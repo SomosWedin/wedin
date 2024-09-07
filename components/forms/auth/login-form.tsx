@@ -80,7 +80,7 @@ export default function LoginForm() {
                   <FormControl>
                     <Input
                       placeholder="tucorreo@wedin.app"
-                      className="!mt-1.5"
+                      className="!mt-1"
                       {...field}
                     />
                   </FormControl>

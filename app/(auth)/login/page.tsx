@@ -1,4 +1,3 @@
-// import SociaMediaLoginForm from '@/components/forms/auth/socia-media-login-form';
 import LoginForm from '@/components/forms/auth/login-form';
 import Link from "next/link";
 import Image from "next/image";
@@ -19,7 +18,7 @@ export default function LoginPage() {
       <div className="w-4/6 p-10 flex flex-col items-center justify-center max-w-5xl m-auto gap-8">
         <div className="flex flex-col gap-6 items-center">
           <Image src={logoImg} alt="Logo" className="w-48" />
-          <p className="text-3xl font-semibold text-center text-text-primary sm:text-5xl">
+          <p className="text-3xl font-semibold text-center text-textPrimary sm:text-5xl">
             Bienvenido de vuelta
           </p>
         </div>
@@ -27,9 +26,9 @@ export default function LoginPage() {
         <LoginForm />
 
         <div className="flex items-center justify-center gap-2 w-full">
-          <span className="w-60 border-b-2 border-border-secondary" />
+          <span className="w-60 border-b-2 border-borderSecondary" />
           <p className="text-gray-300">o</p>
-          <span className="w-60 border-b-2 border-border-secondary" />
+          <span className="w-60 border-b-2 border-borderSecondary" />
         </div>
 
         <div className="flex items-center justify-center w-full">
@@ -40,7 +39,7 @@ export default function LoginPage() {
           <p className="text-secondary-400">¿Primera vez en wedin? Registrate en un minuto</p>
           <Link
             href="/register"
-            className="flex justify-center items-center border border-border-default bg-gray-600 rounded-md text-text-secondary font-medium px-4 py-2 hover:opacity-65 cursor-pointer transition-all duration-150"
+            className="flex justify-center items-center border border-borderDefault bg-gray600 rounded-md text-textSecondary font-medium px-4 py-2 hover:bg-borderDefault cursor-pointer transition-all duration-150"
           >
             Registrate
           </Link>
