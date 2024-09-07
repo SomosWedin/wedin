@@ -1,12 +1,12 @@
 'use server';
 
 import type { ErrorResponse } from '@/lib/auth';
-import prismaClient from '@/prisma/client';
-import type { User } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+const prismaClient = new PrismaClient();
 
 export const getUserByEmail = async (
   email: string
-): Promise<User | ErrorResponse> => {
+): Promise<any | ErrorResponse> => {
   try {
     const currentUser = await prismaClient.user.findUnique({
       where: { email },

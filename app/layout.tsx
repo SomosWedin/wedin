@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
+// import { auth } from "@/lib/auth";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "@/components/ui/toaster";
 import Provider from "@/utils/Provider";
@@ -18,14 +18,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
+  // const session = await auth();
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased sm:min-h-[100vh]`}>
-        <SessionProvider session={session}>
+        {/* <SessionProvider session={session}> */}
           <Toaster />
           <Provider>{children}</Provider>
-        </SessionProvider>
+        {/* </SessionProvider> */}
       </body>
     </html>
   );
