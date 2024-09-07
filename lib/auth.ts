@@ -52,11 +52,11 @@ export const {
 
       if (account && account.type !== 'credentials') return true;
 
-      // const existingUser = await getUserbyEmail(user.email);
-      //
-      // if (!existingUser || !existingUser.emailVerified) {
-      //   return true;
-      // }
+      const existingUser = await getUserByEmail(user.email);
+      
+      if (!existingUser || !existingUser.emailVerified) {
+        return true;
+      }
 
       return true;
     },

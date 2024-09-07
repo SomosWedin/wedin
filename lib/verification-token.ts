@@ -1,4 +1,4 @@
-import prismaClient from '@/server/prisma/client';
+import prismaClient from '@/prisma/client';
 import { getLoginUserByEmail } from '@/actions/data/user';
 
 export const getVerificationTokenByEmail = async (email: string) => {
