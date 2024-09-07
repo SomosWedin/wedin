@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "@/components/ui/toaster";
-import Provider from "@/util/Provider";
+import Provider from "@/utils/Provider";
 import { Inter } from "next/font/google";
 import "../styles/globals.css";
 

@@ -3,7 +3,7 @@
 import { signIn } from '@/lib/auth';
 import { generateVerificationToken } from '@/lib/tokens';
 import { LoginSchema } from '@/schemas/auth';
-import {AuthError} from 'next-auth';
+import AuthError from 'next-auth';
 import type * as z from 'zod';
 import { getLoginUserByEmail } from '../data/user';
 
@@ -45,7 +45,8 @@ export const login = async (
       });
     } catch (error) {
       if (error instanceof AuthError) {
-        switch (error.type) {
+        const authError = error as (typeof AuthError) & { type: string };
+        switch (authError.type) {
           case 'CredentialsSignin':
             return { error: 'Credenciales incorrectas' };
           default:

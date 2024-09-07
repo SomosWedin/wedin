@@ -12,6 +12,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "typeRoots": ["./node_modules/@types", "./node_modules/@prisma/client"],
     "plugins": [
       {
         "name": "next"

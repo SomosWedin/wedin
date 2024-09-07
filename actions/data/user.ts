@@ -1,7 +1,7 @@
 'use server';
 
 import type { ErrorResponse } from '@/lib/auth';
-import prismaClient from '@prisma/client';
+import prismaClient from '@/prisma/client';
 import type { User } from '@prisma/client';
 
 export const getUserByEmail = async (

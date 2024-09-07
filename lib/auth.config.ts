@@ -1,25 +1,26 @@
-import prismaClient from '@prisma/client';
+import prismaClient from '@/prisma/client';
 import bcrypt from 'bcryptjs';
 import Credentials from 'next-auth/providers/credentials';
 import Facebook from 'next-auth/providers/facebook';
 import Google from 'next-auth/providers/google';
-import type { NextAuthConfig } from 'next-auth';
+import { NextAuthOptions } from 'next-auth';
+import { Adapter } from 'next-auth/adapters';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { LoginSchema } from '@/schemas/auth';
 
-const authOptions: NextAuthConfig = {
-  adapter: PrismaAdapter(prismaClient),
+const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prismaClient) as Adapter,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       allowDangerousEmailAccountLinking: true,
     }),
-    Facebook({
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      allowDangerousEmailAccountLinking: true,
-    }),
+    // Facebook({
+    //   clientId: process.env.GOOGLE_CLIENT_ID as string,
+    //   clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    //   allowDangerousEmailAccountLinking: true,
+    // }),
     Credentials({
       // i added this
       credentials: {
