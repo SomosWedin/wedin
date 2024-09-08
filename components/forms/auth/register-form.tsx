@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRegisterForm } from '@/hooks/use-register';
 import {
   Form,
@@ -21,6 +22,14 @@ export default function RegisterForm() {
     handleRegister,
     isLoading,
   } = useRegisterForm();
+
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('registerEmail');
+    if (savedEmail) {
+      form.setValue('email', savedEmail); 
+    }
+  }, [form]);
 
   return (
     <Form {...form}>
@@ -83,7 +92,7 @@ export default function RegisterForm() {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          {/* <div className="flex flex-col gap-2">
             <FormField
               control={form.control}
               name="passwordConfirmation"
@@ -104,10 +113,10 @@ export default function RegisterForm() {
                 </FormItem>
               )}
             />
-          </div>
+          </div> */}
         </div>
 
-        <AuthFormButton label="Registrarme" isLoading={isLoading} />
+        <AuthFormButton label="Crear cuenta" isLoading={isLoading} />
       </form>
     </Form>
   );
