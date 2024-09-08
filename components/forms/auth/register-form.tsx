@@ -1,5 +1,6 @@
 'use client';
 
+import { useRegisterForm } from '@/hooks/use-register';
 import {
   Form,
   FormControl,
@@ -9,27 +10,25 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import Link from 'next/link';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
-import { useLoginForm } from '@/hooks/use-login';
-import { Loader2 } from 'lucide-react';
+import AuthFormButton from './auth-form-button';
 
-export default function LoginForm() {
+export default function RegisterForm() {
   const {
     form,
     isPasswordVisible,
     setIsPasswordVisible,
-    handleLogin,
+    handleRegister,
     isLoading,
-  } = useLoginForm();
+  } = useRegisterForm();
+
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(handleLogin)}
+        onSubmit={form.handleSubmit(handleRegister)}
         className="flex flex-col gap-6 w-full max-w-xl"
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2">
             <FormField
               control={form.control}
@@ -56,14 +55,14 @@ export default function LoginForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contraseña</FormLabel>
+                  <FormLabel>Crear contraseña</FormLabel>
                   <FormControl>
                     <div className="flex">
                       <Input
                         {...field}
-                        className="!-mt-1"
                         type={isPasswordVisible ? 'text' : 'password'}
-                        placeholder="Password!52419$"
+                        className="!-mt-1"
+                        placeholder="TuContraseña!52419$"
                       />
                       <button
                         type="button"
@@ -82,23 +81,33 @@ export default function LoginForm() {
                 </FormItem>
               )}
             />
-            <div className="flex justify-end">
-              <Link
-                href="/password-reset"
-                className="text-textTertiary text-sm hover:opacity-70 hover:underline transition-opacity"
-              >
-                Olvidaste tu contraseña?
-              </Link>
-            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <FormField
+              control={form.control}
+              name="passwordConfirmation"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirma tu contraseña</FormLabel>
+                  <FormControl>
+                    <div className="flex">
+                      <Input
+                        {...field}
+                        type={isPasswordVisible ? 'text' : 'password'}
+                        className="!-mt-1"
+                        placeholder="**********"
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
           </div>
         </div>
-        <Button type="submit" variant="login" disabled={isLoading}>
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            'Iniciar sesión'
-          )}
-        </Button>
+
+        <AuthFormButton label="Registrarme" isLoading={isLoading} />
       </form>
     </Form>
   );

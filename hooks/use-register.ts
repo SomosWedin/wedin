@@ -2,32 +2,31 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { login, checkUserExists } from '@/actions/auth/login';
-import { LoginSchema } from '@/schemas/auth';
+import { register } from '@/actions/auth/register';
+import { RegisterSchema } from '@/schemas/auth';
 import type { z } from 'zod';
 
-export function useLoginForm() {
+export function useRegisterForm() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const form = useForm<z.infer<typeof LoginSchema>>({
-    resolver: zodResolver(LoginSchema),
+  const form = useForm<z.infer<typeof RegisterSchema>>({
+    resolver: zodResolver(RegisterSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      eventType: 'wedding',
     },
   });
 
   const mutation = useMutation({
-    mutationFn: (values: z.infer<typeof LoginSchema>) => login(values, 'credentials'),
+    mutationFn: (values: z.infer<typeof RegisterSchema>) => register(values),
     onSuccess: (data) => {
-      console.log("data:", data)
+      console.log("data:", data);
     },
     onError: (error) => {
-        console.log("error:", error)
+      console.log("error:", error);
     },
   });
 
-  const handleLogin = async (values: z.infer<typeof LoginSchema>) => {
-    const validatedFields = LoginSchema.safeParse(values);
+  const handleRegister = async (values: z.infer<typeof RegisterSchema>) => {
+    const validatedFields = RegisterSchema.safeParse(values);
     if (validatedFields.success) {
       mutation.mutate(validatedFields.data);
     }
@@ -37,7 +36,7 @@ export function useLoginForm() {
     form,
     isPasswordVisible,
     setIsPasswordVisible,
-    handleLogin,
+    handleRegister,
     isLoading: mutation.isPending,
   };
 }

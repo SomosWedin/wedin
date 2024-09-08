@@ -36,9 +36,9 @@ export default function AuthFormButton({
   }
 
   return (
-    <Button type="submit" className="rounded-lg" disabled={isLoading}>
-      Iniciar sesión con {label}
-      {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+    <Button type="submit" variant='login' className="rounded-lg" disabled={isLoading}>
+      {label}
+      {isLoading && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
     </Button>
   );
 }

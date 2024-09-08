@@ -7,6 +7,11 @@ import AuthError from 'next-auth';
 import type * as z from 'zod';
 import { getLoginUserByEmail } from '../data/user';
 
+export const checkUserExists = async (email: string) => {
+  const existingUser = await getLoginUserByEmail(email);
+  return !!existingUser;
+};
+
 export const login = async (
   values: z.infer<typeof LoginSchema>,
   type = 'credentials',

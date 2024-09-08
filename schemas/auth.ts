@@ -8,7 +8,7 @@ export const LoginSchema = z.object({
   password: z
     .string()
     .min(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
-    .max(255, { message: `Slow down cowboy, you're not Julian Assange` }),
+    .max(255, { message: 'La contraseña es demasiado larga' }),
 });
 
 export const MagicLoginSchema = z.object({

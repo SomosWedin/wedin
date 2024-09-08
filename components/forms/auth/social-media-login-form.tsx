@@ -10,7 +10,7 @@ type SocialMediaLoginButtonType = {
 };
 function SociaMediaLoginButton({
   provider,
-  callbackUrl = '/dashboard',
+  callbackUrl = '/',
 }: SocialMediaLoginButtonType) {
   const [isLoading, setIsLoading] = useState(false);
   const handleSignIn = () => {

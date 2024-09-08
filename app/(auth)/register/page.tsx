@@ -1,11 +1,11 @@
-import LoginForm from '@/components/forms/auth/login-form';
 import Link from "next/link";
 import Image from "next/image";
 import backgroundImg from "@/public/login-background.svg";
 import logoImg from "@/public/w-logo.svg";
 import SociaMediaLoginButton from '@/components/forms/auth/social-media-login-form';
+import RegisterForm from "@/components/forms/auth/register-form";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
     <div className="flex w-full">
       <div className="hidden md:block w-2/6 h-screen ">
@@ -19,11 +19,11 @@ export default function LoginPage() {
         <div className="flex flex-col gap-6 items-center">
           <Image src={logoImg} alt="Logo" className="w-48" />
           <p className="text-3xl font-semibold text-center text-textPrimary sm:text-5xl">
-            Bienvenido de vuelta
+            Vamos a crear tu cuenta
           </p>
         </div>
 
-        <LoginForm />
+        <RegisterForm />
 
         <div className="flex items-center justify-center gap-2 w-full">
           <span className="w-64 border-b-2 border-borderSecondary" />
@@ -35,7 +35,7 @@ export default function LoginPage() {
           <SociaMediaLoginButton provider={'google'}  />
         </div>
 
-        <div className="flex items-center justify-center gap-2 w-full text-sm">
+        {/* <div className="flex items-center justify-center gap-2 w-full text-sm">
           <p className="text-secondary-400">¿Primera vez en wedin? Registrate en un minuto</p>
           <Link
             href="/register"
@@ -43,7 +43,7 @@ export default function LoginPage() {
           >
             Registrate
           </Link>
-        </div>
+        </div> */}
       </div>
     </div>
   );
