@@ -3,14 +3,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { login, checkUserExists } from '@/actions/auth/login';
+import { useToast } from '@/hooks/use-toast';
 import { LoginSchema } from '@/schemas/auth';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import debounce from 'lodash.debounce';
+// import { Button } from '@/components/ui/button';
+// import Link from 'next/link';
 
 export function useLoginForm() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [userExists, setUserExists] = useState(false);
+  const { toast } = useToast();
   const router = useRouter();
 
   const form = useForm<z.infer<typeof LoginSchema>>({
@@ -36,18 +40,26 @@ export function useLoginForm() {
     if (exists) {
       setUserExists(true);
     } else {
-      router.push('/register');
-        localStorage.setItem('registerEmail', email);
+      //router.push('/register');
+      localStorage.setItem('registerEmail', email);
+      toast({
+        variant: 'destructive',
+        title: 'Error! 😢',
+        description: `No existe cuenta con ${email}`,
+      });
     }
   };
 
-  const debouncedCheckUser = debounce(checkUser, 2000);
+  const debouncedCheckUser = debounce(checkUser, 1000);
 
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-        if (name === 'email' && value.email) {
-            debouncedCheckUser(value.email);
-          }
+      if (name === 'email' && value.email) {
+        const emailPattern = /^[^\s@]{2,}@[^\s@]{2,}\.[^\s@]{2,}$/;
+        if (emailPattern.test(value.email)) {
+          debouncedCheckUser(value.email);
+        }
+      }
     });
     return () => subscription.unsubscribe();
   }, [form.watch]);

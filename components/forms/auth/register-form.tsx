@@ -23,7 +23,6 @@ export default function RegisterForm() {
     isLoading,
   } = useRegisterForm();
 
-
   useEffect(() => {
     const savedEmail = localStorage.getItem('registerEmail');
     if (savedEmail) {
