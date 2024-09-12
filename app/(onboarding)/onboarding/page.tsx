@@ -1,7 +1,12 @@
-import React from 'react'
+import { getCurrentUser } from '@/actions/get-current-user';
+import OnboardingStepper from '../components/stepper';
 
-export default function OnboardingPage(){
+export default async function OnboardingPage(){
+  const currentUser = await getCurrentUser();
+
   return (
-    <div>OnboardingPage</div>
+    <div className='h-screen flex items-center justify-center w-full p-6 sm:p-10'>
+      <OnboardingStepper currentUser={currentUser} />
+    </div>
   )
 }
