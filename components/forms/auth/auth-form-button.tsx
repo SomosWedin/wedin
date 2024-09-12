@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { capitalizeFirstLetter } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
-import { FaGoogle } from "react-icons/fa";
+import { Button } from '@/components/ui/button';
+import { capitalizeFirstLetter } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
+import { FaGoogle } from 'react-icons/fa';
 
 type AuthFormButtonProps = {
   variant?: string;
@@ -12,16 +12,17 @@ type AuthFormButtonProps = {
 
 export default function AuthFormButton({
   variant,
-  label = "Iniciar sesión",
+  label = 'Iniciar sesión',
   isLoading, // we use this because the login is using on submit and not action
   handleSignIn, // we use this because the login is using on submit and not action
 }: AuthFormButtonProps) {
-  if (variant === "socialMediaLogin") {
+  if (variant === 'socialMediaLogin') {
     return (
       <Button
         onClick={handleSignIn}
         variant="socialMediaLogin"
         disabled={isLoading}
+        type='submit'
       >
         {isLoading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -36,7 +37,12 @@ export default function AuthFormButton({
   }
 
   return (
-    <Button type="submit" variant='login' className="rounded-lg" disabled={isLoading}>
+    <Button
+      type="submit"
+      variant="login"
+      className="rounded-lg"
+      disabled={isLoading}
+    >
       {label}
       {isLoading && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
     </Button>

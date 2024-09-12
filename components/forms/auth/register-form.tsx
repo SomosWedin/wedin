@@ -1,6 +1,5 @@
-'use client';
+'use client'
 
-import { useEffect } from 'react';
 import { useRegisterForm } from '@/hooks/use-register';
 import {
   Form,
@@ -12,6 +11,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
+// import { Button } from '@/components/ui/button';
+// import { Loader2 } from 'lucide-react';
 import AuthFormButton from './auth-form-button';
 
 export default function RegisterForm() {
@@ -22,13 +23,6 @@ export default function RegisterForm() {
     handleRegister,
     isLoading,
   } = useRegisterForm();
-
-  useEffect(() => {
-    const savedEmail = localStorage.getItem('registerEmail');
-    if (savedEmail) {
-      form.setValue('email', savedEmail); 
-    }
-  }, [form]);
 
   return (
     <Form {...form}>
@@ -90,6 +84,14 @@ export default function RegisterForm() {
               )}
             />
           </div>
+
+          {/* <Button type="submit" variant="login" disabled={isLoading} className='mt-4'>
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              'Crear cuenta'
+            )}
+          </Button> */}
 
           {/* <div className="flex flex-col gap-2">
             <FormField
