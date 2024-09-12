@@ -3,10 +3,7 @@ import Image from 'next/image';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { CiHeart } from 'react-icons/ci';
 import { FaChevronRight } from 'react-icons/fa6';
