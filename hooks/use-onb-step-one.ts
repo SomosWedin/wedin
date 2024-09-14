@@ -6,29 +6,25 @@ import { useToast } from '@/hooks/use-toast';
 export const useOnbStepOne = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const updateEventType = async (eventType: EventType) => {
     setLoading(true);
-    setError(null);
 
     try {
       const response = await stepOne(eventType);
       if (response.error) {
-        setError(response.error);
         toast({
-            variant: 'destructive',
-            title: 'Error al registrar usuario.',
-            description: 'Error actualizando tu perfil',
-          });
+          variant: 'destructive',
+          title: 'Error! 😢',
+          description: response.error,
+        });
       }
     } catch (err) {
       toast({
         variant: 'destructive',
-        title: 'Error al registrar usuario.',
-        description: 'Error actualizando tu perfil',
+        title: 'Error! 😢',
+        description: 'Ocorrio un error al crear tu evento, Intente de nuevo.',
       });
-      setError('Error actualizando tu perfil');
     } finally {
       setLoading(false);
     }
@@ -37,6 +33,5 @@ export const useOnbStepOne = () => {
   return {
     updateEventType,
     loading,
-    error,
   };
 };

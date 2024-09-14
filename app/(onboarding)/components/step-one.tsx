@@ -6,6 +6,7 @@ import { FaChevronRight } from 'react-icons/fa6';
 import { GiWineGlass } from 'react-icons/gi';
 import { useOnbStepOne } from '@/hooks/use-onb-step-one';
 import { EventType } from '@prisma/client';
+import OnboardingStepper from './stepper';
 
 export default function StepOne() {
   const { updateEventType } = useOnbStepOne();
@@ -61,13 +62,7 @@ export default function StepOne() {
         </Card>
       </div>
 
-      <div className="absolute bottom-0 flex gap-3">
-        <div className="h-2 w-2 bg-slate400 rounded-full"></div>
-        <div className="h-2 w-2 bg-slate300 rounded-full"></div>
-        <div className="h-2 w-2 bg-slate300 rounded-full"></div>
-        <div className="h-2 w-2 bg-slate300 rounded-full"></div>
-        <div className="h-2 w-2 bg-slate300 rounded-full"></div>
-      </div>
+      <OnboardingStepper step={1} />
     </div>
   );
 }

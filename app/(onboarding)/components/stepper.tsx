@@ -1,32 +1,18 @@
-'use client';
-
-import { useState } from 'react';
-import type { User } from '@prisma/client';
-import StepOne from './step-one';
-import StepTwo from './step-two';
-
 type OnboardingStepperProps = {
-  currentUser?: User | null;
+  step: number;
 };
 
 export default function OnboardingStepper({
-  currentUser,
+  step,
 }: OnboardingStepperProps) {
-  const [currentPage, setCurrentPage] = useState(
-    currentUser?.onboardingStep || 1
-  );
 
   return (
-    <>
-      {currentPage === 1 && <StepOne />}
-
-      {currentPage === 2 && <StepTwo />}
-
-      {currentPage === 3 && 'step 3'}
-
-      {currentPage === 4 && 'step 4'}
-
-      {currentPage === 5 && 'step 5'}
-    </>
+    <div className="absolute bottom-0 flex gap-3">
+      <div className={`h-2 w-2 rounded-full ${step === 1 ? 'bg-slate400' : 'bg-slate300'}`}></div>
+      <div className={`h-2 w-2 rounded-full ${step === 2 ? 'bg-slate400' : 'bg-slate300'}`}></div>
+      <div className={`h-2 w-2 rounded-full ${step === 3 ? 'bg-slate400' : 'bg-slate300'}`}></div>
+      <div className={`h-2 w-2 rounded-full ${step === 4 ? 'bg-slate400' : 'bg-slate300'}`}></div>
+      <div className={`h-2 w-2 rounded-full ${step === 5 ? 'bg-slate400' : 'bg-slate300'}`}></div>
+    </div>
   );
 }

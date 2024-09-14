@@ -3,13 +3,15 @@
 import { auth } from '@/lib/auth';
 import prismaClient from '@/prisma/client';
 import type { Wishlist, EventType } from '@prisma/client';
+import { getCurrentUser } from '../get-current-user';
 
 export const stepOne = async (values: EventType) => {
   let wishlist: Wishlist;
-
+  
   const session = await auth();
+  const currentUser = await getCurrentUser();
 
-  if (!session?.user?.email || !session.user.id) return { error: 'Error obteniendo tu sesión' };
+  if (!session?.user?.email || !currentUser?.id ) return { error: 'Error obteniendo tu sesión' };
 
   try {
     wishlist = await prismaClient.wishlist.create({
@@ -19,12 +21,12 @@ export const stepOne = async (values: EventType) => {
       data: {
         eventType: values,
         wishlistId: wishlist.id,
-        primaryUserId: session.user.id,
+        primaryUserId: currentUser.id,
       },
     });
   } catch (error) {
     console.error('Error creating wishlist or event:', error);
-    return { error: 'Error actualizando tu perfil' };
+    return { error: 'Error creando evento' };
   }
 
   try {
@@ -38,7 +40,7 @@ export const stepOne = async (values: EventType) => {
     });
   } catch (error) {
     console.error('Error updating user profile:', error);
-    return { error: 'Error actualizando tu perfil' };
+    return { error: 'Error actualizando perfil del usuario' };
   }
 
   return { success: true };
