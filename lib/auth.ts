@@ -26,6 +26,7 @@ declare module 'next-auth/jwt' {
     isOnboarded: boolean;
     role: string;
     isExistingUser?: boolean;
+    id: string;
   }
 }
 
@@ -66,6 +67,7 @@ export const {
         session.user.isExistingUser = token.isExistingUser;
         session.user.role = token.role;
         session.user.isOnboarded = token.isOnboarded;
+        session.user.id = token.id;
       }
 
       return session;
@@ -91,6 +93,7 @@ export const {
       token.isOnboarded = response.isOnboarded;
       token.role = response.role;
       token.isExistingUser = true;
+      token.id = response.id;
 
       return token;
     },
