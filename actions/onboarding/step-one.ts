@@ -9,7 +9,6 @@ export const stepOne = async (values: EventType) => {
   
   const session = await auth();
 
-
   if (!session?.user?.email || !session?.user?.id ) return { error: 'Error obteniendo tu sesión' };
 
   try {
