@@ -8,30 +8,15 @@ import {
 } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { StepTwoSchema } from '@/schemas/onboarding';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import type { z } from 'zod';
+import { Loader2 } from 'lucide-react';
+import { useOnbStepTwo } from '@/hooks/use-onb-step-two';
 import Image from 'next/image';
 import OnboardingStepper from './stepper';
 import illustration from '@/public/onb-step-two-icon.svg';
 import wedinIcon from '@/public/w-icon.svg';
 
 export default function StepTwo() {
-  const form = useForm<z.infer<typeof StepTwoSchema>>({
-    resolver: zodResolver(StepTwoSchema),
-    defaultValues: {
-      name: '',
-      lastName: '',
-      partnerName: '',
-      partnerLastName: '',
-      partnerEmail: '',
-    },
-  });
-
-  const onSubmit = async (values: z.infer<typeof StepTwoSchema>) => {
-    console.log(values);
-  };
+  const { form, loading, onSubmit, isDirty } = useOnbStepTwo();
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -158,8 +143,14 @@ export default function StepTwo() {
           />
 
           <div className="flex justify-center">
-            <Button type="submit" variant="login" className="mt-4 w-72">
+            <Button
+              type="submit"
+              variant="login"
+              className="mt-4 w-72"
+              disabled={loading || !isDirty}
+            >
               Continuar
+              {loading && <Loader2 className="w-4 h-4 animate-spin ml-3" />}
             </Button>
           </div>
         </form>

@@ -1,37 +1,54 @@
 import { useState } from 'react';
 import { stepTwo } from '@/actions/onboarding/step-two';
-import { User } from '@prisma/client';
 import { useToast } from '@/hooks/use-toast';
+import { StepTwoSchema } from '@/schemas/onboarding';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
 
 export const useOnbStepTwo = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  const updateUser = async (user: User) => {
-    setLoading(true);
+  const form = useForm<z.infer<typeof StepTwoSchema>>({
+    resolver: zodResolver(StepTwoSchema),
+    defaultValues: {
+      name: '',
+      lastName: '',
+      partnerName: '',
+      partnerLastName: '',
+      partnerEmail: '',
+    },
+  });
 
-    try {
-      const response = await stepTwo(user);
-      if (response.error) {
+  const { formState: { isDirty } } = form;
+
+  const onSubmit = async (values: z.infer<typeof StepTwoSchema>) => {
+    setLoading(true);
+    const validatedFields = StepTwoSchema.safeParse(values);
+    if (validatedFields.success) {
+      const response = await stepTwo(validatedFields.data);
+
+      if (response?.error) {
         toast({
           variant: 'destructive',
-          title: 'Error! 😢',
+          title: 'Error en el paso 2',
           description: response.error,
         });
+
+        setLoading(false);
+        return null;
       }
-    } catch (err) {
-      toast({
-        variant: 'destructive',
-        title: 'Error! 😢',
-        description: 'Ocorrio un error al crear tu evento, Intente de nuevo.',
-      });
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
+
   return {
-    updateUser,
+    form,
     loading,
+    onSubmit,
+    isDirty,
   };
 };

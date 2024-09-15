@@ -26,3 +26,9 @@ export const StepTwoSchema = z.object({
     .min(1, { message: 'El email de tu pareja no puede estar vacío' })
     .email('Email inválido'),
 });
+
+export const StepThreeSchema = z.object({
+  eventCountry: z.string().optional(),
+  eventCity: z.string().optional(),
+  isDecidingEventLocation: boolean(),
+});
