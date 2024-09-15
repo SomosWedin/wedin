@@ -1,4 +1,3 @@
-import * as React from 'react';
 import {
   Form,
   FormControl,
@@ -10,47 +9,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Combobox } from '@/components/ui/combobox';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { StepThreeSchema } from '@/schemas/onboarding';
 import { Loader2 } from 'lucide-react';
-import type { z } from 'zod';
 import { useSession } from 'next-auth/react';
 import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/w-icon.svg';
 import Image from 'next/image';
 import { countries } from '@/lib/countries';
+import { useOnbStepThree } from '@/hooks/use-onb-step-three';
 
 export default function StepThree() {
   const router = useRouter();
-  const [isDeciding, setIsDeciding] = React.useState<boolean | string>(false);
-  const [isLoading, setIsLoading] = React.useState(false);
   const { data: session, update } = useSession();
 
-  const form = useForm<z.infer<typeof StepThreeSchema>>({
-    resolver: zodResolver(StepThreeSchema),
-    defaultValues: {
-      isDecidingEventLocation: false,
-    },
-  });
-
-  const onSubmit = async (values: z.infer<typeof StepThreeSchema>) => {};
-
-  const handleIsDecidingCountryCity = (value: boolean | string) => {
-    setIsDeciding(value);
-    if (value) {
-      form.setValue('eventCountry', '');
-      form.setValue('eventCity', '');
-    }
-  };
+  const { form, loading, onSubmit, handleIsDecidingCountryCity, isDeciding } = useOnbStepThree();
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -68,42 +42,35 @@ export default function StepThree() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="w-full flex flex-col gap-3 "
+          className="w-full flex flex-col gap-4"
         >
           <div className="flex items-center gap-4">
-            <FormField
-              control={form.control}
-              name="eventCountry"
-              render={({ field }) => (
-                <FormItem className="w-full">
-                  <FormLabel>País</FormLabel>
-                  <Select
-                    disabled={!!isDeciding}
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="País donde te casas" />
-                      </SelectTrigger>
+            {isDeciding ? (
+              <div className="w-full">
+                <Label>País</Label>
+                <Input placeholder="Elegí un país" disabled className="!mt-1.5" />
+              </div>
+            ) : (
+              <FormField
+                control={form.control}
+                name="eventCountry"
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormLabel>País</FormLabel>
+                    <FormControl className="!mt-1">
+                      <Combobox
+                        options={countries}
+                        placeholder="Elegí un país"
+                        selected={field.value || ''}
+                        onChange={field.onChange}
+                        width="w-60"
+                      />
                     </FormControl>
-                    <SelectContent className="max-h-60 bg-white">
-                      {countries.map(country => (
-                        <SelectItem
-                          key={country.id}
-                          value={country.name}
-                          className="cursor-pointer border-b-[1px]"
-                          style={{ margin: '0 auto' }}
-                        >
-                          {country.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
+                    <FormMessage className="font-normal text-red-600" />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
@@ -149,7 +116,10 @@ export default function StepThree() {
           />
 
           <div className="flex justify-center mt-6">
-            <Button variant="login" className='w-72'>Continuar</Button>
+            <Button type="submit" variant="login" disabled={loading} className="w-72">
+              Continuar
+              {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+            </Button>
           </div>
         </form>
       </Form>

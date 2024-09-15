@@ -32,3 +32,8 @@ export const StepThreeSchema = z.object({
   eventCity: z.string().optional(),
   isDecidingEventLocation: boolean(),
 });
+
+export const StepFourSchema = z.object({
+  eventDate: z.date().optional(),
+  isDecidingEventDate: boolean(),
+});

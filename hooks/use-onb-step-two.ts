@@ -32,7 +32,7 @@ export const useOnbStepTwo = () => {
       if (response?.error) {
         toast({
           variant: 'destructive',
-          title: 'Error en el paso 2',
+          title: 'Error en el paso 2. Intenta de nuevo.',
           description: response.error,
         });
 
