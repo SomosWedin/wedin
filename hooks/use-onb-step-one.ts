@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { stepOne } from '@/actions/onboarding/step-one';
 import { EventType } from '@prisma/client';
 import { useToast } from '@/hooks/use-toast';
+import { useOnboarding } from '@/app/(onboarding)/components/context';
 
 export const useOnbStepOne = () => {
   const { toast } = useToast();
+  const { setCurrentPage } = useOnboarding();
   const [loading, setLoading] = useState(false);
 
   const updateEventType = async (eventType: EventType) => {
@@ -18,6 +20,8 @@ export const useOnbStepOne = () => {
           title: 'Error! 😢',
           description: response.error,
         });
+      } else {
+        setCurrentPage(2);
       }
     } catch (err) {
       toast({

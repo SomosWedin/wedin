@@ -27,7 +27,6 @@ export function useRegisterForm() {
   }, [form]);
 
   async function handleRegister(values: z.infer<typeof RegisterSchema>) {
-    console.log(values);
     setIsLoading(true);
     const validatedFields = RegisterSchema.safeParse(values);
 

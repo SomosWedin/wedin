@@ -5,9 +5,11 @@ import { StepTwoSchema } from '@/schemas/onboarding';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
+import { useOnboarding } from '@/app/(onboarding)/components/context';
 
 export const useOnbStepTwo = () => {
   const { toast } = useToast();
+  const { setCurrentPage } = useOnboarding();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof StepTwoSchema>>({
@@ -38,6 +40,8 @@ export const useOnbStepTwo = () => {
 
         setLoading(false);
         return null;
+      } else {
+        setCurrentPage(3);
       }
     }
 

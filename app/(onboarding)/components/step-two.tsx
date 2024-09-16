@@ -15,6 +15,7 @@ import OnboardingStepper from './stepper';
 import illustration from '@/public/onb-step-two-icon.svg';
 import wedinIcon from '@/public/w-icon.svg';
 
+
 export default function StepTwo() {
   const { form, loading, onSubmit, isDirty } = useOnbStepTwo();
 

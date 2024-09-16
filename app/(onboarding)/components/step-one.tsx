@@ -11,8 +11,8 @@ import Image from 'next/image';
 export default function StepOne() {
   const { updateEventType } = useOnbStepOne();
 
-  const handleEventTypeClick = (eventType: EventType) => {
-    updateEventType(eventType);
+  const handleEventTypeClick = async (eventType: EventType) => {
+    await updateEventType(eventType);
   };
 
   return (

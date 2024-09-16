@@ -25,7 +25,7 @@ export default function StepFive() {
       </div>
 
       <div className="bg-gray50 rounded-xl px-6 py-2 flex flex-col">
-        <div className="flex items-center gap- py-5 border-b border-borderDefault cursor-pointer">
+        <div className="flex items-center gap-3 py-5 border-b border-borderDefault cursor-pointer">
           <CiSettings className="text-primary400 text-3xl" />
           <h2 className="text-gray300 text-sm sm:text-lg">
             Completá más datos de tu evento para comunicarlo en tu web

@@ -6,9 +6,11 @@ import { StepFourSchema } from '@/schemas/onboarding';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
+import { useOnboarding } from '@/app/(onboarding)/components/context';
 
 export const useOnbStepFour = () => {
   const { toast } = useToast();
+  const { setCurrentPage } = useOnboarding();
   const [isDeciding, setIsDeciding] = React.useState<boolean | string>(false);
   const [loading, setLoading] = useState(false);
 
@@ -37,6 +39,8 @@ export const useOnbStepFour = () => {
 
         setLoading(false);
         return null;
+      } else {
+        setCurrentPage(5);
       }
       setLoading(false);
     }
