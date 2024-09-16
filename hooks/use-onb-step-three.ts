@@ -23,7 +23,8 @@ export const useOnbStepThree = () => {
     },
   });
 
-  const { formState: { isDirty } } = form;
+//   const { formState: { isDirty } } = form;
+  const isButtonEnabled = form.formState.isDirty || form.watch('isDecidingEventLocation');
 
   const onSubmit = async (values: z.infer<typeof StepThreeSchema>) => {
     setLoading(true);
@@ -61,6 +62,6 @@ export const useOnbStepThree = () => {
     onSubmit,
     handleIsDecidingCountryCity,
     isDeciding,
-    isDirty,
+    isButtonEnabled,
   };
 };

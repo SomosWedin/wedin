@@ -24,7 +24,7 @@ import Image from 'next/image';
 import { useOnbStepFour } from '@/hooks/use-onb-step-four';
 
 export default function StepFour() {
-  const { form, loading, onSubmit, isDeciding, handleIsDecidingEventDate } = useOnbStepFour();
+  const { form, loading, onSubmit, isDeciding, handleIsDecidingEventDate, isButtonEnabled } = useOnbStepFour();
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -131,7 +131,7 @@ export default function StepFour() {
             <Button
               type="submit"
               variant="login"
-              disabled={loading}
+              disabled={loading || !isButtonEnabled}
               className="w-72"
             >
               Continuar

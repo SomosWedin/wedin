@@ -19,7 +19,7 @@ import { countries } from '@/lib/countries';
 import { useOnbStepThree } from '@/hooks/use-onb-step-three';
 
 export default function StepThree() {
-  const { form, loading, onSubmit, handleIsDecidingCountryCity, isDeciding } = useOnbStepThree();
+  const { form, loading, onSubmit, handleIsDecidingCountryCity, isDeciding, isButtonEnabled } = useOnbStepThree();
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -111,7 +111,7 @@ export default function StepThree() {
           />
 
           <div className="flex justify-center mt-6">
-            <Button type="submit" variant="login" disabled={loading} className="w-72">
+            <Button type="submit" variant="login" disabled={loading || !isButtonEnabled} className="w-72">
               Continuar
               {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
             </Button>
