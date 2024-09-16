@@ -11,9 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
-import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/w-icon.svg';
 import Image from 'next/image';
@@ -21,9 +19,6 @@ import { countries } from '@/lib/countries';
 import { useOnbStepThree } from '@/hooks/use-onb-step-three';
 
 export default function StepThree() {
-  const router = useRouter();
-  const { data: session, update } = useSession();
-
   const { form, loading, onSubmit, handleIsDecidingCountryCity, isDeciding } = useOnbStepThree();
 
   return (

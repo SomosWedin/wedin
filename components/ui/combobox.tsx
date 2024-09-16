@@ -80,11 +80,11 @@ export function Combobox({
             className="w-full justify-between"
           >
             {selected ? (
-              <div className="relative mr-auto font-normal text-base flex flex-grow flex-wrap items-center overflow-hidden">
+              <div className="relative mr-auto font-normal text-sm flex flex-grow flex-wrap items-center overflow-hidden -ml-1">
                 <span>{renderSelectedItems()}</span>
               </div>
             ) : (
-              <p className="font-normal text-base">
+              <p className="font-normal text-sm -ml-1">
                 {placeholder ?? 'Select Item...'}
               </p>
             )}

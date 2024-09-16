@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState } from 'react';
-import { stepTwo } from '@/actions/onboarding/step-two';
+import { stepThree } from '@/actions/onboarding/step-three';
 import { useToast } from '@/hooks/use-toast';
 import { StepThreeSchema } from '@/schemas/onboarding';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,27 +21,27 @@ export const useOnbStepThree = () => {
     },
   });
 
-//   const { formState: { isDirty } } = form;
+    const { formState: { isDirty } } = form;
 
   const onSubmit = async (values: z.infer<typeof StepThreeSchema>) => {
     setLoading(true);
     const validatedFields = StepThreeSchema.safeParse(values);
     if (validatedFields.success) {
-      // const response = await stepTwo(validatedFields.data);
-  
-      // if (response?.error) {
-      //   toast({
-      //     variant: 'destructive',
-      //     title: 'Error en el paso 2. Intenta de nuevo.',
-      //     description: response.error,
-      //   });
-  
-      setLoading(false);
-      return null;
-    }
-    setLoading(false);
-  };
+      const response = await stepThree(validatedFields.data);
 
+      if (response?.error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error en el paso 3. Intenta de nuevo.',
+          description: response.error,
+        });
+
+        setLoading(false);
+        return null;
+      }
+      setLoading(false);
+    }
+  };
 
   const handleIsDecidingCountryCity = (value: boolean | string) => {
     setIsDeciding(value);
@@ -57,7 +57,6 @@ export const useOnbStepThree = () => {
     onSubmit,
     handleIsDecidingCountryCity,
     isDeciding,
-    // isDirty,
+    isDirty,
   };
-
 };

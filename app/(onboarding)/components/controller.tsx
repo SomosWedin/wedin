@@ -5,6 +5,7 @@ import type { User } from '@prisma/client';
 import StepOne from './step-one';
 import StepTwo from './step-two';
 import StepThree from './step-three';
+import StepFour from './step-four';
 
 type OnboardingControlllerProps = {
   currentUser?: User | null;
@@ -25,7 +26,7 @@ export default function OnboardingControlller({
 
       {currentPage === 3 && <StepThree />}
 
-      {currentPage === 4 && 'step 4'}
+      {currentPage === 4 && <StepFour />}
 
       {currentPage === 5 && 'step 5'}
     </>
