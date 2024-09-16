@@ -1,6 +1,7 @@
 'use client';
 
 import logout from '@/actions/auth/logout';
+import { Button } from '@/components/ui/button';
 
 export default function DashboardPage() {
   const handleLogout = async () => {
@@ -9,9 +10,9 @@ export default function DashboardPage() {
   };
 
   return (
-    <div>
-      <div>hello</div>
-      <button onClick={handleLogout}>Logout</button>
+    <div className="flex flex-col justify-center items-center h-screen gap-10">
+      <div>dashboard</div>
+      <Button variant="destructive" onClick={handleLogout} className='bg-red-500 text-white hover:opacity-80 transition-all font-bold'>Logout</Button>
     </div>
   );
 }

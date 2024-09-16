@@ -14,11 +14,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { StepFourSchema } from '@/schemas/onboarding';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { z } from 'zod';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
@@ -26,45 +21,11 @@ import { format } from 'date-fns';
 import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/w-icon.svg';
 import Image from 'next/image';
-import { useOnbStepThree } from '@/hooks/use-onb-step-three';
+import { useOnbStepFour } from '@/hooks/usd-onb-step-four';
 
 export default function StepFour() {
-  const [isDeciding, setIsDeciding] = useState<boolean | string>(false);
-  const [loading, setLoading] = useState(false);
+  const { form, loading, onSubmit, isDeciding, handleIsDecidingEventDate } = useOnbStepFour();
 
-  const form = useForm<z.infer<typeof StepFourSchema>>({
-    resolver: zodResolver(StepFourSchema),
-    defaultValues: {
-      eventDate: undefined,
-      isDecidingEventDate: false,
-    },
-  });
-
-  const onSubmit = async (values: z.infer<typeof StepFourSchema>) => {
-    setLoading(true);
-    const validatedFields = StepFourSchema.safeParse(values);
-    if (validatedFields.success) {
-      // const response = await stepOneUpdate(validatedFields.data);
-      // if (response?.error) {
-      //   toast({
-      //     variant: 'destructive',
-      //     title: 'Error al completar el paso 1',
-      //     description: response.error,
-      //   });
-      //   setLoading(false);
-      //   return null;
-      // }
-    }
-
-    setLoading(false);
-  };
-
-  const handleIsDecidingChange = (value: boolean | string) => {
-    setIsDeciding(value);
-    if (value) {
-      form.setValue('eventDate', undefined);
-    }
-  };
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
       <Image src={wedinIcon} alt="wedin icon" width={78} />
@@ -153,7 +114,7 @@ export default function StepFour() {
                       checked={field.value}
                       onCheckedChange={checked => {
                         field.onChange(checked);
-                        handleIsDecidingChange(checked);
+                        handleIsDecidingEventDate(checked);
                       }}
                     />
                   </FormControl>
