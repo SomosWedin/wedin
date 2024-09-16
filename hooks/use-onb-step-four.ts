@@ -23,7 +23,8 @@ export const useOnbStepFour = () => {
   });
 
   // const { formState: { isDirty } } = form;
-  const isButtonEnabled = form.formState.isDirty || form.watch('isDecidingEventDate');
+  const isButtonEnabled =
+    form.formState.isDirty || form.watch('isDecidingEventDate');
 
   const onSubmit = async (values: z.infer<typeof StepFourSchema>) => {
     setLoading(true);
@@ -40,11 +41,10 @@ export const useOnbStepFour = () => {
 
         setLoading(false);
         return null;
-      } else {
-        setCurrentPage(5);
       }
-      setLoading(false);
+      setCurrentPage(5);
     }
+    setLoading(false);
   };
 
   const handleIsDecidingEventDate = (value: boolean | string) => {

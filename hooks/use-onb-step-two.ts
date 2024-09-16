@@ -23,7 +23,9 @@ export const useOnbStepTwo = () => {
     },
   });
 
-  const { formState: { isDirty } } = form;
+  const {
+    formState: { isDirty },
+  } = form;
 
   const onSubmit = async (values: z.infer<typeof StepTwoSchema>) => {
     setLoading(true);
@@ -40,14 +42,11 @@ export const useOnbStepTwo = () => {
 
         setLoading(false);
         return null;
-      } else {
-        setCurrentPage(3);
       }
+      setCurrentPage(3);
     }
-
     setLoading(false);
   };
-
 
   return {
     form,

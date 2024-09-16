@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { stepFive } from '@/actions/onboarding/step-five';
 import { useToast } from '@/hooks/use-toast';
-// import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export const useOnbStepFive = () => {
-  // const router = useRouter();
+  const { push } = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -21,10 +21,10 @@ export const useOnbStepFive = () => {
 
       setLoading(false);
       return null;
-    } else {
-      location.href = '/dashboard';
     }
     setLoading(false);
+    // location.href = '/dashboard';
+    push('/dashboard');
   };
 
   return {

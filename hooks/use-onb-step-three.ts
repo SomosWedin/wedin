@@ -23,8 +23,9 @@ export const useOnbStepThree = () => {
     },
   });
 
-//   const { formState: { isDirty } } = form;
-  const isButtonEnabled = form.formState.isDirty || form.watch('isDecidingEventLocation');
+  //   const { formState: { isDirty } } = form;
+  const isButtonEnabled =
+    form.formState.isDirty || form.watch('isDecidingEventLocation');
 
   const onSubmit = async (values: z.infer<typeof StepThreeSchema>) => {
     setLoading(true);
@@ -41,11 +42,10 @@ export const useOnbStepThree = () => {
 
         setLoading(false);
         return null;
-      } else {
-        setCurrentPage(4);
       }
-      setLoading(false);
+      setCurrentPage(4);
     }
+    setLoading(false);
   };
 
   const handleIsDecidingCountryCity = (value: boolean | string) => {

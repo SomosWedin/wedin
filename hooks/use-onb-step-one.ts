@@ -14,15 +14,15 @@ export const useOnbStepOne = () => {
 
     try {
       const response = await stepOne(eventType);
-      if (response.error) {
+      if (response?.error) {
         toast({
           variant: 'destructive',
           title: 'Error! 😢',
           description: response.error,
         });
-      } else {
-        setCurrentPage(2);
+        return null;
       }
+      setCurrentPage(2);
     } catch (err) {
       toast({
         variant: 'destructive',
