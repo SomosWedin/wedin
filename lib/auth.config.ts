@@ -3,13 +3,12 @@ import bcrypt from 'bcryptjs';
 import Credentials from 'next-auth/providers/credentials';
 // import Facebook from 'next-auth/providers/facebook';
 import Google from 'next-auth/providers/google';
-import { NextAuthOptions } from 'next-auth';
-import { Adapter } from 'next-auth/adapters';
+import type { NextAuthOptions } from 'next-auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { LoginSchema } from '@/schemas/auth';
 
 const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prismaClient) as Adapter,
+  adapter: PrismaAdapter(prismaClient),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -22,11 +21,6 @@ const authOptions: NextAuthOptions = {
     //   allowDangerousEmailAccountLinking: true,
     // }),
     Credentials({
-      // i added this
-      credentials: {
-        email: { label: 'email', type: 'email' },
-        password: { label: 'password', type: 'password' },
-      },
       async authorize(credentials) {
         const validatedFields = LoginSchema.safeParse(credentials);
 

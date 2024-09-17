@@ -38,7 +38,7 @@ export default function RegisterPage() {
         <div className="flex items-center justify-center gap-4 w-full text-sm">
           <p className="text-secondary-400">¿Ya tienes una cuenta?</p>
           <Link
-            href="/register"
+            href="/login"
             className="flex justify-center items-center border border-borderDefault bg-gray600 rounded-md text-textSecondary font-medium px-4 py-2 hover:bg-borderDefault cursor-pointer transition-all duration-150"
           >
             Iniciar sesión

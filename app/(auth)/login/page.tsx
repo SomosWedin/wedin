@@ -35,7 +35,7 @@ export default function LoginPage() {
           <SociaMediaLoginButton provider={'google'}  />
         </div>
 
-        <div className="flex items-center justify-center gap-2 w-full text-sm">
+        <div className="flex items-center justify-center gap-4 w-full text-sm">
           <p className="text-secondary-400">¿Primera vez en wedin? Registrate en un minuto</p>
           <Link
             href="/register"
