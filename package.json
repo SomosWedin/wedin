@@ -56,7 +56,7 @@
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.438.0",
     "next": "14.2.8",
-    "next-auth": "^5.0.0-beta.17",
+    "next-auth": "5.0.0-beta.21",
     "nodemailer": "^6.9.15",
     "qs": "^6.13.0",
     "query-string": "^9.1.0",
