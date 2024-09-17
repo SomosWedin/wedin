@@ -32,7 +32,7 @@ interface ComboboxProps {
   onChange?: (event: string | string[]) => void;
   onCreate?: (value: string) => void;
   width?: string;
-  searchPlaceholder?: string;
+  // searchPlaceholder?: string;
 }
 
 export function Combobox({
@@ -43,7 +43,7 @@ export function Combobox({
   onChange,
   onCreate,
   width,
-  searchPlaceholder,
+  // searchPlaceholder,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState<string>('');
