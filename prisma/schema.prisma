@@ -73,7 +73,6 @@ model User {
   accounts             Account[]
   sessions             Session[]
   eventPrimaryUsers    Event[]                @relation("primaryUser")
-  eventSecondaryUsers  Event[]                @relation("secondaryUser")
   TransactionStatusLog TransactionStatusLog[]
 }
 
@@ -81,7 +80,6 @@ model Event {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
   name             String?
   primaryUserId    String    @db.ObjectId
-  secondaryUserId  String?   @db.ObjectId
   date             DateTime?
   coverMessage     String?
   coverImageUrl    String?
@@ -91,13 +89,14 @@ model Event {
   updatedAt        DateTime  @updatedAt
   country          String?
   city             String?
+  partnerName      String?
   eventType        EventType @default(WEDDING)
   guests           String?
   hasPYbankAccount Boolean   @default(false)
 
   wishlist           Wishlist     @relation(fields: [wishlistId], references: [id])
   eventPrimaryUser   User         @relation("primaryUser", fields: [primaryUserId], references: [id])
-  eventSecondaryUser User?        @relation("secondaryUser", fields: [secondaryUserId], references: [id])
+ 
   bankDetails        BankDetails?
 
   wishlistGifts WishlistGift[]
@@ -106,7 +105,6 @@ model Event {
   giftAmounts   String[]
 
   @@unique([wishlistId])
-  // @@unique([secondaryUserId])
   @@unique([primaryUserId])
 }
 

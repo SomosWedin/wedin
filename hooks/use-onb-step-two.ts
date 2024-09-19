@@ -19,7 +19,6 @@ export const useOnbStepTwo = () => {
       lastName: '',
       partnerName: '',
       partnerLastName: '',
-      partnerEmail: '',
     },
   });
 

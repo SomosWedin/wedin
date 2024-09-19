@@ -21,10 +21,6 @@ export const StepTwoSchema = z.object({
     .min(1, { message: 'El apellido de tu pareja no puede estar vacío' })
     .min(2, { message: 'Apellido muy corto' })
     .max(255, { message: 'Apellido muy largo' }),
-  partnerEmail: z
-    .string()
-    .min(1, { message: 'El email de tu pareja no puede estar vacío' })
-    .email('Email inválido'),
 });
 
 export const StepThreeSchema = z.object({

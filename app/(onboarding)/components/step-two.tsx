@@ -125,24 +125,6 @@ export default function StepTwo() {
             </div>
           </div>
 
-          <FormField
-            control={form.control}
-            name="partnerEmail"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email de tu pareja</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="crisley@wedin.app"
-                    className="!mt-1.5"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage className="font-normal text-red-600" />
-              </FormItem>
-            )}
-          />
-
           <div className="flex justify-center">
             <Button
               type="submit"
