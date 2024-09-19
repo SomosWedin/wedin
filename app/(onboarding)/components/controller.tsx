@@ -7,6 +7,7 @@ import StepTwo from './step-two';
 import StepThree from './step-three';
 import StepFour from './step-four';
 import StepFive from './step-five';
+import StepSix from './step-six';
 
 type OnboardingControllerProps = {
   currentUser?: User | null;
@@ -30,6 +31,7 @@ function OnboardingSteps() {
       {currentPage === 3 && <StepThree />}
       {currentPage === 4 && <StepFour />}
       {currentPage === 5 && <StepFive />}
+      {currentPage === 6 && <StepSix />}
     </>
   );
 }

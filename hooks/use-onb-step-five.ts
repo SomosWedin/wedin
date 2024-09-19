@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { stepFive } from '@/actions/onboarding/step-five';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-// import { useOnboarding } from '@/app/(onboarding)/components/context';
+import { useOnboarding } from '@/app/(onboarding)/components/context';
 
 export const useOnbStepFive = () => {
-  const { push } = useRouter();
   const { toast } = useToast();
-  //const { setCurrentPage } = useOnboarding();
+  const { setCurrentPage } = useOnboarding();
   const [loading, setLoading] = useState(false);
 
   const finalizeOnboarding = async () => {
@@ -24,9 +22,8 @@ export const useOnbStepFive = () => {
       setLoading(false);
       return null;
     }
+    setCurrentPage(6);
     setLoading(false);
-    // location.href = '/dashboard';
-    push('/dashboard');
   };
 
   return {
