@@ -85,7 +85,7 @@ export default function RegisterForm() {
             />
           </div>
 
-          {/* <Button type="submit" variant="login" disabled={isLoading} className='mt-4'>
+          {/* <Button type="submit" variant="success" disabled={isLoading} className='mt-4'>
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (

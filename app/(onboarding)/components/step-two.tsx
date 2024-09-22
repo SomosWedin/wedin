@@ -14,10 +14,12 @@ import Image from 'next/image';
 import OnboardingStepper from './stepper';
 import illustration from '@/public/onb-step-two-icon.svg';
 import wedinIcon from '@/public/w-icon.svg';
-
+import { useOnboarding } from './context';
+import { EventType } from '@prisma/client';
 
 export default function StepTwo() {
   const { form, loading, onSubmit, isDirty } = useOnbStepTwo();
+  const { eventType } = useOnboarding();
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -84,51 +86,53 @@ export default function StepTwo() {
             <div className="border-b border-gray200 w-full h-full -mt-6"></div>
           </div>
 
-          <div className="flex gap-2">
-            <div className="w-full">
-              <FormField
-                control={form.control}
-                name="partnerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>El nombre de tu pareja</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Crisley"
-                        className="!mt-1.5"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="font-normal text-red-600" />
-                  </FormItem>
-                )}
-              />
+          {eventType === EventType.WEDDING && ( 
+            <div className="flex gap-2">
+              <div className="w-full">
+                <FormField
+                  control={form.control}
+                  name="partnerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>El nombre de tu pareja</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Crisley"
+                          className="!mt-1.5"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className="font-normal text-red-600" />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="w-full">
+                <FormField
+                  control={form.control}
+                  name="partnerLastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>El apellido de tu pareja</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Dominguez"
+                          className="!mt-1.5"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className="font-normal text-red-600" />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
-            <div className="w-full">
-              <FormField
-                control={form.control}
-                name="partnerLastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>El apellido de tu pareja</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Dominguez"
-                        className="!mt-1.5"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="font-normal text-red-600" />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-
+          )}
+          
           <div className="flex justify-center">
             <Button
               type="submit"
-              variant="login"
+              variant="success"
               className="mt-4 w-72"
               disabled={loading || !isDirty}
             >

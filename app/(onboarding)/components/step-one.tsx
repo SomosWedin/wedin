@@ -7,11 +7,14 @@ import { EventType } from '@prisma/client';
 import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/w-icon.svg';
 import Image from 'next/image';
+import { useOnboarding } from './context';
 
 export default function StepOne() {
   const { updateEventType } = useOnbStepOne();
+  const { setEventType } = useOnboarding();
 
   const handleEventTypeClick = async (eventType: EventType) => {
+    setEventType(eventType);
     await updateEventType(eventType);
   };
 

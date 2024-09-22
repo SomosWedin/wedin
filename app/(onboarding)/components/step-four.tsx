@@ -130,7 +130,7 @@ export default function StepFour() {
           <div className="flex justify-center">
             <Button
               type="submit"
-              variant="login"
+              variant="success"
               disabled={loading || !isButtonEnabled}
               className="w-72"
             >

@@ -45,7 +45,7 @@ export default function StepFive() {
         </div>
       </div>
 
-      <Button variant="login" className="w-72 mt-4" onClick={finalizeOnboarding}>
+      <Button variant="success" className="w-72 mt-4" onClick={finalizeOnboarding}>
         Finalizar
         {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
       </Button>

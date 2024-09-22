@@ -111,7 +111,7 @@ export default function StepThree() {
           />
 
           <div className="flex justify-center mt-6">
-            <Button type="submit" variant="login" disabled={loading || !isButtonEnabled} className="w-72">
+            <Button type="submit" variant="success" disabled={loading || !isButtonEnabled} className="w-72">
               Continuar
               {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
             </Button>
