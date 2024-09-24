@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { User, EventType } from '@prisma/client';
 
 type OnboardingContextType = {
@@ -13,7 +13,17 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 
 export const OnboardingProvider = ({ children, currentUser }: { children: ReactNode,  currentUser?: User | null }) => {
   const [currentPage, setCurrentPage] = useState(currentUser?.onboardingStep || 1);
-  const [eventType, setEventType] = useState<EventType | undefined>(undefined);
+  const [eventType, setEventType] = useState<EventType | undefined>(() => {
+    const savedEventType = localStorage.getItem('eventType');
+    return savedEventType ? JSON.parse(savedEventType) : undefined;
+  });
+
+  useEffect(() => {
+    if (eventType) {
+      localStorage.setItem('eventType', JSON.stringify(eventType));
+    }
+  }, [eventType]);
+
 
   return (
     <OnboardingContext.Provider value={{ currentPage, setCurrentPage, eventType, setEventType }}>
