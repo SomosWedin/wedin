@@ -45,6 +45,7 @@ const config: Config = {
         backgroundSecondary: "#E7E7E7",
         backgroundTertiary: "#435E41",
         error: "#D32F2F",
+        active: "#F4EEEC",
         success: "#435E41",
         info: "#1976D2",
         warning: "#FBC02D",

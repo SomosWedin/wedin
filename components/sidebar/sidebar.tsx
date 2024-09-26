@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import logout from '@/actions/auth/logout';
 import Image from 'next/image';
@@ -8,10 +9,30 @@ import { FiHome } from 'react-icons/fi';
 import { LuSparkles, LuList, LuSettings } from 'react-icons/lu';
 import { IoGiftOutline } from 'react-icons/io5';
 import { LuLogOut } from 'react-icons/lu';
+import { DASHBOARD_ROUTES } from '@/utils/constants';
 
-export default function Sidebar() {
+type SidebarProps = {
+  onMenuItemClick: (name: string) => void;
+};
+
+export default function Sidebar({ onMenuItemClick }: SidebarProps) {
+  const [activeMenuItem, setActiveMenuItem] = useState<string>(
+    DASHBOARD_ROUTES.HOME
+  );
+
+  const handleMenuItemClick = (name: string) => {
+    setActiveMenuItem(name);
+    onMenuItemClick(name);
+  };
+
   const handleLogout = async () => {
     await logout();
+  };
+
+  const getMenuItemClass = (name: string) => {
+    return activeMenuItem === name
+      ? 'bg-active'
+      : 'hover:bg-active transition-all';
   };
 
   return (
@@ -22,28 +43,43 @@ export default function Sidebar() {
         </div>
 
         <div className="flex flex-col gap-2 my-6">
-          <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg hover:bg-gray500 transition-all cursor-pointer">
+          <div
+            className={`flex items-center gap-4 px-4 py-2.5 rounded-lg cursor-pointer ${getMenuItemClass(DASHBOARD_ROUTES.HOME)}`}
+            onClick={() => handleMenuItemClick(DASHBOARD_ROUTES.HOME)}
+          >
             <FiHome className="text-xl" />
             <h2 className="font-medium text-textPrimary text-sm">Inicio</h2>
           </div>
-          <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg hover:bg-gray500 transition-all cursor-pointer">
+          <div
+            className={`flex items-center gap-4 px-4 py-2.5 rounded-lg cursor-pointer ${getMenuItemClass(DASHBOARD_ROUTES.EVENT)}`}
+            onClick={() => handleMenuItemClick(DASHBOARD_ROUTES.EVENT)}
+          >
             <LuSparkles className="text-xl" />
             <h2 className="font-medium text-textPrimary text-sm">
               Presentación
             </h2>
           </div>
-          <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg hover:bg-gray500 transition-all cursor-pointer">
+          <div
+            className={`flex items-center gap-4 px-4 py-2.5 rounded-lg cursor-pointer ${getMenuItemClass(DASHBOARD_ROUTES.WISHLIST)}`}
+            onClick={() => handleMenuItemClick(DASHBOARD_ROUTES.WISHLIST)}
+          >
             <LuList className="text-xl" />
             <h2 className="font-medium text-textPrimary text-sm">Mi lista</h2>
           </div>
-          <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg hover:bg-gray500 transition-all cursor-pointer">
+          <div
+            className={`flex items-center gap-4 px-4 py-2.5 rounded-lg cursor-pointer ${getMenuItemClass(DASHBOARD_ROUTES.SETTINGS)}`}
+            onClick={() => handleMenuItemClick(DASHBOARD_ROUTES.SETTINGS)}
+          >
             <LuSettings className="text-xl" />
             <h2 className="font-medium text-textPrimary text-sm">Generales</h2>
           </div>
 
           <div className="border-b border-gray500 my-3"></div>
 
-          <div className="flex items-center gap-4 pl-4 py-2.5 rounded-lg hover:bg-gray500 transition-all cursor-pointer">
+          <div
+            className={`flex items-center gap-4 pl-4 py-2.5 rounded-lg cursor-pointer ${getMenuItemClass(DASHBOARD_ROUTES.RECIEVED_GIFTS)}`}
+            onClick={() => handleMenuItemClick(DASHBOARD_ROUTES.RECIEVED_GIFTS)}
+          >
             <IoGiftOutline className="text-xl" />
             <h2 className="font-medium text-textPrimary text-sm">
               Regalos recibidos
