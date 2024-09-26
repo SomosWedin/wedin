@@ -32,7 +32,7 @@ const config: Config = {
         gray100: "#F3F4F6",
         gray200: "#E5E7EB",
         gray300: "#71717A",
-        gray500: "#E0E0E0",
+        gray500: "#E3E3E3",
         gray600: "#F4F4F5",
         slate300: "#CBD5E1",
         slate400: "#94A3B8",
