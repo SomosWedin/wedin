@@ -9,7 +9,7 @@ import { DASHBOARD_ROUTES } from '@/utils/constants';
 import Loader from '@/components/common/loader';
 import { useDashboard } from './context';
 
-export default function DashboardController() {
+export default function DashboardRouter() {
   const { activeMenuItem } = useDashboard();
   const [loading, setLoading] = useState(false);
 

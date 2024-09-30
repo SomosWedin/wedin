@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useQuery } from '@tanstack/react-query';
+// import { useQuery } from '@tanstack/react-query';
 import {
   Form,
   FormControl,
@@ -22,37 +22,27 @@ import {
 } from '@/components/ui/popover';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { EventUserUpdateSchema } from '@/schemas/dashboard';
 import { getEvent } from '@/actions/data/event';
+import { Event, User } from '@prisma/client';
 
-const fetchEvent = async () => {
-  const response = await getEvent();
-  console.log(response);
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  return response.json();
-};
+interface EventUserUpdateFormProps {
+  event?: Event | null;
+  currentUser?: User | null;
+}
 
-export default function DashboardEventUserUpdateForm() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['event'],
-    queryFn: fetchEvent,
-  });
-
-  console.log(data);
-
+export default function DashboardEventUserUpdateForm({ event, currentUser }: EventUserUpdateFormProps) {
   const form = useForm<z.infer<typeof EventUserUpdateSchema>>({
     resolver: zodResolver(EventUserUpdateSchema),
     defaultValues: {
-      eventDate: data?.eventDate || undefined,
-      name: data?.name || '',
-      lastName: data?.lastName || '',
-      partnerName: data?.partnerName || '',
-      partnerLastName: data?.partnerLastName || '',
-      partnerEmail: data?.partnerEmail || '',
+      eventDate: event?.date ?? undefined,
+      name: currentUser?.name ?? '',
+      lastName: currentUser?.lastName ?? '',
+      partnerName: event?.partnerName ?? '',
+      partnerLastName: '',
+      partnerEmail: '',
     },
   });
 

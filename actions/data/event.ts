@@ -1,20 +1,18 @@
 'use server';
 
 import type { ErrorResponse } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Event } from '@prisma/client';
 import { getCurrentUser } from '@/actions/get-current-user';
-import { NextResponse } from 'next/server';
 
 const prismaClient = new PrismaClient();
 
-export const getEvent = async (): Promise<any | ErrorResponse> => {
+export const getEvent = async (): Promise<Event | ErrorResponse> => {
   const user = await getCurrentUser();
 
   if (!user)
-    return NextResponse.json(
-      { error: 'User not authenticated' },
-      { status: 401 }
-    );
+    return {
+      error: 'User not authenticated',
+    };
 
   const userId = user.id;
 
@@ -24,12 +22,71 @@ export const getEvent = async (): Promise<any | ErrorResponse> => {
     });
 
     if (!event) {
-      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+      return {
+        error: 'Event not found',
+      };
     }
 
     return event;
   } catch (error) {
     console.error('Error getting event:', error);
-    return NextResponse.json({ error: 'Error getting event' }, { status: 500 });
+    return {
+      error: 'Error getting event',
+    };
+  }
+};
+
+export const getEventById = async (
+  eventId: string
+): Promise<Event | ErrorResponse> => {
+  try {
+    const event = await prismaClient.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      return {
+        error: 'Event not found',
+      };
+    }
+
+    return event;
+  } catch (error) {
+    console.error('Error getting event by ID:', error);
+    return {
+      error: 'Error getting event by ID',
+    };
+  }
+};
+
+export const updateEvent = async (
+  eventId: string,
+  data: Partial<Event>
+): Promise<Event | ErrorResponse> => {
+  try {
+    const updatedEvent = await prismaClient.event.update({
+      where: { id: eventId },
+      data,
+    });
+
+    return updatedEvent;
+  } catch (error) {
+    console.error('Error updating event:', error);
+    return {
+      error: 'Error updating event',
+    };
+  }
+};
+
+export const getAllEvents = async (): Promise<Event[] | ErrorResponse> => {
+  try {
+    const events = await prismaClient.event.findMany();
+
+    return events;
+  } catch (error) {
+    console.error('Error getting all events:', error);
+    return {
+      error: 'Error getting all events',
+    };
   }
 };

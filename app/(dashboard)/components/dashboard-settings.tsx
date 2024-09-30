@@ -1,9 +1,40 @@
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IoIosList } from 'react-icons/io';
 import { TbCurrencyDollar } from 'react-icons/tb';
 import DashboardEventUserUpdateForm from '@/components/forms/dashboard/event-user-update';
+import { getEvent } from '@/actions/data/event';
+import { getCurrentUser } from '@/actions/get-current-user';
+import { User, Event } from '@prisma/client';
+import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
 
 export default function DashboardSettings() {
+  const [event, setEvent] = useState<Event | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const event = await getEvent();
+        const currentUser = await getCurrentUser();
+        if (!event || !currentUser) return;
+        setCurrentUser(currentUser);
+        setEvent(event as Event);
+      } catch (error) {
+        console.error('Error fetching event:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return <DashboardSettingsSkeleton />;
+  }
+
   return (
     <div className="w-full h-screen flex justify-center items-center px-10 flex-col gap-8">
       <div className="w-full flex flex-col gap-4 border-b border-gray-200 pb-6">
@@ -27,7 +58,7 @@ export default function DashboardSettings() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="general" className="mt-8">
-            <DashboardEventUserUpdateForm />
+            <DashboardEventUserUpdateForm event={event} currentUser={currentUser} />
           </TabsContent>
           <TabsContent value="bank">
             bank you want to receive the money
