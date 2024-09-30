@@ -16,7 +16,7 @@ import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/w-icon.svg';
 import Image from 'next/image';
 import { countries } from '@/lib/countries';
-import { useOnbStepThree } from '@/hooks/use-onb-step-three';
+import { useOnbStepThree } from '@/hooks/onboarding/use-onb-step-three';
 
 export default function StepThree() {
   const { form, loading, onSubmit, handleIsDecidingCountryCity, isDeciding, isButtonEnabled } = useOnbStepThree();

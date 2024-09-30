@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { IoIosList } from "react-icons/io";
-import { TbCurrencyDollar } from "react-icons/tb";
+import { IoIosList } from 'react-icons/io';
+import { TbCurrencyDollar } from 'react-icons/tb';
+import DashboardEventUserUpdateForm from '@/components/forms/dashboard/event-user-update';
 
 export default function DashboardSettings() {
   return (
@@ -14,7 +15,7 @@ export default function DashboardSettings() {
       </div>
 
       <div className="flex items-start w-full">
-        <Tabs defaultValue="account" className="w-[400px]">
+        <Tabs defaultValue="general" className="w-full">
           <TabsList className="gap-4">
             <TabsTrigger value="general">
               <IoIosList className="text-xl" />
@@ -25,11 +26,11 @@ export default function DashboardSettings() {
               Configuración bancaria
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="general">
-            general config about your event and user
+          <TabsContent value="general" className="mt-8">
+            <DashboardEventUserUpdateForm />
           </TabsContent>
           <TabsContent value="bank">
-            bank config about your event
+            bank you want to receive the money
           </TabsContent>
         </Tabs>
       </div>

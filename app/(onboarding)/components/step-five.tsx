@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CiSettings } from 'react-icons/ci';
 import { IoGiftOutline } from 'react-icons/io5';
 import { PiBank } from 'react-icons/pi';
-import { useOnbStepFive } from '@/hooks/use-onb-step-five';
+import { useOnbStepFive } from '@/hooks/onboarding/use-onb-step-five';
 import { Loader2 } from 'lucide-react';
 
 export default function StepFive() {

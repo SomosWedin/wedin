@@ -1,3 +1,4 @@
+import * as React from 'react';
 import {
   Form,
   FormControl,
@@ -9,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
-import { useOnbStepTwo } from '@/hooks/use-onb-step-two';
+import { useOnbStepTwo } from '@/hooks/onboarding/use-onb-step-two';
 import Image from 'next/image';
 import OnboardingStepper from './stepper';
 import illustration from '@/public/onb-step-two-icon.svg';
