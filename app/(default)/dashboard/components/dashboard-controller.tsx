@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardHome from './dashboard-home';
 import DashboardEvent from './dashboard-event';
 import DashboardWishlist from './dashboard-wishlist';
+import DashboardSettings from './dashboard-settings';
 import { DASHBOARD_ROUTES } from '@/utils/constants';
 import Loader from '@/components/common/loader';
 
@@ -19,5 +20,6 @@ export default function DashboardController({ content }: ModalControllerProps) {
   if (content === DASHBOARD_ROUTES.HOME) return <DashboardHome />;
   if (content === DASHBOARD_ROUTES.EVENT) return <DashboardEvent />;
   if (content === DASHBOARD_ROUTES.WISHLIST) return <DashboardWishlist />;
+  if (content === DASHBOARD_ROUTES.SETTINGS) return <DashboardSettings />;
   return null;
 }
