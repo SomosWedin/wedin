@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { OnboardingProvider, useOnboarding } from './context';
 import type { User } from '@prisma/client';
 import StepOne from './step-one';

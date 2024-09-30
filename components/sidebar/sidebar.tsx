@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import logout from '@/actions/auth/logout';
 import Image from 'next/image';
@@ -10,19 +9,13 @@ import { LuSparkles, LuList, LuSettings } from 'react-icons/lu';
 import { IoGiftOutline } from 'react-icons/io5';
 import { LuLogOut } from 'react-icons/lu';
 import { DASHBOARD_ROUTES } from '@/utils/constants';
+import { useDashboard } from '@/app/(dashboard)/components/context';
 
-type SidebarProps = {
-  onMenuItemClick: (name: string) => void;
-};
-
-export default function Sidebar({ onMenuItemClick }: SidebarProps) {
-  const [activeMenuItem, setActiveMenuItem] = useState<string>(
-    DASHBOARD_ROUTES.HOME
-  );
+export default function Sidebar() {
+  const { activeMenuItem, setActiveMenuItem } = useDashboard();
 
   const handleMenuItemClick = (name: string) => {
     setActiveMenuItem(name);
-    onMenuItemClick(name);
   };
 
   const handleLogout = async () => {
