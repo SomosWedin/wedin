@@ -7,6 +7,7 @@ import { getEvent } from '@/actions/data/event';
 import { getCurrentUser } from '@/actions/get-current-user';
 import { User, Event } from '@prisma/client';
 import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
+import DashboardBankDetailsUpdateForm from '@/components/forms/dashboard/bank-details-update';
 
 export default function DashboardSettings() {
   const [event, setEvent] = useState<Event | null>(null);
@@ -58,10 +59,13 @@ export default function DashboardSettings() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="general" className="mt-8">
-            <DashboardEventUserUpdateForm event={event} currentUser={currentUser} />
+            <DashboardEventUserUpdateForm
+              event={event}
+              currentUser={currentUser}
+            />
           </TabsContent>
-          <TabsContent value="bank">
-            bank you want to receive the money
+          <TabsContent value="bank" className="mt-8">
+            <DashboardBankDetailsUpdateForm eventId={event?.id}  />
           </TabsContent>
         </Tabs>
       </div>

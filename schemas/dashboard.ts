@@ -24,3 +24,27 @@ export const EventUserUpdateSchema = z.object({
     .max(255, { message: 'Apellido muy largo' }),
   partnerEmail: z.string().email({ message: 'Email no válido' }),
 });
+
+export const BankDetailsFormSchema = z.object({
+  eventId: z.string(),
+  bankName: z.string().min(1, { message: 'Debe seleccionar una entidad' }),
+  accountHolder: z
+    .string()
+    .min(1, { message: 'Nombre y apellido no puede estar vacío' })
+    .min(2, { message: 'Nombre y Apellido muy corto' })
+    .max(255, { message: 'Nombre y Apellido muy largo' }),
+  accountNumber: z
+    .string()
+    .min(1, { message: 'Número de cuenta no puede estar vacío' })
+    .max(24, { message: 'Número de cuenta muy largo' }),
+  accountType: z.string().min(1, { message: 'Debe seleccionar una moneda' }),
+  identificationType: z
+    .string()
+    .min(1, { message: 'Debe seleccionar un documento' }),
+  identificationNumber: z
+    .string()
+    .min(1, { message: 'Número de documento no puede estar vacío' })
+    .max(12, { message: 'Número de documento muy largo' }),
+  razonSocial: z.string().optional(),
+  ruc: z.string().optional(),
+});

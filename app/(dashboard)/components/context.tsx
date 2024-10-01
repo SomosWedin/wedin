@@ -16,12 +16,17 @@ type DashboardContextType = {
   setActiveMenuItem: Dispatch<SetStateAction<string>>;
 };
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
+const defaultDashboardContext: DashboardContextType = {
+  activeMenuItem: DASHBOARD_ROUTES.HOME,
+  setActiveMenuItem: () => {},
+};
+
+const DashboardContext = createContext<DashboardContextType>(defaultDashboardContext);
 
 // Custom hook for local storage
 const useLocalStorage = (key: string, initialValue: string): [string, Dispatch<SetStateAction<string>>, boolean] => {
   const [storedValue, setStoredValue] = useState<string>(initialValue);
-  const [isHydrated, setIsHydrated] = useState(false); 
+  const [isHydrated, setIsHydrated] = useState<boolean>(false); 
   useEffect(() => {
     const item = localStorage.getItem(key);
     if (item) {

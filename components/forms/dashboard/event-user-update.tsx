@@ -29,8 +29,8 @@ import { getEvent } from '@/actions/data/event';
 import { Event, User } from '@prisma/client';
 
 interface EventUserUpdateFormProps {
-  event?: Event | null;
-  currentUser?: User | null;
+  event: Event | null;
+  currentUser: User | null;
 }
 
 export default function DashboardEventUserUpdateForm({ event, currentUser }: EventUserUpdateFormProps) {
@@ -203,7 +203,7 @@ export default function DashboardEventUserUpdateForm({ event, currentUser }: Eve
             />
           </div>
         </div>
-        <Button type="submit" variant="success" className="w-64">
+        <Button type="submit" variant="success" className="w-64 mt-6">
           Guardar
         </Button>
       </form>
