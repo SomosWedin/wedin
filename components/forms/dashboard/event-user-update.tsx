@@ -61,10 +61,10 @@ export default function DashboardEventUserUpdateForm({ event, currentUser }: Eve
           name="eventDate"
           render={({ field }) => (
             <FormItem className="max-w-sm">
-              <FormLabel className="-mb-1">Fecha del evento</FormLabel>
+              <FormLabel className="mb-[-10px]">Fecha del evento</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
-                  <FormControl>
+                  <FormControl className='!mt-1.5'>
                     <Button
                       variant={'outline'}
                       className={cn(

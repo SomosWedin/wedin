@@ -213,7 +213,7 @@ export default function DashboardBankDetailsUpdateForm({
             <FormItem className="max-w-sm">
               <FormLabel>Razón social</FormLabel>
               <FormControl>
-                <Input placeholder="Nombre y apellido" className="!mt-1" {...field} />
+                <Input placeholder="Nombre y apellido" className="!mt-1.5" {...field} />
               </FormControl>
               <FormMessage className="font-normal text-red-600" />
             </FormItem>
