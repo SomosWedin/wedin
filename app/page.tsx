@@ -5,7 +5,7 @@ export default async function Home() {
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    redirect('/gifts');
+    redirect('/login');
   } else {
     redirect('/dashboard');
   }
