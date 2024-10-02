@@ -118,10 +118,15 @@ export default function DashboardBankDetailsUpdateForm({
           </div>
           <div className="w-full">
             <FormField
-              control={form.control}
               name="identificationNumber"
+              control={form.control}
               render={({ field }) => (
-                <IdentificationNumberField field={field} />
+                <IdentificationNumberField
+                  field={{
+                    ...field,
+                    value: field.value || '',
+                  }}
+                />
               )}
             />
           </div>

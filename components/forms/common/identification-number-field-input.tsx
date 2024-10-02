@@ -7,10 +7,9 @@ import {
   import { Input } from '@/components/ui/input';
   import { useEffect, useState } from 'react';
   import type { ControllerRenderProps } from 'react-hook-form';
-  import type { z } from 'zod';
   
   type IdentificationNumberFieldProps = {
-    field: ControllerRenderProps<any, 'identificationNumber'>;
+    field: ControllerRenderProps<{ identificationNumber: string }, 'identificationNumber'>;
     disabled?: boolean;
   };
   

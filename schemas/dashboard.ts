@@ -48,3 +48,5 @@ export const BankDetailsFormSchema = z.object({
   razonSocial: z.string().optional(),
   ruc: z.string().optional(),
 });
+
+export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>;
