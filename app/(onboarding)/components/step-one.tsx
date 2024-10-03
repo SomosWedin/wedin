@@ -2,16 +2,19 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CiHeart } from 'react-icons/ci';
 import { FaChevronRight } from 'react-icons/fa6';
 import { GiWineGlass } from 'react-icons/gi';
-import { useOnbStepOne } from '@/hooks/use-onb-step-one';
+import { useOnbStepOne } from '@/hooks/onboarding/use-onb-step-one';
 import { EventType } from '@prisma/client';
 import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/w-icon.svg';
 import Image from 'next/image';
+import { useOnboarding } from './context';
 
 export default function StepOne() {
   const { updateEventType } = useOnbStepOne();
+  const { setEventType } = useOnboarding();
 
   const handleEventTypeClick = async (eventType: EventType) => {
+    setEventType(eventType);
     await updateEventType(eventType);
   };
 

@@ -18,7 +18,8 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        login: "bg-success text-white hover:bg-success/80",
+        success: "bg-success text-white hover:bg-success/80",
+        logout: "border w-full border-borderDefault hover:bg-borderDefault transition-all duration-150 gap-2",
         socialMediaLogin: "bg-gray600 w-full max-w-xl flex items-center justify-center gap-2 border border-borderDefault text-black hover:bg-borderDefault transition-all duration-150",
       },
       size: {

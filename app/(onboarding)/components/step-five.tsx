@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CiSettings } from 'react-icons/ci';
 import { IoGiftOutline } from 'react-icons/io5';
 import { PiBank } from 'react-icons/pi';
-import { useOnbStepFive } from '@/hooks/use-onb-step-five';
+import { useOnbStepFive } from '@/hooks/onboarding/use-onb-step-five';
 import { Loader2 } from 'lucide-react';
 
 export default function StepFive() {
@@ -25,19 +25,19 @@ export default function StepFive() {
       </div>
 
       <div className="bg-gray50 rounded-xl px-6 py-2 flex flex-col">
-        <div className="flex items-center gap-3 py-5 border-b border-borderDefault cursor-pointer">
+        <div className="flex items-center gap-3 py-5 border-b border-borderDefault">
           <CiSettings className="text-primary400 text-3xl" />
           <h2 className="text-gray300 text-sm sm:text-lg">
             Completá más datos de tu evento para comunicarlo en tu web
           </h2>
         </div>
-        <div className="flex items-center gap-4 py-5 border-b border-borderDefault cursor-pointer">
+        <div className="flex items-center gap-4 py-5 border-b border-borderDefault">
           <IoGiftOutline className="text-primary400 text-2xl" />
           <h2 className="text-gray300 text-sm sm:text-lg">
             Armá una lista de los regalos que querés recibir y compartí el link
           </h2>
         </div>
-        <div className="flex items-center gap-4 py-5 cursor-pointer">
+        <div className="flex items-center gap-4 py-5">
           <PiBank className="text-primary400 text-2xl" />
           <h2 className="text-gray300 text-sm sm:text-lg">
             Completá tus datos bancarios y retirá la recaudación
@@ -45,7 +45,7 @@ export default function StepFive() {
         </div>
       </div>
 
-      <Button variant="login" className="w-72 mt-4" onClick={finalizeOnboarding}>
+      <Button variant="success" className="w-72 mt-4" onClick={finalizeOnboarding}>
         Finalizar
         {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
       </Button>

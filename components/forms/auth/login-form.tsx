@@ -96,7 +96,7 @@ export default function LoginForm() {
                   </Link>
                 </div>
               </div>
-              <Button type="submit" variant="login" disabled={isLoading}>
+              <Button type="submit" variant="success" disabled={isLoading}>
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (

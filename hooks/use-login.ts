@@ -26,13 +26,10 @@ export function useLoginForm() {
   });
 
   const mutation = useMutation({
-    mutationFn: (values: z.infer<typeof LoginSchema>) => login(values, 'credentials'),
-    onSuccess: (data) => {
-      console.log("data:", data)
-    },
-    onError: (error) => {
-        console.log("error:", error)
-    },
+    mutationFn: (values: z.infer<typeof LoginSchema>) =>
+      login(values, 'credentials'),
+    onSuccess: data => {},
+    onError: error => {},
   });
 
   const checkUser = async (email: string) => {

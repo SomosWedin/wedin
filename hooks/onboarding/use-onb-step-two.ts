@@ -9,7 +9,7 @@ import { useOnboarding } from '@/app/(onboarding)/components/context';
 
 export const useOnbStepTwo = () => {
   const { toast } = useToast();
-  const { setCurrentPage } = useOnboarding();
+  const { setCurrentPage, eventType } = useOnboarding();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof StepTwoSchema>>({
@@ -19,6 +19,7 @@ export const useOnbStepTwo = () => {
       lastName: '',
       partnerName: '',
       partnerLastName: '',
+      eventType: eventType,
     },
   });
 
@@ -43,6 +44,11 @@ export const useOnbStepTwo = () => {
         return null;
       }
       setCurrentPage(3);
+    } else {
+      toast({
+        variant: 'destructive',
+        description: validatedFields.error.errors.map(err => err.message).join(', '),
+      });
     }
     setLoading(false);
   };

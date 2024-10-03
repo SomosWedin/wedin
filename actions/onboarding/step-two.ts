@@ -1,4 +1,3 @@
-// actions/auth/step-one-update.ts
 'use server';
 
 import { auth } from '@/lib/auth';
@@ -35,17 +34,19 @@ export const stepTwo = async (values: z.infer<typeof StepTwoSchema>) => {
     return { error: 'Error actualizando tu perfil' };
   }
 
-  try {
-    await prismaClient.event.update({
-      where: {
-        primaryUserId: session.user.id,
-      },
-      data: {
-        partnerName: partnerName + ' ' + partnerLastName,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    return { error: 'Error actualizando tu evento' };
+  if (partnerName && partnerLastName) {
+    try {
+      await prismaClient.event.update({
+        where: {
+          primaryUserId: session.user.id,
+        },
+        data: {
+          partnerName: partnerName + ' ' + partnerLastName,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      return { error: 'Error actualizando tu evento' };
+    }
   }
 };

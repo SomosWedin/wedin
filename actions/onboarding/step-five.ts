@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import prismaClient from '@/prisma/client';
+import { revalidatePath } from 'next/cache';
 
 export const stepFive = async () => {
   const session = await auth();
@@ -17,6 +18,7 @@ export const stepFive = async () => {
         isOnboarded: true,
       },
     });
+    revalidatePath('/');
   } catch (error) {
     console.error(error);
     return { error: 'Error actualizando tu perfil' };

@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { OnboardingProvider, useOnboarding } from './context';
 import type { User } from '@prisma/client';
 import StepOne from './step-one';
@@ -13,6 +14,8 @@ type OnboardingControllerProps = {
   currentUser?: User | null;
 };
 
+
+// TODO: change controller naming to something more appropriate
 export default function OnboardingController({ currentUser }: OnboardingControllerProps) {
   return (
     <OnboardingProvider currentUser={currentUser}>

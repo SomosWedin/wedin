@@ -39,7 +39,7 @@ export default function AuthFormButton({
   return (
     <Button
       type="submit"
-      variant="login"
+      variant="success"
       className="rounded-lg"
       disabled={isLoading}
     >

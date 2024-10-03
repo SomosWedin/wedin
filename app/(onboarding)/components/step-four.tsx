@@ -21,7 +21,7 @@ import { format } from 'date-fns';
 import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/w-icon.svg';
 import Image from 'next/image';
-import { useOnbStepFour } from '@/hooks/use-onb-step-four';
+import { useOnbStepFour } from '@/hooks/onboarding/use-onb-step-four';
 
 export default function StepFour() {
   const { form, loading, onSubmit, isDeciding, handleIsDecidingEventDate, isButtonEnabled } = useOnbStepFour();
@@ -130,7 +130,7 @@ export default function StepFour() {
           <div className="flex justify-center">
             <Button
               type="submit"
-              variant="login"
+              variant="success"
               disabled={loading || !isButtonEnabled}
               className="w-72"
             >
