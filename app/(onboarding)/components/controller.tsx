@@ -14,7 +14,6 @@ type OnboardingControllerProps = {
   currentUser?: User | null;
 };
 
-
 // TODO: change controller naming to something more appropriate
 export default function OnboardingController({ currentUser }: OnboardingControllerProps) {
   return (

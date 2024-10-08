@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import backgroundImg from "@/public/login-background.svg";
+import backgroundImg from "@/public/assets/login-background.webp" ;
 import logoImg from "@/public/w-logo.svg";
 import SociaMediaLoginButton from '@/components/forms/auth/social-media-login-form';
 import RegisterForm from "@/components/forms/auth/register-form";

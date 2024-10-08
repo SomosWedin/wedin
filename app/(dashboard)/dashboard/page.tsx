@@ -1,15 +1,14 @@
-
-import Sidebar from '@/components/sidebar/sidebar';
+import dynamic from 'next/dynamic';
+const Sidebar = dynamic(() => import('@/components/sidebar/sidebar'), { ssr: false });
 import DashboardRouter from '../components/router';
-import { DashboardProvider } from '../components/context';
 
 export default function DashboardPage() {
   return (
-    <DashboardProvider>
-      <div className="flex items-start justify-center">
+    <div className="flex items-start justify-center">
+      <div className='hidden md:block'>
         <Sidebar />
-        <DashboardRouter />
       </div>
-    </DashboardProvider>
+      <DashboardRouter />
+    </div>
   );
 }
