@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { Loader2 } from 'lucide-react';
 import OnboardingStepper from './stepper';
-import wedinIcon from '@/public/w-icon.svg';
+import wedinIcon from '@/public/assets/w-icon.svg';
 import Image from 'next/image';
 import { countries } from '@/lib/countries';
 import { useOnbStepThree } from '@/hooks/onboarding/use-onb-step-three';

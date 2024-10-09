@@ -13,8 +13,8 @@ import { Loader2 } from 'lucide-react';
 import { useOnbStepTwo } from '@/hooks/onboarding/use-onb-step-two';
 import Image from 'next/image';
 import OnboardingStepper from './stepper';
-import illustration from '@/public/onb-step-two-icon.svg';
-import wedinIcon from '@/public/w-icon.svg';
+import illustration from '@/public/assets/onb-step-two-icon.svg';
+import wedinIcon from '@/public/assets/w-icon.svg';
 import { useOnboarding } from './context';
 import { EventType } from '@prisma/client';
 

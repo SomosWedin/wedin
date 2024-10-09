@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import OnboardingStepper from './stepper';
-import wedinIcon from '@/public/w-icon.svg';
+import wedinIcon from '@/public/assets/w-icon.svg';
 import Image from 'next/image';
 import { useOnbStepFour } from '@/hooks/onboarding/use-onb-step-four';
 

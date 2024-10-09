@@ -25,15 +25,19 @@ import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { EventUserUpdateSchema } from '@/schemas/dashboard';
-import { getEvent } from '@/actions/data/event';
-import { Event, User } from '@prisma/client';
+import { Event, User, EventType } from '@prisma/client';
+import { useGlobalContext } from '@/context/GlobalContext';
 
 interface EventUserUpdateFormProps {
-  event: Event | null;
-  currentUser: User | null;
+  event?: Event | null;
+  currentUser?: User | null;
 }
 
-export default function DashboardEventUserUpdateForm({ event, currentUser }: EventUserUpdateFormProps) {
+export default function DashboardEventUserUpdateForm({
+  event,
+  currentUser,
+}: EventUserUpdateFormProps) {
+  const { eventType } = useGlobalContext();
   const form = useForm<z.infer<typeof EventUserUpdateSchema>>({
     resolver: zodResolver(EventUserUpdateSchema),
     defaultValues: {
@@ -64,7 +68,7 @@ export default function DashboardEventUserUpdateForm({ event, currentUser }: Eve
               <FormLabel className="mb-[-10px]">Fecha del evento</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
-                  <FormControl className='!mt-1.5'>
+                  <FormControl className="!mt-1.5">
                     <Button
                       variant={'outline'}
                       className={cn(
@@ -144,65 +148,68 @@ export default function DashboardEventUserUpdateForm({ event, currentUser }: Eve
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <div className="w-full">
-            <FormField
-              control={form.control}
-              name="partnerName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>El nombre de tu pareja</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Crisley"
-                      className="!mt-1.5"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
+        {eventType === EventType.WEDDING && (
+          <div className="flex gap-2">
+            <div className="w-full">
+              <FormField
+                control={form.control}
+                name="partnerName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>El nombre de tu pareja</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Crisley"
+                        className="!mt-1.5"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="font-normal text-red-600" />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="w-full">
+              <FormField
+                control={form.control}
+                name="partnerLastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>El apellido de tu pareja</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Dominguez"
+                        className="!mt-1.5"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="font-normal text-red-600" />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="w-full">
+              <FormField
+                control={form.control}
+                name="partnerEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email de tu pareja</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="crisley@wedin.app"
+                        className="!mt-1.5"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="font-normal text-red-600" />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
-          <div className="w-full">
-            <FormField
-              control={form.control}
-              name="partnerLastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>El apellido de tu pareja</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Dominguez"
-                      className="!mt-1.5"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="w-full">
-            <FormField
-              control={form.control}
-              name="partnerEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email de tu pareja</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="crisley@wedin.app"
-                      className="!mt-1.5"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
+        )}
+
         <Button type="submit" variant="success" className="w-64 mt-6">
           Guardar
         </Button>
