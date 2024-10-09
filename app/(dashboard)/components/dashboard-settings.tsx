@@ -3,34 +3,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IoIosList } from 'react-icons/io';
 import { TbCurrencyDollar } from 'react-icons/tb';
 import DashboardEventUserUpdateForm from '@/components/forms/dashboard/event-user-update';
-import { getEvent } from '@/actions/data/event';
-import { getCurrentUser } from '@/actions/get-current-user';
-import { User, Event } from '@prisma/client';
 import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
 import DashboardBankDetailsUpdateForm from '@/components/forms/dashboard/bank-details-update';
 
 export default function DashboardSettings() {
-  const [event, setEvent] = useState<Event | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const event = await getEvent();
-        const currentUser = await getCurrentUser();
-        if (!event || !currentUser) return;
-        setCurrentUser(currentUser);
-        setEvent(event as Event);
-      } catch (error) {
-        console.error('Error fetching event:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   if (loading) {
     return <DashboardSettingsSkeleton />;
@@ -59,13 +36,10 @@ export default function DashboardSettings() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="general" className="mt-8">
-            <DashboardEventUserUpdateForm
-              event={event}
-              currentUser={currentUser}
-            />
+            <DashboardEventUserUpdateForm/>
           </TabsContent>
           <TabsContent value="bank" className="mt-8">
-            <DashboardBankDetailsUpdateForm eventId={event?.id}  />
+            <DashboardBankDetailsUpdateForm />
           </TabsContent>
         </Tabs>
       </div>

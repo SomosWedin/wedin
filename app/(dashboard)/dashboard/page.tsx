@@ -4,11 +4,11 @@ import DashboardRouter from '../components/router';
 
 export default function DashboardPage() {
   return (
-    <div className="flex items-start justify-center">
+    <>
       <div className='hidden md:block'>
         <Sidebar />
       </div>
       <DashboardRouter />
-    </div>
+    </>
   );
 }

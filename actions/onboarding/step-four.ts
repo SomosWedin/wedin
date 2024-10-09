@@ -39,6 +39,7 @@ export const stepFour = async (values: z.infer<typeof StepFourSchema>) => {
       },
       data: {
         onboardingStep: 5,
+        isOnboarded: true,
       },
     });
   } catch (error) {

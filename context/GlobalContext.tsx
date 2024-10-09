@@ -3,12 +3,16 @@
 import { createContext, useContext, useState, ReactNode, useMemo, useEffect } from "react";
 import { DASHBOARD_ROUTES } from "@/utils/constants";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
+import { getEvent } from "@/actions/data/event"; 
+import { Event, EventType } from "@prisma/client"; 
+import { ErrorResponse } from "@/lib/auth"
 
 type GlobalContextType = {
   activeMenuItem: string;
   setActiveMenuItem: (menuItem: string) => void;
   theme: string;
   toggleTheme: () => void;
+  eventType: EventType | null; 
 };
 
 const GlobalContext = createContext<GlobalContextType>({
@@ -16,6 +20,7 @@ const GlobalContext = createContext<GlobalContextType>({
   setActiveMenuItem: () => {},
   theme: 'light',
   toggleTheme: () => {},
+  eventType: null, 
 });
 
 export const GlobalProvider = ({ children }: { children: ReactNode }) => {
@@ -40,12 +45,31 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
     return () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   }, []);
 
+  const [eventType, setEventType] = useState<EventType | null>(null);
+
+  useEffect(() => {
+    const fetchEventType = async () => {
+      try {
+        const event: Event | ErrorResponse = await getEvent();  
+        if (event && 'eventType' in event) {
+          setEventType(event.eventType); 
+        }
+      } catch (error) {
+        console.error("Failed to fetch event:", error);
+        setEventType(null); 
+      }
+    };
+
+    fetchEventType(); 
+  }, []); 
+
   const value = useMemo(() => ({
     activeMenuItem,
     setActiveMenuItem,
     theme,
     toggleTheme,
-  }), [activeMenuItem, theme]);
+    eventType, 
+  }), [activeMenuItem, theme, eventType]);
 
   return (
     <GlobalContext.Provider value={value}>

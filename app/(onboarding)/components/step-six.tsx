@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import wedinIcon from '@/public/w-icon.svg';
+import wedinIcon from '@/public/assets/w-icon.svg';
 import { Progress } from '@/components/ui/progress';
 
 export default function StepSix() {

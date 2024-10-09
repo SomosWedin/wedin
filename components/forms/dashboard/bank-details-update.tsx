@@ -26,7 +26,7 @@ import { BankDetailsFormSchema } from '@/schemas/dashboard';
 import { BankDetails } from '@prisma/client';
 import IdentificationNumberField from '@/components/forms/common/identification-number-field-input';
 interface BankDetailsFormProps {
-  eventId: string | undefined;
+  eventId?: string | undefined;
   bankDetails?: BankDetails | null;
 }
 

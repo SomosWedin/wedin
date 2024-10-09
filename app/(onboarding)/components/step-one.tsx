@@ -5,7 +5,7 @@ import { GiWineGlass } from 'react-icons/gi';
 import { useOnbStepOne } from '@/hooks/onboarding/use-onb-step-one';
 import { EventType } from '@prisma/client';
 import OnboardingStepper from './stepper';
-import wedinIcon from '@/public/w-icon.svg';
+import wedinIcon from '@/public/assets/w-icon.svg';
 import Image from 'next/image';
 import { useOnboarding } from './context';
 
