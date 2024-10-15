@@ -15,11 +15,11 @@ const buttonVariants = cva(
         outline:
           "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+          "bg-active text-secondary-foreground hover:bg-active/80",
+        ghost: "hover:bg-active/60 hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         success: "bg-success text-white hover:bg-success/80",
-        logout: "border w-full border-borderDefault hover:bg-borderDefault transition-all duration-150 gap-2",
+        logout: "border w-full border-borderDefault hover:bg-borderDefault transition-all duration-150",
         socialMediaLogin: "bg-gray600 w-full max-w-xl flex items-center justify-center gap-2 border border-borderDefault text-black hover:bg-borderDefault transition-all duration-150",
       },
       size: {
