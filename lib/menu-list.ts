@@ -43,7 +43,7 @@ export function getMenuList(pathname: string): Group[] {
       groupLabel: '',
       menus: [
         {
-          href: '/presetation',
+          href: '/event-details',
           label: 'Presentación',
           icon: Sparkles,
         },
@@ -58,8 +58,8 @@ export function getMenuList(pathname: string): Group[] {
           icon: SettingsIcon,
           submenus: [
             {
-              href: "/event",
-              label: "Configuración General"
+              href: "/event-settings",
+              label: "Configuración general"
             },
             {
               href: "/bank-details",

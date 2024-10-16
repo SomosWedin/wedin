@@ -1,10 +1,10 @@
 import { ContentLayout } from "@/components/admin-panel/content-layout";
-import DashboardRouter from '../components/router';
+import DashboardHome from '@/components/dashboard/dashboard-home';
 
 export default function DashboardPage() {
   return (
-    <ContentLayout title="Dashboard">
-      <DashboardRouter />
+    <ContentLayout title="Inicio">
+      <DashboardHome />
     </ContentLayout>
   );
 }
