@@ -90,3 +90,30 @@ export const getAllEvents = async (): Promise<Event[] | ErrorResponse> => {
     };
   }
 };
+
+export async function updateEventImages({
+  eventId,
+  imageUrls = [],
+}: {
+  eventId: string;
+  imageUrls: string[];
+}) {
+  if (!imageUrls || imageUrls.length === 0) {
+    return { error: 'No image URLs provided' };
+  }
+
+  const imageData = imageUrls.map((url) => ({
+    eventId, 
+    url,
+  }));
+
+  try {
+    await prismaClient.image.createMany({
+      data: imageData,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error uploading event images:', error);
+    return { error: 'Error uploading event images' };
+  }
+}

@@ -6,7 +6,7 @@ import { IoEyeOutline } from 'react-icons/io5';
 
 export default function DashboardHome() {
   return (
-    <section className="w-full h-full flex flex-col justify-center items-center gap-8">
+    <section className="w-full h-full flex flex-col justify-start items-center gap-12">
       <div className="w-full flex flex-col gap-4 border-b border-gray-200 pb-6">
         <h1 className="text-2xl font-black">Inicio</h1>
         <p className="text-textTertiary">
@@ -14,7 +14,6 @@ export default function DashboardHome() {
           evento
         </p>
       </div>
-
       <div className="border border-borderDefault bg-gray-50 w-full rounded-lg px-6 py-8">
         <div className="flex justify-between items-center border-b border-gray-200 pb-6">
           <h2 className="text-xl font-medium">
