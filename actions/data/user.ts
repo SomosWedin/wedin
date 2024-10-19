@@ -1,6 +1,6 @@
 'use server';
 
-import type { ErrorResponse } from '@/lib/auth';
+import type { ErrorResponse } from '@/auth';
 import { PrismaClient } from '@prisma/client';
 const prismaClient = new PrismaClient();
 

@@ -6,7 +6,7 @@ import {
     protectedRoutes,
     publicRoutes,
   } from '@/lib/routes';
-  import { auth } from '@/lib/auth';
+  import { auth } from '@/auth';
   
   export default auth(req => {
     const { nextUrl } = req;

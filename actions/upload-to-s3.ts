@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth } from '@/auth';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 

@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth } from '@/auth';
 import prismaClient from '@/prisma/client';
 import { StepThreeSchema } from '@/schemas/onboarding';
 import type * as z from 'zod';

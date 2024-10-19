@@ -1,6 +1,6 @@
 'use server';
 
-import { signIn } from '@/lib/auth';
+import { signIn } from '@/auth';
 import { generateVerificationToken } from '@/lib/tokens';
 import { LoginSchema } from '@/schemas/auth';
 import AuthError from 'next-auth';

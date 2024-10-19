@@ -2,54 +2,49 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardEventDetailsSkeleton() {
   return (
-    <div className="w-full h-screen flex justify-center items-center px-10 flex-col gap-6">
+    <section className="w-full h-full flex justify-start items-center flex-col gap-12">
       <div className="w-full flex flex-col gap-4 border-b border-gray-200 pb-6">
-        <Skeleton className="h-10 w-[200px] rounded-lg" />
-        <Skeleton className="h-6 max-w-4xl rounded-lg " />
+        <Skeleton className="h-8 w-[150px] rounded-lg" /> 
+        <Skeleton className="h-6 w-full max-w-xl rounded-lg" /> 
       </div>
+
       <div className="w-full flex flex-col gap-8">
-        <div className="flex gap-4 max-w-sm">
-          <Skeleton className="h-10 w-full mt-2 rounded-lg" />
-          <Skeleton className="h-10 w-full mt-2 rounded-lg" />
-        </div>
-
-        <div className="max-w-sm">
-          <Skeleton className="h-4 w-[200px] rounded-lg" />
-          <Skeleton className="h-10 w-full mt-2 rounded-lg" />
-        </div>
-
-        <div className="flex gap-2">
-          <div className="w-full">
-            <Skeleton className="h-4 w-[200px] rounded-lg" />
-            <Skeleton className="h-10 w-full mt-2 rounded-lg" />
+        <div className="w-full flex flex-col sm:flex-row items-center gap-6 border-b border-gray-200 pb-10">
+          <div className="w-full sm:w-1/2 flex flex-col gap-2">
+            <Skeleton className="h-6 w-[100px] rounded-lg" /> 
+            <Skeleton className="h-4 w-full max-w-md rounded-lg" />
           </div>
-          <div className="w-full">
-            <Skeleton className="h-4 w-[200px] rounded-lg" />
-            <Skeleton className="h-10 w-full mt-2 rounded-lg" />
-          </div>
-          <div className="w-full">
-            <Skeleton className="h-4 w-[200px] rounded-lg" />
-            <Skeleton className="h-10 w-full mt-2 rounded-lg" />
+
+          <div className="w-full sm:w-1/2 flex flex-col gap-6 items-end">
+            <div className="flex gap-2 flex-wrap justify-center sm:justify-end">
+              <Skeleton className="w-16 h-24 rounded-md" />
+              <Skeleton className="w-16 h-24 rounded-md" />
+              <Skeleton className="w-16 h-24 rounded-md" />
+              <Skeleton className="w-16 h-24 rounded-md" />
+              <Skeleton className="w-16 h-24 rounded-md" />
+              <Skeleton className="w-16 h-24 rounded-md" />
+            </div>
+
+            <Skeleton className="h-10 w-[150px] rounded-lg" /> 
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <div className="w-full">
-            <Skeleton className="h-4 w-[200px] rounded-lg" />
-            <Skeleton className="h-10 w-full mt-2 rounded-lg" />
+        <div className="w-full flex flex-col sm:flex-row items-center gap-6">
+          <div className="w-full sm:w-1/2 flex flex-col gap-2">
+            <Skeleton className="h-6 w-[200px] rounded-lg" />
+            <Skeleton className="h-4 w-full max-w-md rounded-lg" /> 
           </div>
-          <div className="w-full">
-            <Skeleton className="h-4 w-[200px] rounded-lg" />
-            <Skeleton className="h-10 w-full mt-2 rounded-lg" />
-          </div>
-          <div className="w-full">
-            <Skeleton className="h-4 w-[200px] rounded-lg" />
-            <Skeleton className="h-10 w-full mt-2 rounded-lg" />
+
+          <div className="w-full sm:w-1/2 flex flex-col gap-6 items-end">
+            <Skeleton className="h-32 w-full max-w-sm rounded-lg" />
+
+            <div className="flex gap-2">
+              <Skeleton className="h-10 w-[100px] rounded-lg" /> 
+              <Skeleton className="h-10 w-[100px] rounded-lg" /> 
+            </div>
           </div>
         </div>
-
-        <Skeleton className="h-10 w-64" />
       </div>
-    </div>
+    </section>
   );
 }

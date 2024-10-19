@@ -1,6 +1,6 @@
 'use server';
 
-import type { ErrorResponse } from '@/lib/auth';
+import type { ErrorResponse } from '@/auth';
 import { PrismaClient, Event } from '@prisma/client';
 import { getCurrentUser } from '@/actions/get-current-user';
 
