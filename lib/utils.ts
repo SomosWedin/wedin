@@ -11,15 +11,12 @@ export function formatPrice(price: number): string {
     currency: 'PYG',
     minimumFractionDigits: 0,
   }).format(price);
-
   const formattedWithDot = formatted.replace(/,/g, '.').replace('PYG', 'Gs');
-
   return formattedWithDot;
 }
 
 export function capitalizeFirstLetter(string: string | undefined | null) {
   if (string === null || string === undefined) return '';
-
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 

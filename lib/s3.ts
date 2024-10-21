@@ -1,50 +1,58 @@
 import { getSignedURL } from '@/actions/upload-to-s3';
 import { computeSHA256 } from './utils';
 
-type UploadImageToAwsParams = {
-  file: File;
-  id: string;
-  type?: 'giftId' | 'eventId';
+type UploadImagesToAwsParams = {
+  files: File[]; 
+  eventId: string;
 };
 
-export const uploadImageToAws = async ({
-  file,
-  id,
-  type = 'giftId',
-}: UploadImageToAwsParams) => {
-  const checksum = await computeSHA256(file);
-
-  const presignResponse = await getSignedURL({
-    fileName: file.name,
-    fileType: file.type,
-    fileSize: file.size,
-    id,
-    type,
-    checksum,
-  });
-
-  if (presignResponse.error || !presignResponse?.success) {
-    return { error: presignResponse.error };
+export const uploadEventCoverImagesToAws = async ({
+  files,
+  eventId,
+}: UploadImagesToAwsParams) => {
+  if (!files.length || files.length > 6) {
+    return { error: 'You must upload between 1 and 6 images.' };
   }
 
-  const imageUrl = presignResponse.success.split('?')[0];
+  const uploadedImages: string[] = [];
 
-  if (!imageUrl) {
-    return { error: 'Failed to upload image' };
+  for (const file of files) {
+    const checksum = await computeSHA256(file);
+
+    const presignResponse = await getSignedURL({
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      id: eventId,
+      type: 'eventId',
+      checksum,
+    });
+
+    if (presignResponse.error || !presignResponse?.success) {
+      return { error: presignResponse.error };
+    }
+
+    const imageUrl = presignResponse.success.split('?')[0];
+
+    if (!imageUrl) {
+      return { error: 'Failed to upload image' };
+    }
+
+    const awsImagePosting = await fetch(imageUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+        metadata: JSON.stringify({ eventId }),
+      },
+    });
+
+    if (!awsImagePosting.ok) {
+      return { error: awsImagePosting.statusText };
+    }
+
+    uploadedImages.push(imageUrl);  
   }
 
-  const awsImagePosting = await fetch(imageUrl, {
-    method: 'PUT',
-    body: file,
-    headers: {
-      'Content-Type': file.type,
-      metadata: JSON.stringify({ id }),
-    },
-  });
-
-  if (!awsImagePosting.ok) {
-    return { error: awsImagePosting.statusText };
-  }
-
-  return { imageUrl: imageUrl };
+  return { uploadedImages };  
 };

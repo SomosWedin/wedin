@@ -62,9 +62,11 @@ export const getSignedURL = async ({
     metadata.eventId = id;
   }
 
+  const fileKey = `${id}/${Date.now()}-${fileName}`;
+
   const putObjectCommand = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET,
-    Key: fileName,
+    Key: fileKey,
     ContentType: fileType,
     ContentLength: fileSize,
     ChecksumSHA256: checksum,

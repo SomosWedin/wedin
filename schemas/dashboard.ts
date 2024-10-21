@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z, type ZodType } from 'zod';
 
 export const EventUserUpdateSchema = z.object({
   eventDate: z.date().optional(),
@@ -47,6 +47,26 @@ export const BankDetailsFormSchema = z.object({
     .max(12, { message: 'Número de documento muy largo' }),
   razonSocial: z.string().optional(),
   ruc: z.string().optional(),
+});
+
+export const EventCoverFormSchema = z.object({
+  eventId: z.string(),
+  images: z
+    .array(z.any().nullable() as ZodType<File>)
+    .min(1, { message: 'Debes subir al menos 1 archivo' })
+    .max(6, { message: 'No puedes subir más de 6 archivos' }),
+  imageUrls: z.array(z.string()).optional(),
+  message: z
+    .string()
+    .min(1, { message: 'El mensaje para tus invitados no puede estar vacío' })
+    .min(3, {
+      message:
+        'El mensaje para tus invitados debe contener al menos 3 caracteres',
+    })
+    .max(255, {
+      message:
+        'El mensaje para tus invitados debe contener un máximo de 255 caracteres',
+    }),
 });
 
 export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>;
