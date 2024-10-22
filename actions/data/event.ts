@@ -20,7 +20,7 @@ export const getEvent = async (): Promise<Event | ErrorResponse> => {
     const event = await prismaClient.event.findUnique({
       where: { primaryUserId: userId },
       include: {
-        images: true, 
+        images: true,
       },
     });
 
@@ -64,15 +64,44 @@ export const getEventById = async (
 
 export const updateEvent = async (
   eventId: string,
-  data: Partial<Event>
+  data: {
+    coverMessage?: string;
+    imageUrls?: string[];
+    [key: string]: any; // Allow any other fields for future flexibility
+  }
 ): Promise<Event | ErrorResponse> => {
   try {
+    const updateData: Partial<Event> = {};
+
+    // If coverMessage is provided, update it
+    if (data.coverMessage) {
+      updateData.coverMessage = data.coverMessage;
+    }
+
+    // If imageUrls are provided, update the images related to the event
+    if (data.imageUrls && data.imageUrls.length > 0) {
+      // Delete existing images for this event (optional)
+      // await prismaClient.image.deleteMany({
+      //   where: { eventId },
+      // });
+
+      // Add new images
+      const imageData = data.imageUrls.map(url => ({
+        eventId,
+        url,
+      }));
+      await prismaClient.image.createMany({
+        data: imageData,
+      });
+    }
+
+    // Update other fields of the Event model
     const updatedEvent = await prismaClient.event.update({
       where: { id: eventId },
-      data,
+      data: updateData,
     });
 
-    return updatedEvent;
+    return updatedEvent ;
   } catch (error) {
     console.error('Error updating event:', error);
     return {

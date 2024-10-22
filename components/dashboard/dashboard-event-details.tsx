@@ -12,10 +12,6 @@ export default async function DashboardEventDetails() {
     return <p>Error: {event.error}</p>; 
   }
 
-  const imagesUrls = event?.images ? event.images.map((image: Image) => image.url) : [];
- 
-  console.log("imagesUrls ===>", imagesUrls);
-
  return (
     <section className="w-full h-full flex justify-start items-center flex-col gap-12">
       <div className="w-full flex flex-col gap-4 border-b border-gray-200 pb-6">
@@ -28,9 +24,7 @@ export default async function DashboardEventDetails() {
 
       <Suspense fallback={<DashboardEventDetailsSkeleton />}>
         <EventDetailsUpdateForm
-          eventId={event.id}
-          imagesUrls={imagesUrls}
-          message={event.coverMessage}
+          event={event}
         />
       </Suspense>
     </section>

@@ -14,46 +14,24 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { RxCross2 } from 'react-icons/rx';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
-
 import { useEventCover } from '@/hooks/dashboard/use-event-cover';
+import { Event } from '@prisma/client';
+import ResetEventCoverFormDialog from '@/components/dialog/reset-event-cover-form-dialog';
 
 type EventDetailsUpdateFormProps = {
-  eventId: string | null;
-  imagesUrls: string[] | null;
-  message: string | null;
+  event: Event | null;
 };
 
-const EventDetailsUpdateForm = ({
-  eventId,
-  imagesUrls,
-  message,
-}: EventDetailsUpdateFormProps) => {
-  const {
-    loading,
-    previewUrls,
-    fileInputRef,
-    handleFileChange,
-    handleButtonClick,
-    handleRemoveImage,
-    form,
-    handleReset,
-    onSubmit,
-    isDirty,
-  } = useEventCover({ eventId, message });
+const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
+  if (!event) return null;
+  const { loading, previewUrls, fileInputRef, handleFileChange, handleButtonClick, handleRemoveImage, form, handleReset, onSubmit, isDirty } = useEventCover({ eventId: event?.id, message: event?.coverMessage });
+
+  console.log(event);
+
+  const imagesUrls = event?.images;
 
   return (
     <Form {...form}>
@@ -80,10 +58,15 @@ const EventDetailsUpdateForm = ({
                     key={idx}
                     className="relative w-16 h-24 bg-gray-50 border-2 border-borderSecondary border-dashed rounded-md flex items-center justify-center"
                   >
-                     {(imagesUrls && imagesUrls[idx]) || (previewUrls && previewUrls[idx]) ? (
+                    {(previewUrls && previewUrls[idx]) ||
+                    (imagesUrls && imagesUrls[idx]?.url) ? (
                       <>
                         <Image
-                          src={previewUrls && previewUrls[idx] ? previewUrls[idx] : imagesUrls ? imagesUrls[idx] : ''}
+                          src={
+                            previewUrls && previewUrls[idx]
+                              ? previewUrls[idx]
+                              : imagesUrls[idx]?.url || ''
+                          }
                           alt={`preview-${idx}`}
                           className="w-full h-full object-cover"
                           width={64}
@@ -94,7 +77,7 @@ const EventDetailsUpdateForm = ({
                           size="xs"
                           variant="outline"
                           className="absolute top-0 right-0"
-                          onClick={() => handleRemoveImage(idx)}
+                          onClick={() => console.log(imagesUrls[idx]?.id)}
                         >
                           <RxCross2 />
                         </Button>
@@ -183,39 +166,10 @@ const EventDetailsUpdateForm = ({
           </div>
         </div>
         <div className="w-full justify-end flex gap-2">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2"
-                disabled={!isDirty}
-              >
-                Descartar
-                <RxCross2 className="text-xl" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Estas seguro que quieres descartar tus cambios?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esto hara que pierdas todos los cambios que hayas completado.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleReset}
-                  className="bg-destructive text-white hover:bg-destructive/85 transition-colors"
-                >
-                  Si, descartar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
+          <ResetEventCoverFormDialog
+            handleReset={handleReset}
+            isDirty={isDirty}
+          />
           <Button
             type="submit"
             variant="success"
