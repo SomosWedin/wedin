@@ -35,16 +35,25 @@ type EventDetailsUpdateFormProps = {
   eventId: string | null;
   imagesUrls: string[] | null;
   message: string | null;
-  images: File[];
 };
 
 const EventDetailsUpdateForm = ({
   eventId,
   imagesUrls,
   message,
-  images,
 }: EventDetailsUpdateFormProps) => {
-  const { loading, previewUrls, fileInputRef, handleFileChange, handleButtonClick, handleRemoveImage, form, handleReset, onSubmit, isDirty } = useEventCover({ eventId, imagesUrls, message, images });
+  const {
+    loading,
+    previewUrls,
+    fileInputRef,
+    handleFileChange,
+    handleButtonClick,
+    handleRemoveImage,
+    form,
+    handleReset,
+    onSubmit,
+    isDirty,
+  } = useEventCover({ eventId, message });
 
   return (
     <Form {...form}>
@@ -71,10 +80,10 @@ const EventDetailsUpdateForm = ({
                     key={idx}
                     className="relative w-16 h-24 bg-gray-50 border-2 border-borderSecondary border-dashed rounded-md flex items-center justify-center"
                   >
-                    {previewUrls && previewUrls[idx] ? (
+                     {(imagesUrls && imagesUrls[idx]) || (previewUrls && previewUrls[idx]) ? (
                       <>
                         <Image
-                          src={previewUrls[idx]}
+                          src={previewUrls && previewUrls[idx] ? previewUrls[idx] : imagesUrls ? imagesUrls[idx] : ''}
                           alt={`preview-${idx}`}
                           className="w-full h-full object-cover"
                           width={64}
@@ -99,7 +108,7 @@ const EventDetailsUpdateForm = ({
 
             <FormField
               control={form.control}
-              name="imagesUrls"
+              name="images"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
@@ -112,6 +121,7 @@ const EventDetailsUpdateForm = ({
                         ref={fileInputRef}
                         onChange={event => {
                           handleFileChange(event);
+                          field.onChange(event.target.files);
                         }}
                         multiple
                       />
@@ -210,7 +220,7 @@ const EventDetailsUpdateForm = ({
             type="submit"
             variant="success"
             className="gap-2"
-            // disabled={loading || !isDirty}
+            disabled={loading || !isDirty}
           >
             Guardar
             {loading ? (

@@ -1,5 +1,3 @@
-// ./hooks/dashboard/use-event-cover.ts
-
 'use client';
 
 import React, { useState, useRef } from 'react';
@@ -13,16 +11,12 @@ import { z } from 'zod';
 
 type EventCoverUpdateFormProps = {
   eventId: string | null;
-  imagesUrls: string[] | null;
   message: string | null;
-  images: File[];
 };
 
 export function useEventCover({
   eventId,
-  imagesUrls,
   message,
-  images,
 }: EventCoverUpdateFormProps) {
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[] | null>(null);
@@ -34,13 +28,12 @@ export function useEventCover({
     // resolver: zodResolver(EventCoverFormSchema),
     defaultValues: {
       eventId: eventId ?? '',
-      imagesUrls: imagesUrls ?? [],
       message: message ?? '',
-      images: images ?? [],
+      images: [] as File[],
     },
   });
 
-  const { formState, handleSubmit } = form;
+  const { formState } = form;
   const { isDirty } = formState;
 
   const handleFileChange = (action: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,7 +42,8 @@ export function useEventCover({
     if (files.length > 0) {
       const newFiles = selectedFiles ? [...selectedFiles, ...files] : files;
       const previews = newFiles.map(file => URL.createObjectURL(file));
-
+      
+      form.setValue('images', newFiles.slice(0, 6));
       setSelectedFiles(newFiles.slice(0, 6));
       setPreviewUrls(previews.slice(0, 6));
     }
@@ -99,9 +93,9 @@ export function useEventCover({
       return;
     }
 
-    if (selectedFiles) {
+    if (values.images && values.images.length > 0) {
       const uploadResponse = await uploadEventCoverImagesToAws({
-        files: selectedFiles,
+        files: values.images,
         eventId: values.eventId,
       });
 

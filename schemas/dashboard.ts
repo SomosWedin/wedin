@@ -48,6 +48,7 @@ export const BankDetailsFormSchema = z.object({
   razonSocial: z.string().optional(),
   ruc: z.string().optional(),
 });
+export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>;
 
 export const EventCoverFormSchema = z.object({
   eventId: z.string(),
@@ -55,7 +56,6 @@ export const EventCoverFormSchema = z.object({
     .array(z.any().nullable() as ZodType<File>)
     .min(1, { message: 'Debes subir al menos 1 archivo' })
     .max(6, { message: 'No puedes subir más de 6 archivos' }),
-  imageUrls: z.array(z.string()).optional(),
   message: z
     .string()
     .min(1, { message: 'El mensaje para tus invitados no puede estar vacío' })
@@ -68,5 +68,3 @@ export const EventCoverFormSchema = z.object({
         'El mensaje para tus invitados debe contener un máximo de 255 caracteres',
     }),
 });
-
-export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>;

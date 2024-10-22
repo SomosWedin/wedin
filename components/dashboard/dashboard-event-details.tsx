@@ -1,8 +1,7 @@
 import DashboardEventDetailsSkeleton from '@/components/skeletons/dashboard-event-details';
-import { Event } from '@prisma/client';
 import { Suspense, lazy } from 'react';
 import { getEvent } from '@/actions/data/event';
-import { getEventImages } from '@/actions/data/images';
+import type { Image } from '@prisma/client';
 
 const EventDetailsUpdateForm = lazy(() => import('@/components/forms/dashboard/event-details-update-form'));
 
@@ -12,9 +11,10 @@ export default async function DashboardEventDetails() {
   if (!event || 'error' in event) {
     return <p>Error: {event.error}</p>; 
   }
-  const images = await getEventImages(event?.id);
 
-  console.log(images);
+  const imagesUrls = event?.images ? event.images.map((image: Image) => image.url) : [];
+ 
+  console.log("imagesUrls ===>", imagesUrls);
 
  return (
     <section className="w-full h-full flex justify-start items-center flex-col gap-12">
@@ -29,9 +29,8 @@ export default async function DashboardEventDetails() {
       <Suspense fallback={<DashboardEventDetailsSkeleton />}>
         <EventDetailsUpdateForm
           eventId={event.id}
-          imagesUrls={event.images}
+          imagesUrls={imagesUrls}
           message={event.coverMessage}
-          images={event.images}
         />
       </Suspense>
     </section>
