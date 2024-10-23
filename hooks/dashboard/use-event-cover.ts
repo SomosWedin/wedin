@@ -172,8 +172,9 @@ export function useEventCover({
       });
 
       return reorderedImages;
-      if (fakeHasNonNullUrl && realHasNullUrl) {
-      }
+
+      // if (fakeHasNonNullUrl && realHasNullUrl) {
+      // }
 
       // const updatedImages = [...realIdImages, ...fakeIdImages].slice(0, 6);
       //
