@@ -259,5 +259,5 @@ model Image {
   giftlistId    String?      @db.ObjectId
   Transaction   Transaction? @relation(fields: [transactionId], references: [id])
   Event         Event?       @relation(fields: [eventId], references: [id])
-  Gift          Gift?       @relation(fields: [giftId], references: [id])
+  Gift          Gift?        @relation(fields: [giftId], references: [id])
 }

@@ -1,12 +1,17 @@
 'use server';
 
-import type { ErrorResponse } from '@/auth';
-import { PrismaClient, Event } from '@prisma/client';
 import { getCurrentUser } from '@/actions/get-current-user';
+import type { ErrorResponse } from '@/auth';
+import { Event, Image as ImageModel, PrismaClient } from '@prisma/client';
 
 const prismaClient = new PrismaClient();
 
-export const getEvent = async (): Promise<Event | ErrorResponse> => {
+export const getEvent = async (): Promise<
+  | (Event & {
+      images: ImageModel[];
+    })
+  | ErrorResponse
+> => {
   const user = await getCurrentUser();
 
   if (!user)
@@ -101,7 +106,7 @@ export const updateEvent = async (
       data: updateData,
     });
 
-    return updatedEvent ;
+    return updatedEvent;
   } catch (error) {
     console.error('Error updating event:', error);
     return {

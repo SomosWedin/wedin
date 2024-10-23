@@ -1,29 +1,45 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { updateEventImages } from '@/actions/data/images';
 import { updateEvent } from '@/actions/data/event';
-import { uploadEventCoverImagesToAws } from '@/lib/s3';
-import { useForm } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { uploadEventCoverImagesToAws } from '@/lib/s3';
 import { EventCoverFormSchema } from '@/schemas/dashboard';
+import { Image as ImageModel } from '@prisma/client';
+import React, { useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 type EventCoverUpdateFormProps = {
-  eventId: string | null;
+  eventId: string;
   message: string | null;
+  images: ImageModel[];
 };
 
 export function useEventCover({
   eventId,
   message,
+  images,
 }: EventCoverUpdateFormProps) {
+  const coverImages = images.map(image => ({
+    id: image.id,
+    url: image.url,
+  }));
+  const filledImagesArray = [
+    ...coverImages,
+    ...Array(6 - coverImages.length)
+      .fill(null)
+      .map((_, index) => ({ id: index.toString(), url: null })),
+  ].slice(0, 6);
+  const [eventImages, setEventImages] = useState<
+    {
+      id: string;
+      url: string | null;
+    }[]
+  >(filledImagesArray);
   const [loading, setLoading] = useState(false);
   const [previewUrls, setPreviewUrls] = useState<string[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-
   const form = useForm({
     // resolver: zodResolver(EventCoverFormSchema),
     defaultValues: {
@@ -32,33 +48,129 @@ export function useEventCover({
       images: [] as File[],
     },
   });
-
   const { formState } = form;
   const { isDirty } = formState;
 
   const handleFileChange = (action: React.ChangeEvent<HTMLInputElement>) => {
-    const files = action.target.files ? Array.from(action.target.files) : [];
+    const files = action.target.files;
 
-    if (files.length > 0) {
-      const newFiles = [...form.getValues('images'), ...files].slice(0, 6);
+    if (files && files.length > 0) {
+      const filesArray = Array.from(files);
+      const newFiles = [...form.getValues('images'), ...filesArray].slice(0, 6);
       const previews = newFiles.map(file => URL.createObjectURL(file));
 
-      form.setValue('images', newFiles);
       setPreviewUrls(previews);
+
+      setEventImages(prevImages => {
+        // Separate images with real UUIDs and fake numeric IDs
+        const realIdImages = prevImages.filter(
+          image => image.id !== null && !/^\d+$/.test(image.id)
+        );
+        const fakeIdImages = prevImages.filter(
+          image => image.id === null || /^\d+$/.test(image.id)
+        );
+
+        // Fill URLs for real ID images with null URLs first
+        let newFileIndex = 0;
+        const updatedRealIdImages = realIdImages.map(image => {
+          if (image.url === null && newFileIndex < newFiles.length) {
+            return {
+              ...image,
+              url: URL.createObjectURL(newFiles[newFileIndex++]),
+            };
+          }
+          return image;
+        });
+
+        // Fill remaining slots with fake IDs
+        const updatedFakeIdImages = fakeIdImages.map(image => {
+          if (newFileIndex < newFiles.length) {
+            return {
+              ...image,
+              url: URL.createObjectURL(newFiles[newFileIndex++]),
+            };
+          }
+          return image;
+        });
+
+        // Combine and slice to ensure a maximum of 6 elements
+        const updatedImages = [
+          ...updatedRealIdImages,
+          ...updatedFakeIdImages,
+        ].slice(0, 6);
+
+        const reorderedImages = updatedImages.sort((a, b) => {
+          if (a.url === null && b.url !== null) return 1;
+          if (a.url !== null && b.url === null) return -1;
+          if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
+          if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
+          return 0;
+        });
+
+        return reorderedImages;
+      });
     }
+  };
+
+  const handleRemoveImage = (imageId: string, index: number) => {
+    setEventImages(prevImages => {
+      // Remove the image by setting its URL to null (preserve the ID)
+      const newImages = [...prevImages];
+      newImages[index] = { id: imageId, url: null };
+
+      // Separate images with real UUIDs and fake numeric IDs
+      const realIdImages = newImages.filter(
+        image => image.id !== null && !/^\d+$/.test(image.id)
+      );
+      const fakeIdImages = newImages.filter(
+        image => image.id === null || /^\d+$/.test(image.id)
+      );
+
+      // Fill any real ID image with null URL with the first available fake ID image
+      let fakeImageIndex = 0;
+      const updatedRealIdImages = realIdImages.map(image => {
+        if (image.url === null && fakeIdImages.length > 0) {
+          // Assign the URL from the first available fake image
+          return {
+            ...image,
+            url: fakeIdImages[fakeImageIndex]?.url || null,
+          };
+        }
+        return image;
+      });
+
+      // Update fake ID images in case some URLs have been moved to real ID images
+      const updatedFakeIdImages = fakeIdImages.map(image => {
+        if (image.url === null && fakeImageIndex < fakeIdImages.length) {
+          return {
+            ...image,
+            url: fakeIdImages[fakeImageIndex++]?.url || null,
+          };
+        }
+        return image;
+      });
+
+      // Combine the images and ensure it doesn't exceed 6 items
+      const updatedImages = [
+        ...updatedRealIdImages,
+        ...updatedFakeIdImages,
+      ].slice(0, 6);
+
+      // Sort the images: real UUIDs first, then by URL presence
+      const reorderedImages = updatedImages.sort((a, b) => {
+        if (a.url === null && b.url !== null) return 1;
+        if (a.url !== null && b.url === null) return -1;
+        if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
+        if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
+        return 0;
+      });
+
+      return reorderedImages;
+    });
   };
 
   const handleButtonClick = () => {
     fileInputRef.current?.click();
-  };
-
-  const handleRemoveImage = (index: number) => {
-    const currentImages = form.getValues('images');
-    const newFiles = currentImages.filter((_, idx) => idx !== index);
-    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
-
-    form.setValue('images', newFiles);
-    setPreviewUrls(newPreviews);
   };
 
   const handleReset = () => {
@@ -67,16 +179,15 @@ export function useEventCover({
   };
 
   const onSubmit = async (values: z.infer<typeof EventCoverFormSchema>) => {
-    console.log("Submitted values:", values);
     setLoading(true);
-  
+
     if (!Object.keys(formState.dirtyFields).length) {
       setLoading(false);
       return;
     }
-  
+
     // const validatedFields = EventCoverFormSchema.safeParse(values);
-  
+
     // if (!validatedFields.success) {
     //   console.log("Validation failed", validatedFields.error)
     //   toast({
@@ -87,15 +198,15 @@ export function useEventCover({
     //   setLoading(false);
     //   return;
     // }
-  
+
     let imageUrls: string[] = [];
-  
+
     if (values.images && values.images.length > 0) {
       const uploadResponse = await uploadEventCoverImagesToAws({
         files: values.images,
         eventId: values.eventId,
       });
-  
+
       if (uploadResponse?.error) {
         toast({
           title: uploadResponse.error,
@@ -104,15 +215,15 @@ export function useEventCover({
         setLoading(false);
         return;
       }
-  
+
       imageUrls = uploadResponse.uploadedImages ?? [];
     }
-  
+
     const updatedEvent = await updateEvent(values.eventId, {
       coverMessage: values.message,
       imageUrls: imageUrls,
     });
-  
+
     if ('error' in updatedEvent) {
       toast({
         title: updatedEvent.error,
@@ -121,12 +232,12 @@ export function useEventCover({
       setLoading(false);
       return;
     }
-  
+
     toast({
       title: 'La portada de tu evento fue actualizado correctamente. 🖼️🎉',
       className: 'bg-white',
     });
-  
+
     setLoading(false);
   };
 
@@ -141,5 +252,7 @@ export function useEventCover({
     handleRemoveImage,
     handleReset,
     onSubmit,
+    eventImages,
+    setEventImages,
   };
 }
