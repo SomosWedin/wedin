@@ -120,67 +120,72 @@ export function useEventCover({
 
   const handleRemoveImage = (imageId: string, index: number) => {
     setEventImages(prevImages => {
-      console.log('Previous Images:', prevImages);
-
-      // Step 1: Create a new array and set the URL of the image at the specified index to null
       const newImages = [...prevImages];
       newImages[index] = { id: imageId, url: null };
 
-      console.log('New Images after removal:', newImages);
-
-      // Step 2: Separate images with real UUIDs and fake numeric IDs
       const realIdImages = newImages.filter(
         image => image.id !== null && !/^\d+$/.test(image.id)
       );
+
       const fakeIdImages = newImages.filter(
         image => image.id === null || /^\d+$/.test(image.id)
       );
 
-      console.log('Real ID Images:', realIdImages);
-      console.log('Fake ID Images:', fakeIdImages);
+      const fakeIdsHasUrl = fakeIdImages.some(image => image.url !== null);
+      const realIdsHasNullUrl = realIdImages.some(image => image.url == null);
 
-      // const fakeHasNonNullUrl = fakeIdImages.some(image => image.url !== null);
-      // const realHasNullUrl = realIdImages.some(image => image.url == null);
+      if (realIdsHasNullUrl && fakeIdsHasUrl) {
+        const smallestFakeIdImageUrl = fakeIdImages.reduce(
+          (smallest, image) => {
+            if (image.url === null) {
+              return smallest;
+            }
 
-      // Step 3: Find the smallest fake ID image URL
-      const smallestFakeIdImageUrl = fakeIdImages.reduce((smallest, image) => {
-        const currentId = parseInt(image.id, 10);
-        const smallestId = parseInt(smallest.id, 10);
+            const currentId = parseInt(image.id, 10);
+            const smallestId = parseInt(smallest.id, 10);
 
-        return currentId < smallestId ? image : smallest;
-      }, fakeIdImages[0])?.url;
+            return currentId < smallestId ? image : smallest;
+          },
+          fakeIdImages.find(image => image.url !== null) || fakeIdImages[0]
+        ).url;
 
-      console.log('Smallest Fake ID Image URL:', smallestFakeIdImageUrl);
+        const updatedRealIdImages = realIdImages.map(image => {
+          if (image.url === null && smallestFakeIdImageUrl) {
+            return {
+              ...image,
+              url: smallestFakeIdImageUrl,
+            };
+          }
+          return image;
+        });
 
-      // Step 4: Update real ID images by replacing null URLs with the smallest fake ID image URL
-      const updatedRealIdImages = realIdImages.map(image => {
-        if (image.url === null && smallestFakeIdImageUrl) {
-          return {
-            ...image,
-            url: smallestFakeIdImageUrl,
-          };
-        }
-        return image;
-      });
+        const updatedFakeIdImages = fakeIdImages.map(image => {
+          if (image.url === smallestFakeIdImageUrl) {
+            return {
+              ...image,
+              url: null,
+            };
+          }
+          return image;
+        });
 
-      // Step 5: Update fake ID images to remove the object with url: smallestFakeIdImageUrl
-      const updatedFakeIdImages = fakeIdImages.map(image => {
-        if (image.url === smallestFakeIdImageUrl) {
-          return {
-            ...image,
-            url: null,
-          };
-        }
-        return image;
-      });
+        const updatedImages = [
+          ...updatedRealIdImages,
+          ...updatedFakeIdImages,
+        ].slice(0, 6);
 
-      // Step 6: Combine and reorder images
-      const updatedImages = [
-        ...updatedRealIdImages,
-        ...updatedFakeIdImages,
-      ].slice(0, 6);
+        const reorderedImages = updatedImages.sort((a, b) => {
+          if (a.url === null && b.url !== null) return 1;
+          if (a.url !== null && b.url === null) return -1;
+          if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
+          if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
+          return 0;
+        });
 
-      console.log('Updated Images:', updatedImages);
+        return reorderedImages;
+      }
+
+      const updatedImages = [...realIdImages, ...fakeIdImages].slice(0, 6);
 
       const reorderedImages = updatedImages.sort((a, b) => {
         if (a.url === null && b.url !== null) return 1;
@@ -190,29 +195,9 @@ export function useEventCover({
         return 0;
       });
 
-      console.log('Reordered Images:', reorderedImages);
-
-      // Step 7: Set the updated state
       return reorderedImages;
-
-      // if (fakeHasNonNullUrl && realHasNullUrl) {
-      // }
-
-      // const updatedImages = [...realIdImages, ...fakeIdImages].slice(0, 6);
-      //
-      // const reorderedImages = updatedImages.sort((a, b) => {
-      //   if (a.url === null && b.url !== null) return 1;
-      //   if (a.url !== null && b.url === null) return -1;
-      //   if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
-      //   if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
-      //   return 0;
-      // });
-      //
-      // return reorderedImages;
     });
   };
-
-  console.log({ eventImages });
 
   const handleButtonClick = () => {
     fileInputRef.current?.click();
