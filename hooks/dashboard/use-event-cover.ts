@@ -51,73 +51,11 @@ export function useEventCover({
   const { formState } = form;
   const { isDirty } = formState;
 
-  const handleFileChange = (action: React.ChangeEvent<HTMLInputElement>) => {
-    const files = action.target.files;
-
-    if (files && files.length > 0) {
-      const filesArray = Array.from(files);
-      const newFiles = [...form.getValues('images'), ...filesArray].slice(0, 6);
-      const previews = newFiles.map(file => URL.createObjectURL(file));
-
-      setPreviewUrls(previews);
-
-      setEventImages(prevImages => {
-        // Separate images with real UUIDs and fake numeric IDs
-        const realIdImages = prevImages.filter(
-          image => image.id !== null && !/^\d+$/.test(image.id)
-        );
-        const fakeIdImages = prevImages.filter(
-          image => image.id === null || /^\d+$/.test(image.id)
-        );
-
-        // Fill URLs for real ID images with null URLs first
-        let newFileIndex = 0;
-        const updatedRealIdImages = realIdImages.map(image => {
-          if (image.url === null && newFileIndex < newFiles.length) {
-            return {
-              ...image,
-              url: URL.createObjectURL(newFiles[newFileIndex++]),
-            };
-          }
-          return image;
-        });
-
-        // Fill remaining slots with fake IDs
-        const updatedFakeIdImages = fakeIdImages.map(image => {
-          if (newFileIndex < newFiles.length) {
-            return {
-              ...image,
-              url: URL.createObjectURL(newFiles[newFileIndex++]),
-            };
-          }
-          return image;
-        });
-
-        // Combine and slice to ensure a maximum of 6 elements
-        const updatedImages = [
-          ...updatedRealIdImages,
-          ...updatedFakeIdImages,
-        ].slice(0, 6);
-
-        const reorderedImages = updatedImages.sort((a, b) => {
-          if (a.url === null && b.url !== null) return 1;
-          if (a.url !== null && b.url === null) return -1;
-          if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
-          if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
-          return 0;
-        });
-
-        return reorderedImages;
-      });
-    }
-  };
-
   const handleRemoveImage = (imageId: string, index: number) => {
     setEventImages(prevImages => {
       const newImages = [...prevImages];
       newImages[index] = { id: imageId, url: null };
 
-      // Separate images with real UUIDs and fake numeric IDs
       const realIdImages = newImages.filter(
         image => image.id !== null && !/^\d+$/.test(image.id)
       );
@@ -126,36 +64,38 @@ export function useEventCover({
         image => image.id === null || /^\d+$/.test(image.id)
       );
 
-      const fakeHasNonNullUrl = fakeIdImages.some(image => image.url !== null);
-      const realHasNullUrl = realIdImages.some(image => image.url == null);
-
-      const smallestIdImageUrl = fakeIdImages.reduce((smallest, image) => {
+      const smallestFakeIdImageUrl = fakeIdImages.reduce((smallest, image) => {
         const currentId = parseInt(image.id, 10);
         const smallestId = parseInt(smallest.id, 10);
 
         return currentId < smallestId ? image : smallest;
-      }, fakeIdImages[0]).url;
+      }, fakeIdImages[0])?.url;
 
-      // Now update realIdImages by replacing null URLs with the smallestIdImageUrl
+      const usedUrls = new Set();
+
       const updatedRealIdImages = realIdImages.map(image => {
-        if (image.url === null && smallestIdImageUrl) {
+        if (
+          image.url === null &&
+          smallestFakeIdImageUrl &&
+          !usedUrls.has(smallestFakeIdImageUrl)
+        ) {
+          usedUrls.add(smallestFakeIdImageUrl);
           return {
             ...image,
-            url: smallestIdImageUrl, // Replace null with the smallestIdImageUrl
+            url: smallestFakeIdImageUrl,
           };
         }
         return image;
       });
 
-      // Update fakeIdImages to remove the object with url: smallestIdImageUrl
       const updatedFakeIdImages = fakeIdImages.map(image => {
-        if (image.url === smallestIdImageUrl) {
+        if (image.url === smallestFakeIdImageUrl) {
           return {
             ...image,
-            url: null, // Set the URL to null for the object with smallestIdImageUrl
+            url: null,
           };
         }
-        return image; // Return the object as-is if it doesn't match
+        return image;
       });
 
       const updatedImages = [
@@ -172,22 +112,65 @@ export function useEventCover({
       });
 
       return reorderedImages;
-
-      // if (fakeHasNonNullUrl && realHasNullUrl) {
-      // }
-
-      // const updatedImages = [...realIdImages, ...fakeIdImages].slice(0, 6);
-      //
-      // const reorderedImages = updatedImages.sort((a, b) => {
-      //   if (a.url === null && b.url !== null) return 1;
-      //   if (a.url !== null && b.url === null) return -1;
-      //   if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
-      //   if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
-      //   return 0;
-      // });
-      //
-      // return reorderedImages;
     });
+  };
+
+  const handleFileChange = (action: React.ChangeEvent<HTMLInputElement>) => {
+    const files = action.target.files;
+
+    if (files && files.length > 0) {
+      const filesArray = Array.from(files);
+      const newFiles = [...form.getValues('images'), ...filesArray].slice(0, 6);
+      const previews = newFiles.map(file => URL.createObjectURL(file));
+
+      setPreviewUrls(previews);
+
+      setEventImages(prevImages => {
+        const realIdImages = prevImages.filter(
+          image => image.id !== null && !/^\d+$/.test(image.id)
+        );
+        const fakeIdImages = prevImages.filter(
+          image => image.id === null || /^\d+$/.test(image.id)
+        );
+
+        let newFileIndex = 0;
+
+        const updatedRealIdImages = realIdImages.map(image => {
+          if (image.url === null && newFileIndex < newFiles.length) {
+            return {
+              ...image,
+              url: URL.createObjectURL(newFiles[newFileIndex++]),
+            };
+          }
+          return image;
+        });
+
+        const updatedFakeIdImages = fakeIdImages.map(image => {
+          if (newFileIndex < newFiles.length) {
+            return {
+              ...image,
+              url: URL.createObjectURL(newFiles[newFileIndex++]),
+            };
+          }
+          return image;
+        });
+
+        const updatedImages = [
+          ...updatedRealIdImages,
+          ...updatedFakeIdImages,
+        ].slice(0, 6);
+
+        const reorderedImages = updatedImages.sort((a, b) => {
+          if (a.url === null && b.url !== null) return 1;
+          if (a.url !== null && b.url === null) return -1;
+          if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
+          if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
+          return 0;
+        });
+
+        return reorderedImages;
+      });
+    }
   };
 
   console.log({ eventImages });
