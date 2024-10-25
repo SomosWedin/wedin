@@ -56,10 +56,8 @@ export function useEventCover({
 
     if (files && files.length > 0) {
       const filesArray = Array.from(files);
-      const newFiles = [...form.getValues('images'), ...filesArray].slice(0, 6);
+      const newFiles = [...filesArray].slice(0, 6);
       const previews = newFiles.map(file => URL.createObjectURL(file));
-
-      setPreviewUrls(previews);
 
       setEventImages(prevImages => {
         // Separate images with real UUIDs and fake numeric IDs
@@ -69,8 +67,6 @@ export function useEventCover({
         const fakeIdImages = prevImages.filter(
           image => image.id === null || /^\d+$/.test(image.id)
         );
-
-        console.log({ realIdImages, fakeIdImages });
 
         // Fill URLs for real ID images with null URLs first
         let newFileIndex = 0;
@@ -84,8 +80,8 @@ export function useEventCover({
           return image;
         });
 
-        // Fill remaining slots with fake IDs
         const updatedFakeIdImages = fakeIdImages.map(image => {
+          console.log({ newFileIndex, file: newFiles[newFileIndex++] });
           if (newFileIndex < newFiles.length) {
             return {
               ...image,
@@ -100,8 +96,6 @@ export function useEventCover({
           ...updatedRealIdImages,
           ...updatedFakeIdImages,
         ].slice(0, 6);
-
-        console.log({ updatedImages });
 
         const reorderedImages = updatedImages.sort((a, b) => {
           if (a.url === null && b.url !== null) return 1;
