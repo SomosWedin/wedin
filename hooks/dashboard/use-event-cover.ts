@@ -15,6 +15,11 @@ type EventCoverUpdateFormProps = {
   images: ImageModel[];
 };
 
+export type EventImage = {
+  id: string;
+  url: string | null;
+};
+
 export function useEventCover({
   eventId,
   message,
@@ -30,16 +35,13 @@ export function useEventCover({
       .fill(null)
       .map((_, index) => ({ id: index.toString(), url: null })),
   ].slice(0, 6);
-  const [eventImages, setEventImages] = useState<
-    {
-      id: string;
-      url: string | null;
-    }[]
-  >(filledImagesArray);
+
+  const [eventImages, setEventImages] =
+    useState<EventImage[]>(filledImagesArray);
   const [loading, setLoading] = useState(false);
-  const [previewUrls, setPreviewUrls] = useState<string[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
   const form = useForm({
     // resolver: zodResolver(EventCoverFormSchema),
     defaultValues: {
@@ -104,6 +106,8 @@ export function useEventCover({
       });
     }
   };
+
+  console.log({ eventImages });
 
   const handleRemoveImage = (imageId: string, index: number) => {
     setEventImages(prevImages => {
@@ -240,7 +244,6 @@ export function useEventCover({
     form,
     loading,
     isDirty,
-    previewUrls,
     fileInputRef,
     handleFileChange: handleAddImages,
     handleButtonClick,

@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useEventCover } from '@/hooks/dashboard/use-event-cover';
+import { EventImage, useEventCover } from '@/hooks/dashboard/use-event-cover';
 import { Event, Image as ImageModel } from '@prisma/client';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
@@ -30,7 +30,6 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
   const { images, coverMessage, id } = event;
   const {
     loading,
-    previewUrls,
     fileInputRef,
     handleFileChange,
     handleButtonClick,
@@ -41,6 +40,12 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
     isDirty,
     eventImages,
   } = useEventCover({ eventId: id, message: coverMessage, images });
+
+  const countNullUrls = (images: EventImage[]) => {
+    return images.reduce((count, image) => {
+      return image.url === null ? count + 1 : count;
+    }, 0);
+  };
 
   return (
     <Form {...form}>
@@ -116,7 +121,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
                         type="button"
                         variant="success"
                         onClick={handleButtonClick}
-                        disabled={previewUrls?.length === 6}
+                        disabled={countNullUrls(eventImages) === 0}
                       >
                         Subir imagen
                         <MdOutlineFileUpload className="text-xl" />
