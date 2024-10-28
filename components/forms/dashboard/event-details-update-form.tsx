@@ -31,7 +31,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
   const {
     loading,
     fileInputRef,
-    handleFileChange,
+    handleAddImages,
     handleButtonClick,
     handleRemoveImage,
     form,
@@ -112,7 +112,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
                         accept="image/jpeg, image/png, image/heic, image/webp, image/svg+xml"
                         ref={fileInputRef}
                         onChange={event => {
-                          handleFileChange(event);
+                          handleAddImages(event);
                           field.onChange(event.target.files);
                         }}
                         multiple

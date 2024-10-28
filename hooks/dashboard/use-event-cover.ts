@@ -47,7 +47,7 @@ export function useEventCover({
     defaultValues: {
       eventId: eventId ?? '',
       message: message ?? '',
-      images: [] as File[],
+      images: [],
     },
   });
   const { formState } = form;
@@ -106,8 +106,6 @@ export function useEventCover({
       });
     }
   };
-
-  console.log({ eventImages });
 
   const handleRemoveImage = (imageId: string, index: number) => {
     setEventImages(prevImages => {
@@ -174,11 +172,11 @@ export function useEventCover({
   };
 
   const handleReset = () => {
-    setPreviewUrls([]);
     form.reset();
   };
 
   const onSubmit = async (values: z.infer<typeof EventCoverFormSchema>) => {
+    console.log(values);
     setLoading(true);
 
     if (!Object.keys(formState.dirtyFields).length) {
@@ -245,7 +243,7 @@ export function useEventCover({
     loading,
     isDirty,
     fileInputRef,
-    handleFileChange: handleAddImages,
+    handleAddImages,
     handleButtonClick,
     handleRemoveImage,
     handleReset,
