@@ -51,7 +51,17 @@ export function useEventCover({
   const { formState } = form;
   const { isDirty } = formState;
 
-  const handleFileChange = (action: React.ChangeEvent<HTMLInputElement>) => {
+  const reorderImages = (imagesArray: { id: string; url: string | null }[]) => {
+    return imagesArray.sort((a, b) => {
+      if (a.url === null && b.url !== null) return 1;
+      if (a.url !== null && b.url === null) return -1;
+      if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
+      if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
+      return 0;
+    });
+  };
+
+  const handleAddImages = (action: React.ChangeEvent<HTMLInputElement>) => {
     const files = action.target.files;
 
     if (files && files.length > 0) {
@@ -88,21 +98,9 @@ export function useEventCover({
           return image;
         });
 
-        // Combine and slice to ensure a maximum of 6 elements
-        const updatedImages = [
-          ...updatedRealIdImages,
-          ...updatedFakeIdImages,
-        ].slice(0, 6);
-
-        const reorderedImages = updatedImages.sort((a, b) => {
-          if (a.url === null && b.url !== null) return 1;
-          if (a.url !== null && b.url === null) return -1;
-          if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
-          if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
-          return 0;
-        });
-
-        return reorderedImages;
+        return reorderImages(
+          [...updatedRealIdImages, ...updatedFakeIdImages].slice(0, 6)
+        );
       });
     }
   };
@@ -158,33 +156,12 @@ export function useEventCover({
           return image;
         });
 
-        const updatedImages = [
-          ...updatedRealIdImages,
-          ...updatedFakeIdImages,
-        ].slice(0, 6);
-
-        const reorderedImages = updatedImages.sort((a, b) => {
-          if (a.url === null && b.url !== null) return 1;
-          if (a.url !== null && b.url === null) return -1;
-          if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
-          if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
-          return 0;
-        });
-
-        return reorderedImages;
+        return reorderImages(
+          [...updatedRealIdImages, ...updatedFakeIdImages].slice(0, 6)
+        );
       }
 
-      const updatedImages = [...realIdImages, ...fakeIdImages].slice(0, 6);
-
-      const reorderedImages = updatedImages.sort((a, b) => {
-        if (a.url === null && b.url !== null) return 1;
-        if (a.url !== null && b.url === null) return -1;
-        if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
-        if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
-        return 0;
-      });
-
-      return reorderedImages;
+      return reorderImages([...realIdImages, ...fakeIdImages].slice(0, 6));
     });
   };
 
@@ -265,7 +242,7 @@ export function useEventCover({
     isDirty,
     previewUrls,
     fileInputRef,
-    handleFileChange,
+    handleFileChange: handleAddImages,
     handleButtonClick,
     handleRemoveImage,
     handleReset,
@@ -274,44 +251,3 @@ export function useEventCover({
     setEventImages,
   };
 }
-
-// const updateImages = (
-//   realIdImages: Array<{ id: string | null; url: string | null }>,
-//   fakeIdImages: Array<{ id: string | null; url: string | null }>,
-//   newFiles: File[],
-//   maxImages = 6
-// ) => {
-//   let newFileIndex = 0;
-//
-//   const updatedRealIdImages = realIdImages.map(image => {
-//     if (image.url === null && newFileIndex < newFiles.length) {
-//       return { ...image, url: URL.createObjectURL(newFiles[newFileIndex++]) };
-//     }
-//     return image;
-//   });
-//
-//   const updatedFakeIdImages = fakeIdImages.map(image => {
-//     if (image.url === null && newFileIndex < newFiles.length) {
-//       return { ...image, url: URL.createObjectURL(newFiles[newFileIndex++]) };
-//     }
-//     return image;
-//   });
-//
-//   const combinedImages = [...updatedRealIdImages, ...updatedFakeIdImages];
-//   return reorderAndSliceImages(combinedImages, maxImages);
-// };
-//
-// const reorderAndSliceImages = (
-//   images: Array<{ id: string | null; url: string | null }>,
-//   maxImages: number
-// ) => {
-//   const slicedImages = images.slice(0, maxImages);
-//
-//   return slicedImages.sort((a, b) => {
-//     if (a.url === null && b.url !== null) return 1;
-//     if (a.url !== null && b.url === null) return -1;
-//     if (!/^\d+$/.test(a.id ?? '') && /^\d+$/.test(b.id ?? '')) return -1;
-//     if (/^\d+$/.test(a.id ?? '') && !/^\d+$/.test(b.id ?? '')) return 1;
-//     return 0;
-//   });
-// };
