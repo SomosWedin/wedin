@@ -10,7 +10,7 @@ export default async function DashboardEventDetails() {
   const event = await getEvent();
 
   if (!event || 'error' in event) {
-    return;
+    return <div>Error</div>;
   }
 
   return (

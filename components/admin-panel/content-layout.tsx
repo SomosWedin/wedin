@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/admin-panel/navbar";
+import { Navbar } from '@/components/admin-panel/navbar';
 
 interface ContentLayoutProps {
   title: string;
@@ -9,7 +9,9 @@ export function ContentLayout({ title, children }: ContentLayoutProps) {
   return (
     <div>
       <Navbar title={title} />
-      <div className="container pt-8 pb-8 px-4 sm:px-8 h-screen bg-white">{children}</div>
+      <div className="container px-4 pt-8 pb-8 h-screen bg-white sm:px-8">
+        {children}
+      </div>
     </div>
   );
 }

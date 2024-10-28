@@ -67,7 +67,6 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
                 >
                   {eventImage.url ? (
                     <>
-                      {/* {console.log({ eventImageId: eventImage.id })} */}
                       <Image
                         src={eventImage.url}
                         alt={`preview-${eventImage.id}`}
@@ -87,7 +86,6 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
                     </>
                   ) : (
                     <>
-                      {/* {console.log({ eventImageId: eventImage.id })} */}
                       <CiImageOn className="text-3xl text-gray-400" />
                     </>
                   )}
