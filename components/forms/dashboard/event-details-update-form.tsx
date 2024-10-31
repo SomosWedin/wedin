@@ -52,6 +52,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
   return (
     <Form {...form}>
       <form
+        // @ts-ignore
         onSubmit={form.handleSubmit(onSubmit)}
         className="flex flex-col gap-8 w-full"
         noValidate

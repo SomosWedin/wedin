@@ -10,7 +10,12 @@ export const uploadEventCoverImagesToAws = async ({
   files,
   eventId,
 }: UploadImagesToAwsParams) => {
-  if (!files.length || files.length > 6) {
+
+  if (files.length === 0) {
+    return { uploadedImages: [] }; 
+  }
+
+  if (files.length > 6) {
     return { error: 'You must upload between 1 and 6 images.' };
   }
 

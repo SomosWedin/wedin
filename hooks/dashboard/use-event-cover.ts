@@ -183,11 +183,6 @@ export function useEventCover({
   const onSubmit = async (values: z.infer<typeof EventCoverFormSchema>) => {
     setLoading(true);
 
-    // if (!Object.keys(dirtyFields).length) {
-    //   setLoading(false);
-    //   return;
-    // }
-
     // const validatedFields = EventCoverFormSchema.safeParse(values);
 
     // if (!validatedFields.success) {
@@ -200,22 +195,28 @@ export function useEventCover({
     //   return;
     // }
 
-    // this approach only deletes images and doesnt check for cover message, the loading gets stuck and never finishes
-    // const deletedImages = coverImages
-    //   .filter(img => img.url && !eventImages.some(v => v.url === img.url))
-    //   .map(img => ({ imageId: img.id, imageUrl: img.url! }));
-
-    // if (deletedImages.length > 0) {
-    //   const deleteResponse = await deleteEventImage(deletedImages);
-    //   if ('error' in deleteResponse) {
-    //     toast({
-    //       title: deleteResponse.error,
-    //       variant: 'destructive',
-    //     });
-    //     setLoading(false);
-    //     return;
-    //   }
-    // }
+    const imagesToRemove = eventImages
+      .filter(img => img.url === null)
+      .map(img => img.id);
+    const imagesToDelete = coverImages.filter(img =>
+      imagesToRemove.includes(img.id)
+    );
+    if (imagesToDelete.length > 0) {
+      const deleteResponse = await deleteEventImage(
+        imagesToDelete.map(img => ({
+          imageId: img.id,
+          imageUrl: img.url,
+        }))
+      );
+      if ('error' in deleteResponse) {
+        toast({
+          title: deleteResponse.error,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+    }
 
     let imageUrls: string[] = [];
 

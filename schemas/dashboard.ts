@@ -52,10 +52,8 @@ export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>;
 
 export const EventCoverFormSchema = z.object({
   eventId: z.string(),
-  // change this to filelist
   images: z
-    .array(z.any().nullable() as ZodType<File>)
-    .min(1, { message: 'Debes subir al menos 1 archivo' })
+    .array(z.instanceof(File).nullable())
     .max(6, { message: 'No puedes subir más de 6 archivos' }),
   message: z
     .string()
