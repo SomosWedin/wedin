@@ -1,9 +1,11 @@
 'use client';
 
 import { updateEvent } from '@/actions/data/event';
+import { deleteEventImage } from '@/actions/data/images';
 import { useToast } from '@/hooks/use-toast';
 import { uploadEventCoverImagesToAws } from '@/lib/s3';
 import { EventCoverFormSchema } from '@/schemas/dashboard';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Image as ImageModel } from '@prisma/client';
 import React, { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -39,6 +41,7 @@ export function useEventCover({
   const [eventImages, setEventImages] =
     useState<EventImage[]>(filledImagesArray);
   const [loading, setLoading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -47,11 +50,11 @@ export function useEventCover({
     defaultValues: {
       eventId: eventId ?? '',
       message: message ?? '',
-      images: [],
+      images: images ?? [],
     },
   });
   const { formState } = form;
-  const { isDirty } = formState;
+  const { isDirty, dirtyFields } = formState;
 
   const reorderImages = (imagesArray: { id: string; url: string | null }[]) => {
     return imagesArray.sort((a, b) => {
@@ -158,11 +161,13 @@ export function useEventCover({
           return image;
         });
 
+        setHasChanges(true);
         return reorderImages(
           [...updatedRealIdImages, ...updatedFakeIdImages].slice(0, 6)
         );
       }
 
+      setHasChanges(true);
       return reorderImages([...realIdImages, ...fakeIdImages].slice(0, 6));
     });
   };
@@ -176,25 +181,41 @@ export function useEventCover({
   };
 
   const onSubmit = async (values: z.infer<typeof EventCoverFormSchema>) => {
-    console.log(values);
     setLoading(true);
 
-    if (!Object.keys(formState.dirtyFields).length) {
-      setLoading(false);
-      return;
-    }
+    // if (!Object.keys(dirtyFields).length) {
+    //   setLoading(false);
+    //   return;
+    // }
 
-    const validatedFields = EventCoverFormSchema.safeParse(values);
+    // const validatedFields = EventCoverFormSchema.safeParse(values);
 
-    if (!validatedFields.success) {
-      toast({
-        title: 'Error',
-        description: 'Archivo invalido, por favor intenta de nuevo.',
-        variant: 'destructive',
-      });
-      setLoading(false);
-      return;
-    }
+    // if (!validatedFields.success) {
+    //   console.log(validatedFields.error);
+    //   toast({
+    //     title: validatedFields.error.message,
+    //     variant: 'destructive',
+    //   });
+    //   setLoading(false);
+    //   return;
+    // }
+
+    // this approach only deletes images and doesnt check for cover message, the loading gets stuck and never finishes
+    // const deletedImages = coverImages
+    //   .filter(img => img.url && !eventImages.some(v => v.url === img.url))
+    //   .map(img => ({ imageId: img.id, imageUrl: img.url! }));
+
+    // if (deletedImages.length > 0) {
+    //   const deleteResponse = await deleteEventImage(deletedImages);
+    //   if ('error' in deleteResponse) {
+    //     toast({
+    //       title: deleteResponse.error,
+    //       variant: 'destructive',
+    //     });
+    //     setLoading(false);
+    //     return;
+    //   }
+    // }
 
     let imageUrls: string[] = [];
 
@@ -242,6 +263,7 @@ export function useEventCover({
     form,
     loading,
     isDirty,
+    dirtyFields,
     fileInputRef,
     handleAddImages,
     handleButtonClick,
@@ -250,5 +272,6 @@ export function useEventCover({
     onSubmit,
     eventImages,
     setEventImages,
+    hasChanges,
   };
 }

@@ -2,6 +2,7 @@
 
 import type { ErrorResponse } from '@/auth';
 import { PrismaClient } from '@prisma/client';
+import { deleteEventCoverImageFromAws } from '@/lib/s3';
 
 const prismaClient = new PrismaClient();
 
@@ -48,15 +49,17 @@ export async function updateEventImages({
   }
 }
 
-export async function deleteEventImage({
-  imageId,
-}: {
-  imageId: string;
-}) {
+export async function deleteEventImage(
+  images: { imageId: string; imageUrl: string }[]
+) {
   try {
-    await prismaClient.image.delete({
-      where: {  id: imageId },
-    });
+    for (const { imageId, imageUrl } of images) {
+      await prismaClient.image.delete({
+        where: { id: imageId },
+      });
+      await deleteEventCoverImageFromAws(imageUrl);
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error deleting event image:', error);

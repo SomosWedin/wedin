@@ -250,7 +250,7 @@ model PasswordResetToken {
 
 model Image {
   id            String       @id @default(auto()) @map("_id") @db.ObjectId
-  url           String
+  url           String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   transactionId String?      @db.ObjectId

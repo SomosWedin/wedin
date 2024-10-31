@@ -1,8 +1,8 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function formatPrice(price: number): string {
@@ -21,6 +21,9 @@ export function capitalizeFirstLetter(string: string | undefined | null) {
 }
 
 export async function computeSHA256(file: File) {
+  if (!(file instanceof File)) {
+    throw new Error('Provided argument is not a File object.');
+  }
   const buffer = await file.arrayBuffer();
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));

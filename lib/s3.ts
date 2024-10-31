@@ -56,3 +56,15 @@ export const uploadEventCoverImagesToAws = async ({
 
   return { uploadedImages };  
 };
+
+export const deleteEventCoverImageFromAws = async (imageUrl: string) => {
+  const deleteResponse = await fetch(imageUrl, {
+    method: 'DELETE',
+  });
+
+  if (!deleteResponse.ok) {
+    return { error: deleteResponse.statusText };
+  }
+
+  return { success: true };
+};

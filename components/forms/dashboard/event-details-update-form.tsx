@@ -39,6 +39,8 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
     onSubmit,
     isDirty,
     eventImages,
+    dirtyFields,
+    hasChanges,
   } = useEventCover({ eventId: id, message: coverMessage, images });
 
   const countNullUrls = (images: EventImage[]) => {
@@ -183,7 +185,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
             type="submit"
             variant="success"
             className="gap-2"
-            disabled={loading || !isDirty}
+            disabled={loading || (!isDirty && !hasChanges)}
           >
             Guardar
             {loading ? (
