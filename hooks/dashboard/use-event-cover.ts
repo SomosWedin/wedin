@@ -1,16 +1,19 @@
 'use client';
 
-import { deleteEventImage } from '@/actions/data/images';
+import { updateEvent } from '@/actions/data/event';
+import { addImages, deleteImages, updateImage } from '@/actions/data/images';
 import { useToast } from '@/hooks/use-toast';
+import {
+  deleteEventCoverImageFromAws,
+  uploadEventCoverImagesToAws,
+} from '@/lib/s3';
 import { EventCoverFormSchema } from '@/schemas/dashboard';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Image as ImageModel } from '@prisma/client';
-import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-
-type FormImage = ImageModel | File;
 
 type EventCoverUpdateFormProps = {
   eventId: string;
@@ -42,10 +45,10 @@ interface DeletedImages {
   url: string[]; // URLs of images to delete from storage (e.g., AWS S3)
 }
 
-interface RemainingImage {
-  id: string;
-  url: string;
-}
+// interface RemainingImage {
+//   id: string;
+//   url: string;
+// }
 
 export type EventImage = {
   id: string;
@@ -60,38 +63,7 @@ export function useEventCover({
   message,
   images,
 }: EventCoverUpdateFormProps) {
-  const coverImages = images.map(image => ({
-    id: image.id,
-    url: image.url,
-    fileName: null,
-  }));
-
-  const filledImagesArray: EventImage[] = Array.from(
-    { length: 6 },
-    (_, index) => ({
-      id: coverImages[index]?.id ?? index.toString(),
-      url: coverImages[index]?.url ?? null,
-      fileName: coverImages[index]?.fileName ?? null,
-    })
-  );
-
-  const [eventImages, setEventImages] =
-    useState<EventImage[]>(filledImagesArray);
   const [loading, setLoading] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [imagesUrlToDelete, setImageUrlToDelete] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
-
-  const form = useForm({
-    resolver: zodResolver(EventCoverFormSchema),
-    defaultValues: {
-      message: message ?? '',
-    },
-  });
-  const { formState } = form;
-  const { isDirty, dirtyFields } = formState;
-
   const [initialImages, setInitialImages] = useState<ExistingImage[]>([]); // Images initially fetched from the database
   const [existingImages, setExistingImages] = useState<ExistingImage[]>([]); // Images currently displayed from the database
   const [newImages, setNewImages] = useState<NewImage[]>([]); // New images added by the user
@@ -99,6 +71,19 @@ export function useEventCover({
   const [replacedImages, setReplacedImages] = useState<{ id: string }[]>([]); // IDs of images marked for replacement
   const [formError, setFormError] = useState<string | null>(null); // Form-level error state
   const slots = Array.from({ length: MAX_IMAGES });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  console.log(message);
+
+  const form = useForm({
+    resolver: zodResolver(EventCoverFormSchema),
+    defaultValues: {
+      message: message,
+    },
+  });
+  const { formState } = form;
+  const { isDirty, dirtyFields } = formState;
 
   useEffect(() => {
     const imagesWithIsNew: ExistingImage[] = images.map(img => ({
@@ -109,7 +94,6 @@ export function useEventCover({
     setExistingImages(imagesWithIsNew); // Set existing images to display
   }, [images]);
 
-  // Handle adding images
   const handleImageAdd = (event: ChangeEvent<HTMLInputElement>) => {
     setFormError(null);
 
@@ -171,7 +155,6 @@ export function useEventCover({
     }
   };
 
-  // Handle removing images
   const handleImageRemove = (id: string) => {
     setFormError(null); // Reset any form errors
 
@@ -207,10 +190,10 @@ export function useEventCover({
     }
   };
 
-  // Handle form submission
   const handleOnSubmit: SubmitHandler<
     z.infer<typeof EventCoverFormSchema>
-  > = data => {
+  > = async data => {
+    setLoading(true);
     // Prepare new images to upload
     const newImagesToUpload = newImages.map(({ file, id }) => ({
       file,
@@ -225,10 +208,10 @@ export function useEventCover({
     }));
 
     // Remaining images (unchanged)
-    const remainingImages: RemainingImage[] = existingImages.map(img => ({
-      id: img.id,
-      url: img.url,
-    }));
+    // const remainingImages: RemainingImage[] = existingImages.map(img => ({
+    //   id: img.id,
+    //   url: img.url,
+    // }));
 
     // Identify images in replacedImages that were not replaced
     const replacedIds = updatedImages.map(img => img.replaceId);
@@ -262,210 +245,106 @@ export function useEventCover({
     };
 
     // Final submission data
-    console.log({
-      newImagesToUpload,
-      imagesToReplace,
-      imagesToDelete,
-      remainingImages,
-    });
+    // newImagesToUpload: [
+    //   { file: fileC, tempId: 'newImgC' },
+    //   { file: fileD, tempId: 'newImgD' },
+    // ],
+    // imagesToReplace: [
+    //   { file: fileA, replaceId: 'img1', tempId: 'newImgA' },
+    //   { file: fileB, replaceId: 'img2', tempId: 'newImgB' },
+    // ],
+    // imagesToDelete: {
+    //   id: [],
+    //   url: [
+    //     'https://example.com/image1.jpg',
+    //     'https://example.com/image2.jpg',
+    //   ],
+    // },
+    // remainingImages: [
+    //   { id: 'img3', url: 'https://example.com/image3.jpg' },
+    // ],
 
-    // Proceed with submission (e.g., send data to backend)
-    // ...
-  };
+    if (newImagesToUpload.length > 0) {
+      console.log('uploading new images', newImagesToUpload);
+      const files = newImagesToUpload.map(({ file }) => file);
 
-  const reorderImages = (imagesArray: EventImage[]) => {
-    return imagesArray.sort((a, b) => {
-      if (a.url === null && b.url !== null) return 1;
-      if (a.url !== null && b.url === null) return -1;
-      if (!/^\d+$/.test(a.id) && /^\d+$/.test(b.id)) return -1;
-      if (/^\d+$/.test(a.id) && !/^\d+$/.test(b.id)) return 1;
-      return 0;
-    });
-  };
-
-  const handleAddImages = (action: React.ChangeEvent<HTMLInputElement>) => {
-    const files = action.target.files;
-    const formImages = form.getValues('images');
-    const formValueImagesArray = files ? Array.from(files) : [];
-
-    form.setValue('images', [...formImages, ...formValueImagesArray]);
-
-    if (files && files.length > 0) {
-      const newFiles = Array.from(files);
-
-      setEventImages(prevImages => {
-        const realIdImages = prevImages.filter(
-          image => image.id !== null && !/^\d+$/.test(image.id)
-        );
-
-        const fakeIdImages = prevImages.filter(
-          image => image.id === null || /^\d+$/.test(image.id)
-        );
-
-        let newFileIndex = 0;
-
-        const updatedRealIdImages = realIdImages.map(image => {
-          if (image.url === null && newFileIndex < newFiles.length) {
-            return {
-              ...image,
-              fileName: newFiles[newFileIndex].name,
-              url: URL.createObjectURL(newFiles[newFileIndex++]),
-            };
-          }
-          return image;
-        });
-
-        const updatedFakeIdImages = fakeIdImages.map(image => {
-          if (image.url === null && newFileIndex < newFiles.length) {
-            return {
-              ...image,
-              fileName: newFiles[newFileIndex].name,
-              url: URL.createObjectURL(newFiles[newFileIndex++]),
-            };
-          }
-          return image;
-        });
-
-        return reorderImages(
-          [...updatedRealIdImages, ...updatedFakeIdImages].slice(0, 6)
-        );
+      const uploadResponse = await uploadEventCoverImagesToAws({
+        files: files,
+        eventId,
       });
+
+      if (uploadResponse?.error) {
+        toast({
+          title: uploadResponse.error,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (
+        uploadResponse.uploadedImages &&
+        uploadResponse.uploadedImages.length > 0
+      ) {
+        const awsImageUrls = uploadResponse.uploadedImages;
+        const result = await addImages({ eventId, imageUrls: awsImageUrls });
+
+        if (result?.error) {
+          toast({
+            title: result.error,
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+      }
     }
-  };
 
-  const handleRemoveImage = (imageId: string, index: number) => {
-    const formImages = form.getValues('images');
-    const any = formImages;
+    if (imagesToReplace.length > 0) {
+      console.log('replacing images', imagesToReplace);
+      imagesToReplace.map(async image => {
+        const uploadResponse = await uploadEventCoverImagesToAws({
+          files: [image.file],
+          eventId,
+        });
 
-    formImages.forEach((image: FormImage) => {
-      const isImageModel = (image: FormImage): image is ImageModel => {
-        return 'id' in image;
-      };
-
-      if (isImageModel(image) && image.id === imageId) {
-        // Find the image to delete by its id
-        const urlToDelete = formImages.find(
-          value => isImageModel(value) && value.id === imageId
-        );
-
-        // Filter out the image with the specified id
-        const filteredFormImages = formImages.filter(
-          value => !isImageModel(value) || value.id !== imageId
-        );
-
-        // If urlToDelete is found and is an ImageModel, access its URL
-        if (urlToDelete && isImageModel(urlToDelete)) {
-          setImageUrlToDelete(prevState => [...prevState, urlToDelete.url!]); // Assert URL is defined
+        if (uploadResponse?.error) {
+          toast({
+            title: uploadResponse.error,
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
         }
 
-        // Update the form images with the filtered array
-        form.setValue('images', filteredFormImages);
-      }
-    });
+        if (uploadResponse.uploadedImages) {
+          const awsImageUrl = uploadResponse.uploadedImages;
+          const result = await updateImage({
+            imageId: image.replaceId,
+            imageUrl: awsImageUrl[0],
+          });
 
-    setEventImages(prevImages => {
-      const newImages = [...prevImages];
-      newImages[index] = { id: imageId, url: null, fileName: null };
-
-      const realIdImages = newImages.filter(
-        image => image.id !== null && !/^\d+$/.test(image.id)
-      );
-
-      const fakeIdImages = newImages.filter(
-        image => image.id === null || /^\d+$/.test(image.id)
-      );
-
-      const fakeIdsHasUrl = fakeIdImages.some(image => image.url !== null);
-      const realIdsHasNullUrl = realIdImages.some(image => image.url == null);
-
-      if (realIdsHasNullUrl && fakeIdsHasUrl) {
-        const smallestFakeIdImage = fakeIdImages.reduce(
-          (smallest, image) => {
-            if (image.url === null) {
-              return smallest;
-            }
-
-            const currentId = parseInt(image.id, 10);
-            const smallestId = parseInt(smallest.id, 10);
-
-            return currentId < smallestId ? image : smallest;
-          },
-          fakeIdImages.find(image => image.url !== null) || fakeIdImages[0]
-        );
-
-        const smallestFakeIdImageUrl = smallestFakeIdImage.url;
-        const updatedRealIdImages = realIdImages.map(image => {
-          if (image.url === null && smallestFakeIdImageUrl) {
-            return {
-              ...image,
-              url: smallestFakeIdImageUrl,
-            };
+          if (result?.error) {
+            toast({
+              title: result.error,
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
           }
-          return image;
-        });
+        }
+      });
+    }
 
-        const updatedFakeIdImages = fakeIdImages.map(image => {
-          if (image.url === smallestFakeIdImageUrl) {
-            return {
-              ...image,
-              url: null,
-            };
-          }
-          return image;
-        });
+    if (imagesToDelete.id.length > 0) {
+      console.log('deleting images from db', imagesToDelete.id);
+      const deleteImageResponse = await deleteImages({
+        imageIds: imagesToDelete.id,
+      });
 
-        setHasChanges(true);
-        return reorderImages(
-          [...updatedRealIdImages, ...updatedFakeIdImages].slice(0, 6)
-        );
-      }
-
-      setHasChanges(true);
-      return reorderImages([...realIdImages, ...fakeIdImages].slice(0, 6));
-    });
-  };
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleReset = () => {
-    form.reset();
-  };
-
-  const onSubmit = async (formValue: z.infer<typeof EventCoverFormSchema>) => {
-    setLoading(true);
-
-    // const validatedFields = EventCoverFormSchema.safeParse(formValue);
-    // if (!validatedFields.success) {
-    //   console.log(validatedFields.error);
-    //   toast({
-    //     title: validatedFields.error.message,
-    //     variant: 'destructive',
-    //   });
-    //   setLoading(false);
-    //   return;
-    // }
-
-    const realIdImages = eventImages.filter(
-      image => image.id !== null && !/^\d+$/.test(image.id)
-    );
-
-    // const fakeIdImages = eventImages.filter(
-    //   image => image.id === null || /^\d+$/.test(image.id)
-    // );
-
-    const imagesToRemove = realIdImages.filter(img => img.url === null);
-
-    if (imagesToRemove.length > 0 && imagesToRemove.length > 0) {
-      const deleteImageResult = await deleteEventImage(
-        imagesToRemove,
-        imagesUrlToDelete
-      );
-
-      if (deleteImageResult?.error) {
+      if (deleteImageResponse?.error) {
         toast({
-          title: deleteImageResult.error,
+          title: deleteImageResponse.error,
           variant: 'destructive',
         });
         setLoading(false);
@@ -473,95 +352,68 @@ export function useEventCover({
       }
     }
 
-    // const newImages = eventImages.filter(image => image.url);
-    const formValueImages = formValue.images;
-    const formValueImagesArray = formValueImages
-      ? Array.from(formValueImages)
-      : [];
-    let awsImageUrl: string[] = [];
-
-    // const mergedImages = newImages
-    //   .map(newImage => {
-    //     const matchingFile = formValueImagesArray.find(
-    //       file => file.name === newImage.fileName
-    //     );
-    //     if (matchingFile) {
-    //       return {
-    //         ...newImage,
-    //         file: matchingFile,
-    //       };
-    //     }
-    //   })
-    //   .filter(item => item !== undefined);
-
-    if (formValue.images && formValue.images.length > 0) {
-      console.log({ formValue, eventImages });
-      console.log('uploadEventCoverImagesToAws', formValueImagesArray);
-
-      // const uploadResponse = await uploadEventCoverImagesToAws({
-      //   files: formValueImagesArray,
-      //   eventId: formValue.eventId,
-      // });
-      //
-      // if (uploadResponse?.error) {
-      //   toast({
-      //     title: uploadResponse.error,
-      //     variant: 'destructive',
-      //   });
-      //   setLoading(false);
-      //   return;
-      // }
-      // awsImageUrl = uploadResponse.uploadedImages ?? [];
+    if (imagesToDelete.url.length > 0) {
+      console.log('aws images to delete', imagesToDelete.url);
+      imagesToDelete.url.map(async imageUrl => {
+        const deleteImageResponse =
+          await deleteEventCoverImageFromAws(imageUrl);
+        if (deleteImageResponse?.error) {
+          toast({
+            title: deleteImageResponse.error,
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+      });
     }
 
-    if (awsImageUrl.length > 0) {
-      console.log('createing images for event');
-      // const createImagesResult = await createImagesForEvent({
-      //   eventId,
-      //   imageUrls: awsImageUrl,
-      // });
-      //
-      // if (createImagesResult?.error) {
-      //   toast({
-      //     title: createImagesResult.error,
-      //     variant: 'destructive',
-      //   });
-      //   setLoading(false);
-      //   return;
-      // }
+    if (data.message) {
+      const updateEventResponse = await updateEvent(eventId, {
+        coverMessage: message,
+      });
+
+      if (updateEventResponse?.error) {
+        toast({
+          title: updateEventResponse.error,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
     }
 
     toast({
-      title: 'La portada de tu evento fue actualizado correctamente. 🖼️🎉',
-      className: 'bg-white',
+      title: 'Event cover images updated successfully.',
+      variant: 'default',
     });
 
     setLoading(false);
   };
 
+  const handleReset = () => {
+    form.reset();
+  };
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
   const currentImages = [...existingImages, ...newImages, ...updatedImages];
 
   return {
+    currentImages,
     dirtyFields,
-    eventImages,
     fileInputRef,
     form,
-    handleAddImages,
+    formError,
     handleButtonClick,
-    handleRemoveImage,
-    handleReset,
-    hasChanges,
-    isDirty,
-    loading,
-    onSubmit,
-    setEventImages,
-
-    //new
     handleImageAdd,
     handleImageRemove,
     handleOnSubmit,
-    currentImages,
+    handleReset,
+    isDirty,
+    loading,
     slots,
-    formError,
   };
 }

@@ -51,10 +51,6 @@ export const BankDetailsFormSchema = z.object({
 export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>;
 
 export const EventCoverFormSchema = z.object({
-  eventId: z.string(),
-  images: z
-    .array(z.instanceof(File).nullable())
-    .max(6, { message: 'No puedes subir más de 6 archivos' }),
   message: z
     .string()
     .min(1, { message: 'El mensaje para tus invitados no puede estar vacío' })
