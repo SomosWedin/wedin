@@ -92,7 +92,7 @@ export function useEventCover({
     setExistingImages(imagesWithIsNew); // Set existing images to display
   }, [images]);
 
-  const handleImageAdd = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleAddImage = (event: ChangeEvent<HTMLInputElement>) => {
     setFormError(null);
 
     const files = Array.from(event.target.files || []);
@@ -106,45 +106,74 @@ export function useEventCover({
       return isValidType && isValidSize;
     });
 
-    if (validFiles.length !== files.length) {
-      setFormError('Some files were not valid and have been ignored.');
+    const invalidFiles = files.filter(file => !validFiles.includes(file));
+
+    let errorMessage = '';
+
+    if (invalidFiles.length > 0) {
+      errorMessage = 'Some files were not valid and have been ignored.';
     }
 
-    const currentImageCount =
+    const totalImagesCount =
       existingImages.length + newImages.length + updatedImages.length;
-    if (currentImageCount + validFiles.length > MAX_IMAGES) {
-      setFormError(`You can only upload up to ${MAX_IMAGES} images.`);
-      return;
+    const availableSlots = MAX_IMAGES - totalImagesCount;
+
+    if (availableSlots <= 0) {
+      // No slots available; cannot add any more images
+      errorMessage += ` You have reached the maximum number of images (${MAX_IMAGES}).`;
+    } else {
+      let filesToAdd: File[] = [];
+      let filesNotAdded: File[] = [];
+
+      if (validFiles.length > availableSlots) {
+        // Not all valid files can be added
+        filesToAdd = validFiles.slice(0, availableSlots);
+        filesNotAdded = validFiles.slice(availableSlots);
+      } else {
+        // All valid files can be added
+        filesToAdd = validFiles;
+      }
+
+      // Process files to add
+      const newImageEntries: NewImage[] = filesToAdd.map(file => ({
+        id: uuidv4(),
+        file,
+        url: URL.createObjectURL(file),
+        isNew: true, // New images have isNew: true
+      }));
+
+      if (replacedImages.length > 0) {
+        // If there are images marked for replacement, assign new images to replace them
+        const replacements: UpdatedImage[] = replacedImages.map(
+          (replacement, index) => {
+            const img = newImageEntries[index];
+            return {
+              ...img,
+              replaceId: replacement.id, // Associate with the existing DB image ID
+            };
+          }
+        );
+
+        setUpdatedImages(prev => [...prev, ...replacements]);
+        setReplacedImages([]); // Clear replacedImages after processing
+        newImageEntries.splice(0, replacements.length); // Remove used entries from newImageEntries
+      }
+
+      if (newImageEntries.length > 0) {
+        setNewImages(prev => [...prev, ...newImageEntries]);
+      }
+
+      if (filesNotAdded.length > 0) {
+        const fileNamesNotAdded = filesNotAdded.map(file => file.name);
+        errorMessage += ` You can only upload up to ${MAX_IMAGES} images. The following files were not added: ${fileNamesNotAdded.join(
+          ', '
+        )}.`;
+      }
     }
 
-    // Validate adding images end
-
-    const newImageEntries: NewImage[] = validFiles.map(file => ({
-      id: uuidv4(),
-      file,
-      url: URL.createObjectURL(file),
-      isNew: true, // New images have isNew: true
-    }));
-
-    if (replacedImages.length > 0) {
-      // If there are images marked for replacement, assign new images to replace them
-      const replacements: UpdatedImage[] = replacedImages.map(
-        (replacement, index) => {
-          const img = newImageEntries[index];
-          return {
-            ...img,
-            replaceId: replacement.id, // Associate with the existing DB image ID
-          };
-        }
-      );
-
-      setUpdatedImages(prev => [...prev, ...replacements]);
-      setReplacedImages([]); // Clear replacedImages after processing
-      newImageEntries.splice(0, replacements.length); // Remove used entries from newImageEntries
-    }
-
-    if (newImageEntries.length > 0) {
-      setNewImages(prev => [...prev, ...newImageEntries]);
+    // Set the form error if any
+    if (errorMessage) {
+      setFormError(errorMessage.trim());
     }
 
     // Clear the input value to allow selecting the same file again if needed
@@ -153,7 +182,7 @@ export function useEventCover({
     }
   };
 
-  const handleImageRemove = (id: string) => {
+  const handleRemoveImage = (id: string) => {
     setFormError(null); // Reset any form errors
 
     const imageToRemove =
@@ -406,8 +435,8 @@ export function useEventCover({
     form,
     formError,
     handleButtonClick,
-    handleImageAdd,
-    handleImageRemove,
+    handleAddImage,
+    handleRemoveImage,
     handleOnSubmit,
     handleReset,
     isDirty,

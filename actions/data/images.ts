@@ -69,6 +69,7 @@ export async function updateImage({
     return { success: true };
   } catch (error) {
     console.error('Error updating event image:', error);
+    console.error('imageId', imageId);
     return { error: 'Error updating event image' };
   }
 }

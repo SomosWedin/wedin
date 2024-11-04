@@ -26,15 +26,15 @@ type EventDetailsUpdateFormProps = {
 };
 
 const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
-  console.log({ event });
   const { images, coverMessage, id } = event;
   const {
     currentImages,
     fileInputRef,
     form,
+    formError,
     handleButtonClick,
-    handleImageAdd,
-    handleImageRemove,
+    handleAddImage,
+    handleRemoveImage,
     handleOnSubmit,
     handleReset,
     isDirty,
@@ -80,7 +80,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
                           size="xs"
                           variant="outline"
                           className="absolute top-0 right-0"
-                          onClick={() => handleImageRemove(eventImage.id)}
+                          onClick={() => handleRemoveImage(eventImage.id)}
                         >
                           <RxCross2 />
                         </Button>
@@ -93,6 +93,12 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
               })}
             </div>
 
+            {formError && (
+              <div style={{ color: 'red', marginBottom: '10px' }}>
+                {formError}
+              </div>
+            )}
+
             <FormItem>
               <FormControl>
                 <>
@@ -103,7 +109,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
                     accept="image/jpeg, image/png, image/heic, image/webp, image/svg+xml"
                     ref={fileInputRef}
                     onChange={event => {
-                      handleImageAdd(event);
+                      handleAddImage(event);
                     }}
                     multiple
                   />
