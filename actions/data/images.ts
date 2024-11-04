@@ -1,9 +1,10 @@
 'use server';
 
 import type { ErrorResponse } from '@/auth';
-import { PrismaClient } from '@prisma/client';
-import { deleteEventCoverImageFromAws } from '@/lib/s3';
 import { EventImage } from '@/hooks/dashboard/use-event-cover';
+import { deleteEventCoverImageFromAws } from '@/lib/s3';
+import { PrismaClient } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 
 const prismaClient = new PrismaClient();
 
@@ -43,6 +44,7 @@ export async function addImages({
     await prismaClient.image.createMany({
       data: imageData,
     });
+    revalidatePath('/event-details');
     return { success: true };
   } catch (error) {
     console.error('Error uploading event images:', error);
@@ -66,6 +68,7 @@ export async function updateImage({
       where: { id: imageId }, // Target the specific image by ID
       data: { url: imageUrl }, // Update the image URL
     });
+    revalidatePath('/event-details');
     return { success: true };
   } catch (error) {
     console.error('Error updating event image:', error);
@@ -83,6 +86,7 @@ export async function deleteImages({ imageIds }: { imageIds: string[] }) {
     await prismaClient.image.deleteMany({
       where: { id: { in: imageIds } }, // Delete all images with IDs in the provided array
     });
+    revalidatePath('/event-details');
     return { success: true };
   } catch (error) {
     console.error('Error deleting event images:', error);

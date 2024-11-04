@@ -22,6 +22,7 @@ export function capitalizeFirstLetter(string: string | undefined | null) {
 
 export async function computeSHA256(file: File) {
   if (!(file instanceof File)) {
+    console.log(file);
     throw new Error('Provided argument is not a File object.');
   }
   const buffer = await file.arrayBuffer();

@@ -45,11 +45,6 @@ interface DeletedImages {
   url: string[]; // URLs of images to delete from storage (e.g., AWS S3)
 }
 
-// interface RemainingImage {
-//   id: string;
-//   url: string;
-// }
-
 export type EventImage = {
   id: string;
   url: string | null;
@@ -70,6 +65,8 @@ export function useEventCover({
   const [updatedImages, setUpdatedImages] = useState<UpdatedImage[]>([]); // New images that replace existing ones
   const [replacedImages, setReplacedImages] = useState<{ id: string }[]>([]); // IDs of images marked for replacement
   const [formError, setFormError] = useState<string | null>(null); // Form-level error state
+  const [currentImages, setCurrentImages] = useState<BaseImage[]>([]);
+
   const slots = Array.from({ length: MAX_IMAGES });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -91,6 +88,10 @@ export function useEventCover({
     setInitialImages(imagesWithIsNew); // Store initial images for reference
     setExistingImages(imagesWithIsNew); // Set existing images to display
   }, [images]);
+
+  useEffect(() => {
+    setCurrentImages([...existingImages, ...newImages, ...updatedImages]);
+  }, [existingImages, newImages, updatedImages]);
 
   const handleAddImage = (event: ChangeEvent<HTMLInputElement>) => {
     setFormError(null);
@@ -144,19 +145,26 @@ export function useEventCover({
 
       if (replacedImages.length > 0) {
         // If there are images marked for replacement, assign new images to replace them
-        const replacements: UpdatedImage[] = replacedImages.map(
-          (replacement, index) => {
+        const numReplacements = Math.min(
+          replacedImages.length,
+          newImageEntries.length
+        );
+
+        const replacements: UpdatedImage[] = replacedImages
+          .slice(0, numReplacements)
+          .map((replacement, index) => {
             const img = newImageEntries[index];
             return {
               ...img,
               replaceId: replacement.id, // Associate with the existing DB image ID
             };
-          }
-        );
+          });
 
         setUpdatedImages(prev => [...prev, ...replacements]);
-        setReplacedImages([]); // Clear replacedImages after processing
-        newImageEntries.splice(0, replacements.length); // Remove used entries from newImageEntries
+
+        // Remove processed images from replacedImages and newImageEntries
+        setReplacedImages(prev => prev.slice(numReplacements));
+        newImageEntries.splice(0, numReplacements); // Remove used entries from newImageEntries
       }
 
       if (newImageEntries.length > 0) {
@@ -185,6 +193,7 @@ export function useEventCover({
   const handleRemoveImage = (id: string) => {
     setFormError(null); // Reset any form errors
 
+    // Find the image to remove in any of the arrays
     const imageToRemove =
       existingImages.find(img => img.id === id) ||
       newImages.find(img => img.id === id) ||
@@ -194,16 +203,18 @@ export function useEventCover({
 
     if (imageToRemove.isNew) {
       // Handle new image removal
-      // Check if it's in updatedImages (i.e., a replacement image)
-      const updatedImageIndex = updatedImages.findIndex(img => img.id === id);
-      if (updatedImageIndex !== -1) {
-        // It's a replacement image
-        const updatedImage = updatedImages[updatedImageIndex];
-        setReplacedImages(prev => [...prev, { id: updatedImage.replaceId }]); // Re-add the replaceId to replacedImages
-        setUpdatedImages(prev => prev.filter(img => img.id !== id)); // Remove from updatedImages
+      const newImagesIndex = newImages.findIndex(img => img.id === id);
+      if (newImagesIndex !== -1) {
+        // Remove from newImages
+        setNewImages(prev => prev.filter(img => img.id !== id));
       } else {
-        // It's a new image
-        setNewImages(prev => prev.filter(img => img.id !== id)); // Remove from newImages
+        // It's a replacement image
+        const updatedImageIndex = updatedImages.findIndex(img => img.id === id);
+        if (updatedImageIndex !== -1) {
+          const updatedImage = updatedImages[updatedImageIndex];
+          setReplacedImages(prev => [...prev, { id: updatedImage.replaceId }]); // Re-add the replaceId to replacedImages
+          setUpdatedImages(prev => prev.filter(img => img.id !== id)); // Remove from updatedImages
+        }
       }
       // Revoke the object URL to free up memory
       URL.revokeObjectURL(imageToRemove.url);
@@ -233,12 +244,6 @@ export function useEventCover({
       replaceId,
       tempId: id,
     }));
-
-    // Remaining images (unchanged)
-    // const remainingImages: RemainingImage[] = existingImages.map(img => ({
-    //   id: img.id,
-    //   url: img.url,
-    // }));
 
     // Identify images in replacedImages that were not replaced
     const replacedIds = updatedImages.map(img => img.replaceId);
@@ -287,9 +292,6 @@ export function useEventCover({
     //     'https://example.com/image2.jpg',
     //   ],
     // },
-    // remainingImages: [
-    //   { id: 'img3', url: 'https://example.com/image3.jpg' },
-    // ],
 
     if (newImagesToUpload.length > 0) {
       console.log('uploading new images', newImagesToUpload);
@@ -415,6 +417,11 @@ export function useEventCover({
       variant: 'default',
     });
 
+    setNewImages([]);
+    setUpdatedImages([]);
+    setReplacedImages([]);
+    setFormError(null);
+
     setLoading(false);
   };
 
@@ -425,8 +432,6 @@ export function useEventCover({
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
-
-  const currentImages = [...existingImages, ...newImages, ...updatedImages];
 
   return {
     currentImages,
