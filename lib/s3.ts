@@ -2,7 +2,7 @@ import { getSignedURL } from '@/actions/upload-to-s3';
 import { computeSHA256 } from './utils';
 
 type UploadImagesToAwsParams = {
-  files: File[]; 
+  files: File[];
   eventId: string;
 };
 
@@ -10,13 +10,8 @@ export const uploadEventCoverImagesToAws = async ({
   files,
   eventId,
 }: UploadImagesToAwsParams) => {
-
   if (files.length === 0) {
-    return { uploadedImages: [] }; 
-  }
-
-  if (files.length > 6) {
-    return { error: 'You must upload between 1 and 6 images.' };
+    return { uploadedImages: [] };
   }
 
   const uploadedImages: string[] = [];
@@ -56,10 +51,10 @@ export const uploadEventCoverImagesToAws = async ({
       return { error: awsImagePosting.statusText };
     }
 
-    uploadedImages.push(imageUrl);  
+    uploadedImages.push(imageUrl);
   }
 
-  return { uploadedImages };  
+  return { uploadedImages };
 };
 
 export const deleteEventCoverImageFromAws = async (imageUrl: string) => {

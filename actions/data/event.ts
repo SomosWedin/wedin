@@ -70,7 +70,7 @@ export const getEventById = async (
 export const updateEvent = async (
   eventId: string,
   data: {
-    coverMessage?: string | null;
+    coverMessage: string;
   }
 ) => {
   try {
@@ -80,6 +80,8 @@ export const updateEvent = async (
     if (data.coverMessage) {
       updateData.coverMessage = data.coverMessage;
     }
+
+    console.log(updateData);
 
     // Update other fields of the Event model
     const updatedEvent = await prismaClient.event.update({

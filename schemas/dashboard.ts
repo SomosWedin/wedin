@@ -51,7 +51,7 @@ export const BankDetailsFormSchema = z.object({
 export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>;
 
 export const EventCoverFormSchema = z.object({
-  message: z
+  coverMessage: z
     .string()
     .min(1, { message: 'El mensaje para tus invitados no puede estar vacío' })
     .min(3, {

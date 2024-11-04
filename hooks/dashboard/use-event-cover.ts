@@ -17,7 +17,7 @@ import { z } from 'zod';
 
 type EventCoverUpdateFormProps = {
   eventId: string;
-  message: string | null;
+  coverMessage: string | null;
   images: ImageModel[];
 };
 
@@ -60,7 +60,7 @@ const MAX_IMAGES = 6;
 
 export function useEventCover({
   eventId,
-  message,
+  coverMessage,
   images,
 }: EventCoverUpdateFormProps) {
   const [loading, setLoading] = useState(false);
@@ -74,12 +74,10 @@ export function useEventCover({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  console.log(message);
-
   const form = useForm({
     resolver: zodResolver(EventCoverFormSchema),
     defaultValues: {
-      message: message,
+      coverMessage: coverMessage ?? '',
     },
   });
   const { formState } = form;
@@ -368,9 +366,9 @@ export function useEventCover({
       });
     }
 
-    if (data.message) {
+    if (data.coverMessage) {
       const updateEventResponse = await updateEvent(eventId, {
-        coverMessage: message,
+        coverMessage: data.coverMessage,
       });
 
       if (updateEventResponse?.error) {

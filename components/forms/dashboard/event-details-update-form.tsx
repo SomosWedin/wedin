@@ -40,7 +40,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
     isDirty,
     loading,
     slots,
-  } = useEventCover({ eventId: id, message: coverMessage, images });
+  } = useEventCover({ eventId: id, coverMessage: coverMessage, images });
 
   return (
     <Form {...form}>
@@ -133,7 +133,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
           <div className="flex flex-col gap-6 items-end w-full sm:w-1/2">
             <FormField
               control={form.control}
-              name="message"
+              name="coverMessage"
               render={({ field }) => (
                 <FormItem className="w-full">
                   <FormControl>
