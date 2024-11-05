@@ -21,10 +21,9 @@ type EventCoverUpdateFormProps = {
   images: ImageModel[];
 };
 
-// Interfaces for image types
 interface BaseImage {
-  id: string; // IDs are strings for both existing and new images
-  url: string;
+  id: string; 
+  url: string | null;
 }
 
 interface ExistingImage extends BaseImage {
@@ -215,7 +214,9 @@ export function useEventCover({
         }
       }
       // Revoke the object URL to free up memory
-      URL.revokeObjectURL(imageToRemove.url);
+      if (imageToRemove.url) {
+        URL.revokeObjectURL(imageToRemove.url);
+      }
     } else {
       // Handle existing image removal
       setReplacedImages(prev => [...prev, { id }]); // Mark it for replacement
