@@ -8,22 +8,6 @@ import { revalidatePath } from 'next/cache';
 
 const prismaClient = new PrismaClient();
 
-export async function getEventImages(
-  eventId: string
-): Promise<string[] | ErrorResponse> {
-  try {
-    const images = await prismaClient.image.findMany({
-      where: { eventId },
-      select: { url: true },
-    });
-
-    return images.map(image => image.url);
-  } catch (error) {
-    console.error('Error getting event images:', error);
-    return { error: 'Error getting event images' };
-  }
-}
-
 export async function addImages({
   eventId,
   imageUrls,
