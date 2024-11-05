@@ -52,8 +52,8 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
           <div className="flex flex-col gap-2 w-full sm:w-1/2">
             <h2 className="text-xl font-medium">Fotos</h2>
             <p className="text-textTertiary">
-              Puedes subir hasta 6 fotos horizontales, con un peso máximo de 40
-              mb cada uno
+              Puedes subir hasta 6 fotos verticales, con un peso máximo de 40 mb
+              cada uno
             </p>
           </div>
 
@@ -99,32 +99,28 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
               </div>
             )}
 
-            <FormItem>
-              <FormControl>
-                <>
-                  <input
-                    id="imageUpload"
-                    type="file"
-                    className="hidden"
-                    accept="image/jpeg, image/png, image/heic, image/webp, image/svg+xml"
-                    ref={fileInputRef}
-                    onChange={event => {
-                      handleAddImage(event);
-                    }}
-                    multiple
-                  />
-                  <Button
-                    type="button"
-                    variant="success"
-                    onClick={handleButtonClick}
-                  >
-                    Subir imagen
-                    <MdOutlineFileUpload className="text-xl" />
-                  </Button>
-                </>
-              </FormControl>
-              <FormMessage className="font-normal text-red-600" />
-            </FormItem>
+            <>
+              <input
+                id="imageUpload"
+                type="file"
+                className="hidden"
+                accept="image/jpeg, image/png, image/heic, image/webp, image/svg+xml"
+                ref={fileInputRef}
+                onChange={event => {
+                  handleAddImage(event);
+                }}
+                multiple
+              />
+              <Button
+                type="button"
+                variant="success"
+                onClick={handleButtonClick}
+                disabled={currentImages.length >= 6}
+              >
+                Subir imagen
+                <MdOutlineFileUpload className="text-xl ml-2" />
+              </Button>
+            </>
           </div>
         </div>
 

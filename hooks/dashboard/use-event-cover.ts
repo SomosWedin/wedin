@@ -112,7 +112,7 @@ export function useEventCover({
     let errorMessage = '';
 
     if (invalidFiles.length > 0) {
-      errorMessage = 'Some files were not valid and have been ignored.';
+      errorMessage = 'Algunos archivos no son válidos y han sido ignorados.';
     }
 
     const totalImagesCount =
@@ -121,7 +121,7 @@ export function useEventCover({
 
     if (availableSlots <= 0) {
       // No slots available; cannot add any more images
-      errorMessage += ` You have reached the maximum number of images (${MAX_IMAGES}).`;
+      errorMessage += `Has llegado al límite permitido de imágenes (${MAX_IMAGES}).`;
     } else {
       let filesToAdd: File[] = [];
       let filesNotAdded: File[] = [];
@@ -173,9 +173,7 @@ export function useEventCover({
 
       if (filesNotAdded.length > 0) {
         const fileNamesNotAdded = filesNotAdded.map(file => file.name);
-        errorMessage += ` You can only upload up to ${MAX_IMAGES} images. The following files were not added: ${fileNamesNotAdded.join(
-          ', '
-        )}.`;
+        errorMessage += `Puedes subir hasta ${MAX_IMAGES} imágenes. Los siguientes archivos no fueron añadidos: ${fileNamesNotAdded.join(',')}`;
       }
     }
 
@@ -413,8 +411,7 @@ export function useEventCover({
     }
 
     toast({
-      title: 'Event cover images updated successfully.',
-      variant: 'default',
+      title: 'La portada del evento se actualizó con éxito. 📸',
     });
 
     setNewImages([]);
