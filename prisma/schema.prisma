@@ -82,7 +82,6 @@ model Event {
   primaryUserId    String    @db.ObjectId
   date             DateTime?
   coverMessage     String?
-  coverImageUrl    String?
   url              String?   @unique
   wishlistId       String    @db.ObjectId
   createdAt        DateTime  @default(now())
@@ -94,15 +93,16 @@ model Event {
   guests           String?
   hasPYbankAccount Boolean   @default(false)
 
-  wishlist           Wishlist     @relation(fields: [wishlistId], references: [id])
-  eventPrimaryUser   User         @relation("primaryUser", fields: [primaryUserId], references: [id])
- 
-  bankDetails        BankDetails?
+  wishlist         Wishlist @relation(fields: [wishlistId], references: [id])
+  eventPrimaryUser User     @relation("primaryUser", fields: [primaryUserId], references: [id])
+
+  bankDetails BankDetails?
 
   wishlistGifts WishlistGift[]
   transactions  Transaction[]
   gifts         Gift[]
   giftAmounts   String[]
+  images        Image[]
 
   @@unique([wishlistId])
   @@unique([primaryUserId])
@@ -139,7 +139,6 @@ model Gift {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   name            String
   price           String
-  imageUrl        String?
   isDefault       Boolean  @default(false)
   isEditedVersion Boolean  @default(false)
   categoryId      String   @db.ObjectId
@@ -152,6 +151,7 @@ model Gift {
   giftlist      Giftlist?      @relation(fields: [giftlistId], references: [id])
   event         Event?         @relation(fields: [eventId], references: [id])
   wishlistGifts WishlistGift[]
+  image         Image?
 }
 
 model WishlistGift {
@@ -249,11 +249,15 @@ model PasswordResetToken {
 }
 
 model Image {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  url           String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  transactionId String?  @db.ObjectId
-
-  transaction Transaction? @relation(fields: [transactionId], references: [id])
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  url           String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  transactionId String?      @db.ObjectId
+  eventId       String?      @db.ObjectId
+  giftId        String?      @unique @db.ObjectId
+  giftlistId    String?      @db.ObjectId
+  Transaction   Transaction? @relation(fields: [transactionId], references: [id])
+  Event         Event?       @relation(fields: [eventId], references: [id])
+  Gift          Gift?        @relation(fields: [giftId], references: [id])
 }

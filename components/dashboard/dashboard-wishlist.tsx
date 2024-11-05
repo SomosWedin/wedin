@@ -5,7 +5,7 @@ import { IoGiftOutline } from 'react-icons/io5';
 
 export default function DashboardWishlist() {
   return (
-    <div className="w-full h-screen flex justify-center items-center px-10 flex-col gap-8">
+    <div className="w-full h-full flex justify-center items-center flex-col gap-8">
       <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-200 pb-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-black">Mi lista de regalos</h1>

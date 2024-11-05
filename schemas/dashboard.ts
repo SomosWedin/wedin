@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z, type ZodType } from 'zod';
 
 export const EventUserUpdateSchema = z.object({
   eventDate: z.date().optional(),
@@ -48,5 +48,18 @@ export const BankDetailsFormSchema = z.object({
   razonSocial: z.string().optional(),
   ruc: z.string().optional(),
 });
-
 export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>;
+
+export const EventCoverFormSchema = z.object({
+  coverMessage: z
+    .string()
+    .min(1, { message: 'El mensaje para tus invitados no puede estar vacío' })
+    .min(3, {
+      message:
+        'El mensaje para tus invitados debe contener al menos 3 caracteres',
+    })
+    .max(255, {
+      message:
+        'El mensaje para tus invitados debe contener un máximo de 255 caracteres',
+    }),
+});

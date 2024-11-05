@@ -1,12 +1,17 @@
 'use server';
 
-import type { ErrorResponse } from '@/lib/auth';
-import { PrismaClient, Event } from '@prisma/client';
 import { getCurrentUser } from '@/actions/get-current-user';
+import type { ErrorResponse } from '@/auth';
+import { Event, Image as ImageModel, PrismaClient } from '@prisma/client';
 
 const prismaClient = new PrismaClient();
 
-export const getEvent = async (): Promise<Event | ErrorResponse> => {
+export const getEvent = async (): Promise<
+  | (Event & {
+      images: ImageModel[];
+    })
+  | ErrorResponse
+> => {
   const user = await getCurrentUser();
 
   if (!user)
@@ -19,6 +24,9 @@ export const getEvent = async (): Promise<Event | ErrorResponse> => {
   try {
     const event = await prismaClient.event.findUnique({
       where: { primaryUserId: userId },
+      include: {
+        images: true,
+      },
     });
 
     if (!event) {
@@ -61,15 +69,27 @@ export const getEventById = async (
 
 export const updateEvent = async (
   eventId: string,
-  data: Partial<Event>
-): Promise<Event | ErrorResponse> => {
+  data: {
+    coverMessage: string;
+  }
+) => {
   try {
+    const updateData: Partial<Event> = {};
+
+    // If coverMessage is provided, update it
+    if (data.coverMessage) {
+      updateData.coverMessage = data.coverMessage;
+    }
+
+    console.log(updateData);
+
+    // Update other fields of the Event model
     const updatedEvent = await prismaClient.event.update({
       where: { id: eventId },
-      data,
+      data: updateData,
     });
 
-    return updatedEvent;
+    return { success: updatedEvent };
   } catch (error) {
     console.error('Error updating event:', error);
     return {

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { auth } from '@/lib/auth';
+import { auth } from '@/auth';
 import { SessionProvider } from 'next-auth/react';
 import { Toaster } from '@/components/ui/toaster';
 import Provider from '@/utils/Provider';

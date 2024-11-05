@@ -1,14 +1,10 @@
-import dynamic from 'next/dynamic';
-const Sidebar = dynamic(() => import('@/components/sidebar/sidebar'), { ssr: false });
-import DashboardRouter from '../components/router';
+import { ContentLayout } from "@/components/admin-panel/content-layout";
+import DashboardHome from '@/components/dashboard/dashboard-home';
 
 export default function DashboardPage() {
   return (
-    <>
-      <div className='hidden md:block'>
-        <Sidebar />
-      </div>
-      <DashboardRouter />
-    </>
+    <ContentLayout title="Inicio">
+      <DashboardHome />
+    </ContentLayout>
   );
 }
