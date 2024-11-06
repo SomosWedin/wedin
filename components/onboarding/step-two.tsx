@@ -15,7 +15,7 @@ import Image from 'next/image';
 import OnboardingStepper from './stepper';
 import illustration from '@/public/assets/onb-step-two-icon.svg';
 import wedinIcon from '@/public/assets/w-icon.svg';
-import { useOnboarding } from './context';
+import { useOnboarding } from '../../app/onboarding/context';
 import { EventType } from '@prisma/client';
 
 export default function StepTwo() {
@@ -28,7 +28,9 @@ export default function StepTwo() {
 
       <div className="flex flex-col gap-4 text-center">
         <h1 className="text-textSecondary text-2xl font-medium">
-          ¿Cómo se llaman los protagonistas del evento?
+          {eventType === EventType.WEDDING
+            ? '¿Cómo se llaman los protagonistas del evento?'
+            : '¿Cómo te llamas?'}
         </h1>
         <p className="text-secondary400">
           Este nombre será visible en tu página personalizada

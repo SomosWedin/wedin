@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { stepOne } from '@/actions/onboarding/step-one';
 import { EventType } from '@prisma/client';
 import { useToast } from '@/hooks/use-toast';
-import { useOnboarding } from '@/app/(onboarding)/components/context';
+import { useOnboarding } from '@/app/onboarding/context';
 
 export const useOnbStepOne = () => {
   const { toast } = useToast();
