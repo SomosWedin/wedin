@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { stepFive } from '@/actions/onboarding/step-five';
 import { useToast } from '@/hooks/use-toast';
-import { useOnboarding } from '@/app/(onboarding)/components/context';
+import { useOnboarding } from '@/app/onboarding/context';
 
 export const useOnbStepFive = () => {
   const { toast } = useToast();

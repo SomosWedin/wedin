@@ -3,19 +3,21 @@
 import React from 'react';
 import { OnboardingProvider, useOnboarding } from './context';
 import type { User } from '@prisma/client';
-import StepOne from './step-one';
-import StepTwo from './step-two';
-import StepThree from './step-three';
-import StepFour from './step-four';
-import StepFive from './step-five';
-import StepSix from './step-six';
+import StepOne from '@/components/onboarding/step-one';
+import StepTwo from '@/components/onboarding/step-two';
+import StepThree from '@/components/onboarding/step-three';
+import StepFour from '@/components/onboarding/step-four';
+import StepFive from '@/components/onboarding/step-five';
+import StepSix from '@/components/onboarding/step-six';
 
 type OnboardingControllerProps = {
   currentUser?: User | null;
 };
 
 // TODO: change controller naming to something more appropriate
-export default function OnboardingController({ currentUser }: OnboardingControllerProps) {
+export default function OnboardingController({
+  currentUser,
+}: OnboardingControllerProps) {
   return (
     <OnboardingProvider currentUser={currentUser}>
       <OnboardingSteps />

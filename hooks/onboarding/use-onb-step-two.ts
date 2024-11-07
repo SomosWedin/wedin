@@ -5,7 +5,7 @@ import { StepTwoSchema } from '@/schemas/onboarding';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
-import { useOnboarding } from '@/app/(onboarding)/components/context';
+import { useOnboarding } from '@/app/onboarding/context';
 
 export const useOnbStepTwo = () => {
   const { toast } = useToast();
