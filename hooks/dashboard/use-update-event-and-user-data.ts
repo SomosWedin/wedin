@@ -28,6 +28,7 @@ export function useUpdateEventAndUserData({
     resolver: zodResolver(EventUserUpdateSchema),
     defaultValues: {
       eventDate: date || undefined,
+      eventType: eventType || '',
       name: name || '',
       lastName: lastName || '',
       partnerName: '',
@@ -50,6 +51,11 @@ export function useUpdateEventAndUserData({
       console.error('Error updating event and user data:', error);
       return;
     }
+
+    toast({
+      title: 'El evento y usuario se actualizó con éxito. 📅',
+    });
+    setLoading(false);
   };
 
   return {
