@@ -1,7 +1,7 @@
 'use server';
 
 import type { ErrorResponse } from '@/auth';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 const prismaClient = new PrismaClient();
 
 export const getUserByEmail = async (
@@ -46,23 +46,32 @@ export const updateVerifiedOn = async (email: string) => {
 
 export const updateUserById = async (
   userId: string,
-  name: string,
-  lastName: string,
-  onboardingStep: number
+  name?: string,
+  lastName?: string,
+  onboardingStep?: number
 ) => {
   try {
-    await prismaClient.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        name: name,
-        lastName: lastName,
-        onboardingStep: onboardingStep,
-      },
+    const updateData: Partial<User> = {};
+
+    if (name) {
+      updateData.name = name;
+    }
+    if (lastName) {
+      updateData.lastName = lastName;
+    }
+    if (onboardingStep) {
+      updateData.onboardingStep = onboardingStep;
+    }
+
+    const updatedUser = await prismaClient.user.update({
+      where: { id: userId },
+      data: updateData,
     });
+
+    return { success: updatedUser };
   } catch (error) {
-    return null;
+    console.error('Error updating user:', error);
+    return { error: 'Error updating user' };
   }
 };
 

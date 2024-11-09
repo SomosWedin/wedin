@@ -70,20 +70,21 @@ export const getEventById = async (
 export const updateEvent = async (
   eventId: string,
   data: {
-    coverMessage: string;
+    coverMessage?: string;
+    date?: Date;
   }
 ) => {
   try {
     const updateData: Partial<Event> = {};
 
-    // If coverMessage is provided, update it
     if (data.coverMessage) {
       updateData.coverMessage = data.coverMessage;
     }
 
-    console.log(updateData);
+    if (data.date) {
+      updateData.date = data.date;
+    }
 
-    // Update other fields of the Event model
     const updatedEvent = await prismaClient.event.update({
       where: { id: eventId },
       data: updateData,

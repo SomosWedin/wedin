@@ -1,7 +1,8 @@
-import { z, type ZodType } from 'zod';
+import { z } from 'zod';
 
 export const EventUserUpdateSchema = z.object({
   eventDate: z.date().optional(),
+  eventType: z.string().min(1, { message: 'El tipo de evento es requerido' }),
   name: z
     .string()
     .min(1, { message: 'Tu nombre no puede estar vacío' })
@@ -16,13 +17,43 @@ export const EventUserUpdateSchema = z.object({
     .string()
     .min(1, { message: 'El nombre de tu pareja no puede estar vacío' })
     .min(2, { message: 'Nombre muy corto' })
-    .max(255, { message: 'Nombre muy largo' }),
+    .max(255, { message: 'Nombre muy largo' })
+    .optional(),
   partnerLastName: z
     .string()
     .min(1, { message: 'El apellido de tu pareja no puede estar vacío' })
     .min(2, { message: 'Apellido muy corto' })
-    .max(255, { message: 'Apellido muy largo' }),
-  partnerEmail: z.string().email({ message: 'Email no válido' }),
+    .max(255, { message: 'Apellido muy largo' })
+    .optional(),
+  partnerEmail: z
+    .string()
+    .email({ message: 'Email no válido' })
+    .optional(),
+}).superRefine((data, ctx) => {
+  // Only require partner fields if the eventType is 'wedding'
+  if (data.eventType === 'WEDDING') {
+    if (!data.partnerName) {
+      ctx.addIssue({
+        path: ['partnerName'],
+        message: 'El nombre de tu pareja es obligatorio para este tipo de evento',
+        code: z.ZodIssueCode.custom,
+      });
+    }
+    if (!data.partnerLastName) {
+      ctx.addIssue({
+        path: ['partnerLastName'],
+        message: 'El apellido de tu pareja es obligatorio para este tipo de evento',
+        code: z.ZodIssueCode.custom,
+      });
+    }
+    if (!data.partnerEmail) {
+      ctx.addIssue({
+        path: ['partnerEmail'],
+        message: 'El email de tu pareja es obligatorio para este tipo de evento',
+        code: z.ZodIssueCode.custom,
+      });
+    }
+  }
 });
 
 export const BankDetailsFormSchema = z.object({
