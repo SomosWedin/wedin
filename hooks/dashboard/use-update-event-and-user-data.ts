@@ -4,7 +4,7 @@ import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { updateEvent } from '@/actions/data/event';
 import { updateUserById } from '@/actions/data/user';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { EventUserUpdateSchema } from '@/schemas/dashboard';
+import { UpdateEventAndUserFormSchema } from '@/schemas/dashboard';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
@@ -24,10 +24,10 @@ export function useUpdateEventAndUserData({
   const { id, date, eventType, partnerName } = event;
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof EventUserUpdateSchema>>({
-    resolver: zodResolver(EventUserUpdateSchema),
+  const form = useForm<z.infer<typeof UpdateEventAndUserFormSchema>>({
+    resolver: zodResolver(UpdateEventAndUserFormSchema),
     defaultValues: {
-      eventDate: date || undefined,
+      eventDate: date || new Date(),
       eventType: eventType || '',
       name: name || '',
       lastName: lastName || '',
@@ -39,9 +39,23 @@ export function useUpdateEventAndUserData({
   const { isDirty } = form.formState;
 
   const onSubmit: SubmitHandler<
-    z.infer<typeof EventUserUpdateSchema>
+    z.infer<typeof UpdateEventAndUserFormSchema>
   > = async values => {
     setLoading(true);
+
+    const validatedFields = UpdateEventAndUserFormSchema.safeParse(values);
+
+    if (!validatedFields.success) {
+      toast({
+        title: 'Error en los campos del formulario',
+        description: validatedFields.error.errors
+          .map(err => err.message)
+          .join(', '),
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       await updateEvent(id, { date: values.eventDate });
