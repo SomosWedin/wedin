@@ -22,10 +22,17 @@ export const getEvent = async (): Promise<
   const userId = user.id;
 
   try {
-    const event = await prismaClient.event.findUnique({
-      where: { primaryUserId: userId },
+    const event = await prismaClient.event.findFirst({
+      where: {
+        users: {
+          some: {
+            id: userId,
+          },
+        },
+      },
       include: {
         images: true,
+        users: true,
       },
     });
 

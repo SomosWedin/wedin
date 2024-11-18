@@ -21,7 +21,7 @@ export const stepThree = async (values: z.infer<typeof StepThreeSchema>) => {
   try {
     await prismaClient.event.update({
       where: {
-        primaryUserId: session.user.id,
+        id: session.user.eventId,
       },
       data: {
         country: eventCountry,

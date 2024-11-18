@@ -22,6 +22,32 @@ export const getUserByEmail = async (
   }
 };
 
+export const getSecondaryUser = async (
+  primaryUserId: string,
+  eventId: string
+): Promise<User | ErrorResponse> => {
+  try {
+    const secondaryUser = await prismaClient.user.findFirst({
+      where: {
+        id: {
+          not: primaryUserId,
+        },
+        eventId: {
+          equals: eventId,
+        },
+      },
+    });
+
+    if (!secondaryUser) {
+      return { error: 'Secondary event user not found' };
+    }
+
+    return secondaryUser;
+  } catch (error) {
+    return { error: 'Error getting secondary event user' };
+  }
+};
+
 export const getLoginUserByEmail = async (email: string) => {
   try {
     return await prismaClient.user.findUnique({
@@ -48,20 +74,16 @@ export const updateUserById = async (
   userId: string,
   name?: string,
   lastName?: string,
+  email?: string,
   onboardingStep?: number
 ) => {
   try {
     const updateData: Partial<User> = {};
 
-    if (name) {
-      updateData.name = name;
-    }
-    if (lastName) {
-      updateData.lastName = lastName;
-    }
-    if (onboardingStep) {
-      updateData.onboardingStep = onboardingStep;
-    }
+    name && (updateData.name = name);
+    lastName && (updateData.lastName = lastName);
+    onboardingStep && (updateData.onboardingStep = onboardingStep);
+    email && (updateData.email = email);
 
     const updatedUser = await prismaClient.user.update({
       where: { id: userId },

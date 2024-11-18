@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { getEvent } from '@/actions/data/event';
 import { getCurrentUser } from '@/actions/get-current-user';
+import { getSecondaryUser } from '@/actions/data/user';
 import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
 
 const DashboardEventSettingsForm = lazy(
@@ -15,6 +16,12 @@ export default async function DashboardEventSettings() {
     return <div>Error</div>;
   }
 
+  const secondaryEventUser = await getSecondaryUser(currentUser?.id, event?.id);
+
+  if (!secondaryEventUser || 'error' in secondaryEventUser) {
+    return <div>Error</div>;
+  }
+
   return (
     <section className="w-full h-full flex flex-col gap-8 sm:gap-12 justify-start items-center">
       <div className="w-full flex flex-col gap-4 border-b border-gray-200 pb-6">
@@ -26,7 +33,11 @@ export default async function DashboardEventSettings() {
       </div>
 
       <Suspense fallback={<DashboardSettingsSkeleton />}>
-        <DashboardEventSettingsForm event={event} currentUser={currentUser} />
+        <DashboardEventSettingsForm
+          event={event}
+          currentUser={currentUser}
+          secondaryEventUser={secondaryEventUser}
+        />
       </Suspense>
     </section>
   );

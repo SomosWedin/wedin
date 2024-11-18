@@ -17,6 +17,7 @@ declare module 'next-auth' {
       isOnboarded: boolean;
       role?: string;
       isExistingUser?: boolean;
+      eventId?: string;
     } & DefaultSession['user'];
   }
 }
@@ -26,6 +27,7 @@ declare module 'next-auth/jwt' {
     isOnboarded: boolean;
     role: string;
     isExistingUser?: boolean;
+    eventId: string;
     id: string;
   }
 }
@@ -54,7 +56,7 @@ export const {
       if (account && account.type !== 'credentials') return true;
 
       const existingUser = await getUserByEmail(user.email);
-      
+
       if (!existingUser || !existingUser.emailVerified) {
         return true;
       }
@@ -68,6 +70,7 @@ export const {
         session.user.role = token.role;
         session.user.isOnboarded = token.isOnboarded;
         session.user.id = token.id;
+        session.user.eventId = token.eventId;
       }
 
       return session;
@@ -94,6 +97,7 @@ export const {
       token.role = response.role;
       token.isExistingUser = true;
       token.id = response.id;
+      token.eventId = response.eventId;
 
       return token;
     },

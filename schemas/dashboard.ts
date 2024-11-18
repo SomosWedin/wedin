@@ -3,11 +3,10 @@ import { EventType } from '@prisma/client';
 
 export const UpdateEventAndUserFormSchema = z
   .object({
-    eventDate: z
-      .date()
-      .refine(val => val instanceof Date && !isNaN(val.getTime()), {
-        message: 'La fecha del evento no puede estar vacía ni ser inválida',
-      }),
+    eventDate: z.date({
+      required_error: 'Debes seleccionar una fecha',
+      invalid_type_error: '¡Eso no es una fecha!',
+    }),
     eventType: z.string(),
     name: z
       .string()
@@ -17,21 +16,12 @@ export const UpdateEventAndUserFormSchema = z
       .string()
       .min(1, { message: 'Tu apellido no puede estar vacío' })
       .max(255, { message: 'Apellido muy largo' }),
-    partnerName: z
-      .string()
-      .min(1, { message: 'El nombre de tu pareja no puede estar vacío' })
-      .max(255, { message: 'Nombre muy largo' })
-      .optional(),
-    partnerLastName: z
-      .string()
-      .min(1, { message: 'El apellido de tu pareja no puede estar vacío' })
-      .max(255, { message: 'Apellido muy largo' })
-      .optional(),
+    partnerName: z.string(),
+    partnerLastName: z.string(),
     partnerEmail: z
       .string()
-      .min(1, { message: 'El email de tu pareja no puede estar vacío' })
-      .email({ message: 'Email no válido' })
-      .optional(),
+      .min(1, { message: 'Email de tu pareja no puede estar vacio' })
+      .email({ message: 'Email de tu pareja no válido' }),
   })
   .superRefine((data, ctx) => {
     if (data.eventType === EventType.WEDDING) {

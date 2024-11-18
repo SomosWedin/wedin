@@ -30,16 +30,20 @@ import { FaCheck } from 'react-icons/fa6';
 type DashboardEventSettingsFormProps = {
   event: Event;
   currentUser: User;
+  secondaryEventUser?: User;
 };
 
 export default function DashboardEventSettingsForm({
   event,
   currentUser,
+  secondaryEventUser,
 }: DashboardEventSettingsFormProps) {
-  const { loading, form, onSubmit, isDirty } = useUpdateEventAndUserData({
-    event,
-    currentUser,
-  });
+  const { loading, form, onSubmit, isDirty, isValid } =
+    useUpdateEventAndUserData({
+      event,
+      currentUser,
+      secondaryEventUser,
+    });
 
   return (
     <Form {...form}>
@@ -129,7 +133,7 @@ export default function DashboardEventSettingsForm({
             <Label>Email</Label>
             <Input
               type="email"
-              placeholder={currentUser.email ? currentUser.email : ''}
+              placeholder={currentUser.email || ''}
               disabled
             />
           </div>
