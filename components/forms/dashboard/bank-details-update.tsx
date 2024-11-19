@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import {
   Form,
@@ -17,7 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Combobox } from '@/components/ui/combobox';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import type { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { bankEntitiesPY } from '@/lib/bank-entities-py';
@@ -34,8 +36,9 @@ export default function DashboardBankDetailsUpdateForm({
   eventId,
   bankDetails,
 }: BankDetailsFormProps) {
-  const form = useForm({
-    resolver: zodResolver(BankDetailsFormSchema),
+  const form = useForm<z.infer<typeof BankDetailsFormSchema>>({
+    // resolver: zodResolver(BankDetailsFormSchema),
+    mode: 'all',
     defaultValues: {
       eventId: eventId ?? '',
       bankName: bankDetails?.bankName ?? '',
@@ -213,7 +216,11 @@ export default function DashboardBankDetailsUpdateForm({
             <FormItem className="max-w-sm">
               <FormLabel>Razón social</FormLabel>
               <FormControl>
-                <Input placeholder="Nombre y apellido" className="!mt-1.5" {...field} />
+                <Input
+                  placeholder="Nombre y apellido"
+                  className="!mt-1.5"
+                  {...field}
+                />
               </FormControl>
               <FormMessage className="font-normal text-red-600" />
             </FormItem>

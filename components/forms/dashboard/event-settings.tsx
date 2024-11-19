@@ -30,7 +30,7 @@ import { FaCheck } from 'react-icons/fa6';
 type DashboardEventSettingsFormProps = {
   event: Event;
   currentUser: User;
-  secondaryEventUser?: User;
+  secondaryEventUser?: User | null;
 };
 
 export default function DashboardEventSettingsForm({
@@ -152,6 +152,7 @@ export default function DashboardEventSettingsForm({
                       placeholder="Crisley"
                       className="!mt-1.5"
                       {...field}
+                      value={field.value ?? ''}
                     />
                   </FormControl>
                   <FormMessage className="font-normal text-red-600" />
@@ -170,6 +171,7 @@ export default function DashboardEventSettingsForm({
                       placeholder="Dominguez"
                       className="!mt-1.5"
                       {...field}
+                      value={field.value ?? ''}
                     />
                   </FormControl>
                   <FormMessage className="font-normal text-red-600" />
@@ -188,6 +190,7 @@ export default function DashboardEventSettingsForm({
                       placeholder="crisley@wedin.app"
                       className="!mt-1.5"
                       {...field}
+                      value={field.value ?? ''}
                     />
                   </FormControl>
                   <FormMessage className="font-normal text-red-600" />
@@ -202,7 +205,7 @@ export default function DashboardEventSettingsForm({
             type="submit"
             variant="success"
             className="gap-2 w-60"
-            disabled={loading || !isDirty}
+            disabled={loading || !isDirty || !isValid}
           >
             Guardar
             {loading ? (

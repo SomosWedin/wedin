@@ -1,4 +1,11 @@
 import { Suspense, lazy } from 'react';
+import { getEvent } from '@/actions/data/event';
+import { getCurrentUser } from '@/actions/get-current-user';
+import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
+
+const DashboardBankDetailsUpdateForm = lazy(
+  () => import('@/components/forms/dashboard/bank-details-update')
+);
 
 export default function DashboardBankDetails() {
   return (
@@ -10,7 +17,9 @@ export default function DashboardBankDetails() {
         </p>
       </div>
 
-      <Suspense fallback={<div>loading...</div>}>hello world</Suspense>
+      <Suspense fallback={<DashboardSettingsSkeleton />}>
+        <DashboardBankDetailsUpdateForm />
+      </Suspense>
     </section>
   );
 }

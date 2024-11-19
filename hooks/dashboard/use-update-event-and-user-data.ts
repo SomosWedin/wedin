@@ -13,7 +13,7 @@ import { Event, User, EventType } from '@prisma/client';
 type UseUpdateEventAndUserDataProps = {
   event: Event;
   currentUser: User;
-  secondaryEventUser?: User;
+  secondaryEventUser?: User | null;
 };
 
 export function useUpdateEventAndUserData({
@@ -21,7 +21,6 @@ export function useUpdateEventAndUserData({
   currentUser,
   secondaryEventUser,
 }: UseUpdateEventAndUserDataProps) {
-  console.log('event', secondaryEventUser);
   const [loading, setLoading] = useState(false);
   const { name, lastName } = currentUser;
   const { id, date, eventType } = event;
@@ -34,16 +33,17 @@ export function useUpdateEventAndUserData({
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof UpdateEventAndUserFormSchema>>({
-    // resolver: zodResolver(UpdateEventAndUserFormSchema),
+    resolver: zodResolver(UpdateEventAndUserFormSchema),
     mode: 'all',
     defaultValues: {
       eventDate: date || undefined,
-      eventType: eventType || '',
+      eventType: eventType,
       name: name || '',
       lastName: lastName || '',
-      partnerName: partnerName || '',
-      partnerLastName: partnerLastName || '',
-      partnerEmail: partnerEmail || '',
+      partnerName: eventType === EventType.WEDDING ? partnerName || '' : null,
+      partnerLastName:
+        eventType === EventType.WEDDING ? partnerLastName || '' : null,
+      partnerEmail: eventType === EventType.WEDDING ? partnerEmail || '' : null,
     },
   });
   const { isDirty, isValid } = form.formState;
@@ -51,7 +51,6 @@ export function useUpdateEventAndUserData({
   const onSubmit: SubmitHandler<
     z.infer<typeof UpdateEventAndUserFormSchema>
   > = async values => {
-    console.log('values', values);
     setLoading(true);
 
     const validatedFields = UpdateEventAndUserFormSchema.safeParse(values);
@@ -72,14 +71,19 @@ export function useUpdateEventAndUserData({
     try {
       await updateEvent(id, { date: values.eventDate });
       await updateUserById(currentUser.id, values.name, values.lastName);
-      if (partnerId) {
+      if (
+        partnerId &&
+        values.partnerName &&
+        values.partnerLastName &&
+        values.partnerEmail
+      ) {
         await updateUserById(
           partnerId,
           values.partnerName,
-          values.partnerLastName
+          values.partnerLastName,
+          values.partnerEmail
         );
       }
-      console.log('Event and user data updated');
     } catch (error) {
       console.error('Error updating event and user data:', error);
       return;

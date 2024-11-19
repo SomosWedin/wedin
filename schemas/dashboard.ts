@@ -16,12 +16,12 @@ export const UpdateEventAndUserFormSchema = z
       .string()
       .min(1, { message: 'Tu apellido no puede estar vacío' })
       .max(255, { message: 'Apellido muy largo' }),
-    partnerName: z.string(),
-    partnerLastName: z.string(),
+    partnerName: z.string().nullable(),
+    partnerLastName: z.string().nullable(),
     partnerEmail: z
       .string()
-      .min(1, { message: 'Email de tu pareja no puede estar vacio' })
-      .email({ message: 'Email de tu pareja no válido' }),
+      .email({ message: 'Email de tu pareja no válido' })
+      .nullable(),
   })
   .superRefine((data, ctx) => {
     if (data.eventType === EventType.WEDDING) {
