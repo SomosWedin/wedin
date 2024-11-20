@@ -22,10 +22,17 @@ export const getEvent = async (): Promise<
   const userId = user.id;
 
   try {
-    const event = await prismaClient.event.findUnique({
-      where: { primaryUserId: userId },
+    const event = await prismaClient.event.findFirst({
+      where: {
+        users: {
+          some: {
+            id: userId,
+          },
+        },
+      },
       include: {
         images: true,
+        users: true,
       },
     });
 
@@ -70,20 +77,21 @@ export const getEventById = async (
 export const updateEvent = async (
   eventId: string,
   data: {
-    coverMessage: string;
+    coverMessage?: string;
+    date?: Date;
   }
 ) => {
   try {
     const updateData: Partial<Event> = {};
 
-    // If coverMessage is provided, update it
     if (data.coverMessage) {
       updateData.coverMessage = data.coverMessage;
     }
 
-    console.log(updateData);
+    if (data.date) {
+      updateData.date = data.date;
+    }
 
-    // Update other fields of the Event model
     const updatedEvent = await prismaClient.event.update({
       where: { id: eventId },
       data: updateData,

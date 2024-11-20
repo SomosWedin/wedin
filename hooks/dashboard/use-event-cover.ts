@@ -293,7 +293,6 @@ export function useEventCover({
     // },
 
     if (newImagesToUpload.length > 0) {
-      console.log('uploading new images', newImagesToUpload);
       const files = newImagesToUpload.map(({ file }) => file);
 
       const uploadResponse = await uploadEventCoverImagesToAws({
@@ -329,7 +328,6 @@ export function useEventCover({
     }
 
     if (imagesToReplace.length > 0) {
-      console.log('replacing images', imagesToReplace);
       imagesToReplace.map(async image => {
         const uploadResponse = await uploadEventCoverImagesToAws({
           files: [image.file],
@@ -365,7 +363,6 @@ export function useEventCover({
     }
 
     if (imagesToDelete.id.length > 0) {
-      console.log('deleting images from db', imagesToDelete.id);
       const deleteImageResponse = await deleteImages({
         imageIds: imagesToDelete.id,
       });
@@ -381,7 +378,6 @@ export function useEventCover({
     }
 
     if (imagesToDelete.url.length > 0) {
-      console.log('aws images to delete', imagesToDelete.url);
       imagesToDelete.url.map(async imageUrl => {
         const deleteImageResponse =
           await deleteEventCoverImageFromAws(imageUrl);

@@ -3,6 +3,7 @@
 import { auth } from '@/auth';
 import prismaClient from '@/prisma/client';
 import { StepTwoSchema } from '@/schemas/onboarding';
+import { UserType } from '@prisma/client';
 import type * as z from 'zod';
 
 export const stepTwo = async (values: z.infer<typeof StepTwoSchema>) => {
@@ -36,17 +37,21 @@ export const stepTwo = async (values: z.infer<typeof StepTwoSchema>) => {
 
   if (partnerName && partnerLastName) {
     try {
-      await prismaClient.event.update({
-        where: {
-          primaryUserId: session.user.id,
-        },
+      await prismaClient.user.create({
         data: {
-          partnerName: partnerName + ' ' + partnerLastName,
+          name: partnerName,
+          lastName: partnerLastName,
+          isOnboarded: true,
+          isPrimary: false,
+          isMagicLinkLogin: true,
+          eventId: session.user.eventId,
+          onboardingStep: 5,
+          role: UserType.COUPLE,
         },
       });
     } catch (error) {
       console.error(error);
-      return { error: 'Error actualizando tu evento' };
+      return { error: 'Error creando el usuario de tu pareja' };
     }
   }
 };

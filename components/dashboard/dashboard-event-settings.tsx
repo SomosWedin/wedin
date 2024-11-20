@@ -1,20 +1,47 @@
-import DashboardEventUserUpdateForm from '@/components/forms/dashboard/event-settings';
-import DashboardEventSettingsForm from '@/components/forms/dashboard/event-settings';
+import { Suspense, lazy } from 'react';
+import { getEvent } from '@/actions/data/event';
+import { getCurrentUser } from '@/actions/get-current-user';
+import { getSecondaryUser } from '@/actions/data/user';
+import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
+import { EventType } from '@prisma/client';
 
-export default function DashboardEventSettings() {
+const DashboardEventSettingsForm = lazy(
+  () => import('@/components/forms/dashboard/event-settings')
+);
+
+export default async function DashboardEventSettings() {
+  const event = await getEvent();
+  const currentUser = await getCurrentUser();
+  let secondaryEventUser;
+
+  if (!event || 'error' in event || !currentUser || 'error' in currentUser) {
+    return <div>Error</div>;
+  }
+
+  if (event.eventType === EventType.WEDDING) {
+    secondaryEventUser = await getSecondaryUser(currentUser?.id, event?.id);
+    if (!secondaryEventUser || 'error' in secondaryEventUser) {
+      return <div>Error</div>;
+    }
+  }
+
   return (
-    <div className="w-full h-full flex justify-center items-center flex-col gap-8">
+    <section className="w-full h-full flex flex-col gap-12 sm:gap-8 justify-start items-center">
       <div className="w-full flex flex-col gap-4 border-b border-gray-200 pb-6">
         <h1 className="text-2xl font-black">Configuración General</h1>
         <p className="text-textTertiary">
           Define los detalles importantes de tu evento: establece la fecha,
-          añade invitados y configura la información bancaria.
+          añade invitados.
         </p>
       </div>
 
-      <div className="w-full">
-        <DashboardEventSettingsForm />
-      </div>
-    </div>
+      <Suspense fallback={<DashboardSettingsSkeleton />}>
+        <DashboardEventSettingsForm
+          event={event}
+          currentUser={currentUser}
+          secondaryEventUser={secondaryEventUser}
+        />
+      </Suspense>
+    </section>
   );
 }

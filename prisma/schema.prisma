@@ -65,6 +65,7 @@ model User {
   password         String?
   emailVerified    DateTime?
   image            String?
+  isPrimary        Boolean   @default(true)
   role             UserType  @default(ORGANIZER)
   isOnboarded      Boolean   @default(false)
   isMagicLinkLogin Boolean   @default(false)
@@ -72,14 +73,14 @@ model User {
 
   accounts             Account[]
   sessions             Session[]
-  eventPrimaryUsers    Event[]                @relation("primaryUser")
   TransactionStatusLog TransactionStatusLog[]
+  Event                Event?                 @relation(fields: [eventId], references: [id])
+  eventId              String?                @db.ObjectId
 }
 
 model Event {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
   name             String?
-  primaryUserId    String    @db.ObjectId
   date             DateTime?
   coverMessage     String?
   url              String?   @unique
@@ -93,19 +94,18 @@ model Event {
   guests           String?
   hasPYbankAccount Boolean   @default(false)
 
-  wishlist         Wishlist @relation(fields: [wishlistId], references: [id])
-  eventPrimaryUser User     @relation("primaryUser", fields: [primaryUserId], references: [id])
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id])
 
   bankDetails BankDetails?
 
   wishlistGifts WishlistGift[]
   transactions  Transaction[]
+  users         User[]
   gifts         Gift[]
   giftAmounts   String[]
   images        Image[]
 
   @@unique([wishlistId])
-  @@unique([primaryUserId])
 }
 
 model BankDetails {

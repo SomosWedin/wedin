@@ -1,7 +1,7 @@
 'use server';
 
 import type { ErrorResponse } from '@/auth';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 const prismaClient = new PrismaClient();
 
 export const getUserByEmail = async (
@@ -19,6 +19,32 @@ export const getUserByEmail = async (
   } catch (error) {
     // console.error('Error getting user by email:', error);
     return { error: 'InternalError' };
+  }
+};
+
+export const getSecondaryUser = async (
+  primaryUserId: string,
+  eventId: string
+): Promise<User | ErrorResponse> => {
+  try {
+    const secondaryUser = await prismaClient.user.findFirst({
+      where: {
+        id: {
+          not: primaryUserId,
+        },
+        eventId: {
+          equals: eventId,
+        },
+      },
+    });
+
+    if (!secondaryUser) {
+      return { error: 'Secondary event user not found' };
+    }
+
+    return secondaryUser;
+  } catch (error) {
+    return { error: 'Error getting secondary event user' };
   }
 };
 
@@ -46,23 +72,28 @@ export const updateVerifiedOn = async (email: string) => {
 
 export const updateUserById = async (
   userId: string,
-  name: string,
-  lastName: string,
-  onboardingStep: number
+  name?: string,
+  lastName?: string,
+  email?: string,
+  onboardingStep?: number
 ) => {
   try {
-    await prismaClient.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        name: name,
-        lastName: lastName,
-        onboardingStep: onboardingStep,
-      },
+    const updateData: Partial<User> = {};
+
+    name && (updateData.name = name);
+    lastName && (updateData.lastName = lastName);
+    onboardingStep && (updateData.onboardingStep = onboardingStep);
+    email && (updateData.email = email);
+
+    const updatedUser = await prismaClient.user.update({
+      where: { id: userId },
+      data: updateData,
     });
+
+    return { success: updatedUser };
   } catch (error) {
-    return null;
+    console.error('Error updating user:', error);
+    return { error: 'Error updating user' };
   }
 };
 

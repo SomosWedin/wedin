@@ -46,7 +46,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleOnSubmit)}
-        className="flex flex-col gap-8 w-full"
+        className="w-full flex flex-col gap-8"
       >
         <div className="flex flex-col gap-6 items-center pb-10 w-full border-b border-gray-200 sm:flex-row">
           <div className="flex flex-col gap-2 w-full sm:w-1/2">

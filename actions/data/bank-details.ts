@@ -5,15 +5,22 @@ import prismaClient from '@/prisma/client';
 import { BankDetailsFormSchema } from '@/schemas/dashboard';
 import { revalidatePath } from 'next/cache';
 
+export async function getBankDetails(eventId: string) {
+  try {
+    return await prismaClient.bankDetails.findUnique({
+      where: {
+        eventId: eventId,
+      },
+    });
+  } catch (error) {
+    console.error('Error getting bank details:', error);
+    return null;
+  }
+}
+
 export async function updateBankDetails(
   values: z.infer<typeof BankDetailsFormSchema>
 ): Promise<{ success?: boolean; error?: string }> {
-  const validatedField = BankDetailsFormSchema.safeParse(values);
-
-  if (!validatedField.success) {
-    return { error: 'Campos inválidos' };
-  }
-
   try {
     const {
       eventId,
@@ -25,7 +32,7 @@ export async function updateBankDetails(
       identificationType,
       razonSocial,
       ruc,
-    } = validatedField.data;
+    } = values;
 
     await prismaClient.bankDetails.upsert({
       where: {
@@ -42,6 +49,7 @@ export async function updateBankDetails(
         ruc: ruc,
       },
       create: {
+        eventId: eventId,
         bankName: bankName,
         accountHolder: accountHolder,
         accountNumber: accountNumber,
@@ -49,12 +57,11 @@ export async function updateBankDetails(
         identificationNumber: identificationNumber,
         identificationType: identificationType,
         razonSocial: razonSocial,
-        eventId: eventId,
         ruc: ruc,
       },
     });
 
-    revalidatePath('/dashboard');
+    revalidatePath('/bank-details');
     return { success: true };
   } catch (error) {
     console.error('Error upserting bank details:', error);
