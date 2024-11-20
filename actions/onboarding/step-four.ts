@@ -3,6 +3,7 @@
 import { auth } from '@/auth';
 import prismaClient from '@/prisma/client';
 import { StepFourSchema } from '@/schemas/onboarding';
+import { revalidatePath } from 'next/cache';
 import type * as z from 'zod';
 
 export const stepFour = async (values: z.infer<typeof StepFourSchema>) => {
@@ -42,6 +43,7 @@ export const stepFour = async (values: z.infer<typeof StepFourSchema>) => {
         isOnboarded: true,
       },
     });
+    revalidatePath('/onboarding');
   } catch (error) {
     console.error(error);
     return { error: 'Error actualizando tu perfil' };

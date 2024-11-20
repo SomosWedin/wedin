@@ -18,7 +18,7 @@ export const stepFive = async () => {
         isOnboarded: true,
       },
     });
-    revalidatePath('/');
+    revalidatePath('/onboarding');
   } catch (error) {
     console.error(error);
     return { error: 'Error actualizando tu perfil' };
