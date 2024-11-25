@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   Form,
   FormControl,
@@ -20,14 +21,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 
-type OnboardingStepTwoProps = {
-  eventType: EventType;
-};
-
-export default function OnboardingStepTwo({
-  eventType,
-}: OnboardingStepTwoProps) {
+export default function OnboardingStepTwo() {
   const { handleProfileUpdate, loading } = useOnboarding();
+  const [eventType, setEventType] = useState<EventType | undefined>(undefined);
+
+  useEffect(() => {
+    const storedEventType = localStorage.getItem('eventType');
+    if (storedEventType) {
+      setEventType(storedEventType as EventType);
+    }
+  }, []);
+
 
   const form = useForm<z.infer<typeof StepTwoSchema>>({
     resolver: zodResolver(StepTwoSchema),
@@ -37,7 +41,7 @@ export default function OnboardingStepTwo({
       lastName: '',
       partnerName: '',
       partnerLastName: '',
-      eventType: eventType,
+      eventType: eventType || EventType.WEDDING,
     },
   });
 
@@ -173,7 +177,7 @@ export default function OnboardingStepTwo({
               type="submit"
               variant="success"
               className="mt-6 w-72"
-              disabled={loading || !isDirty || !isValid}
+              disabled={loading || !isDirty}
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

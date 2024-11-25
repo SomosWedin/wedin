@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import type { User } from '@prisma/client';
 import OnboardingStepOne from '@/components/onboarding/StepOne';
 import OnboardingStepTwo from '@/components/onboarding/StepTwo';
@@ -20,7 +21,7 @@ export default function OnboardingStepManager({
   return (
     <>
       {currentPage === 1 && <OnboardingStepOne />}
-      {currentPage === 2 && <OnboardingStepTwo eventType="WEDDING" />}
+      {currentPage === 2 && <OnboardingStepTwo />}
       {currentPage === 3 && <OnboardingStepThree />}
       {currentPage === 4 && <OnboardingStepFour />}
       {currentPage === 5 && <OnboardingStepFive />}

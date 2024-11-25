@@ -7,10 +7,14 @@ import OnboardingStepper from './Stepper';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import Image from 'next/image';
 import { useOnboarding } from '@/hooks/useOnboarding';
-// import { Loader2 } from 'lucide-react';
 
 export default function OnboardingStepOne() {
-  const { handleEventTypeUpdate, loading } = useOnboarding();
+  const { handleEventTypeUpdate, saveEventTypeToLocalStorage, loading } = useOnboarding();
+
+  const handleCardClick = (eventType: EventType) => {
+    saveEventTypeToLocalStorage(eventType);
+    handleEventTypeUpdate(eventType);
+  };
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -31,7 +35,7 @@ export default function OnboardingStepOne() {
             loading ? 'cursor-not-allowed pointer-events-none opacity-65' : ''
           }`}
           onClick={() => {
-            handleEventTypeUpdate(EventType.WEDDING);
+            handleCardClick(EventType.WEDDING);
           }}
         >
           <CardHeader>
@@ -52,7 +56,7 @@ export default function OnboardingStepOne() {
             loading ? 'cursor-not-allowed pointer-events-none opacity-70' : ''
           }`}
           onClick={() => {
-            handleEventTypeUpdate(EventType.OTHER);
+            handleCardClick(EventType.OTHER);
           }}
         >
           <CardHeader>

@@ -256,8 +256,8 @@ export const updateUserOnboardedStepFive = async () => {
     return { error: 'Error actualizando tu perfil' };
   }
 
-   // Revalidate cache paths after a successful operation
-   try {
+  // Revalidate cache paths after a successful operation
+  try {
     revalidatePath('/onboarding');
   } catch (revalidationError) {
     console.error('Error revalidating cache:', revalidationError);

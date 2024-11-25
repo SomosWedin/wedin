@@ -164,20 +164,32 @@ export const useOnboarding = () => {
   // Step Five
   const handleCompleteOnboarding = async () => {
     setLoading(true);
-    const response = await updateUserOnboardedStepFive();
 
-    if (response?.error) {
+    try {
+      const response = await updateUserOnboardedStepFive();
+
+      if (response?.error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error finalizando el onboarding. Intenta de nuevo.',
+          description: response.error,
+        });
+        return null;
+      }
+    } catch (error) {
       toast({
         variant: 'destructive',
-        title: 'Error finalizando el onboarding. Intenta de nuevo.',
-        description: response.error,
+        title: 'Error inesperado. Intenta de nuevo.',
+        description: 'Ocurrió un error al completar el onboarding.',
       });
-
+    } finally {
       setLoading(false);
-      return null;
     }
-    setLoading(false);
   };
+
+  const saveEventTypeToLocalStorage = (eventType: EventType) => {
+    localStorage.setItem('eventType', eventType);
+  }
 
   return {
     loading,
@@ -186,5 +198,6 @@ export const useOnboarding = () => {
     handleEventLocationUpdate,
     handleEventDateUpdate,
     handleCompleteOnboarding,
+    saveEventTypeToLocalStorage,
   };
 };
