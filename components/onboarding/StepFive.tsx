@@ -1,15 +1,15 @@
 import Image from 'next/image';
-import OnboardingStepper from './stepper';
+import OnboardingStepper from './Stepper';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import { Button } from '@/components/ui/button';
 import { CiSettings } from 'react-icons/ci';
 import { IoGiftOutline } from 'react-icons/io5';
 import { PiBank } from 'react-icons/pi';
-import { useOnbStepFive } from '@/hooks/onboarding/use-onb-step-five';
 import { Loader2 } from 'lucide-react';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
-export default function StepFive() {
-  const { finalizeOnboarding, loading } = useOnbStepFive();
+export default function OnboardingStepFive() {
+  const { loading, handleCompleteOnboarding } = useOnboarding();
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -48,10 +48,10 @@ export default function StepFive() {
       <Button
         variant="success"
         className="w-72 mt-4"
-        onClick={finalizeOnboarding}
+        onClick={() => handleCompleteOnboarding()}
+        disabled={loading}
       >
-        Finalizar
-        {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Finalizar'}
       </Button>
 
       <OnboardingStepper step={5} />

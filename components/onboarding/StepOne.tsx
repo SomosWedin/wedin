@@ -2,21 +2,15 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CiHeart } from 'react-icons/ci';
 import { FaChevronRight } from 'react-icons/fa6';
 import { GiWineGlass } from 'react-icons/gi';
-import { useOnbStepOne } from '@/hooks/onboarding/use-onb-step-one';
 import { EventType } from '@prisma/client';
-import OnboardingStepper from './stepper';
+import OnboardingStepper from './Stepper';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import Image from 'next/image';
-import { useOnboarding } from '../../app/onboarding/context';
+import { useOnboarding } from '@/hooks/useOnboarding';
+// import { Loader2 } from 'lucide-react';
 
-export default function StepOne() {
-  const { updateEventType } = useOnbStepOne();
-  const { setEventType } = useOnboarding();
-
-  const handleEventTypeClick = async (eventType: EventType) => {
-    setEventType(eventType);
-    await updateEventType(eventType);
-  };
+export default function OnboardingStepOne() {
+  const { handleEventTypeUpdate, loading } = useOnboarding();
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -33,8 +27,12 @@ export default function StepOne() {
 
       <div className="flex flex-col sm:flex-row gap-8 items-center">
         <Card
-          className="w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl"
-          onClick={() => handleEventTypeClick(EventType.WEDDING)}
+          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${
+            loading ? 'cursor-not-allowed pointer-events-none opacity-65' : ''
+          }`}
+          onClick={() => {
+            handleEventTypeUpdate(EventType.WEDDING);
+          }}
         >
           <CardHeader>
             <CiHeart className="text-4xl" />
@@ -50,8 +48,12 @@ export default function StepOne() {
         <div className="h-12 border-r border-gray200 sm:block hidden"></div>
 
         <Card
-          className="w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl"
-          onClick={() => handleEventTypeClick(EventType.OTHER)}
+          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${
+            loading ? 'cursor-not-allowed pointer-events-none opacity-70' : ''
+          }`}
+          onClick={() => {
+            handleEventTypeUpdate(EventType.OTHER);
+          }}
         >
           <CardHeader>
             <GiWineGlass className="text-4xl" />

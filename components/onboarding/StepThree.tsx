@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Form,
   FormControl,
@@ -12,14 +13,47 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { Loader2 } from 'lucide-react';
-import OnboardingStepper from './stepper';
+import OnboardingStepper from './Stepper';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import Image from 'next/image';
 import { countries } from '@/lib/countries';
-import { useOnbStepThree } from '@/hooks/onboarding/use-onb-step-three';
+import { useOnboarding } from '@/hooks/useOnboarding';
+import { StepThreeSchema } from '@/schemas/onboarding';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
 
-export default function StepThree() {
-  const { form, loading, onSubmit, handleIsDecidingCountryCity, isDeciding, isButtonEnabled } = useOnbStepThree();
+export default function OnboardingStepThree() {
+  const { handleEventLocationUpdate, loading } = useOnboarding();
+  const [isDeciding, setIsDeciding] = useState<boolean | string>(false);
+
+  const form = useForm<z.infer<typeof StepThreeSchema>>({
+    resolver: zodResolver(StepThreeSchema),
+    mode: 'all',
+    defaultValues: {
+      eventCountry: '',
+      eventCity: '',
+      isDecidingEventLocation: false,
+    },
+  });
+
+  const {
+    formState: { isDirty },
+  } = form;
+
+  const isButtonEnabled = isDirty || form.watch('isDecidingEventLocation');
+
+  const handleIsDecidingCountryCity = (value: boolean | string) => {
+    setIsDeciding(value);
+    if (value) {
+      form.setValue('eventCountry', '');
+      form.setValue('eventCity', '');
+    }
+  };
+
+  const onSubmit = async (values: z.infer<typeof StepThreeSchema>) => {
+    await handleEventLocationUpdate(values);
+  };
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -43,7 +77,11 @@ export default function StepThree() {
             {isDeciding ? (
               <div className="w-full">
                 <Label>País</Label>
-                <Input placeholder="Elegí un país" disabled className="!mt-1.5" />
+                <Input
+                  placeholder="Elegí un país"
+                  disabled
+                  className="!mt-1.5"
+                />
               </div>
             ) : (
               <FormField
@@ -111,9 +149,17 @@ export default function StepThree() {
           />
 
           <div className="flex justify-center mt-6">
-            <Button type="submit" variant="success" disabled={loading || !isButtonEnabled} className="w-72">
-              Continuar
-              {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+            <Button
+              type="submit"
+              variant="success"
+              disabled={loading || !isButtonEnabled}
+              className="w-72"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                'Continuar'
+              )}
             </Button>
           </div>
         </form>

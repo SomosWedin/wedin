@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Form,
   FormControl,
@@ -18,13 +19,44 @@ import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import OnboardingStepper from './stepper';
+import OnboardingStepper from './Stepper';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import Image from 'next/image';
-import { useOnbStepFour } from '@/hooks/onboarding/use-onb-step-four';
+import { StepFourSchema } from '@/schemas/onboarding';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
-export default function StepFour() {
-  const { form, loading, onSubmit, isDeciding, handleIsDecidingEventDate, isButtonEnabled } = useOnbStepFour();
+export default function OnboardingStepFour() {
+  const [isDeciding, setIsDeciding] = useState<boolean | string>(false);
+  const { loading, handleEventDateUpdate } = useOnboarding();
+
+  const form = useForm<z.infer<typeof StepFourSchema>>({
+    resolver: zodResolver(StepFourSchema),
+    mode: 'all',
+    defaultValues: {
+      eventDate: undefined,
+      isDecidingEventDate: false,
+    },
+  });
+
+  const {
+    formState: { isDirty },
+  } = form;
+
+  const isButtonEnabled = isDirty || form.watch('isDecidingEventDate');
+
+  const handleIsDecidingEventDate = (value: boolean | string) => {
+    setIsDeciding(value);
+    if (value) {
+      form.setValue('eventDate', undefined);
+    }
+  };
+
+  const onSubmit = async (values: z.infer<typeof StepFourSchema>) => {
+    await handleEventDateUpdate(values);
+  };
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -134,8 +166,11 @@ export default function StepFour() {
               disabled={loading || !isButtonEnabled}
               className="w-72"
             >
-              Continuar
-              {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                'Continuar'
+              )}
             </Button>
           </div>
         </form>
