@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { EventType } from '@prisma/client';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   updateEventTypeStepOne,
   updateProfileStepTwo,
@@ -18,6 +20,8 @@ import type { z } from 'zod';
 export const useOnboarding = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
+  const { update } = useSession();
 
   // Step One
   const handleEventTypeUpdate = async (eventType: EventType) => {
@@ -31,14 +35,17 @@ export const useOnboarding = () => {
           variant: 'destructive',
           description: response.error,
         });
+        setLoading(false);
         return;
       }
-      setLoading(false);
+      
+      router.refresh();
     } catch (error) {
       toast({
         variant: 'destructive',
         description: 'Ocurrió un error al crear tu evento, intenta de nuevo.',
       });
+      setLoading(false);
     }
   };
 
@@ -68,15 +75,17 @@ export const useOnboarding = () => {
           title: 'Error en el paso 2. Intenta de nuevo.',
           description: response?.error,
         });
+        setLoading(false);
         return;
       }
+      
+      router.refresh();
     } catch (error) {
       toast({
         variant: 'destructive',
         description:
           'Ocurrió un error procesando tu solicitud. Intenta de nuevo.',
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -108,15 +117,17 @@ export const useOnboarding = () => {
           title: 'Error en el paso 3. Intenta de nuevo.',
           description: response?.error,
         });
+        setLoading(false);
         return;
       }
+      
+      router.refresh();
     } catch (error) {
       toast({
         variant: 'destructive',
         description:
           'Ocurrió un error procesando tu solicitud. Intenta de nuevo.',
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -148,15 +159,17 @@ export const useOnboarding = () => {
           title: 'Error en el paso 4. Intenta de nuevo.',
           description: response?.error,
         });
+        setLoading(false);
         return;
       }
+      
+      router.refresh();
     } catch (error) {
       toast({
         variant: 'destructive',
         description:
           'Ocurrió un error procesando tu solicitud. Intenta de nuevo.',
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -174,15 +187,18 @@ export const useOnboarding = () => {
           title: 'Error finalizando el onboarding. Intenta de nuevo.',
           description: response.error,
         });
-        return null;
+        setLoading(false);
+        return;
       }
+
+      await update();
+      window.location.href = '/dashboard';
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error inesperado. Intenta de nuevo.',
         description: 'Ocurrió un error al completar el onboarding.',
       });
-    } finally {
       setLoading(false);
     }
   };
