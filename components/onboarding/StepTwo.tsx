@@ -25,14 +25,6 @@ export default function OnboardingStepTwo() {
   const { handleProfileUpdate, loading } = useOnboarding();
   const [eventType, setEventType] = useState<EventType | undefined>(undefined);
 
-  useEffect(() => {
-    const storedEventType = localStorage.getItem('eventType');
-    if (storedEventType) {
-      setEventType(storedEventType as EventType);
-    }
-  }, []);
-
-
   const form = useForm<z.infer<typeof StepTwoSchema>>({
     resolver: zodResolver(StepTwoSchema),
     mode: 'all',
@@ -41,9 +33,17 @@ export default function OnboardingStepTwo() {
       lastName: '',
       partnerName: '',
       partnerLastName: '',
-      eventType: eventType || EventType.WEDDING,
+      eventType: EventType.WEDDING,
     },
   });
+
+  useEffect(() => {
+    const storedEventType = localStorage.getItem('eventType');
+    if (storedEventType) {
+      setEventType(storedEventType as EventType);
+      form.setValue('eventType', storedEventType as EventType, { shouldDirty: false });
+    }
+  }, [form]);
 
   const {
     formState: { isDirty, isValid },
@@ -177,7 +177,7 @@ export default function OnboardingStepTwo() {
               type="submit"
               variant="success"
               className="mt-6 w-72"
-              disabled={loading || !isDirty}
+              disabled={loading || !isValid}
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
