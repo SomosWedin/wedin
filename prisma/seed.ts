@@ -44,29 +44,43 @@ async function main() {
   );
 
   // Seed gifts and assign to gift lists
-  // biome-ignore lint/style/useConst: <explanation>
-  let gifts = [];
+  // Track gifts by giftlist for later calculation
+  const giftsByList = new Map();
+  
   for (let i = 0; i < 150; i++) {
     const randomGiftlist = faker.helpers.arrayElement(giftlists);
+    const price = faker.number.int({ min: 89000, max: 1820000 }).toString();
+    
     const defaultGift = await prismaSeed.gift.create({
       data: {
         name: faker.commerce.productName(),
         isDefault: true,
-        price: faker.number.int({ min: 89000, max: 1820000 }).toString(),
-        giftlistId: randomGiftlist.id,
+        price: price,
+        giftlist: {
+          connect: { id: randomGiftlist.id },
+        },
         categoryId: randomGiftlist.categoryId,
-        imageUrl: faker.image.url(),
+        image: {
+          create: {
+            url: faker.image.url(),
+          },
+        },
       },
     });
-    gifts.push(defaultGift);
+    
+    // Track gifts for this giftlist
+    if (!giftsByList.has(randomGiftlist.id)) {
+      giftsByList.set(randomGiftlist.id, []);
+    }
+    giftsByList.get(randomGiftlist.id).push({ id: defaultGift.id, price });
   }
 
   // Update gift lists with calculated quantity and totalPrice
   // biome-ignore lint/style/useConst: <explanation>
   for (let giftlist of giftlists) {
-    const giftsForList = gifts.filter(gift => gift.giftlistId === giftlist.id);
+    const giftsForList = giftsByList.get(giftlist.id) || [];
     const totalPrice = giftsForList.reduce(
-      (acc, curr) => acc + Number(curr.price),
+      (acc: number, curr: { id: string; price: string }) => acc + Number(curr.price),
       0
     );
     await prismaSeed.giftlist.update({

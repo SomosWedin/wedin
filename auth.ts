@@ -1,7 +1,12 @@
+import prismaClient from '@/prisma/client';
 import { getUserByEmail, updateVerifiedOn } from '@/actions/data/user';
 import NextAuth, { type DefaultSession } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
-import authOptions from './auth.config';
+import bcrypt from 'bcryptjs';
+import Credentials from 'next-auth/providers/credentials';
+import { PrismaAdapter } from '@auth/prisma-adapter';
+import { LoginSchema } from '@/schemas/auth';
+import authConfig from './auth.config';
 
 export type ErrorResponse = {
   error: string;
@@ -38,6 +43,42 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
+  ...authConfig,
+  adapter: PrismaAdapter(prismaClient),
+  providers: [
+    ...authConfig.providers,
+    Credentials({
+      async authorize(credentials) {
+        const validatedFields = LoginSchema.safeParse(credentials);
+
+        if (validatedFields.success) {
+          const { email, password } = validatedFields.data;
+
+          const user = await prismaClient.user.findUnique({
+            where: { email },
+          });
+
+          if (!user) {
+            return null;
+          }
+
+          if (!user.password) {
+            return null;
+          }
+
+          const isValid = await bcrypt.compare(password, user.password);
+
+          if (!isValid) {
+            return null;
+          }
+
+          return user;
+        }
+
+        return null;
+      },
+    }),
+  ],
   pages: {
     signIn: '(auth)/login',
     error: '(auth)/error',
@@ -50,6 +91,7 @@ export const {
     },
   },
   callbacks: {
+    ...authConfig.callbacks,
     async signIn({ user, account }) {
       if (!user || !user.email) return false;
 
@@ -62,18 +104,6 @@ export const {
       }
 
       return true;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.name = token.name;
-        session.user.isExistingUser = token.isExistingUser;
-        session.user.role = token.role;
-        session.user.isOnboarded = token.isOnboarded;
-        session.user.id = token.id;
-        session.user.eventId = token.eventId;
-      }
-
-      return session;
     },
     async jwt({ token }) {
       if (!token || !token.email) return token;
@@ -102,11 +132,4 @@ export const {
       return token;
     },
   },
-  // debug: process.env.NODE_ENV === 'development',
-  session: {
-    strategy: 'jwt',
-    maxAge: 60 * 60 * 24, // 24 hours
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-  ...authOptions,
 });

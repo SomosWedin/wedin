@@ -7,7 +7,10 @@ import {
   publicRoutes,
 } from '@/lib/routes';
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import NextAuth from 'next-auth';
+import authConfig from '@/auth.config';
+
+const { auth } = NextAuth(authConfig);
 
 export async function middleware(request: NextRequest) {
   const session = await auth();
