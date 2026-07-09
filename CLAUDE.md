@@ -2,6 +2,46 @@
 
 Wedin — a wedding gift-list / registry web app (Next.js App Router).
 
+## Product overview
+
+Wedin lets a couple (or organizer, for non-wedding events) set up a public
+event site where guests browse a gift catalog and "buy" gifts — but every
+purchase is really a cash contribution: money accumulates in the couple's
+wallet and gets withdrawn to their bank account, regardless of whether the
+gift was a physical item, a honeymoon fund, or open-ended cash. It's a
+cash-gifting/crowdfunding platform wrapped in a registry UI, targeting
+Paraguay (prices shown in Gs./guaraníes).
+
+Two sides of the app:
+- **Organizer dashboard** (`(dashboard)` routes) — the couple runs onboarding
+  (event type, couple profile, location, date →
+  `actions/common/onboarding.ts`), edits the public site's "Presentación"
+  (photos + welcome message), manages the "Mi lista" gift registry, sets
+  general/bank details, and reviews a "Regalos recibidos" ledger with wallet
+  withdrawal.
+- **Guest-facing site** (`(default)` routes) — public per-event page where
+  guests browse gifts by category (Casa / Luna de miel / Dinero), add to
+  cart, and check out.
+
+Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`):
+- **Regalo individual** — one guest fully covers the price.
+- **Regalo grupal** — multiple guests crowdfund toward the price
+  (`groupGiftParts`, `isFullyPaid`).
+- **Monto libre** — open-ended cash gift, no fixed price.
+
+### Terminology (Spanish UI ↔ code/domain)
+- regalo(s) → gift(s)
+- lista de regalos / "Mi lista" → wishlist/registry
+- billetera / retiro → wallet / withdrawal (cash-out to bank)
+- transferencia → bank transfer/payout
+- datos bancarios → bank details (payout account)
+- evento → the wedding/event
+- listas predefinidas / `Giftlist` → pre-built gift bundles/categories
+
+### Current implementation state
+For what's done vs. missing and the build sequence for the guest
+checkout/wallet loop, see `plan-ultraplan.md`.
+
 ## Stack
 - Next.js (App Router) + TypeScript
 - Prisma (PostgreSQL) — schema in `prisma/`
