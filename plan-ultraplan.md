@@ -1,0 +1,484 @@
+# Wedin — Build Plan: Guest Checkout, Wallet & Wishlist Linking
+
+## Context
+
+Wedin's organizer dashboard (auth, onboarding, event settings, bank details)
+is done, but the actual product — guest lands on the couple's page, "buys" a
+gift as a cash contribution, couple withdraws the money — has zero code. No
+guest route, no cart, no checkout, no payment integration, and the
+`WishlistGift` join model that links a `Gift` to a couple's registry is
+defined in `prisma/schema.prisma` but referenced nowhere in the app. Several
+dashboard screens (`Mi lista`, `Regalos recibidos`, home checklist) are
+static placeholders wired to nothing.
+
+This plan sequences the work to make the guest → payment → wallet loop real,
+using **dLocal Go** as the payment gateway and **true guest checkout**
+(name/email only, no account).
+
+Every fact below was independently re-verified by reading the current code
+in this session (not carried over from an earlier draft): `prisma/schema.prisma`,
+`middleware.ts`, `lib/routes.ts`, `actions/data/event.ts`, `actions/data/gift.ts`,
+`actions/data/giftlist.ts`, `actions/upload-to-s3.ts`, `lib/s3.ts`, `schemas/form.ts`,
+`schemas/params.ts`, `hooks/use-store.ts`, `hooks/dashboard/useUpdateBankDetails.ts`,
+`components/dashboard/dashboard-{bank-details,wishlist,transactions,home}.tsx`,
+`app/(default)/gifts/page.tsx`, `components/dialog/reset-event-cover-form-dialog.tsx`,
+`actions/common/onboarding.ts`, `package.json`.
+
+## Verified facts that shape this plan
+
+- `Event.url String? @unique` and `EventUrlFormSchema` (`schemas/form.ts:142`)
+  already exist; nothing reads/writes either. This is the couple's public
+  site slug.
+- `Event.giftAmounts String[]` already exists; `GiftAmountsFormSchema`
+  (`schemas/form.ts:196`) models it as four discrete fields
+  (`giftAmount1..4`) — map the four fields to the array on submit, don't
+  change the Prisma field.
+- `WishlistGiftCreateSchema`, `WishlistGiftEditSchema`,
+  `WishlistGiftDeleteSchema`, `WishlistGiftsCreateSchema` (bulk) all exist
+  in `schemas/form.ts`, unused anywhere. `GetwishlistGiftsParams`
+  (`schemas/params.ts:3`) exists, unused. The validation layer for
+  wishlist-gift linking is already written — only action/UI is missing.
+- `TransactionEditSchema` (`schemas/form.ts:94`) exists but requires
+  `status` (not optional) plus optional `notes` — an action that "just"
+  updates notes must still pass the transaction's current status through.
+  `GetTransactionsParams` exists, unused.
+- Every `Event` already has a 1:1 `Wishlist` created at onboarding
+  (`actions/common/onboarding.ts` creates the `Wishlist` row before the
+  `Event` row, then sets `Event.wishlistId`) — Phase 2 never needs to
+  create a `Wishlist`, only `WishlistGift` rows against the existing one.
+- `middleware.ts`: `isPublicRoute` (line 25) is computed and never read
+  again — confirmed dead code, only `protectedRoutes` (exact-string match,
+  `lib/routes.ts`) is enforced. **Correction to the earlier draft**: the
+  admin gate is *also* dead — `if (!isAdmin && isAdminRoute) { console.log(...) }`
+  (middleware.ts:35-37) only logs, it never redirects. Any admin-only
+  surface built in this plan (Phase 8's future payout-approval route) is
+  **not actually protected today** — treat `adminRoutes`/`isAdminRoute` as
+  non-functional, don't rely on it as a real guard without fixing the
+  `console.log` into a real redirect first, and call this out explicitly
+  rather than silently inheriting broken protection.
+- `lib/routes.ts`'s `publicRoutes` array already contains `/events` (dead,
+  since `isPublicRoute` is unread) — a new `/events/[slug]` route needs
+  **no middleware change**: it's absent from `protectedRoutes` and
+  `onboardingRoute`, so it's already reachable logged-out. Leave
+  `publicRoutes` alone either way.
+- `getEvent()` in `actions/data/event.ts` is session-gated
+  (`getCurrentUser()`); `getEventById(eventId)` looks up by ID only, no
+  by-`url` lookup exists yet. The guest site needs new, deliberately
+  unauthenticated read functions — never `getEvent()`.
+- `TransactionStatusLog.changedById` is a **required** `User` FK
+  (`schema.prisma:209`). A dLocal webhook has no authenticated user →
+  make it optional (`String? @db.ObjectId`) rather than invent a "system"
+  user row.
+- No payment-gateway dependency, env var, or reference exists anywhere
+  (verified via grep across the repo) — greenfield integration. `zustand`
+  (^4.5.5), `resend` (^4.0.0), `nodemailer` (^6.9.15) are already installed
+  but unused for this purpose.
+- `app/api/` contains only `app/api/auth/[...nextauth]/route.ts` — a dLocal
+  webhook route handler is this repo's second-ever API route.
+- Server-side external-SDK wrapper convention, confirmed via
+  `actions/upload-to-s3.ts`: a `'use server'` file instantiates the SDK
+  client directly at module scope from `process.env.*` (no config
+  abstraction), auth-checks via `auth()`, and returns `{ error }` /
+  `{ success }`. `lib/dlocal.ts` should follow this shape exactly.
+- Confirmed conventions to match everywhere below: server actions are
+  `'use server'` files in `actions/<domain>/` returning `{ error }` /
+  `{ success }`; Zod schemas in `schemas/`; forms use React Hook Form +
+  `zodResolver` (`mode: 'all'`) wrapped in a `hooks/<domain>/` hook that
+  manages `loading` manually (`useState`, no `useMutation` — see
+  `hooks/dashboard/useUpdateBankDetails.ts`); reads happen in `async`
+  Server Components calling actions directly (`dashboard-bank-details.tsx`
+  pattern: `Suspense` + `lazy()`-loaded client form); lists are CSS-grid
+  rows (`app/(default)/gifts/page.tsx`), not a table library; dialogs are
+  raw shadcn `Dialog`/`AlertDialog` composed per-file
+  (`components/dialog/reset-event-cover-form-dialog.tsx`), no shared
+  wrapper; `WishlistGift.groupGiftParts` and `Transaction.amount` are both
+  `String` in the schema — treat all money/part-count arithmetic as
+  parse-then-format, matching that existing convention, don't switch to
+  numeric Prisma fields.
+
+## dLocal Go API research (verified from docs.dlocalgo.com, 2026-07-08)
+
+Pulled directly from `docs.dlocalgo.com/integration-api` and its sub-pages
+(Authentication, Payments, Create a payment, Retrieve a payment, Retrieve
+currency exchange, Notifications, Paraguay country requirements). This
+supersedes the "unknown ahead of time" framing in Phase 6 below — the shape
+is now known; only sandbox credentials and live testing remain.
+
+**Environments**
+- Sandbox: `https://api-sbx.dlocalgo.com` (signup at `dashboard-sbx.dlocalgo.com/signup`)
+- Live: `https://api.dlocalgo.com` (signup at `dashboard.dlocalgo.com/signup`)
+- Sandbox test cards: success `4111 1111 1111 1111`, decline (Mastercard)
+  `5555 5555 5555 4444`, any future expiry/any CVV. **Sandbox config does
+  not carry over to live** — payment methods must be reconfigured on the
+  live dashboard.
+
+**Authentication**
+- Every request: `Authorization: Bearer <API_KEY>:<SECRET_KEY>` (literal
+  colon-joined pair as the bearer value, not two headers).
+- Maps directly onto Phase 6's planned `DLOCAL_GO_API_KEY` /
+  `DLOCAL_GO_SECRET_KEY` env vars and the `lib/dlocal.ts` module-scope
+  client pattern.
+
+**PYG / Paraguay specifics**
+- `PYG` is a first-class supported currency — confirmed via
+  `GET /v1/currency-exchanges`, which returns USD-relative rates for 17
+  currencies including PYG (e.g. `source_currency: "USD", target_currency:
+  "PYG", value: 8281.67550` in the docs' example — a live rate, refetch,
+  don't hardcode).
+- `POST /v1/payments` accepts `currency: "PYG"` directly and `country:
+  "PY"` — no special-casing needed beyond passing these two fields; amounts
+  are plain numbers in the given currency's minor-est display unit (PYG has
+  no decimals in practice, but the payout-requirements page separately
+  notes "amount decimals: 2" for the payout/payroll side, not payments —
+  confirm actual PYG payment-amount rounding against a real sandbox
+  response before assuming integer guaraníes).
+- If `currency` doesn't match the payer's `country`, dLocal auto-converts
+  at checkout — relevant if Wedin ever shows prices in a currency other
+  than PYG for a PY event.
+- Paraguay accepts payer `document_type` values `CI` (Cédula de Identidad)
+  and `RUC`.
+- The *payout* side (couple's bank withdrawal, i.e. Phase 8, though dLocal
+  payouts are a distinct product from what Phase 8 currently scopes as
+  "manual-admin-processed") requires: `CI` (7 numeric digits, no check
+  digit) or `RUC` (8 digits, CI + check-digit algorithm), and a 16-digit
+  numeric SIPAP bank account number, chosen from a fixed list of 40+
+  Paraguayan bank codes (Banco Amambay=1 … Ueno Bank=48, including Itaú
+  Paraguay, Banco General, Citibank N.A.). Payouts can be denominated in
+  either PYG or USD. **This is a separate dLocal Go product/endpoint
+  ("Payouts Integration") from the Payments API used for guest checkout —
+  don't conflate the two when scoping Phase 8**; today Phase 8 stays
+  manual (operator-processed), so this is reference-only unless Phase 8 is
+  later upgraded to call dLocal's payout API directly.
+
+**`POST /v1/payments` — create a payment**
+- Request fields: `currency` (ISO-4217, required), `amount` (number,
+  required), `country` (ISO 3166-1 alpha-2, optional — affects
+  conversion), `order_id` (string ≤128 chars, auto-generated if omitted —
+  good fit for `Transaction.id` or a cart batch id), `payment_type`
+  (comma-separated subset of `CREDIT_CARD`/`DEBIT_CARD`/`BANK_TRANSFER`/`VOUCHER`
+  to restrict methods shown), `max_installments`,
+  `installments_fee_responsible` (`BUYER`|`MERCHANT`), `accepted_bins`/
+  `rejected_bins`, `description` (≤100 chars), `expiration_type`/
+  `expiration_value` (MINUTES/HOURS/DAYS), `success_url`/`back_url`/
+  `notification_url` (each ≤2048 chars — maps to Phase 6's checkout
+  page/webhook route), and a nested `payer` object (`id`, `name`, `email`,
+  `phone`, `document_type`, `document`, `user_reference`, `address`).
+  Payer fields become mandatory *at checkout* if omitted from the create
+  call — Wedin's `GuestCheckoutSchema` (`payerName`, `payerEmail`) can stay
+  minimal and let dLocal's hosted page collect the rest.
+- Response (200): `id` (dLocal's payment id, e.g. `"DP-54354"`), `amount`,
+  `currency`, `country`, `status: "PENDING"`, `redirect_url` (hosted
+  checkout URL to send the guest to), `merchant_checkout_token`. `id` is
+  the value to persist as `Transaction.dlocalPaymentId` from Phase 1.
+
+**`GET /v1/payments/:payment_id` — retrieve a payment**
+- `status` enum, confirmed exhaustive: `PENDING`, `PAID`, `REJECTED`,
+  `CANCELLED`, `EXPIRED` (24-hour window). Phase 6's webhook handler should
+  treat `PAID` as the "flip Transaction to COMPLETED" trigger — not
+  `"completed"` as loosely assumed in the original plan text.
+- Also returns `balance_amount`/`balance_fee`/`balance_currency` (net
+  amount and dLocal's commission after fees — relevant for Phase 8's
+  wallet-balance math if the wallet should reflect net-of-fee rather than
+  gross), `payment_method_type`, `created_date`/`approved_date`,
+  `redirect_url` (expires in 24h), `payer` object, `card` object
+  (BIN/issuer/last4), `rejected_reason`.
+
+**Notifications (webhook)**
+- dLocal POSTs a **minimal** payload to `notification_url`:
+  `{"payment_id": "DP-283"}` only — no status included. The webhook
+  handler *must* call `GET /v1/payments/:payment_id` back to learn the
+  real status before updating `Transaction`. This directly changes Phase
+  6's webhook route: it's a fetch-then-update, not a parse-payload-and-update.
+- Signature verification: header `Authorization: V2-HMAC-SHA256,
+  Signature: <hex>`, computed as `HMAC-SHA256(ApiKey + JsonPayload,
+  SecretKey)` (API key and raw JSON body concatenated as the message,
+  secret key as the HMAC key). Since this needs the *raw* request body,
+  the Next.js route handler must call `request.text()` first and verify
+  against that exact string before `JSON.parse`-ing — parsing first and
+  re-stringifying will break the signature match if key order/whitespace
+  differs.
+- Non-200 responses are retried every 10 minutes for up to 30 days — the
+  webhook handler must be idempotent (already planned in Phase 6) and
+  should return 200 quickly, doing any slow work after acknowledging.
+- There's a second, separate notification stream for **payouts** status
+  changes (`payouts-integration/notifications`) — not needed unless Phase
+  8 is upgraded to call dLocal payouts directly.
+
+**Other endpoints available (not yet scoped into any phase, noted for
+completeness)**: `GET /v1/payments` (paginated list, filterable by date
+range/country/email), refunds (`create`/`retrieve`/`retrieve list`),
+`GET .../chargebacks`, one-click upsell, recurring payments/links,
+subscriptions (plans/executions/cancel), split payments, "transparent
+checkout" (presumably an embedded/non-redirect flow, not yet read in
+detail).
+
+**Errors & rate limits**: dedicated `errors.md` (with
+`payment-http-errors.md` / `refunds-http-errors.md` sub-pages) and
+`rate-limits.md` exist but weren't fetched in this pass — read before
+writing `lib/dlocal.ts`'s error handling in Phase 6.
+
+## Phased plan
+
+```
+Phase 1 (schema) ─┬─> Phase 2 (wishlist linking) ─┬─> Phase 4 (guest site) ─> Phase 5 (cart) ─> Phase 6 (checkout+dLocal) ─┬─> Phase 7 (ledger) ─> Phase 8 (wallet)
+                   └─> Phase 3 (event URL) ────────┘                                                                       │
+                                                                                                                            │
+Phase 9 (home progress) ─ depends only on Phase 3, otherwise parallel to 4-8, reads outputs of 2/7/8 once they land ───────┘
+```
+
+### Phase 1 — Schema foundations
+One migration underpinning everything else.
+
+- `Transaction`: add `payerName String?`, `payerEmail String?`,
+  `dlocalPaymentId String? @unique` (exact field name to confirm against
+  dLocal Go docs at implementation time — this is the webhook
+  reconciliation key).
+- `TransactionStatusLog.changedById`: `String @db.ObjectId` → `String? @db.ObjectId`,
+  and its `changedBy` relation becomes optional accordingly.
+- New model `Payout` + `enum PayoutStatus { REQUESTED PROCESSING COMPLETED REJECTED }`,
+  FKs to `Event`, `BankDetails`, `User` (`requestedBy`) — needed by Phase 8,
+  no equivalent exists today.
+- No change to `Event.url` / `Event.giftAmounts` — reuse as-is.
+- Run `npx prisma generate` (MongoDB provider — no migration files, schema
+  push only).
+- Verify: `npx prisma generate` succeeds; no type errors in existing files
+  referencing `Transaction`/`TransactionStatusLog`.
+
+### Phase 2 — Wishlist-gift linking ("Mi lista" + "Agregar a la lista")
+CRUD wiring on top of already-complete `Gift` CRUD (`actions/data/gift.ts`)
+and the already-written, unused Zod schemas above.
+
+**Reference (Figma):**
+
+![Mi lista de regalos](docs/plan-assets/phase2-mi-lista.png)
+![Agregar regalo dialog](docs/plan-assets/phase2-agregar-regalo-dialog.png)
+
+- New `actions/data/wishlist-gift.ts` (`'use server'`, mirrors
+  `actions/data/gift.ts`'s shape): `getWishlistGifts`, `createWishlistGift`,
+  `createWishlistGifts` (bulk), `editWishlistGift`, `deleteWishlistGift`,
+  `getWishlistGift` (single lookup for "already in my list" badge state).
+- Rewrite `app/(dashboard)/wishlist/page.tsx` /
+  `components/dashboard/dashboard-wishlist.tsx` as an async Server
+  Component (pattern: `dashboard-bank-details.tsx` — `getEvent()` then a
+  data call, `Suspense` + `lazy()` client form/list) — real data replaces
+  the current unconditional `EmptyState`.
+- `app/(default)/gifts/page.tsx`: replace the hardcoded "No agregado" badge
+  (line 109) with a real `isInWishlist` check per gift; wire "Agregar
+  regalo" (line 113-116) to a client island calling `createWishlistGift`;
+  wire "Crear regalo" (line 31-34, currently has no handler) to a new
+  `components/dialog/create-gift-dialog.tsx` that calls the already-built
+  but never-invoked `createGift` action, then `createWishlistGift`. Note:
+  `getGifts()` (`actions/data/gift.ts:26`) hardcodes `isDefault: true` in
+  its query — a newly created custom gift (`isDefault: false`) correctly
+  won't reappear in this catalog list; it only needs to surface via
+  `getWishlistGifts` on `/wishlist`, so no change needed there.
+- New hook `hooks/dashboard/use-wishlist-gift.ts` (manual-loading pattern,
+  matches `useUpdateBankDetails.ts`).
+- Verify: adding a gift from `/gifts` makes it appear on `/wishlist` with
+  correct favorite/group flags; removing it updates both views.
+
+### Phase 3 — Event URL/slug write-path
+Small, blocks Phase 4.
+
+- New action in `actions/data/event.ts`: `updateEventUrl(eventId, url)` —
+  validate via `EventUrlFormSchema`, check uniqueness against `Event.url`,
+  update, `revalidatePath`.
+- New form + hook using `EventUrlFormSchema`, surfaced in event-settings
+  (check Figma for placement — likely a "your site is at
+  wedin.com/e/{url}" field near the other settings forms).
+- Verify: setting a URL rejects duplicates with a friendly error; valid
+  submission persists and is reflected in `getEventById`/new `getEventByUrl`.
+
+### Phase 4 — Guest-facing public event site
+Net-new route tree outside `(dashboard)`/`(default)`, never importing the
+session-gated `getEvent()`.
+
+**Reference (Figma)** — same frame covers Phase 4's catalog and Phase 5's
+cart bar at the bottom:
+
+![Guest catalog with category filters and cart bar](docs/plan-assets/phase4-5-guest-catalog-and-cart.png)
+
+- New `actions/data/public-event.ts` (`'use server'`, deliberately no
+  `getCurrentUser()` call anywhere in the file): `getEventByUrl(slug)` — new
+  function, not a rename of `getEventById` — and `getPublicWishlistGifts(eventId)`.
+  Kept as a separate file from `actions/data/event.ts` so no session-gated
+  function can accidentally leak into the public route tree.
+- `app/events/[slug]/page.tsx` — resolves via `getEventByUrl`; `notFound()`
+  if missing or "unpublished" (define published = `url` set AND ≥1
+  `WishlistGift` row, reused by Phase 9's checklist logic).
+- Gift catalog section reuses the `Category`-filter/grid-row UI pattern
+  from `app/(default)/gifts/page.tsx`. Group-gift progress = sum of
+  `COMPLETED` transactions for that `WishlistGift` vs. `gift.price`
+  (both stored as `String`, parse before comparing).
+- `app/events/layout.tsx` — minimal public layout, no dashboard chrome.
+- Verify: visiting `/events/{url}` in a logged-out/incognito browser
+  renders the event without redirecting to `/login`.
+
+### Phase 5 — Cart (Zustand)
+First real Zustand store in the codebase — `zustand` is installed and
+`hooks/use-store.ts`'s hydration-safe wrapper exists, but zero stores exist
+today; this phase sets the pattern.
+
+- New `hooks/use-cart-store.ts` — `create(persist(...))`, localStorage key
+  scoped per event (`wedin-cart-{eventId}`, since a guest could browse
+  multiple couples' sites in one browser). Line-item `amount` kept as a
+  `string` to match the `Transaction.amount`/`groupGiftParts` string
+  convention noted above and avoid float rounding.
+- Every client consumer goes through `useStore(useCartStore, selector)` per
+  the existing hydration-safe contract in `hooks/use-store.ts` — this is
+  the one genuinely new pattern to get right, since it's never been
+  exercised in this repo.
+- New `components/cart/` — drawer (`Dialog`, not `AlertDialog`, per
+  convention), item row, header badge.
+- Verify: adding/removing cart items persists across a page refresh
+  (localStorage), scoped per event.
+
+### Phase 6 — Checkout + dLocal Go integration
+Largest phase. dLocal Go's API shape is now verified (see "dLocal Go API
+research" above) — `POST /v1/payments` with `currency: "PYG"`, `country:
+"PY"`; still needs a follow-up correction pass once real sandbox
+credentials are available and a live call/webhook has actually been
+exercised.
+
+**Reference (Figma):**
+
+![Checkout form with payment method choice](docs/plan-assets/phase6-checkout-form.png)
+![Manual bank-transfer instructions + WhatsApp proof step](docs/plan-assets/phase6-checkout-bank-transfer-instructions.png)
+![Generic thank-you screen (low-fidelity placeholder)](docs/plan-assets/phase6-checkout-thank-you.png)
+
+- New `schemas/checkout.ts`: `GuestCheckoutSchema` (`payerName`,
+  `payerEmail`, cart line items).
+- New `actions/data/checkout.ts`:
+  - `createTransactionsForCart` — creates `OPEN` `Transaction` rows per
+    cart line with `payerName`/`payerEmail` (Phase 1), `payerRole: INVITEE`,
+    `payeeRole: ORGANIZER` (both already the schema defaults).
+  - `createDlocalCheckoutSession` — calls dLocal Go to create a checkout
+    session for the total, persists the returned reference onto
+    `dlocalPaymentId`, returns the redirect URL.
+- New `lib/dlocal.ts` — server-only wrapper following the
+  `actions/upload-to-s3.ts` convention exactly: instantiate the client at
+  module scope from `process.env.*`, no config abstraction layer. New env
+  vars (none exist today): `DLOCAL_GO_API_KEY`, `DLOCAL_GO_SECRET_KEY`.
+  No separate webhook secret exists — per the research above, the
+  `V2-HMAC-SHA256` webhook signature is computed from the same API key +
+  secret key already used for request auth (`HMAC-SHA256(ApiKey + rawBody,
+  SecretKey)`), so `DLOCAL_GO_WEBHOOK_SECRET` is not a real dLocal Go
+  concept and should not be added.
+- New `app/events/[slug]/checkout/page.tsx` +
+  `hooks/checkout/use-checkout.ts` (RHF + `zodResolver(GuestCheckoutSchema)`,
+  manual-loading pattern per convention).
+- New webhook route `app/api/webhooks/dlocal/route.ts` — repo's
+  second-ever API route. The incoming POST body is only
+  `{"payment_id": "..."}` — the handler must call back
+  `GET /v1/payments/:payment_id` to learn the real `status` before doing
+  anything (see research above). On `status: "PAID"`: look up
+  `Transaction` by `dlocalPaymentId`, set `COMPLETED`, write a
+  `TransactionStatusLog` with `changedById: null` (Phase 1's schema
+  change), recompute `WishlistGift.isFullyPaid` (sum `COMPLETED`
+  transactions vs. `gift.price`; for `isGroupGift`, increment
+  `groupGiftParts` — parse the string, don't reinterpret as Int — and mark
+  paid only once the sum covers the price). Must be idempotent (no-op if
+  already `COMPLETED`), since dLocal retries non-200 responses every 10
+  minutes for up to 30 days. Verify the `V2-HMAC-SHA256` signature
+  (`HMAC-SHA256(ApiKey + rawJsonBody, SecretKey)`, header
+  `Authorization: V2-HMAC-SHA256, Signature: <hex>`) against the **raw**
+  request body — call `request.text()` before `JSON.parse`.
+- Still deferred to implementation time (needs a real sandbox account to
+  confirm): exact PYG amount rounding/decimals in a live response, refund
+  request/response shape (`create-a-refund`/`retrieve-a-refund` pages
+  weren't read in this pass), idempotency-key support for double-click
+  checkout protection, and the contents of `errors.md`/`rate-limits.md`
+  for `lib/dlocal.ts`'s error handling.
+- Verify: a full guest checkout in dLocal Go's sandbox/test mode ends with
+  the `Transaction` flipping to `COMPLETED` via the webhook, and
+  `WishlistGift.isFullyPaid` updates correctly for both individual and
+  group gifts (test group-gift partial payment specifically);
+  double-submitting the same webhook payload manually confirms
+  idempotency.
+
+### Phase 7 — Regalos recibidos ledger + "Agradecer"
+
+**Reference (Figma):**
+
+![Regalos recibidos ledger with summary stats and Agradecer buttons](docs/plan-assets/phase7-regalos-recibidos.png)
+
+- New `actions/data/transaction.ts`: `getTransactions` (using
+  `GetTransactionsParams`), `updateTransactionNotes` (using
+  `TransactionEditSchema` — must pass the transaction's current `status`
+  through alongside the new `notes`, since the schema requires it).
+- Open product question to confirm before building this one sub-feature:
+  does "Agradecer" mean a thank-you note stored on `Transaction.notes`, or
+  a transactional email to `payerEmail` via the already-installed
+  `resend`/`nodemailer`? Check the Figma flow; if unresolved, implement
+  the `notes`-only version first (cheaper, reversible) and flag the email
+  variant as a follow-up.
+- Rewrite `components/dashboard/dashboard-transactions.tsx` as an async
+  Server Component (same conversion pattern as Phase 2), real CSS-grid
+  rows instead of the static `EmptyState`.
+- Verify: completed transactions appear on `/transactions` ordered by
+  date; "Agradecer" performs whichever confirmed behavior.
+
+### Phase 8 — Wallet balance + withdrawal ("Enviar a mi cuenta")
+
+Manual-admin-processed for MVP: `BankDetails` has zero gateway account
+tokens today — it's built for a human to read and act on, not an API
+target. Automated multi-country payout is a separate integration surface;
+don't bundle it into this phase.
+
+**Reference (Figma)** — accessed via a "Mi perfil" profile-menu route
+rather than the dashboard sidebar (consistent across all 4 design
+variants of this screen, not a stale iteration):
+
+![Billetera balance card + movements ledger with pending/confirmed states](docs/plan-assets/phase8-billetera.png)
+
+- `getEventBalance(eventId)` — sum `COMPLETED` transaction amounts minus
+  sum of non-`REJECTED` `Payout` amounts (Phase 1's model).
+- New `actions/data/payout.ts`: `getPayouts`, `requestPayout` (validates
+  `amount <= balance`, creates a `Payout` row with `status: REQUESTED` —
+  does **not** call any transfer API; an operator flips status by hand
+  later, or via a future admin-gated route). **Do not** rely on
+  `adminRoutes`/`isAdminRoute` in `middleware.ts` as real protection for
+  that future route — it's dead code today (see Verified Facts); fix the
+  `console.log` into an actual redirect first if/when that route is built.
+- New `components/dialog/request-payout-dialog.tsx` wired to the existing
+  no-op "Gestionar retiro" button in `dashboard-transactions.tsx`.
+- New `components/dashboard/wallet-balance-card.tsx`.
+- Verify: `requestPayout` rejects an amount greater than the computed
+  balance; the balance correctly excludes already-requested payouts.
+
+### Phase 9 — Dashboard home real progress tracking
+Lowest complexity, highest visible payoff — buildable any time after
+Phase 3, in parallel with 4-8.
+
+**Reference (Figma):**
+
+![Dashboard home checklist with progress bar](docs/plan-assets/phase9-dashboard-home-checklist.png)
+
+- Rewrite `components/dashboard/dashboard-home.tsx` as an async Server
+  Component. Replace every hardcoded checklist row (lines 28-95 today)
+  with a real condition: presentación (`coverMessage` + images), guest
+  count (`event.guests`, already exists), ≥1 gift (Phase 2's
+  `getWishlistGifts` count), event config (existing
+  `date`/`country`/`city`/`partnerName`), bank details
+  (`!!getBankDetails()`), site URL (`!!event.url`, Phase 3). Compute the
+  real `X / 6` progress bar (currently hardcoded "1 de 6" / `value={26}`).
+  Enable "Ver sitio web" (currently `disabled`) once `event.url` is set,
+  linking to `/events/{url}`.
+- Verify: toggling each underlying condition (adding a gift, setting bank
+  details, setting the URL, etc.) updates the corresponding checklist row
+  and the progress bar.
+
+## Recommended build order
+
+**1 → 2 → 3 → 4 → 5 → 6 → 7 → 8**, with **9** slotted in any time after
+Phase 3 (good candidate to do second, for a visible win before the public
+site work).
+
+## Critical files
+- `prisma/schema.prisma`
+- `schemas/form.ts`, `schemas/params.ts` (reuse existing schemas, don't recreate)
+- `actions/data/event.ts`, `actions/data/gift.ts`, `actions/upload-to-s3.ts` (patterns to mirror)
+- `hooks/use-store.ts` (cart hydration pattern), `hooks/dashboard/useUpdateBankDetails.ts` (form-hook pattern)
+- `middleware.ts`, `lib/routes.ts` (no changes needed for the new public route; admin gate is broken, noted above)
+- `components/dashboard/dashboard-home.tsx`, `dashboard-transactions.tsx`, `dashboard-wishlist.tsx`
+- `app/(default)/gifts/page.tsx` (list/row convention to reuse)
