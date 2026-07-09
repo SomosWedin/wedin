@@ -293,10 +293,11 @@ Small, blocks Phase 4.
 Net-new route tree outside `(dashboard)`/`(default)`, never importing the
 session-gated `getEvent()`.
 
-**Reference (Figma)** — same frame covers Phase 4's catalog and Phase 5's
-cart bar at the bottom:
+**Reference (Figma)** — full guest flow in one frame: hero header, gift grid,
+and the three "Agregar regalo" dialog states (fixed-price/group detail, monto
+libre, cart):
 
-![Guest catalog with category filters and cart bar](docs/plan-assets/phase4-5-guest-catalog-and-cart.png)
+![Guest hero, gift grid, and add-to-cart dialog states (fixed-price, monto libre, cart)](docs/plan-assets/phase4-guest-experience-full-flow.png)
 
 - New `actions/data/public-event.ts` (`'use server'`, deliberately no
   `getCurrentUser()` call anywhere in the file): `getEventByUrl(slug)` — new
@@ -306,13 +307,39 @@ cart bar at the bottom:
 - `app/events/[slug]/page.tsx` — resolves via `getEventByUrl`; `notFound()`
   if missing or "unpublished" (define published = `url` set AND ≥1
   `WishlistGift` row, reused by Phase 9's checklist logic).
-- Gift catalog section reuses the `Category`-filter/grid-row UI pattern
-  from `app/(default)/gifts/page.tsx`. Group-gift progress = sum of
-  `COMPLETED` transactions for that `WishlistGift` vs. `gift.price`
-  (both stored as `String`, parse before comparing).
+- **Hero section**: render `event.coverMessage` + `event.images` (the same
+  fields edited on the dashboard's Presentación screen) plus couple name(s)
+  and date, above the catalog — matches the reference frame's header
+  ("Crisley & Yayo", "Nos casamos el 14 de febrero de 2027", welcome message,
+  "Ver los regalos" CTA). Part of `getEventByUrl`'s payload, not a separate
+  fetch.
+- Gift catalog section reuses the `Category`-filter/grid-row UI pattern from
+  `app/(default)/gifts/page.tsx`, plus the reference frame's type filter
+  (Todos / Regalo individual / Regalo grupal) and search/sort controls.
+  Group-gift progress = sum of `COMPLETED` transactions for that
+  `WishlistGift` vs. `gift.price` (both stored as `String`, parse before
+  comparing) — rendered as the "Faltan: Gs. X / 30%" progress bar shown on
+  grouped/favorite cards in the reference.
+- **Gift detail is a dialog, not a page** — corrects the earlier draft of
+  this phase, which assumed an undesigned detail route. The reference frame
+  shows it as an "Agregar regalo" `Dialog` opened from a card's
+  "Seleccionar monto" / "Agregar al carrito" button, with two variants:
+  - **Fixed-price / group gift**: product image, title, price, group/favorite
+    badges, progress bar, a contribution-amount input, and a "Completar el
+    valor total del regalo" checkbox (pay the remaining balance in full).
+  - **Monto libre**: no product image/price — a "Montos sugeridos" radio
+    list (Gs. 100.000 / 500.000 / 1.000.000 / 5.000.000 / "Otro monto" with a
+    free-text input). The preset amounts match `Event.giftAmounts` /
+    `GiftAmountsFormSchema`'s four `giftAmount1..4` fields (already in the
+    schema, unwired) — this dialog is the consumer of that data, not a new
+    input surface.
+  Both variants end in "Cancelar" / "Agregar al carrito" — added lines are
+  cart entries (Phase 5), not immediate transactions.
 - `app/events/layout.tsx` — minimal public layout, no dashboard chrome.
-- Verify: visiting `/events/{url}` in a logged-out/incognito browser
-  renders the event without redirecting to `/login`.
+- Verify: visiting `/events/{url}` in a logged-out/incognito browser renders
+  the event (hero + catalog) without redirecting to `/login`; opening a gift
+  card's dialog shows the correct variant (fixed-price vs. monto libre) and
+  "Agregar al carrito" adds the right line item.
 
 ### Phase 5 — Cart (Zustand)
 First real Zustand store in the codebase — `zustand` is installed and
@@ -329,7 +356,21 @@ today; this phase sets the pattern.
   the one genuinely new pattern to get right, since it's never been
   exercised in this repo.
 - New `components/cart/` — drawer (`Dialog`, not `AlertDialog`, per
-  convention), item row, header badge.
+  convention), item row, header badge, plus a persistent sticky bottom bar
+  while the catalog has ≥1 cart item: item count + cash total + a "Ver mi
+  carrito" CTA (never a "pay" CTA at this layer). Full-page context, then a
+  close-up of the confirmed design:
+
+  ![Sticky cart bar in page context: item count, total, "Ver mi carrito"](docs/plan-assets/phase5-sticky-cart-bar-v1.png)
+  ![Sticky cart bar close-up: "Cantidad de regalos", "En efectivo", "Ver mi carrito"](docs/plan-assets/phase5-sticky-cart-bar-v2.png)
+
+  Confirmed with the user: inside the "Carrito" dialog itself (Phase 4's
+  frame), clicking "Agregar al carrito" / "Pagar ahora" on a line only adds
+  it to the cart — it does not initiate payment despite the label. Actual
+  checkout only begins from a deliberate next step (opening the full cart
+  view via "Ver mi carrito"/"Ir al carrito", then proceeding to Phase 6's
+  checkout page) — don't wire either dialog button directly to
+  `createDlocalCheckoutSession`.
 - Verify: adding/removing cart items persists across a page refresh
   (localStorage), scoped per event.
 
