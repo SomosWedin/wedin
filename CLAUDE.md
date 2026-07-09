@@ -44,7 +44,7 @@ checkout/wallet loop, see `plan-ultraplan.md`.
 
 ## Stack
 - Next.js (App Router) + TypeScript
-- Prisma (PostgreSQL) — schema in `prisma/`
+- Prisma (MongoDB) — schema in `prisma/`
 - NextAuth (`@auth/prisma-adapter`) for auth
 - TanStack Query for client data fetching
 - Radix UI + Tailwind for components
@@ -56,8 +56,11 @@ checkout/wallet loop, see `plan-ultraplan.md`.
 - `yarn build` — runs `prisma generate` then `next build`
 - `yarn start` — run production build
 - `yarn lint` — Next.js lint
-- `yarn prisma migrate dev` — apply DB migrations locally
+- `yarn prisma generate` — regenerate the Prisma client after a schema change
+- `yarn prisma db push` — push schema changes to MongoDB (no migration files —
+  Mongo connector doesn't support `prisma migrate`)
 - `yarn prisma db seed` — seed the database (`prisma/seed.ts`)
+- `yarn prisma studio` — open Prisma Studio to browse/edit the database
 
 ## Project layout
 - `app/` — routes, grouped: `(auth)`, `(dashboard)`, `(default)`, plus `onboarding/` and `api/`

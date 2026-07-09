@@ -239,9 +239,9 @@ One migration underpinning everything else.
   FKs to `Event`, `BankDetails`, `User` (`requestedBy`) — needed by Phase 8,
   no equivalent exists today.
 - No change to `Event.url` / `Event.giftAmounts` — reuse as-is.
-- Run `npx prisma generate` (MongoDB provider — no migration files, schema
+- Run `yarn prisma generate` (MongoDB provider — no migration files, schema
   push only).
-- Verify: `npx prisma generate` succeeds; no type errors in existing files
+- Verify: `yarn prisma generate` succeeds; no type errors in existing files
   referencing `Transaction`/`TransactionStatusLog`.
 
 ### Phase 2 — Wishlist-gift linking ("Mi lista" + "Agregar a la lista")
