@@ -4,12 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { login, checkUserExists } from '@/actions/auth/login';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { LoginSchema } from '@/schemas/auth';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import debounce from 'lodash.debounce';
-// import { Button } from '@/components/ui/button';
-// import Link from 'next/link';
 
 export function useLoginForm() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -37,12 +36,18 @@ export function useLoginForm() {
     if (exists) {
       setUserExists(true);
     } else {
-      //router.push('/register');
       localStorage.setItem('registerEmail', email);
       toast({
         variant: 'destructive',
-        title: 'Error! 😢',
-        description: `No existe cuenta con ${email}`,
+        description: `Todavía no tenés una cuenta con ${email}.`,
+        action: (
+          <ToastAction
+            altText="Registrarme"
+            onClick={() => router.push('/register')}
+          >
+            Registrarme
+          </ToastAction>
+        ),
       });
     }
   };
