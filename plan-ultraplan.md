@@ -493,6 +493,73 @@ libre, cart):
   card's dialog shows the correct variant (fixed-price vs. monto libre) and
   "Agregar al carrito" adds the right line item.
 
+**Status: ✅ Done** for fixed-price/group gifts, live-verified (Playwright
+against the real dev DB, disposable test event created and torn down in a
+`finally`-equivalent cleanup step, not just typechecked).
+
+Delivered as planned: `actions/data/public-event.ts` (`getEventByUrl`,
+`getPublicWishlistGifts`, no `getCurrentUser()` import), `app/e/layout.tsx`
+(wedin logo + "Compartir lista" clipboard-copy button, reusing the same
+`w-icon.svg` mark as `app/not-found.tsx`), `app/e/[slug]/page.tsx`
+(`notFound()` when the event is missing or has zero `WishlistGift` rows),
+hero (`components/guest/guest-hero.tsx` + `guest-image-carousel.tsx`, couple
+name derived from `users` — primary + secondary `isPrimary` flag, same
+convention as `event-settings.tsx`), and the gift catalog
+(`components/guest/guest-gift-catalog.tsx` + `guest-gift-card.tsx`) with the
+Todos/Individual/Grupal type filter, search, category and sort controls, and
+the fixed-price/group "Detalles del producto" dialog
+(`components/dialog/gift-contribution-dialog.tsx`).
+
+**Scope correction made live with the user, before writing code**: the plan
+text assumed a schema/UI mechanism for "monto libre" gifts existed or would
+be obvious, but nothing in `prisma/schema.prisma`, the live dev DB, or
+`prisma/seed.ts` marks a `Gift` as open-amount cash (no `Dinero` category, no
+boolean flag, `Gift.price` is a required `String`) — a real gap the plan
+never resolved. Confirmed with the user to **skip the monto libre dialog
+variant for this pass**. Only the fixed-price/individual card (direct
+"Agregar al carrito", full price, no dialog) and the group-gift card
+("Seleccionar monto" → contribution dialog with progress bar + "Completar el
+valor total del regalo" checkbox) are built. **Follow-up needed before monto
+libre can be built**: decide how a `Gift` is marked open-amount (a new
+`Gift.isOpenAmount Boolean` field was the recommended option, discussed but
+not yet decided) — this also blocks wiring `Event.giftAmounts` /
+`GiftAmountsFormSchema`'s four preset amounts into any UI, since that data
+has no consumer yet.
+
+Also decided/found during implementation, not in the original plan text:
+- **Cart is deliberately not persisted yet.** "Agregar al carrito" appends to
+  a local `useState` array inside `guest-gift-catalog.tsx` (confirmed via
+  toast + Playwright) with no drawer, sticky bar, or localStorage — those are
+  explicitly Phase 5's scope (`hooks/use-cart-store.ts` Zustand + persist).
+  Building real cart UI now would either duplicate or conflict with Phase 5's
+  planned architecture.
+- **Individual vs. group dialog dispatch**: re-reading the Figma frame
+  closely, only group gifts open a dialog at all — a fixed-price individual
+  gift's "Agregar al carrito" adds the full price directly, no dialog step.
+  The plan's dialog spec only documents the dialog's *contents*, not this
+  dispatch rule, so it's called out here explicitly for Phase 5+ to rely on.
+- **Already-fully-paid gifts** (`WishlistGift.isFullyPaid`) show a "Regalo
+  recibido" badge and hide the CTA entirely (both card types) — not in the
+  Figma reference (which has no example of this state) but a real guest-facing
+  gap without it: a guest could otherwise try to contribute to a gift that's
+  already fully funded.
+- Reused existing conventions rather than introducing new ones: native
+  `<select>` filter dropdowns (matches `gifts-filter-bar.tsx` /
+  `dashboard-wishlist-list.tsx`, sidesteps the known unmapped
+  shadcn-theme-token gap noted in Phase 2 rather than hitting it a second
+  time), `Checkbox` used as-is like `StepThree`/`StepFour` (same unmapped-token
+  gap, not fixed here — out of scope for this phase), `Progress` bar
+  component as already used in `dashboard-home.tsx`.
+- **Verified date-of-week discrepancy while testing was a test-data artifact,
+  not a code bug**: seeding the test event's `date` via `new Date('2027-02-14')`
+  (UTC midnight) and then formatting it with `date-fns` `format()` (local time)
+  in Paraguay's UTC-3 offset displays "13 de febrero" — but this exactly
+  mirrors `event-settings.tsx`'s existing `format(field.value, 'PPP', ...)`
+  pattern, and real dates come from the dashboard's `Calendar` picker
+  (constructs a local-time `Date`, not a UTC-midnight one), so this isn't
+  expected to reproduce from the real onboarding/event-settings flow — flagged
+  here rather than silently fixed, in case a future phase touches date storage.
+
 ### Phase 5 — Cart (Zustand)
 First real Zustand store in the codebase — `zustand` is installed and
 `hooks/use-store.ts`'s hydration-safe wrapper exists, but zero stores exist
