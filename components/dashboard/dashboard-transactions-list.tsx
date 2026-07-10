@@ -6,9 +6,12 @@ import {
   IoArrowUndoOutline,
   IoCashOutline,
   IoCheckmark,
+  IoChevronDown,
+  IoChevronUp,
   IoClose,
   IoGiftOutline,
   IoSearchOutline,
+  IoSwapVerticalOutline,
   IoSync,
   IoTimeOutline,
 } from 'react-icons/io5';
@@ -60,11 +63,42 @@ const ESTADO_OPTIONS = (
   Object.entries(ESTADO_BY_STATUS) as [TransactionStatus, { label: string }][]
 ).map(([status, { label }]) => ({ value: status, label }));
 
+type SortColumn = 'createdAt' | 'amount';
+type SortDirection = 'asc' | 'desc';
+
+function SortIcon({
+  column,
+  activeColumn,
+  direction,
+}: {
+  column: SortColumn;
+  activeColumn: SortColumn | null;
+  direction: SortDirection;
+}) {
+  if (activeColumn !== column) {
+    return <IoSwapVerticalOutline className="text-gray-400" />;
+  }
+
+  return direction === 'asc' ? <IoChevronUp /> : <IoChevronDown />;
+}
+
 export default function DashboardTransactionsList({
   transactions,
 }: DashboardTransactionsListProps) {
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn !== column) {
+      setSortColumn(column);
+      setSortDirection('desc');
+      return;
+    }
+
+    setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'));
+  };
 
   const completedTransactions = transactions.filter(
     transaction => transaction.status === 'COMPLETED'
@@ -88,9 +122,20 @@ export default function DashboardTransactionsList({
     return matchesSearch && matchesEstado;
   });
 
+  const sortedTransactions = sortColumn
+    ? [...filteredTransactions].sort((a, b) => {
+        const diff =
+          sortColumn === 'createdAt'
+            ? a.createdAt.getTime() - b.createdAt.getTime()
+            : Number(a.amount) - Number(b.amount);
+
+        return sortDirection === 'asc' ? diff : -diff;
+      })
+    : filteredTransactions;
+
   return (
     <div className="flex flex-col gap-6 w-full">
-      <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
+      <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-24">
         <div className="flex flex-col gap-1 p-6 w-full justify-center">
           <h2 className="text-lg font-bold">
             Resúmen de los regalos recibidos
@@ -152,20 +197,42 @@ export default function DashboardTransactionsList({
       <div className="bg-white rounded-lg">
         <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50 rounded-t-lg">
           <div className="col-span-2">Nombre</div>
-          <div className="col-span-2">Fecha</div>
-          <div className="col-span-2">Monto</div>
+          <button
+            type="button"
+            className="flex col-span-2 gap-1 items-center text-left hover:text-textPrimary"
+            onClick={() => handleSort('createdAt')}
+          >
+            Fecha
+            <SortIcon
+              column="createdAt"
+              activeColumn={sortColumn}
+              direction={sortDirection}
+            />
+          </button>
+          <button
+            type="button"
+            className="flex col-span-2 gap-1 items-center text-left hover:text-textPrimary"
+            onClick={() => handleSort('amount')}
+          >
+            Monto
+            <SortIcon
+              column="amount"
+              activeColumn={sortColumn}
+              direction={sortDirection}
+            />
+          </button>
           <div className="col-span-2">Regalo</div>
           <div className="col-span-2">Estado</div>
           <div className="col-span-2" />
         </div>
 
-        {filteredTransactions.length === 0 && (
+        {sortedTransactions.length === 0 && (
           <div className="text-center py-12 text-gray-500">
             No se encontraron regalos
           </div>
         )}
 
-        {filteredTransactions.map(transaction => {
+        {sortedTransactions.map(transaction => {
           const payerName = transaction.payerName ?? 'Anónimo';
           const estado = ESTADO_BY_STATUS[transaction.status];
 
