@@ -42,14 +42,17 @@ export default async function GiftsPage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <Link href="/wishlist" className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-2 gap-2">
+            <Link
+              href="/wishlist"
+              className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-2 gap-2"
+            >
               <ChevronLeft className="w-4 h-4" />
               Volver
             </Link>
             <h1 className="text-3xl font-black">Agregar regalos</h1>
             <p className="text-textTertiary mt-2">
-              Explorá los regalos disponibles y agregalos a tu lista, o creá
-              los tuyos propios.
+              Explorá los regalos disponibles y agregalos a tu lista, o creá los
+              tuyos propios.
             </p>
           </div>
           <CreateGiftDialog
@@ -61,7 +64,7 @@ export default async function GiftsPage({
 
         <Tabs defaultValue="todos" className="w-full">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <TabsList className='gap-3'>
+            <TabsList className="gap-3">
               <TabsTrigger value="todos" className="gap-2">
                 <IoGiftOutline className="text-lg" />
                 Todos los productos
@@ -91,7 +94,7 @@ export default async function GiftsPage({
                     No se encontraron regalos
                   </div>
                 ) : (
-                  gifts.map((gift) => (
+                  gifts.map(gift => (
                     <GiftRow
                       key={gift.id}
                       gift={gift}
@@ -113,13 +116,13 @@ export default async function GiftsPage({
                   No se encontraron listas predefinidas
                 </div>
               ) : (
-                giftlists.map((giftlist) => (
+                giftlists.map(giftlist => (
                   <div
                     key={giftlist.id}
-                    className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                    className="border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow"
                   >
                     <div className="grid grid-cols-2 gap-2 mb-4">
-                      {giftlist.gifts.slice(0, 4).map((gift) => (
+                      {giftlist.gifts.slice(0, 4).map(gift => (
                         <div
                           key={gift.id}
                           className="aspect-square bg-gray-200 rounded flex items-center justify-center overflow-hidden"
@@ -144,10 +147,21 @@ export default async function GiftsPage({
                       </Badge>
                       <h3 className="text-lg font-bold">{giftlist.name}</h3>
                       <p className="text-lg font-semibold">
-                        Gs. {giftlist.gifts.reduce((sum, gift) => sum + Number(gift.price || 0), 0).toLocaleString()}
+                        Gs.{' '}
+                        {giftlist.gifts
+                          .reduce(
+                            (sum, gift) => sum + Number(gift.price || 0),
+                            0
+                          )
+                          .toLocaleString()}
                       </p>
                     </div>
-                    <Button variant="outline" asChild>
+                    <Button
+                      className="hover:bg-gray100 transition-colors"
+                      variant="outline"
+                      asChild
+                      size="lg"
+                    >
                       <Link href={`/gifts/lists/${giftlist.id}`}>
                         Ver paquete
                       </Link>
