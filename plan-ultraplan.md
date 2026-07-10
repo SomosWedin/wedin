@@ -789,6 +789,124 @@ exercised.
 - Verify: completed transactions appear on `/transactions` ordered by
   date; "Agradecer" performs whichever confirmed behavior.
 
+**Status: ✅ Done**, built without Phase 6 (checkout/dLocal) — that phase is
+explicitly skipped for now, and nothing here depends on it. `getTransactions`
+just reads `COMPLETED` `Transaction` rows; three dummy rows were inserted
+directly into the dev DB to develop and live-verify against, no checkout
+flow required. Live-verified with Playwright: real login
+(`me+parejas@avilaca.com` on the `avilaca` dev event — password set to a
+known test value for this, see note below), `/transactions` renders the
+ledger with correct summary totals, "Agradecer" saves a note and the row
+flips to a disabled "Agradecido" state after a refresh (see the one-time-
+Agradecer note below — this replaced an editable "Editar agradecimiento"
+state from the first pass), zero console errors.
+
+Delivered as planned: `actions/data/transaction.ts` (`getTransactions`,
+`updateTransactionNotes`), `dashboard-transactions.tsx` rewritten as an
+async Server Component (`getEvent()` → `getTransactions()`, `Suspense` +
+`lazy()`, same pattern as Phase 2's `dashboard-wishlist.tsx`), new
+`components/dashboard/dashboard-transactions-list.tsx` (summary card + Nombre/
+Monto/Regalo/Agradecer table, matches `dashboard-wishlist-list.tsx`'s grid
+pattern), new `components/dialog/thank-transaction-dialog.tsx`, new
+`components/skeletons/dashboard-transactions.tsx`.
+
+**Open product question resolved by taking the plan's own documented
+fallback**: built the `notes`-only "Agradecer" (pre-filled "¡Muchas gracias,
+{payerName}! 💚", editable `Textarea`, saves to `Transaction.notes`). Button
+label reads "Agradecer" vs. "Editar agradecimiento" based on whether `notes`
+is already set — a free state marker, no schema change needed. Email variant
+still a follow-up if wanted later.
+
+**Scope correction made live with the user, after the first pass**: the
+plan's own verify text ("completed transactions appear") led the first
+implementation to hardcode `status: 'COMPLETED'` inside `getTransactions`.
+Revisited with the user: `Payout` (Phase 8) and `Transaction` (this phase)
+are separate collections tracking opposite directions of money (wallet →
+bank vs. guest → wallet), so there's no overlap risk from showing more
+`Transaction` statuses here — the `COMPLETED`-only filter was an unnecessary
+self-imposed restriction, not something required to keep Phase 7 and 8
+clean of each other. Changed to: `getTransactions` returns every status for
+the event; the table adds **Fecha** (`createdAt`, `dd/MM/yyyy`) and
+**Estado** columns (`ESTADO_BY_STATUS` badge map in
+`dashboard-transactions-list.tsx` — `COMPLETED`→"Recibido" success,
+`PENDING`→"En proceso" warning, `OPEN`→"Pendiente de pago" gray,
+`FAILED`→"Fallido" error, `REFUNDED`→"Reembolsado" gray). The summary
+card's count/total and the "Agradecer" button's visibility still filter to
+`COMPLETED` only — showing a `FAILED` row's amount as "cash received," or
+offering to thank a guest for a payment that never landed, would both be
+wrong even though the row itself should be visible.
+
+**Real pre-existing bug found and fixed while seeding test data**:
+`Transaction.dlocalPaymentId String? @unique` (added in Phase 1) never got
+its Mongo index converted to `sparse: true` — the exact gotcha
+`CLAUDE.md` already documents for `Image.giftId`/`Event.url`/`User.email`,
+just missed for this fourth field since Phase 1 had no real consumer to
+surface it (Phase 6, which would set it, doesn't exist yet). A second
+`Transaction` with no `dlocalPaymentId` threw `P2002` on create. Fixed via
+the documented `$runCommandRaw` `dropIndexes`/`createIndexes` pattern
+against the dev DB, and added the same NOTE-comment block above the field in
+`schema.prisma` as the other three examples — copy that comment's exact
+commands if this index is ever recreated on a fresh environment.
+
+**Test credentials note**: to drive this live through the real login form
+(not just typechecked), `me+parejas@avilaca.com`'s password was set to a
+known value directly in the dev DB (bcrypt-hashed, same method as
+`actions/auth/register.ts`) and `emailVerified` was stamped — this is the
+existing `avilaca`-slug dev event's primary user. Also confirmed live: the
+`signIn` callback in `auth.ts` always returns `true` regardless of
+`emailVerified` (both branches), so verification is not actually enforced
+at login today — dead check, same class of finding as the `isAdminRoute`
+dead code already noted elsewhere in this doc. Flag to the user: decide
+whether to keep this test password or rotate/clear it.
+
+**Second round of changes, driven by the user reviewing the live page**
+(all in `components/dashboard/dashboard-transactions-list.tsx` /
+`components/dialog/thank-transaction-dialog.tsx` unless noted):
+
+- **Agradecer made one-time, not editable.** The first pass's "Editar
+  agradecimiento" (reopens the dialog once notes exist) was wrong — thanking
+  a guest is a single action, not an editable note. Now: once
+  `transaction.notes` is set, the row shows a disabled "Agradecido" button
+  instead of a dialog trigger. `thank-transaction-dialog.tsx` early-returns
+  the disabled state before rendering any `Dialog` at all in that case.
+- **Estado badges got icons** (`ESTADO_BY_STATUS` now carries an `icon` per
+  status alongside `label`/`className`: checkmark/sync/clock/close/undo),
+  matching a reference pill design the user provided.
+- **Search + Estado filter added**, styled identically to `/wishlist`'s
+  filter row (`Input` with a leading `IoSearchOutline`, native `<select>`
+  for Estado built from `ESTADO_OPTIONS`, derived from `ESTADO_BY_STATUS`).
+  Search matches **either** `payerName` or `wishlistGift.gift.name`,
+  client-side over the already-fetched rows — same small-dataset pattern as
+  `dashboard-wishlist-list.tsx`, no new server round-trip.
+- **Fecha and Monto columns made sortable.** Clicking a header toggles
+  asc/desc (defaults to desc on first click); `SortIcon` shows a chevron on
+  the active column and a neutral `IoSwapVerticalOutline` on the inactive
+  one. Sort is applied after search/Estado filtering
+  (`sortedTransactions` derived from `filteredTransactions`).
+- **Summary card intentionally changed to count every status, not just
+  `COMPLETED`** — explicit user request ("inflate the numbers a bit"),
+  confirmed via `AskUserQuestion` that **both** "Regalos recibidos" (count)
+  and "Equivalente en efectivo" (cash total) should include all statuses,
+  not just the count. **This is a real, deliberate deviation from
+  correctness, not a bug**: "Equivalente en efectivo" no longer represents
+  money actually collected — it now includes `FAILED`/`PENDING`/`OPEN`/
+  `REFUNDED` amounts too. **Load-bearing for Phase 8**: the wallet balance
+  (`getEventBalance`) must NOT reuse this card's total — it needs a fresh
+  `COMPLETED`-only sum (the `WHERE status = 'COMPLETED'` filter this phase
+  deliberately removed from the *display* layer still needs to exist in
+  Phase 8's own balance calculation).
+- **Drive-by fixes riding along in this branch** (small, made directly by
+  the user, unrelated to Phase 7's core scope but worth flagging when the
+  PR is opened): `dashboard-wishlist-list.tsx` summary card capped to
+  `max-h-24` with a vertically-centered heading (matches the transactions
+  card); `admin-panel-layout.tsx` main background `bg-zinc-50` →
+  `bg-white`; `content-layout.tsx` height `h-screen` → `h-full` (the fixed
+  `h-screen` was causing overflow/double-scroll once a page's content list
+  — like this ledger — got taller than one viewport).
+- Nine dummy `Transaction` rows now exist on the `avilaca` dev event
+  (mixed statuses, dates spread across the last week) — useful test data
+  for Phase 8's balance/withdrawal work too, no need to reseed.
+
 ### Phase 8 — Wallet balance + withdrawal ("Enviar a mi cuenta")
 
 Manual-admin-processed for MVP: `BankDetails` has zero gateway account

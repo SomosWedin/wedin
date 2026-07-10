@@ -216,6 +216,16 @@ model Transaction {
   payeeRole       UserType          @default(ORGANIZER)
   payerName       String?
   payerEmail      String?
+  // NOTE: the underlying Mongo index (Transaction_dlocalPaymentId_key) must
+  // stay `sparse: true`. Every Transaction created before Phase 6's checkout
+  // exists (or any dummy/test row) has no dlocalPaymentId — Prisma's
+  // `@unique` gives no sparse option, so `db push` won't create/repair this —
+  // a non-sparse unique index only allows ONE transaction with a missing
+  // dlocalPaymentId ever; the second throws P2002. Found live while seeding
+  // test data for Phase 7. If this index is ever recreated (e.g. on a new
+  // environment), run manually:
+  //   db.Transaction.dropIndex("Transaction_dlocalPaymentId_key")
+  //   db.Transaction.createIndex({ dlocalPaymentId: 1 }, { unique: true, sparse: true, name: "Transaction_dlocalPaymentId_key" })
   dlocalPaymentId String?           @unique
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt

@@ -3,7 +3,7 @@ import DashboardTransactions from '@/components/dashboard/dashboard-transactions
 
 export default function TransactionsPage() {
   return (
-    <ContentLayout title="Mi lista">
+    <ContentLayout title="Regalos recibidos">
       <DashboardTransactions />
     </ContentLayout>
   );
