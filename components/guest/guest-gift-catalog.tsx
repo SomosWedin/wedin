@@ -4,23 +4,22 @@ import { useState } from 'react';
 import { IoGiftOutline, IoPeopleOutline, IoPersonOutline, IoSearchOutline } from 'react-icons/io5';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { useStore } from '@/hooks/use-store';
+import { useCartStore } from '@/hooks/use-cart-store';
 import GuestGiftCard, {
   type WishlistGiftWithGift,
 } from '@/components/guest/guest-gift-card';
 import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog';
+import CartStickyBar from '@/components/cart/cart-sticky-bar';
+import CartDrawer from '@/components/cart/cart-drawer';
 import { getGiftProgress } from '@/components/guest/gift-progress';
 import type { Category } from '@prisma/client';
 
 type TypeFilter = 'todos' | 'individual' | 'grupal';
 type SortOption = 'recientes' | 'precio-asc' | 'precio-desc';
 
-type CartItem = {
-  wishlistGiftId: string;
-  giftName: string;
-  amount: string;
-};
-
 type GuestGiftCatalogProps = {
+  eventId: string;
   wishlistGifts: WishlistGiftWithGift[];
   categories: Category[];
 };
@@ -32,27 +31,34 @@ const TYPE_FILTERS: { value: TypeFilter; label: string; icon: React.ReactNode }[
 ];
 
 export default function GuestGiftCatalog({
+  eventId,
   wishlistGifts,
   categories,
 }: GuestGiftCatalogProps) {
   const { toast } = useToast();
+  const cartStore = useCartStore(eventId);
+  const cartItems = useStore(cartStore, state => state.items) ?? [];
+
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sort, setSort] = useState<SortOption>('recientes');
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedWishlistGift, setSelectedWishlistGift] =
     useState<WishlistGiftWithGift | null>(null);
 
+  const cartTotal = cartItems.reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0
+  );
+
   const addToCart = (wishlistGift: WishlistGiftWithGift, amount: string) => {
-    setCartItems(previous => [
-      ...previous,
-      {
-        wishlistGiftId: wishlistGift.id,
-        giftName: wishlistGift.gift.name,
-        amount,
-      },
-    ]);
+    cartStore.getState().addItem({
+      wishlistGiftId: wishlistGift.id,
+      giftName: wishlistGift.gift.name,
+      giftImageUrl: wishlistGift.gift.image?.url ?? null,
+      amount,
+    });
     toast({
       title: 'Agregado al carrito 🎁',
       description: `${wishlistGift.gift.name} — Gs. ${Number(amount).toLocaleString(
@@ -104,7 +110,9 @@ export default function GuestGiftCatalog({
   return (
     <section
       id="lista-de-regalos"
-      className="px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8"
+      className={`px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 ${
+        cartItems.length > 0 ? 'pb-24' : ''
+      }`}
     >
       <h2 className="mb-6 text-3xl font-medium">Lista de regalos</h2>
 
@@ -192,6 +200,22 @@ export default function GuestGiftCatalog({
           onAddToCart={handleContributionSubmit}
         />
       )}
+
+      <CartStickyBar
+        itemCount={cartItems.length}
+        total={cartTotal}
+        onOpenCart={() => setIsCartOpen(true)}
+      />
+      <CartDrawer
+        open={isCartOpen}
+        onOpenChange={setIsCartOpen}
+        items={cartItems}
+        total={cartTotal}
+        onRemoveItem={id => {
+          cartStore.getState().removeItem(id);
+          if (cartItems.length === 1) setIsCartOpen(false);
+        }}
+      />
     </section>
   );
 }

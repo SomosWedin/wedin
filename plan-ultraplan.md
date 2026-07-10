@@ -650,6 +650,60 @@ today; this phase sets the pattern.
 - Verify: adding/removing cart items persists across a page refresh
   (localStorage), scoped per event.
 
+**Status: ✅ Done**, live-verified (Playwright against the real dev DB and
+dev server, not just typechecked): add-to-cart, sticky-bar visibility,
+drawer open, localStorage persistence across a full page reload, and
+remove-to-empty all confirmed with zero console errors.
+
+Delivered as planned: `hooks/use-cart-store.ts`, `components/cart/`
+(`cart-sticky-bar.tsx`, `cart-drawer.tsx`, `cart-item-row.tsx`), wired into
+`guest-gift-catalog.tsx` in place of the Phase 4 placeholder `useState`
+array. No "header badge" component was built — the confirmed Figma
+reference (`phase5-sticky-cart-bar-v1.png`) only shows "Compartir lista" in
+the header; cart affordance is entirely the sticky bar + drawer.
+
+**Correction to this phase's premise**: "zero stores exist today" was
+wrong — `hooks/use-sidebar.ts` is already a working `create(persist(...))`
+Zustand store (dashboard sidebar open/hover state), consumed via
+`useStore(useSidebar, x => x)` in `admin-panel-layout.tsx`/`sidebar.tsx`.
+What's actually new in this phase is a **per-key store factory**: the
+sidebar store is a single global singleton, but the cart needs one
+`localStorage` key per event (`wedin-cart-{eventId}`), so
+`hooks/use-cart-store.ts` exports `useCartStore(eventId)`, which
+lazily creates and caches one store instance per `eventId` in a
+module-level `Map` (not a React hook itself — no hooks called inside it,
+safe to call unconditionally from render).
+
+**Real bug found and fixed, relevant to any future `useStore` consumer**:
+routing store *actions* (`addItem`/`removeItem`) through
+`useStore(cartStore, selector)` — as the plan originally specified for
+"every client consumer" — triggered a live React warning, "Cannot update a
+component while rendering a different component," on first paint (confirmed
+via Playwright console capture; reproduced with the plan's literal wording,
+disappeared once fixed). Root cause: `useStore`'s hydration-safe wrapper
+(`useState` + `useEffect` re-emit) exists to avoid an SSR/CSR mismatch for
+*persisted state values* (e.g. `items`, whose initial value differs between
+server and a hydrated-from-localStorage client) — it's not needed for
+*actions*, which are referentially stable functions untouched by
+hydration. Calling it three times per render (once per selector) on the
+same store was the trigger. Fixed by only wrapping the reactive `items`
+selector in `useStore`; actions are invoked directly via
+`cartStore.getState().addItem(...)` / `.removeItem(...)`, no hook needed.
+**Rule of thumb for Phase 6+**: `useStore(store, selector)` for state you
+render; `store.getState().action(...)` for calls inside event handlers.
+
+**Post-implementation UX fix**, caught by the user reviewing the live
+dialog: removing a cart item left an empty "Todavía no agregaste ningún
+regalo" dialog open instead of closing it — confusing once the cart is
+empty, since the sticky bar (the only other cart entry point) has already
+disappeared by then. Fixed in `guest-gift-catalog.tsx`'s `onRemoveItem`:
+checks `cartItems.length === 1` (the pre-removal count) before calling
+`removeItem`, and closes the dialog (`setIsCartOpen(false)`) when that
+removal empties the cart. Live-verified via Playwright: dialog is gone
+after removing the last item, zero console errors.
+
+**Open PR**: `feature/guest-cart` → base `docs/guest-checkout-wallet-plan`.
+
 ### Phase 6 — Checkout + dLocal Go integration
 Largest phase. dLocal Go's API shape is now verified (see "dLocal Go API
 research" above) — `POST /v1/payments` with `currency: "PYG"`, `country:
