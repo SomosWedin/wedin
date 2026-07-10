@@ -4,10 +4,10 @@ import { format } from 'date-fns';
 import {
   IoArrowUndoOutline,
   IoCashOutline,
-  IoCheckmarkCircle,
-  IoCloseCircleOutline,
+  IoCheckmark,
+  IoClose,
   IoGiftOutline,
-  IoSyncOutline,
+  IoSync,
   IoTimeOutline,
 } from 'react-icons/io5';
 import { Badge } from '@/components/ui/badge';
@@ -29,22 +29,22 @@ const ESTADO_BY_STATUS: Record<
   COMPLETED: {
     label: 'Recibido',
     className: 'bg-success/10 text-success border-transparent',
-    icon: <IoCheckmarkCircle className="mr-1" />,
+    icon: <IoCheckmark className="mr-1" />,
   },
   PENDING: {
     label: 'En proceso',
     className: 'bg-warning/10 text-warning border-transparent',
-    icon: <IoSyncOutline className="mr-1" />,
+    icon: <IoSync className="mr-1" />,
   },
   OPEN: {
-    label: 'Pendiente de pago',
+    label: 'Pendiente',
     className: 'bg-gray100 text-textTertiary border-transparent',
     icon: <IoTimeOutline className="mr-1" />,
   },
   FAILED: {
     label: 'Fallido',
     className: 'bg-error/10 text-error border-transparent',
-    icon: <IoCloseCircleOutline className="mr-1" />,
+    icon: <IoClose className="mr-1" />,
   },
   REFUNDED: {
     label: 'Reembolsado',
@@ -68,7 +68,9 @@ export default function DashboardTransactionsList({
     <div className="flex flex-col gap-6 w-full">
       <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
         <div className="flex flex-col gap-1 p-6 w-full justify-center">
-          <h2 className="text-lg font-bold">Resúmen de los regalos recibidos</h2>
+          <h2 className="text-lg font-bold">
+            Resúmen de los regalos recibidos
+          </h2>
         </div>
         <div className="flex gap-3 items-center p-6">
           <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
