@@ -789,6 +789,55 @@ exercised.
 - Verify: completed transactions appear on `/transactions` ordered by
   date; "Agradecer" performs whichever confirmed behavior.
 
+**Status: ✅ Done**, built without Phase 6 (checkout/dLocal) — that phase is
+explicitly skipped for now, and nothing here depends on it. `getTransactions`
+just reads `COMPLETED` `Transaction` rows; three dummy rows were inserted
+directly into the dev DB to develop and live-verify against, no checkout
+flow required. Live-verified with Playwright: real login
+(`me+parejas@avilaca.com` on the `avilaca` dev event — password set to a
+known test value for this, see note below), `/transactions` renders the
+ledger with correct summary totals, "Agradecer" saves a note and the row
+flips to "Editar agradecimiento" after a refresh, zero console errors.
+
+Delivered as planned: `actions/data/transaction.ts` (`getTransactions`,
+`updateTransactionNotes`), `dashboard-transactions.tsx` rewritten as an
+async Server Component (`getEvent()` → `getTransactions()`, `Suspense` +
+`lazy()`, same pattern as Phase 2's `dashboard-wishlist.tsx`), new
+`components/dashboard/dashboard-transactions-list.tsx` (summary card + Nombre/
+Monto/Regalo/Agradecer table, matches `dashboard-wishlist-list.tsx`'s grid
+pattern), new `components/dialog/thank-transaction-dialog.tsx`, new
+`components/skeletons/dashboard-transactions.tsx`.
+
+**Open product question resolved by taking the plan's own documented
+fallback**: built the `notes`-only "Agradecer" (pre-filled "¡Muchas gracias,
+{payerName}! 💚", editable `Textarea`, saves to `Transaction.notes`). Button
+label reads "Agradecer" vs. "Editar agradecimiento" based on whether `notes`
+is already set — a free state marker, no schema change needed. Email variant
+still a follow-up if wanted later.
+
+**Real pre-existing bug found and fixed while seeding test data**:
+`Transaction.dlocalPaymentId String? @unique` (added in Phase 1) never got
+its Mongo index converted to `sparse: true` — the exact gotcha
+`CLAUDE.md` already documents for `Image.giftId`/`Event.url`/`User.email`,
+just missed for this fourth field since Phase 1 had no real consumer to
+surface it (Phase 6, which would set it, doesn't exist yet). A second
+`Transaction` with no `dlocalPaymentId` threw `P2002` on create. Fixed via
+the documented `$runCommandRaw` `dropIndexes`/`createIndexes` pattern
+against the dev DB, and added the same NOTE-comment block above the field in
+`schema.prisma` as the other three examples — copy that comment's exact
+commands if this index is ever recreated on a fresh environment.
+
+**Test credentials note**: to drive this live through the real login form
+(not just typechecked), `me+parejas@avilaca.com`'s password was set to a
+known value directly in the dev DB (bcrypt-hashed, same method as
+`actions/auth/register.ts`) and `emailVerified` was stamped — this is the
+existing `avilaca`-slug dev event's primary user. Also confirmed live: the
+`signIn` callback in `auth.ts` always returns `true` regardless of
+`emailVerified` (both branches), so verification is not actually enforced
+at login today — dead check, same class of finding as the `isAdminRoute`
+dead code already noted elsewhere in this doc. Flag to the user: decide
+whether to keep this test password or rotate/clear it.
+
 ### Phase 8 — Wallet balance + withdrawal ("Enviar a mi cuenta")
 
 Manual-admin-processed for MVP: `BankDetails` has zero gateway account
