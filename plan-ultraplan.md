@@ -560,6 +560,63 @@ Also decided/found during implementation, not in the original plan text:
   expected to reproduce from the real onboarding/event-settings flow — flagged
   here rather than silently fixed, in case a future phase touches date storage.
 
+**Post-implementation design/UX polish pass**, driven by the user reviewing
+the live page against Figma across several follow-up rounds (same pattern as
+Phase 2's polish pass):
+
+- **Hero matched to Figma pixel-for-pixel**: full-bleed `bg-gray50` band
+  behind the whole hero (closest existing token to the requested `#F8FAFC`),
+  date line rewritten as a pill badge (`bg-success/10`/`text-success`,
+  rounded-full) instead of plain text, photo aspect ratio corrected to
+  portrait `aspect-[3/4]` (matches the "hasta 6 fotos verticales" copy
+  already in the Presentación upload form — the original square/4:3 crop was
+  wrong for real uploaded photos, not just a Figma mismatch).
+- **Carousel rebuilt as a real sliding track**: `guest-image-carousel.tsx`
+  now renders every image side-by-side in a flex row and translates the
+  track by `-activeIndex * 100%` with a `transition-transform` (previously a
+  single `<Image>` whose `src` swapped instantly, no animation). Added
+  left/right chevron buttons (`lucide-react`, wraps around), a bottom
+  gradient overlay + `shadow-inner` so the dot indicators stay legible over
+  any photo, and a 5-second `setInterval` autoplay that resets on every
+  manual navigation (chevron or dot click) so auto-advance never fights a
+  manual click. Verified live via Playwright: transform changes after
+  5.6s, chevron clicks change it immediately.
+- **"Ver los regalos" smooth-scroll**: extracted into
+  `components/guest/view-gifts-button.tsx` (client component) calling
+  `scrollIntoView({ behavior: 'smooth' })` instead of a raw anchor jump —
+  confirmed via Playwright the scroll position moves gradually (0 → mid →
+  final), not an instant jump.
+- **Mobile-first grid, found via real iPhone-12 testing**: the original
+  `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` clipped badge text ("El que más
+  queremos") at 2-up on a 390px-wide phone — card width (~171px) was
+  narrower than the pill needs. Since most guests are expected to browse
+  from a phone, changed to mobile-first single column:
+  `grid-cols-1 sm:grid-cols-2 md:grid-cols-3` (capped at 3 columns max per
+  a separate request, down from 4, so cards get more room generally).
+- **Filter pills matched to Figma**: active "Todos" state changed from a
+  solid `bg-success` fill to a subtle `bg-gray100` fill — Figma's reference
+  showed all three pills reading as one consistent white/thin-border family,
+  not one filled solid green.
+- **Contribution dialog** (`gift-contribution-dialog.tsx`):
+  - Added a "Montos sugeridos" quick-pick row (25%/50%/75% of the remaining
+    balance, rounded to the nearest Gs. 1.000, deduped, excludes anything
+    ≥100% since the existing "Completar el valor total" checkbox already
+    covers that) between the progress bar and the manual amount input —
+    lets a guest contribute to a group gift without typing an exact number.
+  - Fixed a real bug: Radix Dialog auto-focuses the amount input on open;
+    clicking the "X" immediately after opening blurred that focused input
+    first, which (with RHF `mode: 'all'`) synchronously validated the empty
+    field and showed an error, absorbing the first click — a second click
+    was needed to actually close. Fixed via `onOpenAutoFocus={(e) =>
+    e.preventDefault()}` on `DialogContent`, **not** by switching validation
+    mode to `onSubmit` (the user's first instinct) — that would have broken
+    the "Agregar al carrito" button's `disabled={!isValid}` gating, since
+    RHF only computes `isValid` live under `onChange`/`onBlur`/`all` modes.
+
+**Open PR** (code + this plan update, not yet merged): branch
+`feature/guest-public-site` → base `docs/guest-checkout-wallet-plan`,
+https://github.com/wedin-app/wedin/compare/docs/guest-checkout-wallet-plan...feature/guest-public-site?expand=1
+
 ### Phase 5 — Cart (Zustand)
 First real Zustand store in the codebase — `zustand` is installed and
 `hooks/use-store.ts`'s hydration-safe wrapper exists, but zero stores exist
