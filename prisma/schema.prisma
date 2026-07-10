@@ -27,6 +27,13 @@ enum TransactionStatus {
   REFUNDED
 }
 
+enum PayoutStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
   userId            String  @db.ObjectId
@@ -76,6 +83,7 @@ model User {
   TransactionStatusLog TransactionStatusLog[]
   Event                Event?                 @relation(fields: [eventId], references: [id])
   eventId              String?                @db.ObjectId
+  payouts              Payout[]
 }
 
 model Event {
@@ -104,6 +112,7 @@ model Event {
   gifts         Gift[]
   giftAmounts   String[]
   images        Image[]
+  payouts       Payout[]
 
   @@unique([wishlistId])
 }
@@ -122,7 +131,8 @@ model BankDetails {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  event Event @relation(fields: [eventId], references: [id])
+  event   Event    @relation(fields: [eventId], references: [id])
+  payouts Payout[]
 }
 
 model Wishlist {
@@ -177,17 +187,20 @@ model WishlistGift {
 }
 
 model Transaction {
-  id             String            @id @default(auto()) @map("_id") @db.ObjectId
-  wishlistGiftId String            @db.ObjectId
-  wishlistId     String?           @db.ObjectId
-  eventId        String            @db.ObjectId
-  amount         String
-  status         TransactionStatus @default(OPEN)
-  notes          String?
-  payerRole      UserType          @default(INVITEE)
-  payeeRole      UserType          @default(ORGANIZER)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  wishlistGiftId  String            @db.ObjectId
+  wishlistId      String?           @db.ObjectId
+  eventId         String            @db.ObjectId
+  amount          String
+  status          TransactionStatus @default(OPEN)
+  notes           String?
+  payerRole       UserType          @default(INVITEE)
+  payeeRole       UserType          @default(ORGANIZER)
+  payerName       String?
+  payerEmail      String?
+  dlocalPaymentId String?           @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   wishlistGift          WishlistGift           @relation(fields: [wishlistGiftId], references: [id])
   event                 Event                  @relation(fields: [eventId], references: [id])
@@ -206,13 +219,32 @@ model TransactionStatusLog {
   previousStatus TransactionStatus
   status         TransactionStatus
   changedAt      DateTime          @default(now())
-  changedById    String            @db.ObjectId
+  changedById    String?           @db.ObjectId
 
-  changedBy   User        @relation(fields: [changedById], references: [id])
+  changedBy   User?       @relation(fields: [changedById], references: [id])
   transaction Transaction @relation(fields: [transactionId], references: [id])
 
   @@index([id, transactionId])
   @@index([changedById])
+}
+
+model Payout {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  amount        String
+  status        PayoutStatus @default(REQUESTED)
+  eventId       String       @db.ObjectId
+  bankDetailsId String       @db.ObjectId
+  requestedById String       @db.ObjectId
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  event       Event       @relation(fields: [eventId], references: [id])
+  bankDetails BankDetails @relation(fields: [bankDetailsId], references: [id])
+  requestedBy User        @relation(fields: [requestedById], references: [id])
+
+  @@index([eventId])
+  @@index([bankDetailsId])
+  @@index([requestedById])
 }
 
 model Giftlist {

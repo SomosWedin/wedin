@@ -277,6 +277,84 @@ and the already-written, unused Zod schemas above.
 - Verify: adding a gift from `/gifts` makes it appear on `/wishlist` with
   correct favorite/group flags; removing it updates both views.
 
+**Status: ✅ Done, plus a substantial post-implementation polish pass** driven
+by manual review/feedback across several follow-up rounds. Everything below
+was verified live (seeded test user + Playwright + direct DB checks), not
+just typechecked.
+
+Delivered as planned: `actions/data/wishlist-gift.ts`, `dashboard-wishlist.tsx`
+rewrite (async Server Component + `Suspense`/`lazy()` list), `/gifts` wiring,
+`hooks/dashboard/use-wishlist-gift.ts`.
+
+Also added, beyond the original scope:
+- `actions/data/category.ts` (`getCategories`) — needed for category
+  `Select`s; not in the original plan text.
+- **Gift image rendering was broken app-wide.** Seed data always had images
+  (`faker.image.url()`); the bug was `getGifts`/`getGiftlists` never
+  `include`-ing the `image` relation, and the UI never rendering it. Fixed
+  in both places — any future list/table of `Gift`s should `include: {
+  image: true }` from the start.
+- **New route `/gifts/lists/[giftlistId]`** — the "Ver paquete" giftlist
+  detail page didn't exist yet; built it (package summary, bulk "Agregar
+  paquete completo", per-gift table). A natural extension of this phase,
+  not originally scoped.
+- **Confirm-before-add modal.** Clicking a catalog gift row (not just its
+  button) now opens a pre-filled, editable "Agregar regalo" dialog
+  (`components/dialog/add-existing-gift-dialog.tsx` +
+  `components/dashboard/gift-row.tsx`) before it's added, instead of adding
+  instantly.
+- **Gift personalization pattern** (relevant to any future gift-editing
+  UI): editing a catalog gift's name/price/category/image forks a
+  personalized copy (`Gift.isEditedVersion: true`, `sourceGiftId`) rather
+  than mutating the shared default catalog item — *unless* the linked gift
+  is already a personal copy, in which case it edits in place (no
+  duplicate proliferation on repeated edits). `GiftCreateSchema`/
+  `createGift` and `editGift` were extended to support this (image upload
+  via nested `image: { create/upsert }`, `sourceGiftId`). Used in both
+  `add-existing-gift-dialog.tsx` and `edit-wishlist-gift-dialog.tsx`.
+- **`/wishlist` and `/gifts` filters wired** (search, Estado, Categoria).
+  `/wishlist` filters client-side against already-fetched data (small
+  dataset, no round-trip needed); `/gifts` filters via URL search params
+  (`components/dashboard/gifts-filter-bar.tsx`), since `getGifts`/
+  `getGiftlists` already supported `name`/`category` params server-side.
+- **Design pass**: shared badge components
+  (`components/dashboard/gift-type-badge.tsx`, `gift-added-badge.tsx`,
+  `gift-favorite-badge.tsx`) replacing plain icon+text. Fixed a bug where
+  the Tipo column always showed "Regalo Grupal" (was reading
+  `Gift.giftlistId`, which just means "belongs to a predefined package" —
+  unrelated to individual/group funding, which is a `WishlistGift`-level
+  concept that doesn't exist until a gift is actually added to someone's
+  list). Removed a redundant duplicate "already added" indicator that
+  appeared twice in the same row.
+- **`app/not-found.tsx`** — no custom 404 existed anywhere in the app;
+  added one (reuses `EmptyState` + the sidebar's wedin logo mark). Also
+  fixed `getGiftlist()`, which used to `throw` on error instead of
+  returning `null` (crashed with an unhandled Prisma error on a malformed
+  ObjectId in the URL) — now matches the rest of the codebase's
+  return-`null`-on-error convention, and the detail page redirects to
+  `/gifts` instead of a raw 404.
+- **Price validation bug fix**: `GiftFormSchema.price` validated string
+  *length* (`max(10)`) while the error message claimed a numeric max of
+  99,999,999 — anything up to ~10 digits silently passed. Now validates
+  the actual numeric value via `.refine()`. Note:
+  `TransactionCreateSchema.amount` and `CreateTransactionParams.amount`
+  (`schemas/form.ts`, `schemas/params.ts`) have the identical bug but are
+  unused until Phase 6 — worth the same fix when that phase wires them up.
+- **`components/forms/common/price-input.tsx`** — new shared masked
+  Guaraní-currency input (strips non-digits live, formats with `es-PY`
+  thousand separators e.g. `2.000.000`). Reused across all three gift
+  dialogs; reuse it for any future PYG amount input (e.g. Phase 6/8).
+
+**Known gap discovered, not fixed (flagged, out of scope for this phase)**:
+`tailwind.config.ts` never mapped the shadcn CSS-variable tokens (`primary`,
+`input`, `ring`, etc.) that `styles/globals.css` defines. Pre-existing,
+affects ~14 shadcn primitives project-wide — most of the app just never hit
+it because it's styled with explicit custom Tailwind colors instead of the
+shadcn defaults. Only patched locally for the new `Switch` component (uses
+`success`/`gray200` instead of `primary`/`input`). Worth a real fix
+(wiring the CSS vars into `tailwind.config.ts`) before adding more shadcn
+components that lean on default theme colors.
+
 ### Phase 3 — Event URL/slug write-path
 Small, blocks Phase 4.
 
@@ -523,3 +601,9 @@ site work).
 - `middleware.ts`, `lib/routes.ts` (no changes needed for the new public route; admin gate is broken, noted above)
 - `components/dashboard/dashboard-home.tsx`, `dashboard-transactions.tsx`, `dashboard-wishlist.tsx`
 - `app/(default)/gifts/page.tsx` (list/row convention to reuse)
+- From Phase 2's polish pass, reusable in later phases (esp. Phase 4's
+  guest-facing gift browsing): `components/dashboard/gift-type-badge.tsx`,
+  `gift-added-badge.tsx`, `gift-favorite-badge.tsx` (pill badge
+  conventions), `components/forms/common/price-input.tsx` (masked Gs.
+  input), `components/dashboard/gifts-filter-bar.tsx` (URL-searchParams
+  filter bar pattern), `app/not-found.tsx` (custom 404, now exists)

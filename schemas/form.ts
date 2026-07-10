@@ -11,7 +11,7 @@ export const GiftFormSchema = z.object({
   price: z
     .string()
     .min(4, { message: 'Precio tiene que ser mayor a 999 guaranies' })
-    .max(10, {
+    .refine(value => Number(value) <= 99999999, {
       message: 'El precio no puede ser mayor de PYG 99,999,999',
     }),
   isDefault: z.boolean().default(false),
@@ -34,6 +34,7 @@ export const GiftEditSchema = GiftPostSchema.pick({
   name: true,
   categoryId: true,
   price: true,
+  imageUrl: true,
 });
 
 export const GiftCreateSchema = GiftPostSchema.pick({
@@ -42,6 +43,7 @@ export const GiftCreateSchema = GiftPostSchema.pick({
   price: true,
   isDefault: true,
   isEditedVersion: true,
+  sourceGiftId: true,
   eventId: true,
   imageUrl: true,
 });

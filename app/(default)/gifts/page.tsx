@@ -1,10 +1,18 @@
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getGifts } from '@/actions/data/gift';
 import { getGiftlists } from '@/actions/data/giftlist';
-import { IoAdd, IoSearchOutline, IoGiftOutline } from 'react-icons/io5';
+import { getEvent } from '@/actions/data/event';
+import { getWishlistGifts } from '@/actions/data/wishlist-gift';
+import { getCategories } from '@/actions/data/category';
+import GiftRow from '@/components/dashboard/gift-row';
+import GiftsFilterBar from '@/components/dashboard/gifts-filter-bar';
+import CreateGiftDialog from '@/components/dialog/create-gift-dialog';
+import { IoGiftOutline } from 'react-icons/io5';
 import { PiPackageFill } from 'react-icons/pi';
+import { ChevronLeft } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default async function GiftsPage({
@@ -12,31 +20,48 @@ export default async function GiftsPage({
 }: {
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  const gifts = await getGifts({ searchParams });
-  const giftlists = await getGiftlists({ searchParams });
+  const event = await getEvent();
+
+  if (!event || 'error' in event) {
+    return <div>Error</div>;
+  }
+
+  const [gifts, giftlists, wishlistGifts, categories] = await Promise.all([
+    getGifts({ searchParams }),
+    getGiftlists({ searchParams }),
+    getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
+    getCategories(),
+  ]);
+
+  const wishlistGiftIds = new Set(
+    wishlistGifts.map(wishlistGift => wishlistGift.giftId)
+  );
 
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <Link href="/wishlist" className="text-sm text-gray-600 hover:text-gray-900 mb-2 inline-block">
-              ← Volver
+            <Link href="/wishlist" className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-2 gap-2">
+              <ChevronLeft className="w-4 h-4" />
+              Volver
             </Link>
             <h1 className="text-3xl font-black">Agregar regalos</h1>
             <p className="text-textTertiary mt-2">
-              Lorem ipsum dolor asit meLorem ipsum dolor asit mett
+              Explorá los regalos disponibles y agregalos a tu lista, o creá
+              los tuyos propios.
             </p>
           </div>
-          <Button variant="success" className="gap-2">
-            Crear regalo
-            <IoAdd className="text-2xl" />
-          </Button>
+          <CreateGiftDialog
+            eventId={event.id}
+            wishlistId={event.wishlistId}
+            categories={categories}
+          />
         </div>
 
         <Tabs defaultValue="todos" className="w-full">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <TabsList>
+            <TabsList className='gap-3'>
               <TabsTrigger value="todos" className="gap-2">
                 <IoGiftOutline className="text-lg" />
                 Todos los productos
@@ -47,19 +72,7 @@ export default async function GiftsPage({
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-64">
-                <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Regalo"
-                  className="pl-10"
-                />
-              </div>
-              <select className="h-10 rounded-md border border-input bg-white px-3 py-2 text-sm">
-                <option>Categoría</option>
-              </select>
-            </div>
+            <GiftsFilterBar categories={categories} />
           </div>
 
           <TabsContent value="todos" className="mt-6">
@@ -79,43 +92,14 @@ export default async function GiftsPage({
                   </div>
                 ) : (
                   gifts.map((gift) => (
-                    <div
+                    <GiftRow
                       key={gift.id}
-                      className="grid grid-cols-1 sm:grid-cols-12 gap-4 px-4 py-4 border-b border-gray-100 hover:bg-gray-50 items-center"
-                    >
-                      <div className="col-span-4 flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                          <IoGiftOutline className="text-2xl text-gray-400" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{gift.name}</p>
-                          <p className="text-sm text-gray-500">{gift.categoryId}</p>
-                        </div>
-                      </div>
-                      <div className="col-span-2 flex items-center gap-2">
-                        <IoGiftOutline className="text-sm" />
-                        <span className="text-sm">
-                          {gift.giftlistId ? 'Regalo Grupal' : 'Regalo Individual'}
-                        </span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-sm">
-                          {gift.price ? `Gs.${Number(gift.price).toLocaleString()}` : 'Sin límite'}
-                        </span>
-                      </div>
-                      <div className="col-span-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <IoSearchOutline className="text-gray-400" />
-                          <span>No agregado</span>
-                        </div>
-                      </div>
-                      <div className="col-span-2 flex justify-end">
-                        <Button variant="success" size="sm" className="gap-2">
-                          <IoAdd />
-                          Agregar regalo
-                        </Button>
-                      </div>
-                    </div>
+                      gift={gift}
+                      eventId={event.id}
+                      wishlistId={event.wishlistId}
+                      categories={categories}
+                      isInWishlist={wishlistGiftIds.has(gift.id)}
+                    />
                   ))
                 )}
               </div>
@@ -135,26 +119,38 @@ export default async function GiftsPage({
                     className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
                   >
                     <div className="grid grid-cols-2 gap-2 mb-4">
-                      {giftlist.gifts.slice(0, 4).map((gift, idx) => (
+                      {giftlist.gifts.slice(0, 4).map((gift) => (
                         <div
-                          key={idx}
-                          className="aspect-square bg-gray-200 rounded flex items-center justify-center"
+                          key={gift.id}
+                          className="aspect-square bg-gray-200 rounded flex items-center justify-center overflow-hidden"
                         >
-                          <IoGiftOutline className="text-3xl text-gray-400" />
+                          {gift.image?.url ? (
+                            <Image
+                              src={gift.image.url}
+                              alt={gift.name}
+                              className="w-full h-full object-cover"
+                              width={200}
+                              height={200}
+                            />
+                          ) : (
+                            <IoGiftOutline className="text-3xl text-gray-400" />
+                          )}
                         </div>
                       ))}
                     </div>
-                    <div className="mb-2">
-                      <p className="text-sm text-gray-500">
+                    <div className="flex flex-col gap-2 mb-4">
+                      <Badge className="w-fit bg-gray100 text-textTertiary border-transparent">
                         {giftlist.gifts.length} productos
-                      </p>
-                      <h3 className="text-lg font-bold mt-1">{giftlist.name}</h3>
-                      <p className="text-lg font-semibold mt-1">
+                      </Badge>
+                      <h3 className="text-lg font-bold">{giftlist.name}</h3>
+                      <p className="text-lg font-semibold">
                         Gs. {giftlist.gifts.reduce((sum, gift) => sum + Number(gift.price || 0), 0).toLocaleString()}
                       </p>
                     </div>
-                    <Button variant="outline" className="w-full mt-4">
-                      Ver paquete
+                    <Button variant="outline" asChild>
+                      <Link href={`/gifts/lists/${giftlist.id}`}>
+                        Ver paquete
+                      </Link>
                     </Button>
                   </div>
                 ))
