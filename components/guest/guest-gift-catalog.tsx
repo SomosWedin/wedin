@@ -111,7 +111,7 @@ export default function GuestGiftCatalog({
     <section
       id="lista-de-regalos"
       className={`px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 ${
-        cartItems.length > 0 ? 'pb-24' : ''
+        cartItems.length > 0 ? 'mb-20 sm:mb-10' : ''
       }`}
     >
       <h2 className="mb-6 text-3xl font-medium">Lista de regalos</h2>
