@@ -194,7 +194,7 @@ export default function DashboardTransactionsList({
           <div className="col-span-2">Nombre</div>
           <button
             type="button"
-            className="flex col-span-2 gap-1 items-center text-left hover:text-textPrimary"
+            className="flex col-span-2 gap-3 items-center text-left hover:text-textPrimary"
             onClick={() => handleSort('createdAt')}
           >
             Fecha
@@ -206,7 +206,7 @@ export default function DashboardTransactionsList({
           </button>
           <button
             type="button"
-            className="flex col-span-2 gap-1 items-center text-left hover:text-textPrimary"
+            className="flex col-span-2 gap-3 items-center text-left hover:text-textPrimary"
             onClick={() => handleSort('amount')}
           >
             Monto
