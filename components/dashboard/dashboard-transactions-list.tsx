@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { format } from 'date-fns';
 import {
   IoArrowUndoOutline,
@@ -7,10 +8,12 @@ import {
   IoCheckmark,
   IoClose,
   IoGiftOutline,
+  IoSearchOutline,
   IoSync,
   IoTimeOutline,
 } from 'react-icons/io5';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import ThankTransactionDialog from '@/components/dialog/thank-transaction-dialog';
 import type { Prisma, TransactionStatus } from '@prisma/client';
 
@@ -53,9 +56,16 @@ const ESTADO_BY_STATUS: Record<
   },
 };
 
+const ESTADO_OPTIONS = (
+  Object.entries(ESTADO_BY_STATUS) as [TransactionStatus, { label: string }][]
+).map(([status, { label }]) => ({ value: status, label }));
+
 export default function DashboardTransactionsList({
   transactions,
 }: DashboardTransactionsListProps) {
+  const [search, setSearch] = useState('');
+  const [estadoFilter, setEstadoFilter] = useState('');
+
   const completedTransactions = transactions.filter(
     transaction => transaction.status === 'COMPLETED'
   );
@@ -63,6 +73,20 @@ export default function DashboardTransactionsList({
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
   );
+
+  const filteredTransactions = transactions.filter(transaction => {
+    const normalizedSearch = search.trim().toLowerCase();
+    const matchesSearch =
+      !normalizedSearch ||
+      (transaction.payerName ?? '').toLowerCase().includes(normalizedSearch) ||
+      transaction.wishlistGift.gift.name
+        .toLowerCase()
+        .includes(normalizedSearch);
+    const matchesEstado =
+      !estadoFilter || transaction.status === estadoFilter;
+
+    return matchesSearch && matchesEstado;
+  });
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -100,6 +124,31 @@ export default function DashboardTransactionsList({
         </div>
       </div>
 
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex-1 relative">
+          <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Nombre o regalo"
+            className="pl-10"
+            value={search}
+            onChange={event => setSearch(event.target.value)}
+          />
+        </div>
+        <select
+          className="px-3 py-2 h-10 text-sm bg-white rounded-md border border-input"
+          value={estadoFilter}
+          onChange={event => setEstadoFilter(event.target.value)}
+        >
+          <option value="">Estado</option>
+          {ESTADO_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="bg-white rounded-lg">
         <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50 rounded-t-lg">
           <div className="col-span-2">Nombre</div>
@@ -110,7 +159,13 @@ export default function DashboardTransactionsList({
           <div className="col-span-2" />
         </div>
 
-        {transactions.map(transaction => {
+        {filteredTransactions.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            No se encontraron regalos
+          </div>
+        )}
+
+        {filteredTransactions.map(transaction => {
           const payerName = transaction.payerName ?? 'Anónimo';
           const estado = ESTADO_BY_STATUS[transaction.status];
 
@@ -120,13 +175,13 @@ export default function DashboardTransactionsList({
               className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 hover:bg-gray-50"
             >
               <div className="col-span-2">{payerName}</div>
-              <div className="col-span-2 text-textTertiary">
+              <div className="col-span-2 text-textTertiary text-sm">
                 {format(transaction.createdAt, 'dd/MM/yyyy')}
               </div>
               <div className="col-span-2">
                 Gs. {Number(transaction.amount).toLocaleString('es-PY')}
               </div>
-              <div className="col-span-2 text-textTertiary">
+              <div className="col-span-2 text-textTertiary text-sm">
                 {transaction.wishlistGift.gift.name}
               </div>
               <div className="col-span-2">
