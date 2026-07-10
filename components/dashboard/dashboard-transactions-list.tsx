@@ -1,7 +1,15 @@
 'use client';
 
 import { format } from 'date-fns';
-import { IoCashOutline, IoGiftOutline } from 'react-icons/io5';
+import {
+  IoArrowUndoOutline,
+  IoCashOutline,
+  IoCheckmarkCircle,
+  IoCloseCircleOutline,
+  IoGiftOutline,
+  IoSyncOutline,
+  IoTimeOutline,
+} from 'react-icons/io5';
 import { Badge } from '@/components/ui/badge';
 import ThankTransactionDialog from '@/components/dialog/thank-transaction-dialog';
 import type { Prisma, TransactionStatus } from '@prisma/client';
@@ -16,27 +24,32 @@ type DashboardTransactionsListProps = {
 
 const ESTADO_BY_STATUS: Record<
   TransactionStatus,
-  { label: string; className: string }
+  { label: string; className: string; icon: React.ReactNode }
 > = {
   COMPLETED: {
     label: 'Recibido',
     className: 'bg-success/10 text-success border-transparent',
+    icon: <IoCheckmarkCircle className="mr-1" />,
   },
   PENDING: {
     label: 'En proceso',
     className: 'bg-warning/10 text-warning border-transparent',
+    icon: <IoSyncOutline className="mr-1" />,
   },
   OPEN: {
     label: 'Pendiente de pago',
     className: 'bg-gray100 text-textTertiary border-transparent',
+    icon: <IoTimeOutline className="mr-1" />,
   },
   FAILED: {
     label: 'Fallido',
     className: 'bg-error/10 text-error border-transparent',
+    icon: <IoCloseCircleOutline className="mr-1" />,
   },
   REFUNDED: {
     label: 'Reembolsado',
     className: 'bg-gray100 text-textTertiary border-transparent',
+    icon: <IoArrowUndoOutline className="mr-1" />,
   },
 };
 
@@ -104,18 +117,21 @@ export default function DashboardTransactionsList({
               key={transaction.id}
               className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 hover:bg-gray-50"
             >
-              <div className="col-span-2 font-medium">{payerName}</div>
-              <div className="col-span-2 text-sm text-textTertiary">
+              <div className="col-span-2">{payerName}</div>
+              <div className="col-span-2 text-textTertiary">
                 {format(transaction.createdAt, 'dd/MM/yyyy')}
               </div>
-              <div className="col-span-2 text-sm">
+              <div className="col-span-2">
                 Gs. {Number(transaction.amount).toLocaleString('es-PY')}
               </div>
-              <div className="col-span-2 text-sm text-textTertiary">
+              <div className="col-span-2 text-textTertiary">
                 {transaction.wishlistGift.gift.name}
               </div>
               <div className="col-span-2">
-                <Badge className={estado.className}>{estado.label}</Badge>
+                <Badge className={estado.className}>
+                  {estado.icon}
+                  {estado.label}
+                </Badge>
               </div>
               <div className="flex col-span-2 justify-start sm:justify-end">
                 {transaction.status === 'COMPLETED' && (

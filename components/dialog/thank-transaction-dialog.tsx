@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { IoHeartOutline } from 'react-icons/io5';
+import { IoHeart, IoHeartOutline } from 'react-icons/io5';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -24,10 +24,19 @@ export default function ThankTransactionDialog({
   payerName,
 }: ThankTransactionDialogProps) {
   const [open, setOpen] = useState(false);
-  const [notes, setNotes] = useState(
-    transaction.notes ?? `¡Muchas gracias, ${payerName}! 💚`
-  );
+  const [notes, setNotes] = useState(`¡Muchas gracias, ${payerName}! 💚`);
   const { loading, thankTransaction } = useTransaction();
+
+  // Agradecer is one-time — once notes exist, this stays a disabled
+  // "Agradecido" marker instead of reopening the dialog to edit it.
+  if (transaction.notes) {
+    return (
+      <Button type="button" variant="outline" className="gap-2" disabled>
+        <IoHeart className="text-base" />
+        Agradecido
+      </Button>
+    );
+  }
 
   const handleSubmit = async () => {
     const response = await thankTransaction(transaction.id, {
@@ -43,7 +52,7 @@ export default function ThankTransactionDialog({
       <DialogTrigger asChild>
         <Button type="button" variant="outline" className="gap-2">
           <IoHeartOutline className="text-base" />
-          {transaction.notes ? 'Editar agradecimiento' : 'Agradecer'}
+          Agradecer
         </Button>
       </DialogTrigger>
       <DialogContent
