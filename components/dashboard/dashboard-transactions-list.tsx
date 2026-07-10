@@ -1,8 +1,10 @@
 'use client';
 
+import { format } from 'date-fns';
 import { IoCashOutline, IoGiftOutline } from 'react-icons/io5';
+import { Badge } from '@/components/ui/badge';
 import ThankTransactionDialog from '@/components/dialog/thank-transaction-dialog';
-import type { Prisma } from '@prisma/client';
+import type { Prisma, TransactionStatus } from '@prisma/client';
 
 type TransactionWithGift = Prisma.TransactionGetPayload<{
   include: { wishlistGift: { include: { gift: true } } };
@@ -12,10 +14,39 @@ type DashboardTransactionsListProps = {
   transactions: TransactionWithGift[];
 };
 
+const ESTADO_BY_STATUS: Record<
+  TransactionStatus,
+  { label: string; className: string }
+> = {
+  COMPLETED: {
+    label: 'Recibido',
+    className: 'bg-success/10 text-success border-transparent',
+  },
+  PENDING: {
+    label: 'En proceso',
+    className: 'bg-warning/10 text-warning border-transparent',
+  },
+  OPEN: {
+    label: 'Pendiente de pago',
+    className: 'bg-gray100 text-textTertiary border-transparent',
+  },
+  FAILED: {
+    label: 'Fallido',
+    className: 'bg-error/10 text-error border-transparent',
+  },
+  REFUNDED: {
+    label: 'Reembolsado',
+    className: 'bg-gray100 text-textTertiary border-transparent',
+  },
+};
+
 export default function DashboardTransactionsList({
   transactions,
 }: DashboardTransactionsListProps) {
-  const total = transactions.reduce(
+  const completedTransactions = transactions.filter(
+    transaction => transaction.status === 'COMPLETED'
+  );
+  const total = completedTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
   );
@@ -31,7 +62,9 @@ export default function DashboardTransactionsList({
             <IoGiftOutline className="text-xl" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold">{transactions.length}</span>
+            <span className="text-lg font-bold">
+              {completedTransactions.length}
+            </span>
             <span className="text-sm whitespace-nowrap text-textTertiary">
               Regalos recibidos
             </span>
@@ -54,32 +87,43 @@ export default function DashboardTransactionsList({
 
       <div className="bg-white rounded-lg">
         <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50 rounded-t-lg">
-          <div className="col-span-3">Nombre</div>
-          <div className="col-span-3">Monto</div>
-          <div className="col-span-3">Regalo</div>
-          <div className="col-span-3" />
+          <div className="col-span-2">Nombre</div>
+          <div className="col-span-2">Fecha</div>
+          <div className="col-span-2">Monto</div>
+          <div className="col-span-2">Regalo</div>
+          <div className="col-span-2">Estado</div>
+          <div className="col-span-2" />
         </div>
 
         {transactions.map(transaction => {
           const payerName = transaction.payerName ?? 'Anónimo';
+          const estado = ESTADO_BY_STATUS[transaction.status];
 
           return (
             <div
               key={transaction.id}
               className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 hover:bg-gray-50"
             >
-              <div className="col-span-3 font-medium">{payerName}</div>
-              <div className="col-span-3 text-sm">
+              <div className="col-span-2 font-medium">{payerName}</div>
+              <div className="col-span-2 text-sm text-textTertiary">
+                {format(transaction.createdAt, 'dd/MM/yyyy')}
+              </div>
+              <div className="col-span-2 text-sm">
                 Gs. {Number(transaction.amount).toLocaleString('es-PY')}
               </div>
-              <div className="col-span-3 text-sm text-textTertiary">
+              <div className="col-span-2 text-sm text-textTertiary">
                 {transaction.wishlistGift.gift.name}
               </div>
-              <div className="flex col-span-3 justify-start sm:justify-end">
-                <ThankTransactionDialog
-                  transaction={transaction}
-                  payerName={payerName}
-                />
+              <div className="col-span-2">
+                <Badge className={estado.className}>{estado.label}</Badge>
+              </div>
+              <div className="flex col-span-2 justify-start sm:justify-end">
+                {transaction.status === 'COMPLETED' && (
+                  <ThankTransactionDialog
+                    transaction={transaction}
+                    payerName={payerName}
+                  />
+                )}
               </div>
             </div>
           );

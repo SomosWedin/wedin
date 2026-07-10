@@ -21,10 +21,7 @@ export async function getTransactions({
 
   if (!eventId) return [];
 
-  const query: Prisma.TransactionWhereInput = {
-    eventId,
-    status: 'COMPLETED',
-  };
+  const query: Prisma.TransactionWhereInput = { eventId };
 
   if (name) {
     query.payerName = { contains: name.trim(), mode: 'insensitive' };
