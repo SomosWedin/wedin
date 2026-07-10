@@ -194,7 +194,7 @@ export default function DashboardWishlistList({
                 </div>
               </div>
 
-              <div className="flex flex-col col-span-2 gap-2 items-start">
+              <div className="flex flex-col col-span-2 gap-1.5 items-start">
                 <GiftTypeBadge isGroupGift={wishlistGift.isGroupGift} />
                 {wishlistGift.isFavoriteGift && <GiftFavoriteBadge />}
               </div>

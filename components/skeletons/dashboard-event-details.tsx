@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function DashboardEventDetailsSkeleton() {
   return (
     <section className="w-full h-full flex justify-start items-center flex-col sm:gap-8 gap-12">
-      <div className="w-full flex flex-col gap-4 border-b border-gray-200 pb-6">
+      <div className="w-full flex flex-col gap-2 border-b border-gray-200 pb-6">
         <Skeleton className="h-8 w-[150px] rounded-lg" />
         <Skeleton className="h-6 w-full max-w-xl rounded-lg" />
       </div>

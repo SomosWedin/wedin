@@ -241,7 +241,7 @@ export default function EditWishlistGiftDialog({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-6"
+            className="flex flex-col gap-4"
           >
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">Imagen del producto</span>
