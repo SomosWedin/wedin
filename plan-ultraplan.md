@@ -493,6 +493,130 @@ libre, cart):
   card's dialog shows the correct variant (fixed-price vs. monto libre) and
   "Agregar al carrito" adds the right line item.
 
+**Status: ✅ Done** for fixed-price/group gifts, live-verified (Playwright
+against the real dev DB, disposable test event created and torn down in a
+`finally`-equivalent cleanup step, not just typechecked).
+
+Delivered as planned: `actions/data/public-event.ts` (`getEventByUrl`,
+`getPublicWishlistGifts`, no `getCurrentUser()` import), `app/e/layout.tsx`
+(wedin logo + "Compartir lista" clipboard-copy button, reusing the same
+`w-icon.svg` mark as `app/not-found.tsx`), `app/e/[slug]/page.tsx`
+(`notFound()` when the event is missing or has zero `WishlistGift` rows),
+hero (`components/guest/guest-hero.tsx` + `guest-image-carousel.tsx`, couple
+name derived from `users` — primary + secondary `isPrimary` flag, same
+convention as `event-settings.tsx`), and the gift catalog
+(`components/guest/guest-gift-catalog.tsx` + `guest-gift-card.tsx`) with the
+Todos/Individual/Grupal type filter, search, category and sort controls, and
+the fixed-price/group "Detalles del producto" dialog
+(`components/dialog/gift-contribution-dialog.tsx`).
+
+**Scope correction made live with the user, before writing code**: the plan
+text assumed a schema/UI mechanism for "monto libre" gifts existed or would
+be obvious, but nothing in `prisma/schema.prisma`, the live dev DB, or
+`prisma/seed.ts` marks a `Gift` as open-amount cash (no `Dinero` category, no
+boolean flag, `Gift.price` is a required `String`) — a real gap the plan
+never resolved. Confirmed with the user to **skip the monto libre dialog
+variant for this pass**. Only the fixed-price/individual card (direct
+"Agregar al carrito", full price, no dialog) and the group-gift card
+("Seleccionar monto" → contribution dialog with progress bar + "Completar el
+valor total del regalo" checkbox) are built. **Follow-up needed before monto
+libre can be built**: decide how a `Gift` is marked open-amount (a new
+`Gift.isOpenAmount Boolean` field was the recommended option, discussed but
+not yet decided) — this also blocks wiring `Event.giftAmounts` /
+`GiftAmountsFormSchema`'s four preset amounts into any UI, since that data
+has no consumer yet.
+
+Also decided/found during implementation, not in the original plan text:
+- **Cart is deliberately not persisted yet.** "Agregar al carrito" appends to
+  a local `useState` array inside `guest-gift-catalog.tsx` (confirmed via
+  toast + Playwright) with no drawer, sticky bar, or localStorage — those are
+  explicitly Phase 5's scope (`hooks/use-cart-store.ts` Zustand + persist).
+  Building real cart UI now would either duplicate or conflict with Phase 5's
+  planned architecture.
+- **Individual vs. group dialog dispatch**: re-reading the Figma frame
+  closely, only group gifts open a dialog at all — a fixed-price individual
+  gift's "Agregar al carrito" adds the full price directly, no dialog step.
+  The plan's dialog spec only documents the dialog's *contents*, not this
+  dispatch rule, so it's called out here explicitly for Phase 5+ to rely on.
+- **Already-fully-paid gifts** (`WishlistGift.isFullyPaid`) show a "Regalo
+  recibido" badge and hide the CTA entirely (both card types) — not in the
+  Figma reference (which has no example of this state) but a real guest-facing
+  gap without it: a guest could otherwise try to contribute to a gift that's
+  already fully funded.
+- Reused existing conventions rather than introducing new ones: native
+  `<select>` filter dropdowns (matches `gifts-filter-bar.tsx` /
+  `dashboard-wishlist-list.tsx`, sidesteps the known unmapped
+  shadcn-theme-token gap noted in Phase 2 rather than hitting it a second
+  time), `Checkbox` used as-is like `StepThree`/`StepFour` (same unmapped-token
+  gap, not fixed here — out of scope for this phase), `Progress` bar
+  component as already used in `dashboard-home.tsx`.
+- **Verified date-of-week discrepancy while testing was a test-data artifact,
+  not a code bug**: seeding the test event's `date` via `new Date('2027-02-14')`
+  (UTC midnight) and then formatting it with `date-fns` `format()` (local time)
+  in Paraguay's UTC-3 offset displays "13 de febrero" — but this exactly
+  mirrors `event-settings.tsx`'s existing `format(field.value, 'PPP', ...)`
+  pattern, and real dates come from the dashboard's `Calendar` picker
+  (constructs a local-time `Date`, not a UTC-midnight one), so this isn't
+  expected to reproduce from the real onboarding/event-settings flow — flagged
+  here rather than silently fixed, in case a future phase touches date storage.
+
+**Post-implementation design/UX polish pass**, driven by the user reviewing
+the live page against Figma across several follow-up rounds (same pattern as
+Phase 2's polish pass):
+
+- **Hero matched to Figma pixel-for-pixel**: full-bleed `bg-gray50` band
+  behind the whole hero (closest existing token to the requested `#F8FAFC`),
+  date line rewritten as a pill badge (`bg-success/10`/`text-success`,
+  rounded-full) instead of plain text, photo aspect ratio corrected to
+  portrait `aspect-[3/4]` (matches the "hasta 6 fotos verticales" copy
+  already in the Presentación upload form — the original square/4:3 crop was
+  wrong for real uploaded photos, not just a Figma mismatch).
+- **Carousel rebuilt as a real sliding track**: `guest-image-carousel.tsx`
+  now renders every image side-by-side in a flex row and translates the
+  track by `-activeIndex * 100%` with a `transition-transform` (previously a
+  single `<Image>` whose `src` swapped instantly, no animation). Added
+  left/right chevron buttons (`lucide-react`, wraps around), a bottom
+  gradient overlay + `shadow-inner` so the dot indicators stay legible over
+  any photo, and a 5-second `setInterval` autoplay that resets on every
+  manual navigation (chevron or dot click) so auto-advance never fights a
+  manual click. Verified live via Playwright: transform changes after
+  5.6s, chevron clicks change it immediately.
+- **"Ver los regalos" smooth-scroll**: extracted into
+  `components/guest/view-gifts-button.tsx` (client component) calling
+  `scrollIntoView({ behavior: 'smooth' })` instead of a raw anchor jump —
+  confirmed via Playwright the scroll position moves gradually (0 → mid →
+  final), not an instant jump.
+- **Mobile-first grid, found via real iPhone-12 testing**: the original
+  `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` clipped badge text ("El que más
+  queremos") at 2-up on a 390px-wide phone — card width (~171px) was
+  narrower than the pill needs. Since most guests are expected to browse
+  from a phone, changed to mobile-first single column:
+  `grid-cols-1 sm:grid-cols-2 md:grid-cols-3` (capped at 3 columns max per
+  a separate request, down from 4, so cards get more room generally).
+- **Filter pills matched to Figma**: active "Todos" state changed from a
+  solid `bg-success` fill to a subtle `bg-gray100` fill — Figma's reference
+  showed all three pills reading as one consistent white/thin-border family,
+  not one filled solid green.
+- **Contribution dialog** (`gift-contribution-dialog.tsx`):
+  - Added a "Montos sugeridos" quick-pick row (25%/50%/75% of the remaining
+    balance, rounded to the nearest Gs. 1.000, deduped, excludes anything
+    ≥100% since the existing "Completar el valor total" checkbox already
+    covers that) between the progress bar and the manual amount input —
+    lets a guest contribute to a group gift without typing an exact number.
+  - Fixed a real bug: Radix Dialog auto-focuses the amount input on open;
+    clicking the "X" immediately after opening blurred that focused input
+    first, which (with RHF `mode: 'all'`) synchronously validated the empty
+    field and showed an error, absorbing the first click — a second click
+    was needed to actually close. Fixed via `onOpenAutoFocus={(e) =>
+    e.preventDefault()}` on `DialogContent`, **not** by switching validation
+    mode to `onSubmit` (the user's first instinct) — that would have broken
+    the "Agregar al carrito" button's `disabled={!isValid}` gating, since
+    RHF only computes `isValid` live under `onChange`/`onBlur`/`all` modes.
+
+**Open PR** (code + this plan update, not yet merged): branch
+`feature/guest-public-site` → base `docs/guest-checkout-wallet-plan`,
+https://github.com/wedin-app/wedin/compare/docs/guest-checkout-wallet-plan...feature/guest-public-site?expand=1
+
 ### Phase 5 — Cart (Zustand)
 First real Zustand store in the codebase — `zustand` is installed and
 `hooks/use-store.ts`'s hydration-safe wrapper exists, but zero stores exist

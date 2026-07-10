@@ -1,0 +1,197 @@
+'use client';
+
+import { useState } from 'react';
+import { IoGiftOutline, IoPeopleOutline, IoPersonOutline, IoSearchOutline } from 'react-icons/io5';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import GuestGiftCard, {
+  type WishlistGiftWithGift,
+} from '@/components/guest/guest-gift-card';
+import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog';
+import { getGiftProgress } from '@/components/guest/gift-progress';
+import type { Category } from '@prisma/client';
+
+type TypeFilter = 'todos' | 'individual' | 'grupal';
+type SortOption = 'recientes' | 'precio-asc' | 'precio-desc';
+
+type CartItem = {
+  wishlistGiftId: string;
+  giftName: string;
+  amount: string;
+};
+
+type GuestGiftCatalogProps = {
+  wishlistGifts: WishlistGiftWithGift[];
+  categories: Category[];
+};
+
+const TYPE_FILTERS: { value: TypeFilter; label: string; icon: React.ReactNode }[] = [
+  { value: 'todos', label: 'Todos', icon: <IoGiftOutline /> },
+  { value: 'individual', label: 'Regalo individual', icon: <IoPersonOutline /> },
+  { value: 'grupal', label: 'Regalo grupal', icon: <IoPeopleOutline /> },
+];
+
+export default function GuestGiftCatalog({
+  wishlistGifts,
+  categories,
+}: GuestGiftCatalogProps) {
+  const { toast } = useToast();
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos');
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [sort, setSort] = useState<SortOption>('recientes');
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [selectedWishlistGift, setSelectedWishlistGift] =
+    useState<WishlistGiftWithGift | null>(null);
+
+  const addToCart = (wishlistGift: WishlistGiftWithGift, amount: string) => {
+    setCartItems(previous => [
+      ...previous,
+      {
+        wishlistGiftId: wishlistGift.id,
+        giftName: wishlistGift.gift.name,
+        amount,
+      },
+    ]);
+    toast({
+      title: 'Agregado al carrito 🎁',
+      description: `${wishlistGift.gift.name} — Gs. ${Number(amount).toLocaleString(
+        'es-PY'
+      )}`,
+    });
+  };
+
+  const handleAddFullPrice = (wishlistGift: WishlistGiftWithGift) => {
+    addToCart(wishlistGift, wishlistGift.gift.price);
+  };
+
+  const handleOpenContributionDialog = (wishlistGift: WishlistGiftWithGift) => {
+    setSelectedWishlistGift(wishlistGift);
+  };
+
+  const handleContributionSubmit = (amount: string) => {
+    if (selectedWishlistGift) addToCart(selectedWishlistGift, amount);
+  };
+
+  const filteredWishlistGifts = wishlistGifts
+    .filter(wishlistGift => {
+      const matchesType =
+        typeFilter === 'todos' ||
+        (typeFilter === 'grupal'
+          ? wishlistGift.isGroupGift
+          : !wishlistGift.isGroupGift);
+      const matchesSearch = wishlistGift.gift.name
+        .toLowerCase()
+        .includes(search.trim().toLowerCase());
+      const matchesCategory =
+        !categoryFilter || wishlistGift.gift.categoryId === categoryFilter;
+
+      return matchesType && matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      if (sort === 'precio-asc') return Number(a.gift.price) - Number(b.gift.price);
+      if (sort === 'precio-desc') return Number(b.gift.price) - Number(a.gift.price);
+      return 0;
+    });
+
+  const selectedProgress = selectedWishlistGift
+    ? getGiftProgress(
+        selectedWishlistGift.gift.price,
+        selectedWishlistGift.transactions
+      )
+    : null;
+
+  return (
+    <section
+      id="lista-de-regalos"
+      className="px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8"
+    >
+      <h2 className="mb-6 text-3xl font-medium">Lista de regalos</h2>
+
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-wrap gap-1 sm:gap-2">
+          {TYPE_FILTERS.map(filter => (
+            <button
+              key={filter.value}
+              type="button"
+              onClick={() => setTypeFilter(filter.value)}
+              className={`flex gap-2 items-center px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border transition-colors ${
+                typeFilter === filter.value
+                  ? 'bg-gray100 text-textPrimary border-gray-200'
+                  : 'bg-white text-textPrimary border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {filter.icon}
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex-1 relative">
+            <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Regalo"
+              className="pl-10"
+              value={search}
+              onChange={event => setSearch(event.target.value)}
+            />
+          </div>
+          <select
+            className="px-3 py-2 h-10 text-sm bg-white rounded-md border border-input"
+            value={categoryFilter}
+            onChange={event => setCategoryFilter(event.target.value)}
+          >
+            <option value="">Categoria</option>
+            {categories.map(category => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="px-3 py-2 h-10 text-sm bg-white rounded-md border border-input"
+            value={sort}
+            onChange={event => setSort(event.target.value as SortOption)}
+          >
+            <option value="recientes">Ordenar por</option>
+            <option value="precio-asc">Precio: menor a mayor</option>
+            <option value="precio-desc">Precio: mayor a menor</option>
+          </select>
+        </div>
+      </div>
+
+      {filteredWishlistGifts.length === 0 ? (
+        <div className="py-12 text-center text-gray-500">
+          No se encontraron regalos
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+          {filteredWishlistGifts.map(wishlistGift => (
+            <GuestGiftCard
+              key={wishlistGift.id}
+              wishlistGift={wishlistGift}
+              onAddFullPrice={handleAddFullPrice}
+              onOpenContributionDialog={handleOpenContributionDialog}
+            />
+          ))}
+        </div>
+      )}
+
+      {selectedWishlistGift && selectedProgress && (
+        <GiftContributionDialog
+          open={!!selectedWishlistGift}
+          onOpenChange={open => {
+            if (!open) setSelectedWishlistGift(null);
+          }}
+          gift={selectedWishlistGift.gift}
+          isFavoriteGift={selectedWishlistGift.isFavoriteGift}
+          remaining={selectedProgress.remaining}
+          percentage={selectedProgress.percentage}
+          onAddToCart={handleContributionSubmit}
+        />
+      )}
+    </section>
+  );
+}

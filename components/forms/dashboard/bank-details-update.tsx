@@ -81,14 +81,8 @@ export default function DashboardBankDetailsUpdateForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="bg-white">
-                    <SelectItem value="ci">
-                      <span className="font-semibold">CI - </span>Cédula de
-                      Identidad
-                    </SelectItem>
-                    <SelectItem value="ruc">
-                      <span className="font-semibold">RUC - </span>
-                      Registro Único del Contribuyente
-                    </SelectItem>
+                    <SelectItem value="ci">CI</SelectItem>
+                    <SelectItem value="ruc">RUC</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage className="font-normal text-red-600" />
@@ -167,13 +161,8 @@ export default function DashboardBankDetailsUpdateForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="bg-white">
-                    <SelectItem value="pyg">
-                      <span className="font-semibold">PYG - </span>
-                      Guaraníes
-                    </SelectItem>
-                    <SelectItem value="usd">
-                      <span className="font-semibold">USD - </span>Dolares
-                    </SelectItem>
+                    <SelectItem value="pyg">PYG</SelectItem>
+                    <SelectItem value="usd">USD</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage className="font-normal text-red-600" />
