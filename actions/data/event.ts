@@ -122,9 +122,11 @@ export const updateEventUrl = async (eventId: string, url: string) => {
     };
   }
 
+  const normalizedUrl = validatedFields.data.eventUrl;
+
   try {
     const existingEvent = await prismaClient.event.findUnique({
-      where: { url },
+      where: { url: normalizedUrl },
     });
 
     if (existingEvent && existingEvent.id !== eventId) {
@@ -135,7 +137,7 @@ export const updateEventUrl = async (eventId: string, url: string) => {
 
     const updatedEvent = await prismaClient.event.update({
       where: { id: eventId },
-      data: { url },
+      data: { url: normalizedUrl },
     });
 
     revalidatePath('/event-settings');

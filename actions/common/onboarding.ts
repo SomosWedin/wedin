@@ -83,32 +83,36 @@ export const updateProfileStepTwo = async (
     return { error: 'Nombre y apellido son obligatorios.' };
   }
 
-  // Update the primary user's profile
+  // Update the primary user's profile and optionally create the partner's,
+  // atomically — a failure creating the partner must not leave the primary
+  // user advanced to step 3 with the partner's name lost.
   try {
-    await prismaClient.user.update({
-      where: { id: session.user.id },
-      data: {
-        name,
-        lastName,
-        onboardingStep: 3,
-      },
-    });
-
-    // Optionally create a partner's profile if event type is WEDDING
-    if (partnerName && partnerLastName) {
-      await prismaClient.user.create({
+    await prismaClient.$transaction(async tx => {
+      await tx.user.update({
+        where: { id: session.user.id },
         data: {
-          name: partnerName,
-          lastName: partnerLastName,
-          isOnboarded: true,
-          isPrimary: false,
-          isMagicLinkLogin: true,
-          eventId: session.user.eventId,
-          onboardingStep: 5,
-          role: UserType.COUPLE,
+          name,
+          lastName,
+          onboardingStep: 3,
         },
       });
-    }
+
+      // Optionally create a partner's profile if event type is WEDDING
+      if (partnerName && partnerLastName) {
+        await tx.user.create({
+          data: {
+            name: partnerName,
+            lastName: partnerLastName,
+            isOnboarded: true,
+            isPrimary: false,
+            isMagicLinkLogin: true,
+            eventId: session.user.eventId,
+            onboardingStep: 5,
+            role: UserType.COUPLE,
+          },
+        });
+      }
+    });
   } catch (error) {
     console.error('Error updating or creating user:', error);
     return {

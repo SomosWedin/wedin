@@ -141,6 +141,45 @@ export const EventDetailsFormSchema = z.object({
   eventGuests: z.string().optional(),
 });
 
+// Reserved so an event slug can never collide with a real subdomain if we
+// move guest sites from /e/{eventUrl} to {eventUrl}.wedin.app later.
+const RESERVED_EVENT_URLS = [
+  'www',
+  'app',
+  'api',
+  'admin',
+  'dashboard',
+  'mail',
+  'ftp',
+  'blog',
+  'help',
+  'support',
+  'status',
+  'cdn',
+  'assets',
+  'static',
+  'img',
+  'images',
+  'docs',
+  'staging',
+  'dev',
+  'test',
+  'ns1',
+  'ns2',
+  'smtp',
+  'webmail',
+  'autodiscover',
+  'cpanel',
+  'shop',
+  'store',
+  'login',
+  'register',
+  'auth',
+  'null',
+  'undefined',
+  'wedin',
+];
+
 export const EventUrlFormSchema = z.object({
   eventId: z.string(),
   eventUrl: z
@@ -149,13 +188,17 @@ export const EventUrlFormSchema = z.object({
     .min(3, {
       message: 'La dirección de tu evento debe contener al menos 3 caracteres',
     })
-    .max(255, {
+    .max(63, {
       message:
-        'La dirección de tu evento debe contener un máximo de 255 caracteres',
+        'La dirección de tu evento debe contener un máximo de 63 caracteres',
     })
-    .refine(value => /^[a-zA-Z0-9-]*$/.test(value), {
+    .transform(value => value.toLowerCase())
+    .refine(value => /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(value), {
       message:
-        'La dirección de tu evento no puede contener caracteres especiales (.*%$#&...)',
+        'La dirección de tu evento solo puede contener letras, números y guiones, y no puede empezar ni terminar con un guión',
+    })
+    .refine(value => !RESERVED_EVENT_URLS.includes(value), {
+      message: 'Esa dirección está reservada, elegí otra.',
     }),
 });
 

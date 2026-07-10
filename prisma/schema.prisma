@@ -68,6 +68,15 @@ model User {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
   name             String?
   lastName         String?
+  // NOTE: the underlying Mongo index (User_email_key) must stay `sparse: true`.
+  // Partner users created during onboarding step 2 (see
+  // updateProfileStepTwo in actions/common/onboarding.ts) never get an
+  // email — same class of bug as Image.giftId and Event.url above: `@unique`
+  // gives no sparse option, so `db push` won't create/repair this — a
+  // non-sparse unique index only allows ONE user with a missing email ever.
+  // If this index is ever recreated (e.g. on a new environment), run manually:
+  //   db.User.dropIndex("User_email_key")
+  //   db.User.createIndex({ email: 1 }, { unique: true, sparse: true, name: "User_email_key" })
   email            String?   @unique
   password         String?
   emailVerified    DateTime?
