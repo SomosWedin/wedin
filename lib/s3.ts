@@ -57,6 +57,50 @@ export const uploadEventCoverImagesToAws = async ({
   return { uploadedImages };
 };
 
+export const uploadGiftImageToAws = async ({
+  file,
+  eventId,
+}: {
+  file: File;
+  eventId: string;
+}) => {
+  const checksum = await computeSHA256(file);
+
+  const presignResponse = await getSignedURL({
+    fileName: file.name,
+    fileType: file.type,
+    fileSize: file.size,
+    id: eventId,
+    type: 'eventId',
+    checksum,
+  });
+
+  if (presignResponse.error || !presignResponse?.success) {
+    return { error: presignResponse.error };
+  }
+
+  const imageUrl = presignResponse.success.split('?')[0];
+
+  if (!imageUrl) {
+    return { error: 'Failed to upload image' };
+  }
+
+  const awsImagePosting = await fetch(imageUrl, {
+    method: 'PUT',
+    body: file,
+    headers: {
+      'Content-Type': file.type,
+      metadata: JSON.stringify({ eventId }),
+    },
+  });
+
+  if (!awsImagePosting.ok) {
+    return { error: awsImagePosting.statusText };
+  }
+
+  return { url: imageUrl };
+};
+
 export const deleteEventCoverImageFromAws = async (imageUrl: string) => {
   const deleteResponse = await fetch(imageUrl, {
     method: 'DELETE',

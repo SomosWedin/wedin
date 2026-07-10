@@ -9,7 +9,7 @@ export async function getGiftlist(giftlistId: string) {
   try {
     const giftlist = await prismaClient.giftlist.findUnique({
       include: {
-        gifts: true,
+        gifts: { include: { image: true } },
       },
       where: {
         id: giftlistId,
@@ -21,7 +21,7 @@ export async function getGiftlist(giftlistId: string) {
     return giftlist;
   } catch (error) {
     console.error('Error retrieving gifts:', error);
-    throw error;
+    return null;
   }
 }
 
@@ -51,7 +51,7 @@ export async function getGiftlists({
     const giftlists = await prismaClient.giftlist.findMany({
       where: query,
       include: {
-        gifts: true,
+        gifts: { include: { image: true } },
       },
     });
 

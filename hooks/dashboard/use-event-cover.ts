@@ -231,6 +231,12 @@ export function useEventCover({
     z.infer<typeof EventCoverFormSchema>
   > = async data => {
     setLoading(true);
+    // Persisted replacements for images swapped this submit, merged into
+    // existingImages on success so the UI reflects real DB records without
+    // a page reload.
+    const persistedNewImages: ExistingImage[] = [];
+    const persistedReplacedImages: Record<string, ExistingImage> = {};
+
     // Prepare new images to upload
     const newImagesToUpload = newImages.map(({ file, id }) => ({
       file,
@@ -324,11 +330,21 @@ export function useEventCover({
           setLoading(false);
           return;
         }
+
+        if (result.images) {
+          persistedNewImages.push(
+            ...result.images.map(img => ({
+              id: img.id,
+              url: img.url,
+              isNew: false as const,
+            }))
+          );
+        }
       }
     }
 
     if (imagesToReplace.length > 0) {
-      imagesToReplace.map(async image => {
+      for (const image of imagesToReplace) {
         const uploadResponse = await uploadEventCoverImagesToAws({
           files: [image.file],
           eventId,
@@ -358,8 +374,16 @@ export function useEventCover({
             setLoading(false);
             return;
           }
+
+          if (result.image) {
+            persistedReplacedImages[image.replaceId] = {
+              id: result.image.id,
+              url: result.image.url,
+              isNew: false,
+            };
+          }
         }
-      });
+      }
     }
 
     if (imagesToDelete.id.length > 0) {
@@ -410,6 +434,27 @@ export function useEventCover({
     toast({
       title: 'La portada del evento se actualizó con éxito. 📸',
     });
+
+    // Merge server-persisted images into existingImages so the UI reflects
+    // real DB records (ids + permanent URLs) immediately, without waiting
+    // on a route refresh or reloading the page. Replaced images were already
+    // dropped from existingImages by handleRemoveImage, so their persisted
+    // versions are appended alongside the newly-added ones rather than
+    // replaced in place.
+    const mergedImages = [
+      ...existingImages,
+      ...Object.values(persistedReplacedImages),
+      ...persistedNewImages,
+    ];
+    setExistingImages(mergedImages);
+    setInitialImages(mergedImages);
+
+    // Revoke the blob preview URLs for images we just replaced with the
+    // persisted versions above (newly-added ones are freed in this same
+    // pass; handleRemoveImage already revokes any the user discarded).
+    for (const img of [...newImages, ...updatedImages]) {
+      if (img.url) URL.revokeObjectURL(img.url);
+    }
 
     setNewImages([]);
     setUpdatedImages([]);

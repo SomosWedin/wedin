@@ -58,6 +58,7 @@ export async function getGifts({
   try {
     return await prismaClient.gift.findMany({
       where: query,
+      include: { image: true },
       orderBy: {
         createdAt: 'desc',
       },
@@ -97,13 +98,23 @@ export async function editGift(
     return { error: 'Datos inválidos, por favor verifica tus datos.' };
   }
 
+  const { imageUrl, ...giftData } = validatedFields.data;
+
   try {
     const gift = await prismaClient.gift.update({
       where: { id: giftId },
       data: {
-        name: validatedFields.data.name,
-        categoryId: validatedFields.data.categoryId,
-        price: validatedFields.data.price,
+        ...giftData,
+        ...(imageUrl
+          ? {
+              image: {
+                upsert: {
+                  create: { url: imageUrl },
+                  update: { url: imageUrl },
+                },
+              },
+            }
+          : {}),
       },
     });
 
@@ -112,10 +123,11 @@ export async function editGift(
     }
 
     revalidatePath('/dashboard');
+    revalidatePath('/wishlist');
     return { giftId: gift.id };
   } catch (error) {
     console.error('Error editing gift:', error);
-    return { error: 'Error al editar el regalo' };
+    return { error: getErrorMessage(error) };
   }
 }
 
@@ -126,10 +138,14 @@ export async function createGift(formData: z.infer<typeof GiftPostSchema>) {
     return { error: 'Datos inválidos, por favor verifica tus datos.' };
   }
 
+  const { imageUrl, sourceGiftId, ...giftData } = validatedFields.data;
+
   try {
     const newGift = await prismaClient.gift.create({
       data: {
-        ...validatedFields.data,
+        ...giftData,
+        ...(sourceGiftId ? { sourceGiftId } : {}),
+        ...(imageUrl ? { image: { create: { url: imageUrl } } } : {}),
       },
     });
 

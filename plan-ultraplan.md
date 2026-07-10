@@ -56,11 +56,28 @@ in this session (not carried over from an earlier draft): `prisma/schema.prisma`
   non-functional, don't rely on it as a real guard without fixing the
   `console.log` into a real redirect first, and call this out explicitly
   rather than silently inheriting broken protection.
-- `lib/routes.ts`'s `publicRoutes` array already contains `/events` (dead,
-  since `isPublicRoute` is unread) — a new `/events/[slug]` route needs
-  **no middleware change**: it's absent from `protectedRoutes` and
-  `onboardingRoute`, so it's already reachable logged-out. Leave
-  `publicRoutes` alone either way.
+- `lib/routes.ts`'s `publicRoutes` array contains `/events` (dead, since
+  `isPublicRoute` is unread, and no `app/events` route folder exists) —
+  this was the earlier draft's assumed guest-route path. **Corrected**:
+  Phase 3's shipped `event-settings.tsx` field already commits the guest
+  URL scheme to `wedin.com/e/{slug}` (label text: `wedin.com/e/`, confirmed
+  live with the user), so Phase 4's new route is `app/e/[slug]`, not
+  `app/events/[slug]`. No middleware change either way: `/e` is absent from
+  `protectedRoutes` and `onboardingRoute`, so it's already reachable
+  logged-out. Leave the dead `/events` entry in `publicRoutes` alone (or
+  delete it as unused cleanup — not load-bearing either way).
+- MongoDB gotcha, confirmed the hard way three times this session (`Image.giftId`,
+  `Event.url`, `User.email`): an optional `@unique` field (`String? @unique`)
+  needs its underlying index converted to `sparse: true` manually. Prisma's
+  schema DSL has no `sparse` option, and `prisma db push` will not create or
+  repair it — a non-sparse unique index only tolerates **one** document
+  missing the field; the second throws `P2002`. Fix via raw Mongo commands
+  (`$runCommandRaw` `dropIndexes` + `createIndexes` with `sparse: true`), and
+  document the manual reindex commands as a comment above the field in
+  `schema.prisma` (see `Image.giftId`, `Event.url`, `User.email` for the
+  pattern to copy). **Apply this immediately** when Phase 1 adds
+  `Transaction.dlocalPaymentId String? @unique` — it will hit the identical
+  bug the moment a second `Transaction` exists without a completed payment.
 - `getEvent()` in `actions/data/event.ts` is session-gated
   (`getCurrentUser()`); `getEventById(eventId)` looks up by ID only, no
   by-`url` lookup exists yet. The guest site needs new, deliberately
@@ -277,6 +294,84 @@ and the already-written, unused Zod schemas above.
 - Verify: adding a gift from `/gifts` makes it appear on `/wishlist` with
   correct favorite/group flags; removing it updates both views.
 
+**Status: ✅ Done, plus a substantial post-implementation polish pass** driven
+by manual review/feedback across several follow-up rounds. Everything below
+was verified live (seeded test user + Playwright + direct DB checks), not
+just typechecked.
+
+Delivered as planned: `actions/data/wishlist-gift.ts`, `dashboard-wishlist.tsx`
+rewrite (async Server Component + `Suspense`/`lazy()` list), `/gifts` wiring,
+`hooks/dashboard/use-wishlist-gift.ts`.
+
+Also added, beyond the original scope:
+- `actions/data/category.ts` (`getCategories`) — needed for category
+  `Select`s; not in the original plan text.
+- **Gift image rendering was broken app-wide.** Seed data always had images
+  (`faker.image.url()`); the bug was `getGifts`/`getGiftlists` never
+  `include`-ing the `image` relation, and the UI never rendering it. Fixed
+  in both places — any future list/table of `Gift`s should `include: {
+  image: true }` from the start.
+- **New route `/gifts/lists/[giftlistId]`** — the "Ver paquete" giftlist
+  detail page didn't exist yet; built it (package summary, bulk "Agregar
+  paquete completo", per-gift table). A natural extension of this phase,
+  not originally scoped.
+- **Confirm-before-add modal.** Clicking a catalog gift row (not just its
+  button) now opens a pre-filled, editable "Agregar regalo" dialog
+  (`components/dialog/add-existing-gift-dialog.tsx` +
+  `components/dashboard/gift-row.tsx`) before it's added, instead of adding
+  instantly.
+- **Gift personalization pattern** (relevant to any future gift-editing
+  UI): editing a catalog gift's name/price/category/image forks a
+  personalized copy (`Gift.isEditedVersion: true`, `sourceGiftId`) rather
+  than mutating the shared default catalog item — *unless* the linked gift
+  is already a personal copy, in which case it edits in place (no
+  duplicate proliferation on repeated edits). `GiftCreateSchema`/
+  `createGift` and `editGift` were extended to support this (image upload
+  via nested `image: { create/upsert }`, `sourceGiftId`). Used in both
+  `add-existing-gift-dialog.tsx` and `edit-wishlist-gift-dialog.tsx`.
+- **`/wishlist` and `/gifts` filters wired** (search, Estado, Categoria).
+  `/wishlist` filters client-side against already-fetched data (small
+  dataset, no round-trip needed); `/gifts` filters via URL search params
+  (`components/dashboard/gifts-filter-bar.tsx`), since `getGifts`/
+  `getGiftlists` already supported `name`/`category` params server-side.
+- **Design pass**: shared badge components
+  (`components/dashboard/gift-type-badge.tsx`, `gift-added-badge.tsx`,
+  `gift-favorite-badge.tsx`) replacing plain icon+text. Fixed a bug where
+  the Tipo column always showed "Regalo Grupal" (was reading
+  `Gift.giftlistId`, which just means "belongs to a predefined package" —
+  unrelated to individual/group funding, which is a `WishlistGift`-level
+  concept that doesn't exist until a gift is actually added to someone's
+  list). Removed a redundant duplicate "already added" indicator that
+  appeared twice in the same row.
+- **`app/not-found.tsx`** — no custom 404 existed anywhere in the app;
+  added one (reuses `EmptyState` + the sidebar's wedin logo mark). Also
+  fixed `getGiftlist()`, which used to `throw` on error instead of
+  returning `null` (crashed with an unhandled Prisma error on a malformed
+  ObjectId in the URL) — now matches the rest of the codebase's
+  return-`null`-on-error convention, and the detail page redirects to
+  `/gifts` instead of a raw 404.
+- **Price validation bug fix**: `GiftFormSchema.price` validated string
+  *length* (`max(10)`) while the error message claimed a numeric max of
+  99,999,999 — anything up to ~10 digits silently passed. Now validates
+  the actual numeric value via `.refine()`. Note:
+  `TransactionCreateSchema.amount` and `CreateTransactionParams.amount`
+  (`schemas/form.ts`, `schemas/params.ts`) have the identical bug but are
+  unused until Phase 6 — worth the same fix when that phase wires them up.
+- **`components/forms/common/price-input.tsx`** — new shared masked
+  Guaraní-currency input (strips non-digits live, formats with `es-PY`
+  thousand separators e.g. `2.000.000`). Reused across all three gift
+  dialogs; reuse it for any future PYG amount input (e.g. Phase 6/8).
+
+**Known gap discovered, not fixed (flagged, out of scope for this phase)**:
+`tailwind.config.ts` never mapped the shadcn CSS-variable tokens (`primary`,
+`input`, `ring`, etc.) that `styles/globals.css` defines. Pre-existing,
+affects ~14 shadcn primitives project-wide — most of the app just never hit
+it because it's styled with explicit custom Tailwind colors instead of the
+shadcn defaults. Only patched locally for the new `Switch` component (uses
+`success`/`gray200` instead of `primary`/`input`). Worth a real fix
+(wiring the CSS vars into `tailwind.config.ts`) before adding more shadcn
+components that lean on default theme colors.
+
 ### Phase 3 — Event URL/slug write-path
 Small, blocks Phase 4.
 
@@ -288,6 +383,63 @@ Small, blocks Phase 4.
   wedin.com/e/{url}" field near the other settings forms).
 - Verify: setting a URL rejects duplicates with a friendly error; valid
   submission persists and is reflected in `getEventById`/new `getEventByUrl`.
+
+**Status: ✅ Done**, live-verified (real login session, real dev DB, no
+mocks), plus follow-up hardening beyond the original scope.
+
+Delivered as planned: `updateEventUrl` action, `hooks/dashboard/use-event-url.ts`,
+a "Dirección de tu evento" field placed top of `event-settings.tsx` (right
+after Fecha del evento, confirmed with the user), prefixed `wedin.com/e/` —
+**this is now the committed guest-route path for Phase 4**, see the
+`/e/[slug]` correction in Verified Facts above.
+
+Also fixed along the way (not originally scoped, discovered while starting
+this phase):
+- **The MongoDB sparse-index gotcha** (see Verified Facts above) — this is
+  what caused the original "Error uploading event images" bug
+  (`Image.giftId`), was proactively found and pre-fixed on `Event.url`
+  before it could bite the new field, then resurfaced twice more: once when
+  `Image.giftId`'s sparse flag reverted outside of `prisma db push` (cause
+  not fully identified — confirmed `db push` itself doesn't revert it), and
+  once on `User.email` (onboarding step 2's partner-user creation, which
+  never sets an email). All three now documented in `schema.prisma` with
+  manual reindex commands.
+- **`updateProfileStepTwo` non-atomic write bug** (`actions/common/onboarding.ts`) —
+  the primary-user update and partner-user create ran as two separate
+  writes; if the second failed (e.g. the `User.email` sparse-index bug
+  above), the first had already committed, silently advancing the user to
+  onboarding step 3 with the partner's name lost. Now wrapped in
+  `prismaClient.$transaction(...)` so both writes succeed or neither does.
+- **`EventUrlFormSchema` hardened to be DNS-label-safe**: lowercase-normalize
+  (`.transform()`), 63-char cap (down from 255), a proper DNS-label regex
+  (alphanumeric start/end, no leading/trailing hyphen) replacing the old
+  charset-only check, and a reserved-word blocklist (`www`, `app`, `api`,
+  `admin`, `dashboard`, `wedin`, etc.). Not needed for the current
+  path-based `/e/{slug}` routing — done so that a **future** move to
+  `{slug}.wedin.app` subdomain routing (discussed, deferred — see below)
+  doesn't require a data-model or validation rewrite, just a routing-layer
+  change. Also fixed a real bug found in the process: `updateEventUrl`
+  validated through the schema but then used the raw, un-normalized input
+  for both the uniqueness check and the DB write, discarding the
+  normalization.
+- **Event-cover form reload anti-pattern removed** (`/event-details`,
+  Presentación section — adjacent bug hunt, not Phase 3 itself): the form
+  used to require a full page refresh after save to reset state; now the
+  mutation response is used to explicitly sync `existingImages`/form state
+  without reloading (see `hooks/dashboard/use-event-cover.ts`). Also fixed
+  an unawaited-`Promise`-in-`.map()` bug in the same hook's image-replace
+  path.
+
+**Deferred, documented for later**: `{eventUrl}.wedin.app` subdomain routing
+(instead of `wedin.com/e/{eventUrl}`) was evaluated and explicitly deferred.
+Real upside (feels like "their own site," matches Notion/Substack-style
+personalization), but real infra cost: wildcard DNS + wildcard TLS is a
+hosting-provider dependency (e.g. Vercel's Wildcard Domains needs a paid
+tier), needs the reserved-word blocklist above to avoid subdomain collisions
+with real platform infrastructure, needs case-insensitive slug handling
+(also done above), and preview/staging deployments don't get the wildcard
+automatically. The schema hardening above keeps this option open cheaply;
+actually building it is its own project, not part of this plan's phases.
 
 ### Phase 4 — Guest-facing public event site
 Net-new route tree outside `(dashboard)`/`(default)`, never importing the
@@ -304,7 +456,7 @@ libre, cart):
   function, not a rename of `getEventById` — and `getPublicWishlistGifts(eventId)`.
   Kept as a separate file from `actions/data/event.ts` so no session-gated
   function can accidentally leak into the public route tree.
-- `app/events/[slug]/page.tsx` — resolves via `getEventByUrl`; `notFound()`
+- `app/e/[slug]/page.tsx` — resolves via `getEventByUrl`; `notFound()`
   if missing or "unpublished" (define published = `url` set AND ≥1
   `WishlistGift` row, reused by Phase 9's checklist logic).
 - **Hero section**: render `event.coverMessage` + `event.images` (the same
@@ -335,8 +487,8 @@ libre, cart):
     input surface.
   Both variants end in "Cancelar" / "Agregar al carrito" — added lines are
   cart entries (Phase 5), not immediate transactions.
-- `app/events/layout.tsx` — minimal public layout, no dashboard chrome.
-- Verify: visiting `/events/{url}` in a logged-out/incognito browser renders
+- `app/e/layout.tsx` — minimal public layout, no dashboard chrome.
+- Verify: visiting `/e/{url}` in a logged-out/incognito browser renders
   the event (hero + catalog) without redirecting to `/login`; opening a gift
   card's dialog shows the correct variant (fixed-price vs. monto libre) and
   "Agregar al carrito" adds the right line item.
@@ -405,7 +557,7 @@ exercised.
   secret key already used for request auth (`HMAC-SHA256(ApiKey + rawBody,
   SecretKey)`), so `DLOCAL_GO_WEBHOOK_SECRET` is not a real dLocal Go
   concept and should not be added.
-- New `app/events/[slug]/checkout/page.tsx` +
+- New `app/e/[slug]/checkout/page.tsx` +
   `hooks/checkout/use-checkout.ts` (RHF + `zodResolver(GuestCheckoutSchema)`,
   manual-loading pattern per convention).
 - New webhook route `app/api/webhooks/dlocal/route.ts` — repo's
@@ -504,7 +656,7 @@ Phase 3, in parallel with 4-8.
   (`!!getBankDetails()`), site URL (`!!event.url`, Phase 3). Compute the
   real `X / 6` progress bar (currently hardcoded "1 de 6" / `value={26}`).
   Enable "Ver sitio web" (currently `disabled`) once `event.url` is set,
-  linking to `/events/{url}`.
+  linking to `/e/{url}`.
 - Verify: toggling each underlying condition (adding a gift, setting bank
   details, setting the URL, etc.) updates the corresponding checklist row
   and the progress bar.
@@ -523,3 +675,9 @@ site work).
 - `middleware.ts`, `lib/routes.ts` (no changes needed for the new public route; admin gate is broken, noted above)
 - `components/dashboard/dashboard-home.tsx`, `dashboard-transactions.tsx`, `dashboard-wishlist.tsx`
 - `app/(default)/gifts/page.tsx` (list/row convention to reuse)
+- From Phase 2's polish pass, reusable in later phases (esp. Phase 4's
+  guest-facing gift browsing): `components/dashboard/gift-type-badge.tsx`,
+  `gift-added-badge.tsx`, `gift-favorite-badge.tsx` (pill badge
+  conventions), `components/forms/common/price-input.tsx` (masked Gs.
+  input), `components/dashboard/gifts-filter-bar.tsx` (URL-searchParams
+  filter bar pattern), `app/not-found.tsx` (custom 404, now exists)

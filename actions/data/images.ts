@@ -19,17 +19,14 @@ export async function addImages({
     return { error: 'No image URLs provided' };
   }
 
-  const imageData = imageUrls.map(url => ({
-    eventId,
-    url,
-  }));
-
   try {
-    await prismaClient.image.createMany({
-      data: imageData,
-    });
+    const images = await Promise.all(
+      imageUrls.map(url =>
+        prismaClient.image.create({ data: { eventId, url } })
+      )
+    );
     revalidatePath('/event-details');
-    return { success: true };
+    return { success: true, images };
   } catch (error) {
     console.error('Error uploading event images:', error);
     return { error: 'Error uploading event images' };
@@ -48,12 +45,12 @@ export async function updateImage({
   }
 
   try {
-    await prismaClient.image.update({
+    const image = await prismaClient.image.update({
       where: { id: imageId }, // Target the specific image by ID
       data: { url: imageUrl }, // Update the image URL
     });
     revalidatePath('/event-details');
-    return { success: true };
+    return { success: true, image };
   } catch (error) {
     console.error('Error updating event image:', error);
     console.error('imageId', imageId);

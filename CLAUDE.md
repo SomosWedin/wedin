@@ -75,3 +75,13 @@ checkout/wallet loop, see `plan-ultraplan.md`.
   line width 80, semicolons, es5 trailing commas. lint-staged runs Prettier then Biome on commit.
 - New server-side logic goes in `actions/<domain>/`; matching validation in `schemas/`.
 - Keep imports organized (Biome `organizeImports` is on).
+- **MongoDB + optional `@unique` fields**: any `String? @unique` field
+  (`Image.giftId`, `Event.url`, `User.email` are existing examples) needs its
+  underlying index converted to `sparse: true` manually. Prisma's schema DSL
+  has no `sparse` option, and `prisma db push` will not create or repair it —
+  a non-sparse unique index only tolerates **one** document missing the
+  field; the second throws `P2002`. Fix via raw Mongo commands
+  (`$runCommandRaw` `dropIndexes` + `createIndexes` with `sparse: true`), and
+  document the manual reindex commands as a comment above the field in
+  `schema.prisma` (copy the pattern from the three existing examples).
+  Apply this immediately whenever a new optional `@unique` field is added.
