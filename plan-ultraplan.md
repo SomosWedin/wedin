@@ -797,7 +797,9 @@ flow required. Live-verified with Playwright: real login
 (`me+parejas@avilaca.com` on the `avilaca` dev event — password set to a
 known test value for this, see note below), `/transactions` renders the
 ledger with correct summary totals, "Agradecer" saves a note and the row
-flips to "Editar agradecimiento" after a refresh, zero console errors.
+flips to a disabled "Agradecido" state after a refresh (see the one-time-
+Agradecer note below — this replaced an editable "Editar agradecimiento"
+state from the first pass), zero console errors.
 
 Delivered as planned: `actions/data/transaction.ts` (`getTransactions`,
 `updateTransactionNotes`), `dashboard-transactions.tsx` rewritten as an
@@ -856,6 +858,54 @@ existing `avilaca`-slug dev event's primary user. Also confirmed live: the
 at login today — dead check, same class of finding as the `isAdminRoute`
 dead code already noted elsewhere in this doc. Flag to the user: decide
 whether to keep this test password or rotate/clear it.
+
+**Second round of changes, driven by the user reviewing the live page**
+(all in `components/dashboard/dashboard-transactions-list.tsx` /
+`components/dialog/thank-transaction-dialog.tsx` unless noted):
+
+- **Agradecer made one-time, not editable.** The first pass's "Editar
+  agradecimiento" (reopens the dialog once notes exist) was wrong — thanking
+  a guest is a single action, not an editable note. Now: once
+  `transaction.notes` is set, the row shows a disabled "Agradecido" button
+  instead of a dialog trigger. `thank-transaction-dialog.tsx` early-returns
+  the disabled state before rendering any `Dialog` at all in that case.
+- **Estado badges got icons** (`ESTADO_BY_STATUS` now carries an `icon` per
+  status alongside `label`/`className`: checkmark/sync/clock/close/undo),
+  matching a reference pill design the user provided.
+- **Search + Estado filter added**, styled identically to `/wishlist`'s
+  filter row (`Input` with a leading `IoSearchOutline`, native `<select>`
+  for Estado built from `ESTADO_OPTIONS`, derived from `ESTADO_BY_STATUS`).
+  Search matches **either** `payerName` or `wishlistGift.gift.name`,
+  client-side over the already-fetched rows — same small-dataset pattern as
+  `dashboard-wishlist-list.tsx`, no new server round-trip.
+- **Fecha and Monto columns made sortable.** Clicking a header toggles
+  asc/desc (defaults to desc on first click); `SortIcon` shows a chevron on
+  the active column and a neutral `IoSwapVerticalOutline` on the inactive
+  one. Sort is applied after search/Estado filtering
+  (`sortedTransactions` derived from `filteredTransactions`).
+- **Summary card intentionally changed to count every status, not just
+  `COMPLETED`** — explicit user request ("inflate the numbers a bit"),
+  confirmed via `AskUserQuestion` that **both** "Regalos recibidos" (count)
+  and "Equivalente en efectivo" (cash total) should include all statuses,
+  not just the count. **This is a real, deliberate deviation from
+  correctness, not a bug**: "Equivalente en efectivo" no longer represents
+  money actually collected — it now includes `FAILED`/`PENDING`/`OPEN`/
+  `REFUNDED` amounts too. **Load-bearing for Phase 8**: the wallet balance
+  (`getEventBalance`) must NOT reuse this card's total — it needs a fresh
+  `COMPLETED`-only sum (the `WHERE status = 'COMPLETED'` filter this phase
+  deliberately removed from the *display* layer still needs to exist in
+  Phase 8's own balance calculation).
+- **Drive-by fixes riding along in this branch** (small, made directly by
+  the user, unrelated to Phase 7's core scope but worth flagging when the
+  PR is opened): `dashboard-wishlist-list.tsx` summary card capped to
+  `max-h-24` with a vertically-centered heading (matches the transactions
+  card); `admin-panel-layout.tsx` main background `bg-zinc-50` →
+  `bg-white`; `content-layout.tsx` height `h-screen` → `h-full` (the fixed
+  `h-screen` was causing overflow/double-scroll once a page's content list
+  — like this ledger — got taller than one viewport).
+- Nine dummy `Transaction` rows now exist on the `avilaca` dev event
+  (mixed statuses, dates spread across the last week) — useful test data
+  for Phase 8's balance/withdrawal work too, no need to reseed.
 
 ### Phase 8 — Wallet balance + withdrawal ("Enviar a mi cuenta")
 
