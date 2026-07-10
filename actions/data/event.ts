@@ -2,7 +2,9 @@
 
 import { getCurrentUser } from '@/actions/get-current-user';
 import type { ErrorResponse } from '@/auth';
+import { EventUrlFormSchema } from '@/schemas/form';
 import { Event, Image as ImageModel, PrismaClient } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 
 const prismaClient = new PrismaClient();
 
@@ -103,6 +105,44 @@ export const updateEvent = async (
     return {
       error: 'Error updating event',
     };
+  }
+};
+
+export const updateEventUrl = async (eventId: string, url: string) => {
+  const validatedFields = EventUrlFormSchema.safeParse({
+    eventId,
+    eventUrl: url,
+  });
+
+  if (!validatedFields.success) {
+    return {
+      error:
+        validatedFields.error.errors[0]?.message ??
+        'La dirección de tu evento no es válida',
+    };
+  }
+
+  try {
+    const existingEvent = await prismaClient.event.findUnique({
+      where: { url },
+    });
+
+    if (existingEvent && existingEvent.id !== eventId) {
+      return {
+        error: 'Esa dirección ya está en uso, elegí otra.',
+      };
+    }
+
+    const updatedEvent = await prismaClient.event.update({
+      where: { id: eventId },
+      data: { url },
+    });
+
+    revalidatePath('/event-settings');
+    return { success: updatedEvent };
+  } catch (error) {
+    console.error('Error updating event url:', error);
+    return { error: 'Error actualizando la dirección del evento' };
   }
 };
 
