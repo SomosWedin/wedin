@@ -815,6 +815,25 @@ label reads "Agradecer" vs. "Editar agradecimiento" based on whether `notes`
 is already set — a free state marker, no schema change needed. Email variant
 still a follow-up if wanted later.
 
+**Scope correction made live with the user, after the first pass**: the
+plan's own verify text ("completed transactions appear") led the first
+implementation to hardcode `status: 'COMPLETED'` inside `getTransactions`.
+Revisited with the user: `Payout` (Phase 8) and `Transaction` (this phase)
+are separate collections tracking opposite directions of money (wallet →
+bank vs. guest → wallet), so there's no overlap risk from showing more
+`Transaction` statuses here — the `COMPLETED`-only filter was an unnecessary
+self-imposed restriction, not something required to keep Phase 7 and 8
+clean of each other. Changed to: `getTransactions` returns every status for
+the event; the table adds **Fecha** (`createdAt`, `dd/MM/yyyy`) and
+**Estado** columns (`ESTADO_BY_STATUS` badge map in
+`dashboard-transactions-list.tsx` — `COMPLETED`→"Recibido" success,
+`PENDING`→"En proceso" warning, `OPEN`→"Pendiente de pago" gray,
+`FAILED`→"Fallido" error, `REFUNDED`→"Reembolsado" gray). The summary
+card's count/total and the "Agradecer" button's visibility still filter to
+`COMPLETED` only — showing a `FAILED` row's amount as "cash received," or
+offering to thank a guest for a payment that never landed, would both be
+wrong even though the row itself should be visible.
+
 **Real pre-existing bug found and fixed while seeding test data**:
 `Transaction.dlocalPaymentId String? @unique` (added in Phase 1) never got
 its Mongo index converted to `sparse: true` — the exact gotcha
