@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import {
   IoCartOutline,
+  IoCheckmarkCircle,
   IoChevronForward,
   IoGiftOutline,
 } from 'react-icons/io5';
@@ -33,10 +34,16 @@ export default function GuestGiftCard({
   onOpenContributionDialog,
 }: GuestGiftCardProps) {
   const { gift } = wishlistGift;
-  const { remaining, percentage } = getGiftProgress(
+  const { priceValue, remaining, percentage } = getGiftProgress(
     gift.price,
     wishlistGift.transactions
   );
+  // `isFullyPaid` is only flipped by the checkout webhook (not built yet), so
+  // it can lag behind reality — fall back to the transactions sum so a gift
+  // that already reached its price always reads as complete, even pre-webhook.
+  // Guard on priceValue > 0 so a malformed/zero price doesn't read as "complete".
+  const isComplete =
+    wishlistGift.isFullyPaid || (priceValue > 0 && remaining <= 0);
 
   return (
     <div className="flex flex-col gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm justify-between bg-gray-50">
@@ -46,11 +53,21 @@ export default function GuestGiftCard({
             src={gift.image.url}
             alt={gift.name}
             fill
-            className="object-cover"
+            className={`object-cover ${isComplete ? 'opacity-60' : ''}`}
           />
         ) : (
           <div className="flex justify-center items-center w-full h-full">
             <IoGiftOutline className="text-4xl text-gray-300" />
+          </div>
+        )}
+        {isComplete && (
+          <div className="flex absolute inset-0 justify-center items-center">
+            <div className="flex gap-1.5 items-center px-3 py-1.5 bg-white rounded-full shadow-sm">
+              <IoCheckmarkCircle className="text-lg text-success" />
+              <span className="text-sm font-medium text-textPrimary">
+                Completo
+              </span>
+            </div>
           </div>
         )}
         <div className="flex absolute bottom-3 left-3 flex-col gap-1.5 items-start">
@@ -62,7 +79,7 @@ export default function GuestGiftCard({
       <div className="flex flex-col gap-1">
         <p className="font-normal text-lg truncate">{gift.name}</p>
 
-        {wishlistGift.isFullyPaid ? (
+        {isComplete ? (
           <Badge className="w-fit bg-success/10 text-success border-transparent">
             Regalo recibido
           </Badge>
@@ -81,7 +98,7 @@ export default function GuestGiftCard({
         )}
       </div>
 
-      {!wishlistGift.isFullyPaid &&
+      {!isComplete &&
         (wishlistGift.isGroupGift ? (
           <Button
             className="gap-2 justify-between bg-gray-100 hover:bg-gray-200 transition-colors"
