@@ -24,7 +24,11 @@ export default async function GuestEventPage({ params }: GuestEventPageProps) {
   return (
     <>
       <GuestHero event={event} />
-      <GuestGiftCatalog wishlistGifts={wishlistGifts} categories={categories} />
+      <GuestGiftCatalog
+        eventId={event.id}
+        wishlistGifts={wishlistGifts}
+        categories={categories}
+      />
     </>
   );
 }
