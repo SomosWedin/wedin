@@ -907,33 +907,103 @@ whether to keep this test password or rotate/clear it.
   (mixed statuses, dates spread across the last week) — useful test data
   for Phase 8's balance/withdrawal work too, no need to reseed.
 
-### Phase 8 — Wallet balance + withdrawal ("Enviar a mi cuenta")
+### Phase 8 — Wallet balance + withdrawal ("Retirar efectivo") — DONE
 
+Built on `feature/wallet-withdrawal` off `docs/guest-checkout-wallet-plan`.
 Manual-admin-processed for MVP: `BankDetails` has zero gateway account
-tokens today — it's built for a human to read and act on, not an API
-target. Automated multi-country payout is a separate integration surface;
-don't bundle it into this phase.
+tokens — a `Payout` row is created as `REQUESTED` and an operator flips its
+status by hand later; no transfer API is called.
 
-**Reference (Figma)** — accessed via a "Mi perfil" profile-menu route
-rather than the dashboard sidebar (consistent across all 4 design
-variants of this screen, not a stale iteration):
-
-![Billetera balance card + movements ledger with pending/confirmed states](docs/plan-assets/phase8-billetera.png)
-
-- `getEventBalance(eventId)` — sum `COMPLETED` transaction amounts minus
-  sum of non-`REJECTED` `Payout` amounts (Phase 1's model).
-- New `actions/data/payout.ts`: `getPayouts`, `requestPayout` (validates
-  `amount <= balance`, creates a `Payout` row with `status: REQUESTED` —
-  does **not** call any transfer API; an operator flips status by hand
-  later, or via a future admin-gated route). **Do not** rely on
-  `adminRoutes`/`isAdminRoute` in `middleware.ts` as real protection for
-  that future route — it's dead code today (see Verified Facts); fix the
-  `console.log` into an actual redirect first if/when that route is built.
-- New `components/dialog/request-payout-dialog.tsx` wired to the existing
-  no-op "Gestionar retiro" button in `dashboard-transactions.tsx`.
-- New `components/dashboard/wallet-balance-card.tsx`.
-- Verify: `requestPayout` rejects an amount greater than the computed
-  balance; the balance correctly excludes already-requested payouts.
+- `actions/data/payout.ts`: `getEventBalance(eventId)` (sum `COMPLETED`
+  transaction amounts minus sum of non-`REJECTED` `Payout` amounts —
+  manual JS reduce over fetched rows, not Prisma `_sum`, since
+  `Transaction.amount`/`Payout.amount` are Mongo `String` fields with no
+  Decimal aggregation support), `getWalletSummary(eventId)` (same two
+  queries via a shared private `getEventFinancials` helper, returning
+  `{ totalReceived, giftsCount, balance }` for the summary bar),
+  `getPayouts(eventId)`, `requestPayout(eventId, values)` (rejects if no
+  `BankDetails` row exists yet, or if `amount > getEventBalance(eventId)`).
+  **Verified independent of Phase 7's deliberately-inflated ledger card**:
+  on the `avilaca` dev event, `getEventBalance` returned exactly
+  Gs. 1.692.303 (the true `COMPLETED`-only sum) while `/transactions`'
+  "Equivalente en efectivo" showed Gs. 2.907.303 (all statuses) — confirmed
+  live these two numbers are computed independently, not coincidentally
+  equal.
+- `RequestPayoutParams` added to `schemas/params.ts`; `hooks/dashboard/use-payout.ts`
+  mirrors `use-transaction.ts` (loading state, toast, `router.refresh()`).
+- `components/dialog/request-payout-dialog.tsx` — dynamic Zod schema factory
+  (`createRequestPayoutSchema(balance)`, same pattern as
+  `gift-contribution-dialog.tsx`) capping the amount to the live balance.
+  Trigger button: "Retirar efectivo", `variant="success"` (matches the
+  existing "Gestionar retiro" button styling, not the black `default`
+  variant used in the first draft).
+- Route is `/billetera` (Spanish, not `/wallet` — matches the Figma
+  breadcrumb wording). Added to `protectedRoutes` in `lib/routes.ts`.
+  Reachable two ways: a new dedicated **sidebar item** ("Mi billetera",
+  `Wallet` icon, `lib/menu-list.ts`) and the profile-dropdown link in
+  `user-nav.tsx` (its commented-out `/account` stub was repurposed —
+  uncommented, repointed to `/billetera`, relabeled "Mi billetera"). The
+  existing "Gestionar retiro" button in `dashboard-transactions.tsx` is now
+  a real `Link` to `/billetera` (`asChild`, same pattern as
+  `cart-drawer.tsx`'s checkout link) instead of a dialog trigger.
+- **Layout went through two full revisions after the user reviewed the
+  live page against actual reference screenshots** (the original
+  `docs/plan-assets/phase8-billetera.png` Figma turned out to not match
+  what was wanted):
+  1. First pass built a two-column layout (fixed-width balance card left,
+     movements list right) — rejected outright ("dont know why you decided
+     to go with that layout!").
+  2. Rebuilt as a **full-width single-column page mirroring
+     `dashboard-transactions.tsx`/`dashboard-transactions-list.tsx` exactly**:
+     header row (title + description + action button, `border-b`) → a
+     horizontal `bg-gray50` stat bar ("Resúmen de tu billetera" with two
+     icon+value stat blocks: `totalReceived` labeled "Regalos recibidos",
+     `balance` labeled "Disponible para retiro") → "Historial" section →
+     sortable table. `wallet-balance-card.tsx` was deleted; its content
+     folded into `wallet-payouts-list.tsx`, which now owns the whole
+     summary+history rendering (mirroring how
+     `dashboard-transactions-list.tsx` owns both).
+  3. Third round: **the search input was removed** from the Historial
+     table — every `Payout` row has the identical description
+     ("Transferencia a cuenta"), so free-text search had nothing
+     meaningful to filter, unlike Phase 7's ledger where search matches
+     `payerName`/gift name. Only the Estado `<select>` remains, now sharing
+     one row with the "Historial" heading instead of its own search+filter
+     row. Table columns are `Descripción | Fecha (sortable) | Monto
+     (sortable) | Estado` — no `Regalo` column and no trailing
+     per-row-action column (nothing analogous to Phase 7's "Agradecer"
+     applies to a payout).
+  4. `ESTADO_BY_PAYOUT_STATUS` badge map (`wallet-payouts-list.tsx`) mirrors
+     `ESTADO_BY_STATUS`'s convention 1:1 by meaning: `REQUESTED`→"Pendiente"
+     (gray), `PROCESSING`→"En proceso" (warning), `COMPLETED`→"Confirmado"
+     (success), `REJECTED`→"Rechazado" (error).
+  5. "Descargar/Ver extracto" (visible in both reference images) stayed
+     explicitly out of scope this phase, confirmed with the user — no
+     placeholder built either.
+- Both stat blocks in `wallet-payouts-list.tsx`'s summary bar, and the
+  matching blocks in `dashboard-transactions-list.tsx`, got a `w-1/2`
+  class added (small manual polish by the user riding along in this
+  branch, not otherwise part of Phase 8's scope).
+- **Seeding**: `avilaca` dev event had no `BankDetails` row before this
+  phase (`requestPayout` would always reject without one) — created one
+  via a throwaway script, plus 5 dummy `Payout` rows spanning all four
+  `PayoutStatus` values, same hand-seed pattern as Phase 7's dummy
+  transactions.
+- Verify (Playwright, live dev DB, `me+parejas@avilaca.com`): balance math
+  matches independently-computed sums before and after seeding;
+  "Gestionar retiro" navigates to `/billetera` rather than opening a
+  dialog; sidebar "Mi billetera" highlights correctly on `/billetera`
+  (`pathname.startsWith(href)` in `menu.tsx`); Estado filter and
+  Fecha/Monto sort both work; `requestPayout` rejects an amount greater
+  than balance and accepts one within it, after which the visible balance
+  drops and a second request is correctly capped against the new, lower
+  balance.
+- **Unrelated commit riding on this branch**: `d11b6f4` ("Show
+  group/individual gifts as complete once fully funded, not just
+  isFullyPaid", `guest-gift-card.tsx`) was committed directly by the user
+  on `feature/wallet-withdrawal` while this phase was in progress — it's
+  guest-cart/checkout work (Phase 6, still not built), unrelated to the
+  wallet feature. Flagging so PR review doesn't attribute it to Phase 8.
 
 ### Phase 9 — Dashboard home real progress tracking
 Lowest complexity, highest visible payoff — buildable any time after

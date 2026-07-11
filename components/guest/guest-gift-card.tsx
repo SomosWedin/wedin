@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import {
   IoCartOutline,
+  IoCheckmarkCircle,
+  IoCheckmarkCircleOutline,
   IoChevronForward,
   IoGiftOutline,
 } from 'react-icons/io5';
@@ -33,10 +35,12 @@ export default function GuestGiftCard({
   onOpenContributionDialog,
 }: GuestGiftCardProps) {
   const { gift } = wishlistGift;
-  const { remaining, percentage } = getGiftProgress(
+  const { priceValue, remaining, percentage } = getGiftProgress(
     gift.price,
     wishlistGift.transactions
   );
+  const isComplete =
+    wishlistGift.isFullyPaid || (priceValue > 0 && remaining <= 0);
 
   return (
     <div className="flex flex-col gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm justify-between bg-gray-50">
@@ -46,11 +50,21 @@ export default function GuestGiftCard({
             src={gift.image.url}
             alt={gift.name}
             fill
-            className="object-cover"
+            className={`object-cover ${isComplete ? 'opacity-60' : ''}`}
           />
         ) : (
           <div className="flex justify-center items-center w-full h-full">
             <IoGiftOutline className="text-4xl text-gray-300" />
+          </div>
+        )}
+        {isComplete && (
+          <div className="flex absolute inset-0 justify-center items-center">
+            <div className="flex gap-1.5 items-center px-3 py-1.5 bg-white rounded-full shadow-sm">
+              <IoCheckmarkCircleOutline className="text-lg text-success" />
+              <span className="text-sm font-medium text-success">
+                Recibido
+              </span>
+            </div>
           </div>
         )}
         <div className="flex absolute bottom-3 left-3 flex-col gap-1.5 items-start">
@@ -62,43 +76,40 @@ export default function GuestGiftCard({
       <div className="flex flex-col gap-1">
         <p className="font-normal text-lg truncate">{gift.name}</p>
 
-        {wishlistGift.isFullyPaid ? (
-          <Badge className="w-fit bg-success/10 text-success border-transparent">
-            Regalo recibido
-          </Badge>
-        ) : wishlistGift.isGroupGift ? (
+        {wishlistGift.isGroupGift ? ( 
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between text-sm">
               <span>Faltan: Gs. {remaining.toLocaleString('es-PY')}</span>
-              <span>{percentage}%</span>
+              <span>{percentage}% {isComplete && '🎉'}</span>
             </div>
             <Progress value={percentage} />
           </div>
         ) : (
           <p className="font-semibold text-lg">
-            Gs. {Number(gift.price).toLocaleString('es-PY')}
+            Gs. {Number(gift.price).toLocaleString('es-PY')} {isComplete && '🎉'}
           </p>
         )}
       </div>
 
-      {!wishlistGift.isFullyPaid &&
-        (wishlistGift.isGroupGift ? (
-          <Button
-            className="gap-2 justify-between bg-gray-100 hover:bg-gray-200 transition-colors"
-            onClick={() => onOpenContributionDialog(wishlistGift)}
-          >
-            Seleccionar monto
-            <IoChevronForward className="text-lg" />
-          </Button>
-        ) : (
-          <Button
-            className="gap-2 justify-between bg-gray-100 hover:bg-gray-200 transition-colors"
-            onClick={() => onAddFullPrice(wishlistGift)}
-          >
-            Agregar al carrito
-            <IoCartOutline className="text-lg" />
-          </Button>
-        ))}
+      {wishlistGift.isGroupGift ? (
+        <Button
+          className={`gap-2 justify-between bg-gray-100 hover:bg-gray-200 transition-colors ${isComplete ? 'bg-success/10 text-success' : ''}`}
+          onClick={() => onOpenContributionDialog(wishlistGift)}
+          disabled={isComplete}
+        >
+          {isComplete ? 'Regalo recibido' : 'Seleccionar monto'}
+          <IoChevronForward className="text-lg" />
+        </Button>
+      ) : (
+        <Button
+          className={`gap-2 justify-between bg-gray-100 hover:bg-gray-200 transition-colors ${isComplete ? 'bg-success/10 text-success' : ''}`}
+          onClick={() => onAddFullPrice(wishlistGift)}
+          disabled={isComplete}
+        >
+          {isComplete ? 'Regalo recibido' : 'Agregar al carrito'}
+          <IoCartOutline className="text-lg" />
+        </Button>
+      )}
     </div>
   );
 }

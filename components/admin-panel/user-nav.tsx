@@ -73,12 +73,12 @@ export function UserNav({ currentUser }: UserNavProps) {
               Dashboard
             </Link>
           </DropdownMenuItem>
-          {/* <DropdownMenuItem className="hover:cursor-pointer" asChild>
-            <Link href="/account" className="flex items-center">
+          <DropdownMenuItem className="hover:cursor-pointer" asChild>
+            <Link href="/billetera" className="flex items-center">
               <User className="w-4 h-4 mr-3 text-muted-foreground" />
-              Account
+              Mi billetera
             </Link>
-          </DropdownMenuItem> */}
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem

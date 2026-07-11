@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react';
+import Link from 'next/link';
 import EmptyState from '@/components/common/empty-state';
 import { IoGiftOutline } from 'react-icons/io5';
 import { Button } from '@/components/ui/button';
@@ -32,9 +33,11 @@ export default async function DashboardTransactions() {
             el efectivo cuando lo necesites.
           </p>
         </div>
-        <Button variant="success" className="gap-2">
-          Gestionar retiro
-          <LuArrowUpRight className="text-2xl" />
+        <Button variant="success" className="gap-2" asChild>
+          <Link href="/billetera">
+            Gestionar retiro
+            <LuArrowUpRight className="text-2xl" />
+          </Link>
         </Button>
       </div>
 
