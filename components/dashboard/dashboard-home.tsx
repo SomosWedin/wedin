@@ -60,8 +60,9 @@ export default async function DashboardHome() {
       <div className="w-full flex flex-col gap-2 border-b border-gray-200 pb-6">
         <h1 className="text-2xl font-black">Inicio</h1>
         <p className="text-textTertiary">
-          Configura tu página y sigue los pasos para tener todo listo para tu
-          evento
+          {allCompleted
+            ? 'Tu página está lista, compartila con tus invitados'
+            : 'Configura tu página y sigue los pasos para tener todo listo para tu evento'}
         </p>
       </div>
 
