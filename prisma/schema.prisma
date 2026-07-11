@@ -119,6 +119,13 @@ model Event {
   eventType        EventType @default(WEDDING)
   guests           String?
   hasPYbankAccount Boolean   @default(false)
+  // Guest-facing visibility toggle ("Web visible" in the dashboard home
+  // site-link card), independent of the dashboard-home setup checklist —
+  // an event can be fully set up and still be hidden from guests on
+  // purpose. Existing documents lack this field in Mongo (no backfill on
+  // `db push`); Prisma's Mongo connector applies `@default` client-side on
+  // read, so older events still resolve to `true`.
+  isPublished      Boolean   @default(true)
 
   wishlist Wishlist @relation(fields: [wishlistId], references: [id])
 

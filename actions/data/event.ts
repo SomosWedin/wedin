@@ -141,10 +141,33 @@ export const updateEventUrl = async (eventId: string, url: string) => {
     });
 
     revalidatePath('/event-settings');
+    revalidatePath('/dashboard');
     return { success: updatedEvent };
   } catch (error) {
     console.error('Error updating event url:', error);
     return { error: 'Error actualizando la dirección del evento' };
+  }
+};
+
+export const setEventPublished = async (
+  eventId: string,
+  isPublished: boolean
+) => {
+  try {
+    const updatedEvent = await prismaClient.event.update({
+      where: { id: eventId },
+      data: { isPublished },
+    });
+
+    revalidatePath('/dashboard');
+    if (updatedEvent.url) {
+      revalidatePath(`/e/${updatedEvent.url}`);
+    }
+
+    return { success: updatedEvent };
+  } catch (error) {
+    console.error('Error updating event published status:', error);
+    return { error: 'Error actualizando la visibilidad de tu sitio' };
   }
 };
 
