@@ -1027,6 +1027,45 @@ Phase 3, in parallel with 4-8.
   details, setting the URL, etc.) updates the corresponding checklist row
   and the progress bar.
 
+**Status: ✅ Done**, but deliberately scoped down to **4 items, not 6**,
+per a live discussion with the user before implementation — not the
+original text above. Rationale, confirmed with the user:
+
+- **"Completá el onboarding"** is item 1, always rendered checked.
+  `middleware.ts` already redirects any logged-in, non-onboarded user to
+  `/onboarding` before they can ever see `/dashboard`, so `isOnboarded` is
+  guaranteed `true` here — this item can never be unchecked in practice.
+  Kept anyway (static checkmark) for a satisfying "step 1 done" feel,
+  per the user's explicit ask, not because it's a live condition.
+- **"Agregá un regalo a tu lista"** (item 2) — `getWishlistGifts(event.wishlistId).length > 0`,
+  links to `/gifts`.
+- **"Completá la presentación de tu evento"** (item 3) — `!!event.coverMessage && event.images.length > 0`
+  (both required, not either/or), links to `/event-details`.
+- **"Completá los detalles de tu evento"** (item 4) — `!!event.date && !!event.url`,
+  links to `/event-settings`. Note `country`/`city` (the original text's
+  other candidates) are set during onboarding step 3, before `/dashboard`
+  is ever reachable — same always-true problem as item 1 — so they're
+  deliberately excluded from this condition; only `date` and `url` are
+  actually still-unset at this point for a real user.
+- **Guest count and bank details — dropped from this phase's 6-item list**,
+  not deferred-and-forgotten: explicit user decision to ship a tighter
+  4-step checklist now and revisit later rather than wire all 6 original
+  conditions. If a guest-count or bank-details condition is added back
+  later, `X / 4` throughout this component (labels + `Progress` value)
+  needs to become `X / 6` again, and two more rows need to be inserted at
+  the position the user chooses.
+- **"Ver sitio web"** enables (links to `/e/{event.url}`) once **all 4**
+  items are complete — not just `!!event.url` as the original text said.
+  Straightforward now since Phase 4 (the actual `/e/[slug]` guest site)
+  is done — no dead-link risk.
+- Verified live: minted a real Auth.js v5 JWT session (`next-auth/jwt`
+  `encode`, matching `auth.config.ts`'s cookie/secret setup) for two real
+  seeded users against the running dev server, not just typechecked —
+  `av2@wedin.app` (all 4 conditions true → "4 de 4", full progress bar,
+  "Ver sitio web" enabled) and `av1@wedin.app` (gift added but no
+  presentación/date → "2 de 4", correct mix of checked/unchecked rows,
+  "Ver sitio web" correctly disabled).
+
 ## Recommended build order
 
 **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8**, with **9** slotted in any time after
