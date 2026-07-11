@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Pencil, Loader2, ArrowUpRight } from 'lucide-react';
-import { IoShareSocialOutline } from 'react-icons/io5';
+import { IoLinkOutline } from 'react-icons/io5';
 import { FaCheck } from 'react-icons/fa6';
 import type { Event } from '@prisma/client';
 import { Button } from '@/components/ui/button';
@@ -115,8 +115,8 @@ export default function DashboardHomeSiteLinkCard({
 
         <div className="flex gap-3">
           <Button variant="outline" className="gap-2" onClick={handleShare}>
-            Compartir
-            <IoShareSocialOutline className="text-lg" />
+            Copiar link de tu sitio
+            <IoLinkOutline className="text-lg" />
           </Button>
           <Link href={`/e/${event.url}`} target="_blank" rel="noopener noreferrer">
             <Button variant="success" className="gap-2">

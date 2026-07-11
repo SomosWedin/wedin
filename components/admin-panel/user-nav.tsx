@@ -79,8 +79,8 @@ export function UserNav({ currentUser }: UserNavProps) {
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
+        {/* <DropdownMenuSeparator /> */}
+        {/* <DropdownMenuItem
           className="hover:cursor-pointer"
           onSelect={(event) => {
             event.preventDefault();
@@ -89,7 +89,7 @@ export function UserNav({ currentUser }: UserNavProps) {
         >
           <LogOut className="w-4 h-4 mr-3 text-muted-foreground" />
           Cerrar sesión
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
       </DropdownMenuContent>
     </DropdownMenu>
     <LogoutConfirmDialog

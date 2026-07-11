@@ -60,11 +60,11 @@ export function getMenuList(pathname: string): Group[] {
           submenus: [
             {
               href: "/event-settings",
-              label: "Configuración general"
+              label: "Detalles de tu evento"
             },
             {
               href: "/bank-details",
-              label: "Configuración bancaria"
+              label: "Datos de tu cuenta"
             }
           ]
         },

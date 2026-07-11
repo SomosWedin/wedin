@@ -56,7 +56,7 @@ export default async function DashboardHome() {
   const allCompleted = completedCount === items.length;
 
   return (
-    <section className="w-full h-full flex flex-col justify-start items-center gap-12">
+    <section className="w-full h-full flex flex-col justify-start items-center gap-8">
       <div className="w-full flex flex-col gap-2 border-b border-gray-200 pb-6">
         <h1 className="text-2xl font-black">Inicio</h1>
         <p className="text-textTertiary">
