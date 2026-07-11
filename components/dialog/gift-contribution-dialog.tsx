@@ -55,6 +55,7 @@ type GiftContributionDialogProps = {
   remaining: number;
   percentage: number;
   onAddToCart: (amount: string) => void;
+  initialAmount?: string;
 };
 
 export default function GiftContributionDialog({
@@ -65,21 +66,27 @@ export default function GiftContributionDialog({
   remaining,
   percentage,
   onAddToCart,
+  initialAmount,
 }: GiftContributionDialogProps) {
   const contributionSchema = createContributionSchema(remaining);
 
   const form = useForm<z.infer<typeof contributionSchema>>({
     resolver: zodResolver(contributionSchema),
     mode: 'all',
-    defaultValues: { amount: '', completeRemaining: false },
+    defaultValues: { amount: initialAmount ?? '', completeRemaining: false },
   });
   const { isValid } = form.formState;
   const completeRemaining = form.watch('completeRemaining');
   const amountValue = form.watch('amount');
 
   const suggestedAmounts = [0.1, 0.25, 0.5]
-    .map(fraction => Math.max(1000, Math.round((remaining * fraction) / 1000) * 1000))
-    .filter((amount, index, all) => amount < remaining && all.indexOf(amount) === index);
+    .map(fraction =>
+      Math.max(1000, Math.round((remaining * fraction) / 1000) * 1000)
+    )
+    .filter(
+      (amount, index, all) =>
+        amount < remaining && all.indexOf(amount) === index
+    );
 
   const handleSelectSuggestedAmount = (amount: number) => {
     form.setValue('completeRemaining', false);
@@ -87,8 +94,12 @@ export default function GiftContributionDialog({
   };
 
   useEffect(() => {
-    if (!open) form.reset({ amount: '', completeRemaining: false });
-  }, [open, form]);
+    if (open) {
+      form.reset({ amount: initialAmount ?? '', completeRemaining: false });
+    } else {
+      form.reset({ amount: '', completeRemaining: false });
+    }
+  }, [open, initialAmount, form]);
 
   useEffect(() => {
     if (completeRemaining) {
@@ -215,10 +226,16 @@ export default function GiftContributionDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                className="flex-[3] bg-gray-100 hover:bg-gray-200 transition-colors border-none"
               >
                 Cancelar
               </Button>
-              <Button type="submit" variant="success" disabled={!isValid}>
+              <Button
+                type="submit"
+                variant="success"
+                disabled={!isValid}
+                className="flex-[7]"
+              >
                 Agregar al carrito
               </Button>
             </div>

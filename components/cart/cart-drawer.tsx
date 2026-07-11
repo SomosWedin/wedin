@@ -19,6 +19,7 @@ type CartDrawerProps = {
   items: CartItem[];
   total: number;
   onRemoveItem: (id: string) => void;
+  onEditItem: (item: CartItem) => void;
 };
 
 export default function CartDrawer({
@@ -27,13 +28,14 @@ export default function CartDrawer({
   items,
   total,
   onRemoveItem,
+  onEditItem,
 }: CartDrawerProps) {
   const pathname = usePathname();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-lg"
+        className="flex flex-col min-h-[42vh] sm:min-h-[36vh] max-w-lg max-h-[56vh]"
         onOpenAutoFocus={event => event.preventDefault()}
       >
         <DialogHeader>
@@ -41,29 +43,46 @@ export default function CartDrawer({
         </DialogHeader>
 
         {items.length === 0 ? (
-          <div className="flex flex-col gap-2 items-center py-12 text-center text-gray-500">
+          <div className="flex flex-col flex-1 gap-2 justify-center items-center text-center text-gray-500">
             <IoCartOutline className="text-3xl text-gray-300" />
             Todavía no agregaste ningún regalo
           </div>
         ) : (
-          <div className="flex overflow-y-auto flex-col divide-y divide-gray-100 max-h-96">
-            {items.map(item => (
-              <CartItemRow key={item.id} item={item} onRemove={onRemoveItem} />
-            ))}
-          </div>
-        )}
-
-        {items.length > 0 && (
-          <div className="flex flex-col gap-3 pt-4 -mx-6 -mb-6 px-6 pb-6 bg-gray-50 rounded-b-lg">
+          <>
+            <div className="overflow-y-auto flex-1 divide-y divide-gray-100">
+              {items.map(item => (
+                <CartItemRow
+                  key={item.id}
+                  item={item}
+                  onRemove={onRemoveItem}
+                  onEdit={onEditItem}
+                />
+              ))}
+            </div>
             <div className="flex justify-between items-center">
-              <span className="text-textTertiary">Total en efectivo</span>
+              <span className="text-textTertiary">Subtotal</span>
               <span className="text-lg font-semibold">
                 Gs. {total.toLocaleString('es-PY')}
               </span>
             </div>
-            <Button variant="success" className="w-full" asChild>
-              <Link href={`${pathname}/checkout`}>Ir a pagar</Link>
-            </Button>
+          </>
+        )}
+
+        {items.length > 0 && (
+          <div className="pt-4 -mx-6 -mb-6 px-6 pb-6 bg-gray-50 rounded-b-lg">
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-[3] bg-gray-100 hover:bg-gray-200 transition-colors border-none"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancelar
+              </Button>
+              <Button variant="success" className="flex-[7]" asChild>
+                <Link href={`${pathname}/checkout`}>Ir a pagar</Link>
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>

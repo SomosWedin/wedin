@@ -5,7 +5,7 @@ import { IoGiftOutline, IoPeopleOutline, IoPersonOutline, IoSearchOutline } from
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useStore } from '@/hooks/use-store';
-import { useCartStore } from '@/hooks/use-cart-store';
+import { useCartStore, type CartItem } from '@/hooks/use-cart-store';
 import GuestGiftCard, {
   type WishlistGiftWithGift,
 } from '@/components/guest/guest-gift-card';
@@ -46,6 +46,9 @@ export default function GuestGiftCatalog({
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedWishlistGift, setSelectedWishlistGift] =
     useState<WishlistGiftWithGift | null>(null);
+  const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(
+    null
+  );
 
   const cartTotal = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
@@ -57,6 +60,7 @@ export default function GuestGiftCatalog({
       wishlistGiftId: wishlistGift.id,
       giftName: wishlistGift.gift.name,
       giftImageUrl: wishlistGift.gift.image?.url ?? null,
+      isGroupGift: wishlistGift.isGroupGift,
       amount,
     });
     toast({
@@ -75,8 +79,40 @@ export default function GuestGiftCatalog({
     setSelectedWishlistGift(wishlistGift);
   };
 
+  const handleEditCartItem = (item: CartItem) => {
+    const wishlistGift = wishlistGifts.find(
+      candidate => candidate.id === item.wishlistGiftId
+    );
+    if (!wishlistGift) return;
+
+    setEditingCartItem(item);
+    setSelectedWishlistGift(wishlistGift);
+    setIsCartOpen(false);
+  };
+
   const handleContributionSubmit = (amount: string) => {
-    if (selectedWishlistGift) addToCart(selectedWishlistGift, amount);
+    if (!selectedWishlistGift) return;
+
+    if (editingCartItem) {
+      cartStore.getState().updateItemAmount(editingCartItem.id, amount);
+    } else {
+      addToCart(selectedWishlistGift, amount);
+    }
+  };
+
+  const handleContributionDialogOpenChange = (open: boolean) => {
+    if (open) return;
+
+    setSelectedWishlistGift(null);
+    if (editingCartItem) {
+      setEditingCartItem(null);
+      setIsCartOpen(true);
+    }
+  };
+
+  const handleRemoveCartItem = (id: string) => {
+    cartStore.getState().removeItem(id);
+    if (cartItems.length === 1) setIsCartOpen(false);
   };
 
   const filteredWishlistGifts = wishlistGifts
@@ -111,7 +147,7 @@ export default function GuestGiftCatalog({
     <section
       id="lista-de-regalos"
       className={`px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 ${
-        cartItems.length > 0 ? 'mb-20 sm:mb-10' : ''
+        cartItems.length > 0 ? 'mb-12 sm:mb-10' : ''
       }`}
     >
       <h2 className="mb-6 text-3xl font-medium">Lista de regalos</h2>
@@ -175,7 +211,7 @@ export default function GuestGiftCatalog({
           No se encontraron regalos
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3">
           {filteredWishlistGifts.map(wishlistGift => (
             <GuestGiftCard
               key={wishlistGift.id}
@@ -190,14 +226,13 @@ export default function GuestGiftCatalog({
       {selectedWishlistGift && selectedProgress && (
         <GiftContributionDialog
           open={!!selectedWishlistGift}
-          onOpenChange={open => {
-            if (!open) setSelectedWishlistGift(null);
-          }}
+          onOpenChange={handleContributionDialogOpenChange}
           gift={selectedWishlistGift.gift}
           isFavoriteGift={selectedWishlistGift.isFavoriteGift}
           remaining={selectedProgress.remaining}
           percentage={selectedProgress.percentage}
           onAddToCart={handleContributionSubmit}
+          initialAmount={editingCartItem?.amount}
         />
       )}
 
@@ -211,10 +246,8 @@ export default function GuestGiftCatalog({
         onOpenChange={setIsCartOpen}
         items={cartItems}
         total={cartTotal}
-        onRemoveItem={id => {
-          cartStore.getState().removeItem(id);
-          if (cartItems.length === 1) setIsCartOpen(false);
-        }}
+        onRemoveItem={handleRemoveCartItem}
+        onEditItem={handleEditCartItem}
       />
     </section>
   );
