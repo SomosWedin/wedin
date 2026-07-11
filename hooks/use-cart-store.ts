@@ -7,12 +7,14 @@ export type CartItem = {
   giftName: string;
   giftImageUrl: string | null;
   amount: string;
+  isGroupGift: boolean;
 };
 
 type CartState = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, 'id'>) => void;
   removeItem: (id: string) => void;
+  updateItemAmount: (id: string, amount: string) => void;
   clear: () => void;
 };
 
@@ -36,6 +38,12 @@ function createCartStore(eventId: string): CartStore {
         removeItem: id =>
           set(state => ({
             items: state.items.filter(item => item.id !== id),
+          })),
+        updateItemAmount: (id, amount) =>
+          set(state => ({
+            items: state.items.map(item =>
+              item.id === id ? { ...item, amount } : item
+            ),
           })),
         clear: () => set({ items: [] }),
       }),

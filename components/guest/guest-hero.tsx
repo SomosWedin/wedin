@@ -26,7 +26,7 @@ export default function GuestHero({ event }: GuestHeroProps) {
 
   return (
     <div className="bg-gray-50">
-      <section className="grid grid-cols-1 gap-8 items-center px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 lg:grid-cols-2">
+      <section className="grid grid-cols-1 gap-6 sm:gap-8 items-center px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 lg:grid-cols-2">
         <div className="w-full aspect-[3/4]">
           <GuestImageCarousel images={event.images} />
         </div>

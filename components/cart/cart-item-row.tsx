@@ -1,16 +1,21 @@
 'use client';
 
 import Image from 'next/image';
-import { IoGiftOutline, IoTrashOutline } from 'react-icons/io5';
+import { IoGiftOutline, IoPencilOutline, IoTrashOutline } from 'react-icons/io5';
 import { Button } from '@/components/ui/button';
 import type { CartItem } from '@/hooks/use-cart-store';
 
 type CartItemRowProps = {
   item: CartItem;
   onRemove: (id: string) => void;
+  onEdit: (item: CartItem) => void;
 };
 
-export default function CartItemRow({ item, onRemove }: CartItemRowProps) {
+export default function CartItemRow({
+  item,
+  onRemove,
+  onEdit,
+}: CartItemRowProps) {
   return (
     <div className="flex gap-3 items-center py-3">
       <div className="flex overflow-hidden justify-center items-center w-16 h-16 bg-gray-100 rounded-md shrink-0">
@@ -32,15 +37,30 @@ export default function CartItemRow({ item, onRemove }: CartItemRowProps) {
           Gs. {Number(item.amount).toLocaleString('es-PY')}
         </p>
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-label="Quitar del carrito"
-        onClick={() => onRemove(item.id)}
-      >
-        <IoTrashOutline className="text-lg text-gray-500" />
-      </Button>
+      <div className="flex gap-1 items-center shrink-0">
+        {item.isGroupGift && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Editar contribución"
+            onClick={() => onEdit(item)}
+            className="hover:bg-gray-100 transition-colors"
+          >
+            <IoPencilOutline className="text-lg text-gray-500" />
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Quitar del carrito"
+          onClick={() => onRemove(item.id)}
+          className="hover:bg-gray-100 transition-colors"
+        >
+          <IoTrashOutline className="text-lg text-gray-500" />
+        </Button>
+      </div>
     </div>
   );
 }
