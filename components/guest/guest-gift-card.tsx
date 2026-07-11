@@ -4,6 +4,7 @@ import Image from 'next/image';
 import {
   IoCartOutline,
   IoCheckmarkCircle,
+  IoCheckmarkCircleOutline,
   IoChevronForward,
   IoGiftOutline,
 } from 'react-icons/io5';
@@ -38,10 +39,6 @@ export default function GuestGiftCard({
     gift.price,
     wishlistGift.transactions
   );
-  // `isFullyPaid` is only flipped by the checkout webhook (not built yet), so
-  // it can lag behind reality — fall back to the transactions sum so a gift
-  // that already reached its price always reads as complete, even pre-webhook.
-  // Guard on priceValue > 0 so a malformed/zero price doesn't read as "complete".
   const isComplete =
     wishlistGift.isFullyPaid || (priceValue > 0 && remaining <= 0);
 
@@ -63,9 +60,9 @@ export default function GuestGiftCard({
         {isComplete && (
           <div className="flex absolute inset-0 justify-center items-center">
             <div className="flex gap-1.5 items-center px-3 py-1.5 bg-white rounded-full shadow-sm">
-              <IoCheckmarkCircle className="text-lg text-success" />
-              <span className="text-sm font-medium text-textPrimary">
-                Completo
+              <IoCheckmarkCircleOutline className="text-lg text-success" />
+              <span className="text-sm font-medium text-success">
+                Recibido
               </span>
             </div>
           </div>
@@ -79,43 +76,40 @@ export default function GuestGiftCard({
       <div className="flex flex-col gap-1">
         <p className="font-normal text-lg truncate">{gift.name}</p>
 
-        {isComplete ? (
-          <Badge className="w-fit bg-success/10 text-success border-transparent">
-            Regalo recibido
-          </Badge>
-        ) : wishlistGift.isGroupGift ? (
+        {wishlistGift.isGroupGift ? ( 
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between text-sm">
               <span>Faltan: Gs. {remaining.toLocaleString('es-PY')}</span>
-              <span>{percentage}%</span>
+              <span>{percentage}% {isComplete && '🎉'}</span>
             </div>
             <Progress value={percentage} />
           </div>
         ) : (
           <p className="font-semibold text-lg">
-            Gs. {Number(gift.price).toLocaleString('es-PY')}
+            Gs. {Number(gift.price).toLocaleString('es-PY')} {isComplete && '🎉'}
           </p>
         )}
       </div>
 
-      {!isComplete &&
-        (wishlistGift.isGroupGift ? (
-          <Button
-            className="gap-2 justify-between bg-gray-100 hover:bg-gray-200 transition-colors"
-            onClick={() => onOpenContributionDialog(wishlistGift)}
-          >
-            Seleccionar monto
-            <IoChevronForward className="text-lg" />
-          </Button>
-        ) : (
-          <Button
-            className="gap-2 justify-between bg-gray-100 hover:bg-gray-200 transition-colors"
-            onClick={() => onAddFullPrice(wishlistGift)}
-          >
-            Agregar al carrito
-            <IoCartOutline className="text-lg" />
-          </Button>
-        ))}
+      {wishlistGift.isGroupGift ? (
+        <Button
+          className={`gap-2 justify-between bg-gray-100 hover:bg-gray-200 transition-colors ${isComplete ? 'bg-success/10 text-success' : ''}`}
+          onClick={() => onOpenContributionDialog(wishlistGift)}
+          disabled={isComplete}
+        >
+          {isComplete ? 'Regalo recibido' : 'Seleccionar monto'}
+          <IoChevronForward className="text-lg" />
+        </Button>
+      ) : (
+        <Button
+          className={`gap-2 justify-between bg-gray-100 hover:bg-gray-200 transition-colors ${isComplete ? 'bg-success/10 text-success' : ''}`}
+          onClick={() => onAddFullPrice(wishlistGift)}
+          disabled={isComplete}
+        >
+          {isComplete ? 'Regalo recibido' : 'Agregar al carrito'}
+          <IoCartOutline className="text-lg" />
+        </Button>
+      )}
     </div>
   );
 }
