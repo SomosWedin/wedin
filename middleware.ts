@@ -32,15 +32,17 @@ export async function middleware(request: NextRequest) {
     return;
   }
 
-  if (!isAdmin && isAdminRoute) {
-    console.log('redirecting to dashboard');
+  if (isAdminRoute && !isAdmin) {
+    return Response.redirect(
+      new URL(isLoggedIn ? '/dashboard' : '/login', nextUrl)
+    );
   }
 
   if (isLoggedIn && !isExistingUser) {
     return Response.redirect(new URL('/api/auth/signout', nextUrl));
   }
 
-  if (isLoggedIn && !isOnboarded && !isOnboardingRoute) {
+  if (isLoggedIn && !isOnboarded && !isOnboardingRoute && !isAdminRoute) {
     return Response.redirect(new URL('/onboarding', nextUrl));
   }
 

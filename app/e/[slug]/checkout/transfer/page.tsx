@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { IoLogoWhatsapp } from 'react-icons/io5';
 import { getCheckoutTransactions } from '@/actions/data/checkout';
+import { getEventByUrl } from '@/actions/data/public-event';
 import {
   WEDIN_BANK_ACCOUNT,
   buildWedinWhatsappLink,
@@ -13,13 +14,21 @@ type TransferPageProps = {
 };
 
 export default async function TransferPage({
+  params,
   searchParams,
 }: TransferPageProps) {
   const transactionIds = searchParams?.ref?.split(',').filter(Boolean) ?? [];
 
   if (transactionIds.length === 0) notFound();
 
-  const transactions = await getCheckoutTransactions(transactionIds);
+  const event = await getEventByUrl(params.slug);
+
+  if (!event) notFound();
+
+  const transactions = await getCheckoutTransactions(
+    transactionIds,
+    event.id
+  );
 
   if (transactions.length === 0) notFound();
 

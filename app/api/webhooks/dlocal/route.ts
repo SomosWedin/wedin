@@ -35,7 +35,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Could not retrieve payment' }, { status: 502 });
   }
 
-  if (payment.success.status !== 'PAID') {
+  let targetStatus: 'COMPLETED' | 'FAILED' | null = null;
+
+  if (payment.success.status === 'PAID') {
+    targetStatus = 'COMPLETED';
+  } else if (
+    payment.success.status === 'REJECTED' ||
+    payment.success.status === 'CANCELLED' ||
+    payment.success.status === 'EXPIRED'
+  ) {
+    targetStatus = 'FAILED';
+  }
+
+  if (!targetStatus) {
     return NextResponse.json({ received: true });
   }
 
@@ -45,7 +57,7 @@ export async function POST(request: Request) {
     });
 
     for (const transaction of transactions) {
-      await applyTransactionStatusChange(transaction.id, 'COMPLETED', null);
+      await applyTransactionStatusChange(transaction.id, targetStatus, null);
     }
 
     return NextResponse.json({ received: true });

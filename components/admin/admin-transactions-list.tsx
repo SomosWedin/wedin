@@ -3,30 +3,41 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import {
-  IoCashOutline,
   IoChevronDown,
   IoChevronUp,
-  IoGiftOutline,
   IoSearchOutline,
   IoSwapVerticalOutline,
 } from 'react-icons/io5';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import ThankTransactionDialog from '@/components/dialog/thank-transaction-dialog';
 import {
   ESTADO_BY_STATUS,
   ESTADO_OPTIONS,
   PAYMENT_METHOD_ICON,
-} from './transaction-estado';
-import type { Prisma } from '@prisma/client';
+} from '@/components/dashboard/transaction-estado';
+import { useAdminTransactionStatus } from '@/hooks/admin/use-admin-transaction-status';
+import type { Prisma, TransactionStatus, User } from '@prisma/client';
 
-type TransactionWithGift = Prisma.TransactionGetPayload<{
-  include: { wishlistGift: { include: { gift: true } } };
+type TransactionWithGiftAndEvent = Prisma.TransactionGetPayload<{
+  include: {
+    wishlistGift: { include: { gift: true } };
+    event: { include: { users: true } };
+  };
 }>;
 
-type DashboardTransactionsListProps = {
-  transactions: TransactionWithGift[];
+type AdminTransactionsListProps = {
+  transactions: TransactionWithGiftAndEvent[];
 };
+
+function coupleName(users: User[]): string {
+  const primaryUser = users.find(user => user.isPrimary) ?? users[0];
+  const secondaryUser = users.find(user => !user.isPrimary);
+
+  if (!primaryUser?.name) return 'Evento sin organizador';
+
+  return secondaryUser?.name
+    ? `${primaryUser.name} & ${secondaryUser.name}`
+    : primaryUser.name;
+}
 
 type SortColumn = 'createdAt' | 'amount';
 type SortDirection = 'asc' | 'desc';
@@ -47,13 +58,16 @@ function SortIcon({
   return direction === 'asc' ? <IoChevronUp /> : <IoChevronDown />;
 }
 
-export default function DashboardTransactionsList({
+export default function AdminTransactionsList({
   transactions,
-}: DashboardTransactionsListProps) {
+}: AdminTransactionsListProps) {
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(
+    'createdAt'
+  );
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const { loading, updateStatus } = useAdminTransactionStatus();
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn !== column) {
@@ -65,17 +79,15 @@ export default function DashboardTransactionsList({
     setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'));
   };
 
-  const total = transactions.reduce(
-    (sum, transaction) => sum + (Number(transaction.amount) || 0),
-    0
-  );
-
   const filteredTransactions = transactions.filter(transaction => {
     const normalizedSearch = search.trim().toLowerCase();
     const matchesSearch =
       !normalizedSearch ||
       (transaction.payerName ?? '').toLowerCase().includes(normalizedSearch) ||
       transaction.wishlistGift.gift.name
+        .toLowerCase()
+        .includes(normalizedSearch) ||
+      coupleName(transaction.event.users)
         .toLowerCase()
         .includes(normalizedSearch);
     const matchesEstado =
@@ -97,44 +109,12 @@ export default function DashboardTransactionsList({
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-24">
-        <div className="flex flex-col gap-1 p-6 w-full justify-center">
-          <h2 className="text-lg font-bold">
-            Resúmen de los regalos recibidos
-          </h2>
-        </div>
-        <div className="flex gap-3 items-center p-6 w-1/2">
-          <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
-            <IoGiftOutline className="text-xl" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold">{transactions.length}</span>
-            <span className="text-sm whitespace-nowrap text-textTertiary">
-              Regalos recibidos
-            </span>
-          </div>
-        </div>
-        <div className="flex gap-3 items-center p-6 w-1/2">
-          <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
-            <IoCashOutline className="text-xl" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold">
-              Gs. {total.toLocaleString('es-PY')}
-            </span>
-            <span className="text-sm whitespace-nowrap text-textTertiary">
-              Equivalente en efectivo
-            </span>
-          </div>
-        </div>
-      </div>
-
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex-1 relative">
           <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input
             type="text"
-            placeholder="Nombre o regalo"
+            placeholder="Nombre, evento o regalo"
             className="pl-10"
             value={search}
             onChange={event => setSearch(event.target.value)}
@@ -157,9 +137,10 @@ export default function DashboardTransactionsList({
       <div className="bg-white rounded-lg">
         <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50 rounded-t-lg">
           <div className="col-span-2">Nombre</div>
+          <div className="col-span-2">Evento</div>
           <button
             type="button"
-            className="flex col-span-2 gap-3 items-center text-left hover:text-textPrimary"
+            className="flex col-span-1 gap-3 items-center text-left hover:text-textPrimary"
             onClick={() => handleSort('createdAt')}
           >
             Fecha
@@ -182,13 +163,12 @@ export default function DashboardTransactionsList({
             />
           </button>
           <div className="col-span-2">Regalo</div>
-          <div className="col-span-2">Estado</div>
-          <div className="col-span-2" />
+          <div className="col-span-3">Estado</div>
         </div>
 
         {sortedTransactions.length === 0 && (
           <div className="text-center py-12 text-gray-500">
-            No se encontraron regalos
+            No se encontraron transacciones
           </div>
         )}
 
@@ -212,6 +192,9 @@ export default function DashboardTransactionsList({
                 {payerName}
               </div>
               <div className="col-span-2 text-textTertiary text-sm">
+                {coupleName(transaction.event.users)}
+              </div>
+              <div className="col-span-1 text-textTertiary text-sm">
                 {format(transaction.createdAt, 'dd/MM/yyyy')}
               </div>
               <div className="col-span-2">
@@ -220,19 +203,25 @@ export default function DashboardTransactionsList({
               <div className="col-span-2 text-textTertiary text-sm">
                 {transaction.wishlistGift.gift.name}
               </div>
-              <div className="col-span-2">
-                <Badge className={estado.className}>
-                  {estado.icon}
-                  {estado.label}
-                </Badge>
-              </div>
-              <div className="flex col-span-2 justify-start sm:justify-end">
-                {transaction.status === 'COMPLETED' && (
-                  <ThankTransactionDialog
-                    transaction={transaction}
-                    payerName={payerName}
-                  />
-                )}
+              <div className="flex col-span-3 gap-2 items-center">
+                {estado.icon}
+                <select
+                  className="px-2 py-1.5 h-9 text-sm bg-white rounded-md border border-input disabled:opacity-50"
+                  value={transaction.status}
+                  disabled={loading}
+                  onChange={event =>
+                    updateStatus(
+                      transaction.id,
+                      event.target.value as TransactionStatus
+                    )
+                  }
+                >
+                  {ESTADO_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           );

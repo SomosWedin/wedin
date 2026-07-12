@@ -86,9 +86,12 @@ checkout/wallet loop, see `plan-ultraplan.md`.
   `schema.prisma` (copy the pattern from the three existing examples).
   Apply this immediately whenever a new optional `@unique` field is added.
 - **One-off ops scripts** live in `scripts/`, run via a `yarn <script-name>`
-  entry (see `confirm-bank-transfer.ts`). Self-contained like
-  `prisma/seed.ts`: plain `require('@prisma/client')` + `new PrismaClient()`,
-  no `@/` path-alias imports — `ts-node` isn't configured to resolve them
-  outside Next's build, so alias imports fail at runtime. CLI usage strings
-  use `<required>` / `[optional...]` (angle vs. square brackets), e.g.
-  `yarn confirm-bank-transfer <transactionId> [transactionId...]`.
+  entry. Self-contained like `prisma/seed.ts`: plain
+  `require('@prisma/client')` + `new PrismaClient()`, no `@/` path-alias
+  imports — `ts-node` isn't configured to resolve them outside Next's build,
+  so alias imports fail at runtime. CLI usage strings use `<required>` /
+  `[optional...]` (angle vs. square brackets). (No script lives here today —
+  the one example, a bank-transfer confirmation tool, was retired in favor
+  of the staff-only `/admin` page, which calls the real
+  `applyTransactionStatusChange` action directly instead of a duplicated
+  copy.)

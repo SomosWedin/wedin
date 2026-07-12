@@ -808,50 +808,70 @@ one gateway is implemented today, re-add a processor field if/when a second
 one actually is. `dashboard-transactions-list.tsx`'s `PAYMENT_METHOD_ICON`
 map (Phase 7, previously read the stale four-way enum) updated to match.
 
-**Manual bank-transfer confirmation → wallet sync gap, resolved via an
-ops-only script**: since a transfer is confirmed by Wedin staff off a
-WhatsApp proof screenshot, not by the organizer in-app (and the middleware's
-admin-route gate is non-functional per Phase 1's Verified Facts, so a real
-admin UI wasn't a safe near-term option), nothing previously called
-`applyTransactionStatusChange` for a manually-confirmed transfer. Fixed with
-`scripts/confirm-bank-transfer.ts` (`yarn confirm-bank-transfer
-<transactionId> [transactionId...]`) — staff run it after seeing proof; it
-guards against confirming a `CARD` transaction (those belong to the
-webhook), no-ops if already `COMPLETED`, otherwise flips status and
-recomputes `WishlistGift.isFullyPaid`/`groupGiftParts`. New repo convention
-documented in `CLAUDE.md`: one-off ops scripts live in `scripts/`, run via a
-`yarn <script-name>` entry, self-contained like `prisma/seed.ts` (plain
-`require('@prisma/client')`, no `@/` path-alias imports — `ts-node` isn't
-configured to resolve them outside Next's build).
+**Manual bank-transfer confirmation → wallet sync gap, resolved via a
+staff-only `/admin` page** (superseding an earlier, now-retired ops-script
+approach — see below): since a transfer is confirmed by Wedin staff off a
+WhatsApp proof screenshot, not by the organizer in-app, nothing previously
+called `applyTransactionStatusChange` for a manually-confirmed transfer.
+`app/admin/page.tsx` lists every `Transaction` across every event (not
+scoped to one couple's session, via new `getAllTransactionsForAdmin()`) and
+lets staff change a row's status via a `<select>`
+(`components/admin/admin-transactions-list.tsx` +
+`hooks/admin/use-admin-transaction-status.ts`), which calls the new
+`updateTransactionStatusAsAdmin(transactionId, status)` — this reuses the
+real `applyTransactionStatusChange` directly (no duplicated logic) and
+records the actual logged-in staff user as `changedById`, fixing the
+audit-trail gap the earlier script had.
 
-**Known gaps found by a post-implementation code review, not yet fixed** —
-flagged here rather than silently carried forward:
-- No server-side re-validation of a cart line's `amount` against the
-  gift's real price in `createTransactionsForCart` — a guest can edit the
-  persisted cart client-side and check out for less than a gift actually
-  costs.
-- The webhook (`app/api/webhooks/dlocal/route.ts`) only handles
-  `status: "PAID"`; `REJECTED`/`CANCELLED`/`EXPIRED` are silently no-op'd,
-  leaving the `Transaction` stuck at `PENDING` forever with no path to
-  `FAILED` (dLocal stops retrying once it gets a 200).
-- `getCheckoutTransactions` has no `eventId`/ownership check on the ids it's
-  given — the transfer page passes `searchParams.ref` straight through, so
-  guessing/leaking a transaction id exposes another payer's transfer amount.
-- If `createDlocalCheckoutSession` fails after `createTransactionsForCart`
-  already committed rows, those `Transaction`s are orphaned (`OPEN`, no
-  `dlocalPaymentId`) with no cleanup path — they'll inflate Phase 7's
-  all-statuses ledger total even though the guest was never charged.
-- `applyTransactionStatusChange`'s idempotency check (`transaction.ts:103`)
-  is read-then-write, not atomic — concurrent/duplicate webhook deliveries
-  for the same `dlocalPaymentId` could both pass the guard and each append a
-  `TransactionStatusLog` row.
-- `scripts/confirm-bank-transfer.ts` duplicates
-  `recomputeWishlistGiftProgress`/the status-update transaction from
-  `actions/data/transaction.ts` rather than reusing it, and hardcodes
-  `changedById: null` (loses which staffer confirmed a transfer). The
-  duplication is avoidable — the real blocker is that `ts-node` has no
-  `tsconfig-paths` registration for `@/` imports, not a hard
-  `'use server'`/`next/cache` boundary as the script's own comment implies.
+Access is gated on `User.role === 'ADMIN'` (enum value already existed,
+unused until now) two ways: `middleware.ts`'s admin-route check — previously
+dead code (`console.log` with no redirect) — now does
+`Response.redirect(new URL(isLoggedIn ? '/dashboard' : '/login', nextUrl))`
+for any non-admin hitting `/admin`; and the page/actions independently
+re-check `getCurrentUser().role === 'ADMIN'` (DB-fresh, not the JWT-cached
+session role) as defense-in-depth, since server actions are callable
+independent of what page renders them. Staff accounts are flagged `ADMIN`
+by hand in the DB (`yarn prisma studio`) — no self-serve role-assignment UI,
+by explicit scope decision. No sidebar/nav entry either; staff navigate to
+`/admin` directly by URL.
+
+**`scripts/confirm-bank-transfer.ts` retired**: it was the original fix for
+the confirmation gap above, but duplicated
+`recomputeWishlistGiftProgress`/the status-update transaction from
+`actions/data/transaction.ts` instead of reusing it, and hardcoded
+`changedById: null` (no record of which staffer ran it). Once the `/admin`
+page existed to do the same job through the real action with a proper audit
+trail, the script became redundant — deleted, along with its `package.json`
+entry. `CLAUDE.md`'s "one-off ops scripts" convention note stays (still
+valid for a future script), just without this now-dead example.
+
+**Known gaps found by a post-implementation code review — fixed in a
+follow-up pass**:
+- ~~No server-side re-validation of a cart line's `amount`~~ — fixed:
+  `createTransactionsForCart` now batch-fetches the cart's `WishlistGift`s
+  and rejects any item whose amount doesn't match the gift's price
+  (non-group) or exceeds the remaining unpaid balance (group gift), before
+  creating any `Transaction` rows.
+- ~~Webhook only handled `PAID`~~ — fixed: `REJECTED`/`CANCELLED`/`EXPIRED`
+  now flip the transaction to `FAILED` via the same
+  `applyTransactionStatusChange` loop `PAID` already used; only genuinely
+  unhandled statuses (`PENDING`) still just ack.
+- ~~`getCheckoutTransactions` had no `eventId`/ownership check~~ — fixed:
+  it now takes a required `eventId`, and the transfer page resolves it via
+  `getEventByUrl(slug)` before calling it. Residual, accepted risk: guessing
+  a transaction id *within the same event* still isn't blocked — true guest
+  checkout has no account/session to check ownership against; closing that
+  fully would mean signed/opaque references, out of scope for this pass.
+- ~~Orphaned `OPEN` transactions on dLocal session failure~~ — fixed:
+  `createDlocalCheckoutSession` now flips the cart's just-created
+  transactions to `FAILED` (via the same status-change path) on both its
+  error branches, instead of leaving them silently `OPEN`/`PENDING` forever.
+- ~~Non-atomic idempotency check in `applyTransactionStatusChange`~~ —
+  fixed: the plain `update` became a conditional `updateMany({ where: { id,
+  status: { not: status } } })`; only the caller that actually flips the
+  status (`count === 1`) proceeds to write the `TransactionStatusLog` and
+  recompute progress, so concurrent/duplicate webhook deliveries can't both
+  log the same transition.
 
 ### Phase 7 — Regalos recibidos ledger + "Agradecer"
 
