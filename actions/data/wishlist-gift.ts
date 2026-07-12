@@ -142,11 +142,11 @@ export async function editWishlistGift(
 
   const existing = await prismaClient.wishlistGift.findUnique({
     where: { id: wishlistGiftId },
-    select: { isFullyPaid: true },
+    select: { isFullyPaid: true, groupGiftParts: true },
   });
 
-  if (existing?.isFullyPaid) {
-    return { error: 'No se puede editar un regalo ya recibido.' };
+  if (existing?.isFullyPaid || Number(existing?.groupGiftParts) > 0) {
+    return { error: 'No se puede editar un regalo que ya tiene contribuciones.' };
   }
 
   try {

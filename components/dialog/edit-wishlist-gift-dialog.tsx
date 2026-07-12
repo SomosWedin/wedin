@@ -246,7 +246,7 @@ export default function EditWishlistGiftDialog({
             </span>
           </TooltipTrigger>
           <TooltipContent side="top">
-            Un regalo ya recibido no se puede editar
+            Un regalo con contribuciones no se puede editar
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

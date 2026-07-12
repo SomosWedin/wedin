@@ -236,7 +236,10 @@ export default function DashboardWishlistList({
                     categories={categories}
                     isFavoriteGift={wishlistGift.isFavoriteGift}
                     isGroupGift={wishlistGift.isGroupGift}
-                    disabled={wishlistGift.isFullyPaid}
+                    disabled={
+                      wishlistGift.isFullyPaid ||
+                      Number(wishlistGift.groupGiftParts) > 0
+                    }
                   />
                   <DeleteWishlistGiftDialog
                     wishlistId={wishlistId}
