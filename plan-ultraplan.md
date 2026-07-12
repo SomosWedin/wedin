@@ -952,6 +952,27 @@ emails, amounts). Not touched in this pass; flagged for a future one.
 https://github.com/wedin-app/wedin/compare/docs/guest-checkout-wallet-plan...feature/guest-checkout?expand=1,
 pushed through commit `f6da8a2`. Not yet opened as a PR.
 
+**Stale-enum data bug found live, fixed**: after pushing, `/admin` showed
+"Sin transacciones" despite the dev DB having 26 real `Transaction` rows —
+the couple's own `/transactions` ledger would have hit the identical bug.
+Root cause: collapsing `paymentProcessor`/`paymentMethod` into one field
+(above) only changed `schema.prisma` and ran `prisma db push`, which never
+rewrites existing MongoDB documents — so every pre-existing row still
+carried an old string value (`DLOCAL`/`MANUAL_TRANSFER` from before any of
+this session's renames, or no `paymentMethod` field at all on the oldest
+Phase 7 dummy rows, predating the field's existence). Prisma threw `Value
+'DLOCAL' not found in enum 'PaymentMethod'` reading them back;
+`getAllTransactionsForAdmin`'s `try/catch` swallowed it into `[]`, so the
+page just looked empty instead of erroring visibly. Fixed by backfilling in
+place via `$runCommandRaw` (`DLOCAL`/`BANCARD`/`UPAY`/`PAGOPAR` → `CARD`,
+`MANUAL_TRANSFER` → `BANK_TRANSFER`, missing field → `CARD`) rather than
+wiping the dataset — preserves the existing test fixtures (payer names,
+`COMPLETED` statuses, thank-you notes) other phases' testing already
+depends on. Documented as a general rule in `CLAUDE.md` (enum value changes
+need a data backfill in the same pass, same root cause as the sparse-index
+gotcha). All 26 rows now read cleanly (verified: `19 CARD / 7
+BANK_TRANSFER`).
+
 ### Phase 7 — Regalos recibidos ledger + "Agradecer"
 
 **Reference (Figma):**
