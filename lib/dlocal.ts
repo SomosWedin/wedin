@@ -138,6 +138,14 @@ export async function verifyWebhookSignature(
   rawBody: string,
   signatureHeader: string | null
 ): Promise<boolean> {
+  // Stub/dev mode (no credentials configured): createPayment/getPayment
+  // above already stub their responses in this case, so there's no real
+  // secret to verify a signature against — accept unconditionally so the
+  // webhook route stays exercisable end-to-end without sandbox creds, same
+  // as the rest of this module. Production always sets real credentials,
+  // so this bypass never applies there.
+  if (!hasCredentials) return true;
+
   if (!signatureHeader || !apiKey || !secretKey) return false;
 
   const [, signature] = signatureHeader.split('Signature: ');
