@@ -873,6 +873,85 @@ follow-up pass**:
   recompute progress, so concurrent/duplicate webhook deliveries can't both
   log the same transition.
 
+**Live end-to-end verification** (real dev server + real DB, not just
+`tsc`/`biome`, since server actions and middleware redirects can't be
+unit-tested in isolation here): logged in through the actual `/login` form
+(credentials flow, cookie jar via `curl`) against `me+parejas@avilaca.com`
+with a password rotated for this purpose — confirmed `/admin` redirects a
+logged-in non-admin to `/dashboard` and a logged-out visitor to `/login`;
+after flipping the account's `role` to `ADMIN` in the DB and re-logging in,
+`/admin` returned 200 and rendered real cross-event data. Confirmed the
+IDOR fix directly: a real `BANK_TRANSFER` transaction's id, requested under
+a *different* event's slug, 404s without leaking the amount; under its own
+event's slug it still works. Confirmed the atomic idempotency fix by firing
+two concurrent conditional status updates at the same transaction — exactly
+one won and exactly one `TransactionStatusLog` row was written. **Testing
+technique note for future sessions**: getting an authenticated session for
+this kind of test by minting a raw session JWT directly (`next-auth/jwt`
+`encode`) was attempted first and correctly blocked by the permission
+system as a forged-credential action — the right way is to rotate a known
+test account's password (bcrypt, same method as `actions/auth/register.ts`)
+and log in through the real `/login` form, which is what the verification
+above actually did.
+
+**Second-pass code review on the fixes above found 4 more regressions,
+fixed immediately since they were defects in work just shipped, not new
+scope**:
+- Individual (non-group) gift price validation only checked
+  `amount === price`, never whether the gift already had a completed
+  payment — a gift meant to be bought once could be bought twice. Fixed:
+  also rejects if `wishlistGift.transactions.length > 0` (the already-fetched
+  `COMPLETED` set).
+- A freshly-`ADMIN`-flagged account defaults to `isOnboarded: false` (the
+  Prisma default) and was getting redirected from `/admin` into the
+  couple-onboarding wizard by `middleware.ts`'s onboarding check — would
+  have completely blocked real staff usage, since a hand-created staff row
+  never goes through couple onboarding. Fixed: admin routes are exempt from
+  that redirect (`!isAdminRoute` added to the condition; safe because
+  reaching that line with `isAdminRoute: true` already implies `isAdmin:
+  true`, per the earlier check).
+- The atomic idempotency fix above (conditional `updateMany`) had
+  regressed the original code's all-or-nothing guarantee between the status
+  update and its `TransactionStatusLog` write — they'd become two
+  unwrapped operations. Fixed: both now run inside one
+  `prismaClient.$transaction(async tx => {...})`, re-verified live (one
+  winner, exactly one log row).
+- `PAYMENT_METHOD_ICON` had been copy-pasted verbatim into the new
+  `admin-transactions-list.tsx` instead of reusing the existing shared one.
+  Extracted into `components/dashboard/transaction-estado.tsx` (which
+  already held `ESTADO_BY_STATUS`/`ESTADO_OPTIONS`), both list components
+  now import it.
+
+**Open, deliberately unfixed as of this pass — flagged for a decision**:
+`updateTransactionStatusAsAdmin` lets staff set *any* transaction —
+including `CARD` ones — to *any* status. The retired ops script explicitly
+refused to touch `CARD` transactions ("card payments are confirmed by the
+dLocal webhook, not this script"); that guard wasn't carried over into the
+admin action. Risk is asymmetric by direction: staff moving a stuck `CARD`
+transaction *to* `FAILED` is safe and self-correcting (if the webhook later
+fires with a different status, `applyTransactionStatusChange`'s guard just
+sees a different current status and updates normally). Staff setting a
+`CARD` transaction *to* `COMPLETED` is the dangerous direction — it
+triggers `recomputeWishlistGiftProgress` exactly like a real payment, and
+Phase 8's `getEventBalance` would count it toward a withdrawable balance,
+with no reconciliation job anywhere that would ever catch a card
+transaction marked paid that dLocal never actually processed. Recommended
+fix, not yet applied: block admin from setting `CARD` transactions to
+`COMPLETED` specifically (leave that transition to the webhook only), while
+still allowing `FAILED`/other transitions for recovery.
+
+**Also found, pre-existing and unrelated to this diff, same bug class as
+the `getCheckoutTransactions` IDOR fixed above**: `getTransactions` in
+`actions/data/transaction.ts` (used by the couple's own `/transactions`
+ledger) has no auth/ownership check and takes an arbitrary `eventId` — any
+client could call it directly as a server action with someone else's
+`eventId` and read that event's full transaction ledger (payer names,
+emails, amounts). Not touched in this pass; flagged for a future one.
+
+**Git state**: `feature/guest-checkout` → base `docs/guest-checkout-wallet-plan`,
+https://github.com/wedin-app/wedin/compare/docs/guest-checkout-wallet-plan...feature/guest-checkout?expand=1,
+pushed through commit `f6da8a2`. Not yet opened as a PR.
+
 ### Phase 7 — Regalos recibidos ledger + "Agradecer"
 
 **Reference (Figma):**

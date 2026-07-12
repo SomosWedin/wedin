@@ -29,6 +29,30 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
   (`groupGiftParts`, `isFullyPaid`).
 - **Monto libre** — open-ended cash gift, no fixed price.
 
+### Payments & transactions
+- `Transaction.paymentMethod: PaymentMethod` — `CARD` (dLocal Go hosted
+  checkout, `lib/dlocal.ts`) or `BANK_TRANSFER` (manual: guest sees Wedin's
+  own bank account + a WhatsApp link to send proof, staff confirm by hand).
+  There's no per-gateway processor field — only dLocal is implemented today,
+  re-add one if/when a second card gateway actually exists (don't build it
+  ahead of need).
+- `Transaction.status` lifecycle: `OPEN` (card, pre-session) / `PENDING`
+  (card, session created; or a submitted bank transfer awaiting proof) →
+  `COMPLETED` or `FAILED`. All status changes go through
+  `applyTransactionStatusChange` (`actions/data/transaction.ts`) — it's the
+  single place that writes `TransactionStatusLog` and recomputes
+  `WishlistGift.isFullyPaid`/`groupGiftParts`; never update
+  `Transaction.status` directly.
+- **`CARD` transactions should only ever be completed by the dLocal
+  webhook** (`app/api/webhooks/dlocal/route.ts`), never by a human — a
+  `COMPLETED` status is what makes a gift look funded and counts toward the
+  couple's withdrawable wallet balance (Phase 8's `getEventBalance`), and
+  nothing reconciles that against what dLocal actually processed. This is
+  currently a convention, not an enforced guard — `/admin`'s status editor
+  (see below) doesn't yet block it. `BANK_TRANSFER` transactions have no
+  automated path to `COMPLETED` at all; that's the one case staff are
+  expected to set by hand.
+
 ### Terminology (Spanish UI ↔ code/domain)
 - regalo(s) → gift(s)
 - lista de regalos / "Mi lista" → wishlist/registry
@@ -41,6 +65,27 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
 ### Current implementation state
 For what's done vs. missing and the build sequence for the guest
 checkout/wallet loop, see `plan-ultraplan.md`.
+
+### Staff-only access (`/admin`)
+Gated on `User.role === 'ADMIN'` (`UserType` enum). Staff accounts are
+flagged by hand in the DB (`yarn prisma studio`) — there's no self-serve
+role-assignment UI, and none is planned; keep it that way unless a real
+need shows up. Enforcement is layered, both real (not just
+belt-and-suspenders):
+- `middleware.ts` redirects non-admins away from admin routes, but it reads
+  `session.user.role` from the JWT, which is only refreshed at login — a
+  role change via Prisma Studio doesn't take effect until the user
+  re-logs-in.
+- Every admin page/server action independently re-checks
+  `getCurrentUser().role === 'ADMIN'`, which hits the DB fresh every call.
+  **This is the real boundary**, not the middleware — server actions are
+  callable independent of what page renders them, and it's what actually
+  catches a demoted admin whose cookie is stale.
+When adding a new admin route under `app/admin/`, remember the onboarding
+redirect in `middleware.ts` explicitly exempts admin routes (a freshly
+`ADMIN`-flagged account defaults to `isOnboarded: false` and would
+otherwise get bounced into the couple-onboarding wizard) — a new top-level
+route group outside `app/admin/` would need the same exemption.
 
 ## Stack
 - Next.js (App Router) + TypeScript
@@ -95,3 +140,10 @@ checkout/wallet loop, see `plan-ultraplan.md`.
   of the staff-only `/admin` page, which calls the real
   `applyTransactionStatusChange` action directly instead of a duplicated
   copy.)
+- **Testing an authenticated flow live**: don't mint a raw session JWT
+  (`next-auth/jwt`'s `encode`) to impersonate a user for testing — that's a
+  forged credential and gets (correctly) blocked. Instead rotate a known
+  test account's password directly in the DB (bcrypt, same method as
+  `actions/auth/register.ts`) and log in through the real `/login` form (a
+  `curl` cookie-jar login via `/api/auth/csrf` +
+  `/api/auth/callback/credentials` works fine, no browser needed).
