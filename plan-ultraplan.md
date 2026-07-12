@@ -767,6 +767,92 @@ exercised.
   double-submitting the same webhook payload manually confirms
   idempotency.
 
+**Status: 🟡 Built, real sandbox credentials still not exercised**, on
+`feature/guest-checkout` → base `docs/guest-checkout-wallet-plan`,
+https://github.com/wedin-app/wedin/compare/docs/guest-checkout-wallet-plan...feature/guest-checkout?expand=1.
+Delivered as planned: `schemas/checkout.ts`, `actions/data/checkout.ts`
+(`createTransactionsForCart`, `createDlocalCheckoutSession`, plus a new
+`getCheckoutTransactions` not in the original plan text — reads back the
+transfer page's line items by id), `lib/dlocal.ts` (stubs responses when
+`DLOCAL_GO_API_KEY`/`DLOCAL_GO_SECRET_KEY` are unset, so the flow is
+click-through-able end to end without sandbox creds — real creds/live
+sandbox call still outstanding), `app/e/[slug]/checkout/page.tsx` +
+`hooks/checkout/use-checkout.ts`, `app/api/webhooks/dlocal/route.ts`.
+
+**Scope addition beyond the original plan text, decided live with the
+user**: bank transfer is a first-class second payment method, not deferred.
+`GuestCheckoutSchema.paymentMethod: 'CARD' | 'BANK_TRANSFER'` (guest picks
+one at checkout, `components/checkout/checkout-form.tsx` +
+`components/ui/radio-group.tsx`); `BANK_TRANSFER` transactions are created
+`PENDING` (vs. `CARD`'s `OPEN`) and skip `createDlocalCheckoutSession`
+entirely — the guest instead lands on `app/e/[slug]/checkout/transfer/page.tsx`,
+which shows Wedin's own bank account (`lib/wedin-bank-account.ts`) and a
+"send proof via WhatsApp" deep-link to Wedin's ops number. Confirmation is
+manual and ops-side, not organizer-facing (see below) — there is no
+in-product path from "guest sent a transfer" to `COMPLETED`.
+
+**Payment-method naming reconciliation** (found and fixed mid-session, not
+an original plan item): partway through building this phase, manual
+in-progress renames had left the schema in a broken, half-migrated state —
+`prisma/schema.prisma` had a `paymentProcessor: PaymentProcessor
+(DLOCAL|BANCARD|UPAY|PAGOPAR)` field (gateway-tracking, only dLocal ever
+implemented), while `schemas/checkout.ts`/`actions/data/checkout.ts` had
+already moved to a different concept, `paymentMethod: 'CARD'|'BANK_TRANSFER'`
+(the guest's checkout choice) — these are genuinely different things that
+had gotten conflated under one renamed field, and the mismatch meant
+`actions/data/checkout.ts` didn't even type-check. Resolved, confirmed live
+with the user: collapsed to a single `Transaction.paymentMethod:
+PaymentMethod (CARD | BANK_TRANSFER)` field; dropped `paymentProcessor` and
+the `PaymentProcessor` enum (Bancard/Upay/Pagopar) entirely as YAGNI — only
+one gateway is implemented today, re-add a processor field if/when a second
+one actually is. `dashboard-transactions-list.tsx`'s `PAYMENT_METHOD_ICON`
+map (Phase 7, previously read the stale four-way enum) updated to match.
+
+**Manual bank-transfer confirmation → wallet sync gap, resolved via an
+ops-only script**: since a transfer is confirmed by Wedin staff off a
+WhatsApp proof screenshot, not by the organizer in-app (and the middleware's
+admin-route gate is non-functional per Phase 1's Verified Facts, so a real
+admin UI wasn't a safe near-term option), nothing previously called
+`applyTransactionStatusChange` for a manually-confirmed transfer. Fixed with
+`scripts/confirm-bank-transfer.ts` (`yarn confirm-bank-transfer
+<transactionId> [transactionId...]`) — staff run it after seeing proof; it
+guards against confirming a `CARD` transaction (those belong to the
+webhook), no-ops if already `COMPLETED`, otherwise flips status and
+recomputes `WishlistGift.isFullyPaid`/`groupGiftParts`. New repo convention
+documented in `CLAUDE.md`: one-off ops scripts live in `scripts/`, run via a
+`yarn <script-name>` entry, self-contained like `prisma/seed.ts` (plain
+`require('@prisma/client')`, no `@/` path-alias imports — `ts-node` isn't
+configured to resolve them outside Next's build).
+
+**Known gaps found by a post-implementation code review, not yet fixed** —
+flagged here rather than silently carried forward:
+- No server-side re-validation of a cart line's `amount` against the
+  gift's real price in `createTransactionsForCart` — a guest can edit the
+  persisted cart client-side and check out for less than a gift actually
+  costs.
+- The webhook (`app/api/webhooks/dlocal/route.ts`) only handles
+  `status: "PAID"`; `REJECTED`/`CANCELLED`/`EXPIRED` are silently no-op'd,
+  leaving the `Transaction` stuck at `PENDING` forever with no path to
+  `FAILED` (dLocal stops retrying once it gets a 200).
+- `getCheckoutTransactions` has no `eventId`/ownership check on the ids it's
+  given — the transfer page passes `searchParams.ref` straight through, so
+  guessing/leaking a transaction id exposes another payer's transfer amount.
+- If `createDlocalCheckoutSession` fails after `createTransactionsForCart`
+  already committed rows, those `Transaction`s are orphaned (`OPEN`, no
+  `dlocalPaymentId`) with no cleanup path — they'll inflate Phase 7's
+  all-statuses ledger total even though the guest was never charged.
+- `applyTransactionStatusChange`'s idempotency check (`transaction.ts:103`)
+  is read-then-write, not atomic — concurrent/duplicate webhook deliveries
+  for the same `dlocalPaymentId` could both pass the guard and each append a
+  `TransactionStatusLog` row.
+- `scripts/confirm-bank-transfer.ts` duplicates
+  `recomputeWishlistGiftProgress`/the status-update transaction from
+  `actions/data/transaction.ts` rather than reusing it, and hardcodes
+  `changedById: null` (loses which staffer confirmed a transfer). The
+  duplication is avoidable — the real blocker is that `ts-node` has no
+  `tsconfig-paths` registration for `@/` imports, not a hard
+  `'use server'`/`next/cache` boundary as the script's own comment implies.
+
 ### Phase 7 — Regalos recibidos ledger + "Agradecer"
 
 **Reference (Figma):**
