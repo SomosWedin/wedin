@@ -14,6 +14,19 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Scripts
+
+One-off ops scripts live in `scripts/` and run via a `yarn <script-name>`
+entry in `package.json`, e.g.:
+
+```bash
+yarn confirm-bank-transfer <transactionId> [transactionId...]
+```
+
+Usage strings follow `<required>` / `[optional...]` (angle vs. square
+brackets). See `CLAUDE.md` for the underlying conventions (why these scripts
+are self-contained and don't use `@/` path-alias imports).
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

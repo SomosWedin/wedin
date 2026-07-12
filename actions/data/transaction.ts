@@ -3,7 +3,7 @@
 import prismaClient from '@/prisma/client';
 import { TransactionEditSchema } from '@/schemas/form';
 import { GetTransactionsParams } from '@/schemas/params';
-import type { Prisma } from '@prisma/client';
+import type { Prisma, TransactionStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import type { z } from 'zod';
 import { getErrorMessage } from '../helper';
@@ -61,4 +61,61 @@ export async function updateTransactionNotes(
     console.error('Error updating transaction notes:', error);
     return { error: getErrorMessage(error) };
   }
+}
+
+async function recomputeWishlistGiftProgress(wishlistGiftId: string) {
+  const wishlistGift = await prismaClient.wishlistGift.findUnique({
+    where: { id: wishlistGiftId },
+    include: {
+      gift: true,
+      transactions: { where: { status: 'COMPLETED' } },
+    },
+  });
+
+  if (!wishlistGift) return;
+
+  const price = Number(wishlistGift.gift.price) || 0;
+  const contributed = wishlistGift.transactions.reduce(
+    (sum, transaction) => sum + (Number(transaction.amount) || 0),
+    0
+  );
+
+  await prismaClient.wishlistGift.update({
+    where: { id: wishlistGiftId },
+    data: {
+      ...(wishlistGift.isGroupGift
+        ? { groupGiftParts: String(contributed) }
+        : {}),
+      isFullyPaid: price > 0 && contributed >= price,
+    },
+  });
+}
+
+export async function applyTransactionStatusChange(
+  transactionId: string,
+  status: TransactionStatus,
+  changedById: string | null
+) {
+  const transaction = await prismaClient.transaction.findUnique({
+    where: { id: transactionId },
+  });
+
+  if (!transaction || transaction.status === status) return;
+
+  await prismaClient.$transaction([
+    prismaClient.transaction.update({
+      where: { id: transactionId },
+      data: { status },
+    }),
+    prismaClient.transactionStatusLog.create({
+      data: {
+        transactionId,
+        previousStatus: transaction.status,
+        status,
+        changedById,
+      },
+    }),
+  ]);
+
+  await recomputeWishlistGiftProgress(transaction.wishlistGiftId);
 }
