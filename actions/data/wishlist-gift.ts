@@ -140,6 +140,15 @@ export async function editWishlistGift(
   const { wishlistGiftId, giftId, isFavoriteGift, isGroupGift } =
     validatedFields.data;
 
+  const existing = await prismaClient.wishlistGift.findUnique({
+    where: { id: wishlistGiftId },
+    select: { isFullyPaid: true },
+  });
+
+  if (existing?.isFullyPaid) {
+    return { error: 'No se puede editar un regalo ya recibido.' };
+  }
+
   try {
     await prismaClient.wishlistGift.update({
       where: { id: wishlistGiftId },
@@ -166,9 +175,29 @@ export async function deleteWishlistGift(
   const { wishlistId, giftId } = validatedFields.data;
 
   try {
-    await prismaClient.wishlistGift.deleteMany({
+    const wishlistGift = await prismaClient.wishlistGift.findFirst({
       where: { wishlistId, giftId },
+      include: { transactions: { where: { status: 'COMPLETED' }, take: 1 } },
     });
+
+    if (!wishlistGift) {
+      revalidatePath('/wishlist');
+      revalidatePath('/gifts');
+      return { success: true };
+    }
+
+    // Archiving instead of deleting avoids orphaning COMPLETED transactions
+    // still tied to this gift.
+    if (wishlistGift.transactions.length > 0) {
+      await prismaClient.wishlistGift.update({
+        where: { id: wishlistGift.id },
+        data: { isReceived: true },
+      });
+    } else {
+      await prismaClient.wishlistGift.delete({
+        where: { id: wishlistGift.id },
+      });
+    }
 
     revalidatePath('/wishlist');
     revalidatePath('/gifts');

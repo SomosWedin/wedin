@@ -24,6 +24,12 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
+import {
   Form,
   FormControl,
   FormField,
@@ -51,6 +57,7 @@ type EditWishlistGiftDialogProps = {
   categories: Category[];
   isFavoriteGift: boolean;
   isGroupGift: boolean;
+  disabled?: boolean;
 };
 
 export default function EditWishlistGiftDialog({
@@ -61,6 +68,7 @@ export default function EditWishlistGiftDialog({
   categories,
   isFavoriteGift,
   isGroupGift,
+  disabled,
 }: EditWishlistGiftDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -225,6 +233,25 @@ export default function EditWishlistGiftDialog({
     handleOpenChange(false);
     router.refresh();
   };
+
+  if (disabled) {
+    return (
+      <TooltipProvider disableHoverableContent>
+        <Tooltip delayDuration={100}>
+          <TooltipTrigger asChild>
+            <span tabIndex={0}>
+              <Button type="button" variant="outline" size="icon" disabled>
+                <IoPencilOutline />
+              </Button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            Un regalo ya recibido no se puede editar
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>

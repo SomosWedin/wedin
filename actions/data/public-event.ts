@@ -34,7 +34,7 @@ export async function getEventByUrl(slug: string) {
 export async function getPublicWishlistGifts(eventId: string) {
   try {
     return await prismaClient.wishlistGift.findMany({
-      where: { eventId },
+      where: { eventId, isReceived: false },
       include: {
         gift: { include: { image: true } },
         transactions: {
