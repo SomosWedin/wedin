@@ -65,7 +65,11 @@ export default function DashboardTransactionsList({
     setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'));
   };
 
-  const total = transactions.reduce(
+  const completedTransactions = transactions.filter(
+    transaction => transaction.status === 'COMPLETED'
+  );
+  const receivedCount = completedTransactions.length;
+  const total = completedTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
   );
@@ -108,7 +112,7 @@ export default function DashboardTransactionsList({
             <IoGiftOutline className="text-xl" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold">{transactions.length}</span>
+            <span className="text-lg font-bold">{receivedCount}</span>
             <span className="text-sm whitespace-nowrap text-textTertiary">
               Regalos recibidos
             </span>
