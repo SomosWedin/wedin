@@ -61,11 +61,18 @@ export default function CheckoutForm({
     onCheckoutStarted: () => cartStore.getState().clear(),
   });
 
+  // `cartStore.persist` is undefined during SSR — zustand's persist
+  // middleware silently disables itself server-side since `localStorage`
+  // doesn't exist there, rather than throwing. Treat "no persist API" the
+  // same as "not yet hydrated": that's the truthful state on the server,
+  // and the client-side render (where `.persist` is always present) takes
+  // over correctly once it mounts.
   const [hasHydrated, setHasHydrated] = useState(() =>
-    cartStore.persist.hasHydrated()
+    cartStore.persist?.hasHydrated() ?? false
   );
 
   useEffect(() => {
+    if (!cartStore.persist) return;
     if (cartStore.persist.hasHydrated()) {
       setHasHydrated(true);
       return;

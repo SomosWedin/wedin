@@ -973,6 +973,27 @@ need a data backfill in the same pass, same root cause as the sparse-index
 gotcha). All 26 rows now read cleanly (verified: `19 CARD / 7
 BANK_TRANSFER`).
 
+**Checkout page SSR crash found live, fixed**: a hard/direct load of
+`/e/[slug]/checkout` (not a client-side navigation into it) 500'd on
+`cartStore.persist.hasHydrated()` — `cartStore.persist` was `undefined`.
+Root-caused by reproducing `hooks/use-cart-store.ts`'s `createCartStore` in
+isolation under plain Node (no `window`/`localStorage`, i.e. the same
+environment Next.js SSR runs client components in for the initial
+HTML/RSC payload): zustand's persist middleware, when its `storage` option
+can't be resolved (`createJSONStorage(() => localStorage)` throws internally
+on the server and is caught, returning `undefined`), silently degrades to a
+plain non-persisted store rather than throwing — it just never attaches
+`.persist` at all. `components/checkout/checkout-form.tsx`'s `hasHydrated`
+gate (added by an earlier session's cart-hydration-race fix, `hooks/use-cart-store.ts`
++ `checkout-form.tsx`) assumed `.persist` always exists; true on the client
+(browser has `localStorage`), false on the very first server render. Fixed
+by treating a missing `.persist` as `hasHydrated: false` (`cartStore.persist?.hasHydrated() ?? false`
+in the `useState` initializer, an early return in the `useEffect`) — the
+semantically correct value for SSR anyway (the cart genuinely hasn't loaded
+yet), and the client-side render naturally takes over once mounted.
+Live-verified: `curl` against a fresh dev server, `/e/30dealee/checkout`
+200s (was 500), full real HTML returned, no error in the server log.
+
 ### Phase 7 — Regalos recibidos ledger + "Agradecer"
 
 **Reference (Figma):**
