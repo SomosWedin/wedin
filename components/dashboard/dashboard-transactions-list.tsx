@@ -68,7 +68,11 @@ export default function DashboardTransactionsList({
   const completedTransactions = transactions.filter(
     transaction => transaction.status === 'COMPLETED'
   );
-  const receivedCount = completedTransactions.length;
+  const receivedCount = new Set(
+    completedTransactions
+      .filter(transaction => transaction.wishlistGift.isFullyPaid)
+      .map(transaction => transaction.wishlistGiftId)
+  ).size;
   const total = completedTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
