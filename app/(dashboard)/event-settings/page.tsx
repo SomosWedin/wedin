@@ -3,7 +3,7 @@ import DashboardEventSettings from "@/components/dashboard/dashboard-event-setti
 
 export default function EventSettingsPage() {
   return (
-    <ContentLayout title="Configuración General">
+    <ContentLayout title="Detalles de tu evento">
       <DashboardEventSettings />
     </ContentLayout>
   );

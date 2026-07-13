@@ -2,7 +2,9 @@
 
 import { getCurrentUser } from '@/actions/get-current-user';
 import type { ErrorResponse } from '@/auth';
+import { EventUrlFormSchema } from '@/schemas/form';
 import { Event, Image as ImageModel, PrismaClient } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 
 const prismaClient = new PrismaClient();
 
@@ -103,6 +105,69 @@ export const updateEvent = async (
     return {
       error: 'Error updating event',
     };
+  }
+};
+
+export const updateEventUrl = async (eventId: string, url: string) => {
+  const validatedFields = EventUrlFormSchema.safeParse({
+    eventId,
+    eventUrl: url,
+  });
+
+  if (!validatedFields.success) {
+    return {
+      error:
+        validatedFields.error.errors[0]?.message ??
+        'La dirección de tu evento no es válida',
+    };
+  }
+
+  const normalizedUrl = validatedFields.data.eventUrl;
+
+  try {
+    const existingEvent = await prismaClient.event.findUnique({
+      where: { url: normalizedUrl },
+    });
+
+    if (existingEvent && existingEvent.id !== eventId) {
+      return {
+        error: 'Esa dirección ya está en uso, elegí otra.',
+      };
+    }
+
+    const updatedEvent = await prismaClient.event.update({
+      where: { id: eventId },
+      data: { url: normalizedUrl },
+    });
+
+    revalidatePath('/event-settings');
+    revalidatePath('/dashboard');
+    return { success: updatedEvent };
+  } catch (error) {
+    console.error('Error updating event url:', error);
+    return { error: 'Error actualizando la dirección del evento' };
+  }
+};
+
+export const setEventPublished = async (
+  eventId: string,
+  isPublished: boolean
+) => {
+  try {
+    const updatedEvent = await prismaClient.event.update({
+      where: { id: eventId },
+      data: { isPublished },
+    });
+
+    revalidatePath('/dashboard');
+    if (updatedEvent.url) {
+      revalidatePath(`/e/${updatedEvent.url}`);
+    }
+
+    return { success: updatedEvent };
+  } catch (error) {
+    console.error('Error updating event published status:', error);
+    return { error: 'Error actualizando la visibilidad de tu sitio' };
   }
 };
 

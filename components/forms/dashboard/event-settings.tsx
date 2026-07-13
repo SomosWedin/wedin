@@ -24,6 +24,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { Event, User, EventType } from '@prisma/client';
 import { useUpdateEventAndUserData } from '@/hooks/dashboard/use-update-event-and-user-data';
+import { useEventUrl } from '@/hooks/dashboard/use-event-url';
 import { Loader2 } from 'lucide-react';
 import { FaCheck } from 'react-icons/fa6';
 
@@ -44,6 +45,14 @@ export default function DashboardEventSettingsForm({
       currentUser,
       secondaryEventUser,
     });
+
+  const {
+    form: urlForm,
+    onSubmit: onUrlSubmit,
+    isDirty: isUrlDirty,
+    isValid: isUrlValid,
+    loading: urlLoading,
+  } = useEventUrl({ eventId: event.id, url: event.url });
 
   return (
     <Form {...form}>
@@ -91,6 +100,47 @@ export default function DashboardEventSettingsForm({
             </FormItem>
           )}
         />
+
+        <Form {...urlForm}>
+          <FormField
+            control={urlForm.control}
+            name="eventUrl"
+            render={({ field }) => (
+              <FormItem className="max-w-sm">
+                <FormLabel>Dirección de tu evento</FormLabel>
+                <div className="flex items-start gap-2">
+                  <FormControl className="!mt-1.5">
+                    <div className="flex items-center w-full rounded-md border border-input focus-within:ring-1 focus-within:ring-ring">
+                      <span className="pl-3 text-sm text-textTertiary select-none">
+                        wedin.com/e/
+                      </span>
+                      <Input
+                        placeholder="crisley-y-yayo"
+                        className="border-0 !mt-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        {...field}
+                      />
+                    </div>
+                  </FormControl>
+                  <Button
+                    type="button"
+                    variant="success"
+                    className="gap-2 mt-1.5 shrink-0"
+                    disabled={urlLoading || !isUrlDirty || !isUrlValid}
+                    onClick={urlForm.handleSubmit(onUrlSubmit)}
+                  >
+                    Guardar
+                    {urlLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FaCheck className="text-lg" />
+                    )}
+                  </Button>
+                </div>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+        </Form>
 
         <div className="flex gap-2">
           <FormField

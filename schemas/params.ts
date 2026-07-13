@@ -77,3 +77,10 @@ export const GetTransactionsParams = z.object({
   page: z.string().optional(),
   itemsPerPage: z.number().optional(),
 });
+
+export const RequestPayoutParams = z.object({
+  amount: z
+    .string()
+    .min(1, { message: 'Ingresá un monto' })
+    .regex(/^\d+$/, { message: 'El monto debe ser un número válido' }),
+});
