@@ -4,7 +4,8 @@ import {
   Sparkles,
   Gift,
   List,
-  SettingsIcon
+  SettingsIcon,
+  Wallet
 } from 'lucide-react';
 
 type Submenu = {
@@ -59,11 +60,11 @@ export function getMenuList(pathname: string): Group[] {
           submenus: [
             {
               href: "/event-settings",
-              label: "Configuración general"
+              label: "Detalles de tu evento"
             },
             {
               href: "/bank-details",
-              label: "Configuración bancaria"
+              label: "Datos de tu cuenta"
             }
           ]
         },
@@ -76,6 +77,11 @@ export function getMenuList(pathname: string): Group[] {
           href: '/transactions',
           label: 'Regalos recibidos',
           icon: Gift,
+        },
+        {
+          href: '/billetera',
+          label: 'Mi billetera',
+          icon: Wallet,
         },
       ],
     },

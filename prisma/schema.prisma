@@ -27,6 +27,13 @@ enum TransactionStatus {
   REFUNDED
 }
 
+enum PayoutStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
   userId            String  @db.ObjectId
@@ -61,6 +68,15 @@ model User {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
   name             String?
   lastName         String?
+  // NOTE: the underlying Mongo index (User_email_key) must stay `sparse: true`.
+  // Partner users created during onboarding step 2 (see
+  // updateProfileStepTwo in actions/common/onboarding.ts) never get an
+  // email — same class of bug as Image.giftId and Event.url above: `@unique`
+  // gives no sparse option, so `db push` won't create/repair this — a
+  // non-sparse unique index only allows ONE user with a missing email ever.
+  // If this index is ever recreated (e.g. on a new environment), run manually:
+  //   db.User.dropIndex("User_email_key")
+  //   db.User.createIndex({ email: 1 }, { unique: true, sparse: true, name: "User_email_key" })
   email            String?   @unique
   password         String?
   emailVerified    DateTime?
@@ -76,6 +92,7 @@ model User {
   TransactionStatusLog TransactionStatusLog[]
   Event                Event?                 @relation(fields: [eventId], references: [id])
   eventId              String?                @db.ObjectId
+  payouts              Payout[]
 }
 
 model Event {
@@ -83,6 +100,15 @@ model Event {
   name             String?
   date             DateTime?
   coverMessage     String?
+  // NOTE: the underlying Mongo index (Event_url_key) must stay `sparse: true`.
+  // Events are created without a url (set later, in event-settings — see
+  // Phase 3 of plan-ultraplan.md) and stay that way indefinitely until the
+  // organizer picks one. Same class of bug as Image.giftId above: `@unique`
+  // gives no sparse option, so `db push` won't create/repair this — a
+  // non-sparse unique index only allows ONE event with a missing url ever.
+  // If this index is ever recreated (e.g. on a new environment), run manually:
+  //   db.Event.dropIndex("Event_url_key")
+  //   db.Event.createIndex({ url: 1 }, { unique: true, sparse: true, name: "Event_url_key" })
   url              String?   @unique
   wishlistId       String    @db.ObjectId
   createdAt        DateTime  @default(now())
@@ -93,6 +119,13 @@ model Event {
   eventType        EventType @default(WEDDING)
   guests           String?
   hasPYbankAccount Boolean   @default(false)
+  // Guest-facing visibility toggle ("Web visible" in the dashboard home
+  // site-link card), independent of the dashboard-home setup checklist —
+  // an event can be fully set up and still be hidden from guests on
+  // purpose. Existing documents lack this field in Mongo (no backfill on
+  // `db push`); Prisma's Mongo connector applies `@default` client-side on
+  // read, so older events still resolve to `true`.
+  isPublished      Boolean   @default(true)
 
   wishlist Wishlist @relation(fields: [wishlistId], references: [id])
 
@@ -104,6 +137,7 @@ model Event {
   gifts         Gift[]
   giftAmounts   String[]
   images        Image[]
+  payouts       Payout[]
 
   @@unique([wishlistId])
 }
@@ -122,7 +156,8 @@ model BankDetails {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  event Event @relation(fields: [eventId], references: [id])
+  event   Event    @relation(fields: [eventId], references: [id])
+  payouts Payout[]
 }
 
 model Wishlist {
@@ -177,17 +212,30 @@ model WishlistGift {
 }
 
 model Transaction {
-  id             String            @id @default(auto()) @map("_id") @db.ObjectId
-  wishlistGiftId String            @db.ObjectId
-  wishlistId     String?           @db.ObjectId
-  eventId        String            @db.ObjectId
-  amount         String
-  status         TransactionStatus @default(OPEN)
-  notes          String?
-  payerRole      UserType          @default(INVITEE)
-  payeeRole      UserType          @default(ORGANIZER)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  wishlistGiftId  String            @db.ObjectId
+  wishlistId      String?           @db.ObjectId
+  eventId         String            @db.ObjectId
+  amount          String
+  status          TransactionStatus @default(OPEN)
+  notes           String?
+  payerRole       UserType          @default(INVITEE)
+  payeeRole       UserType          @default(ORGANIZER)
+  payerName       String?
+  payerEmail      String?
+  // NOTE: the underlying Mongo index (Transaction_dlocalPaymentId_key) must
+  // stay `sparse: true`. Every Transaction created before Phase 6's checkout
+  // exists (or any dummy/test row) has no dlocalPaymentId — Prisma's
+  // `@unique` gives no sparse option, so `db push` won't create/repair this —
+  // a non-sparse unique index only allows ONE transaction with a missing
+  // dlocalPaymentId ever; the second throws P2002. Found live while seeding
+  // test data for Phase 7. If this index is ever recreated (e.g. on a new
+  // environment), run manually:
+  //   db.Transaction.dropIndex("Transaction_dlocalPaymentId_key")
+  //   db.Transaction.createIndex({ dlocalPaymentId: 1 }, { unique: true, sparse: true, name: "Transaction_dlocalPaymentId_key" })
+  dlocalPaymentId String?           @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   wishlistGift          WishlistGift           @relation(fields: [wishlistGiftId], references: [id])
   event                 Event                  @relation(fields: [eventId], references: [id])
@@ -206,13 +254,32 @@ model TransactionStatusLog {
   previousStatus TransactionStatus
   status         TransactionStatus
   changedAt      DateTime          @default(now())
-  changedById    String            @db.ObjectId
+  changedById    String?           @db.ObjectId
 
-  changedBy   User        @relation(fields: [changedById], references: [id])
+  changedBy   User?       @relation(fields: [changedById], references: [id])
   transaction Transaction @relation(fields: [transactionId], references: [id])
 
   @@index([id, transactionId])
   @@index([changedById])
+}
+
+model Payout {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  amount        String
+  status        PayoutStatus @default(REQUESTED)
+  eventId       String       @db.ObjectId
+  bankDetailsId String       @db.ObjectId
+  requestedById String       @db.ObjectId
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  event       Event       @relation(fields: [eventId], references: [id])
+  bankDetails BankDetails @relation(fields: [bankDetailsId], references: [id])
+  requestedBy User        @relation(fields: [requestedById], references: [id])
+
+  @@index([eventId])
+  @@index([bankDetailsId])
+  @@index([requestedById])
 }
 
 model Giftlist {
@@ -255,6 +322,14 @@ model Image {
   updatedAt     DateTime     @updatedAt
   transactionId String?      @db.ObjectId
   eventId       String?      @db.ObjectId
+  // NOTE: the underlying Mongo index (Image_giftId_key) must stay `sparse: true`.
+  // This field is unique but optional, and most Image rows (event cover photos,
+  // giftlist images) never set it. Prisma's `@unique` doesn't expose a sparse
+  // option, so `db push` won't create/repair this — a non-sparse unique index
+  // rejects the 2nd+ document with a missing giftId (P2002 on Image_giftId_key).
+  // If this index is ever recreated (e.g. on a new environment), run manually:
+  //   db.Image.dropIndex("Image_giftId_key")
+  //   db.Image.createIndex({ giftId: 1 }, { unique: true, sparse: true, name: "Image_giftId_key" })
   giftId        String?      @unique @db.ObjectId
   giftlistId    String?      @db.ObjectId
   Transaction   Transaction? @relation(fields: [transactionId], references: [id])

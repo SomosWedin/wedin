@@ -15,6 +15,7 @@ export const authRoutes: string[] = [
 
 export const protectedRoutes: string[] = [
   '/bank-details',
+  '/billetera',
   '/dashboard',
   '/event-details',
   '/event-settings',

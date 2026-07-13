@@ -1,15 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Ellipsis, LogOut } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import logout from '@/actions/auth/logout';
 
 import { cn } from '@/lib/utils';
 import { getMenuList } from '@/lib/menu-list';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CollapseMenuButton } from '@/components/admin-panel/collapse-menu-button';
+import LogoutConfirmDialog from '@/components/dialog/logout-confirm-dialog';
 import {
   Tooltip,
   TooltipTrigger,
@@ -24,15 +25,12 @@ interface MenuProps {
 export function Menu({ isOpen }: MenuProps) {
   const pathname = usePathname();
   const menuList = getMenuList(pathname);
-
-  const handleLogout = async () => {
-    await logout();
-  };
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   return (
     <ScrollArea className="[&>div>div[style]]:!block h-unset">
       <nav className="mt-8 h-full w-full">
-        <ul className="flex flex-col min-h-[calc(100vh-48px-36px-16px-32px)] lg:min-h-[calc(100vh-32px-40px-32px)] items-start space-y-1 px-2">
+        <ul className="flex flex-col min-h-[calc(100vh-48px-36px-16px-32px)] items-start space-y-1 px-2">
           {menuList.map(({ groupLabel, menus }, index) => (
             <li className={cn('w-full', groupLabel ? 'pt-5' : '')} key={index}>
               {(isOpen && groupLabel) || isOpen === undefined ? (
@@ -123,7 +121,7 @@ export function Menu({ isOpen }: MenuProps) {
               <Tooltip delayDuration={100}>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={handleLogout}
+                    onClick={() => setShowLogoutConfirm(true)}
                     variant="logout"
                     className="w-full justify-center h-10 mt-5"
                   >
@@ -148,6 +146,10 @@ export function Menu({ isOpen }: MenuProps) {
           </li>
         </ul>
       </nav>
+      <LogoutConfirmDialog
+        open={showLogoutConfirm}
+        onOpenChange={setShowLogoutConfirm}
+      />
     </ScrollArea>
   );
 }

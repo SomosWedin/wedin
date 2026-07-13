@@ -1,8 +1,16 @@
 import { getCurrentUser } from '@/actions/get-current-user';
-import OnboardingControlller from './controller';
+import OnboardingStepManager from '@/components/onboarding/StepManager';
 
 export default async function OnboardingPage() {
   const currentUser = await getCurrentUser();
 
-  return <OnboardingControlller currentUser={currentUser} />;
+  if (!currentUser) {
+    return null;
+  }
+
+  return (
+    <div className="h-screen flex items-center justify-center w-full p-6 sm:p-10">
+      <OnboardingStepManager currentUser={currentUser} />
+    </div>
+  );
 }

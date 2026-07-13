@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { LayoutGrid, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import logout from '@/actions/auth/logout';
+import LogoutConfirmDialog from '@/components/dialog/logout-confirm-dialog';
 import type { User as CurrentUser } from '@prisma/client';
 
 type UserNavProps = {
@@ -28,12 +29,10 @@ type UserNavProps = {
 
 export function UserNav({ currentUser }: UserNavProps) {
   const { name, email } = currentUser;
-
-  const handleLogout = async () => {
-    await logout();
-  };
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   return (
+    <>
     <DropdownMenu>
       <TooltipProvider disableHoverableContent>
         <Tooltip delayDuration={100}>
@@ -73,22 +72,30 @@ export function UserNav({ currentUser }: UserNavProps) {
               Dashboard
             </Link>
           </DropdownMenuItem>
-          {/* <DropdownMenuItem className="hover:cursor-pointer" asChild>
-            <Link href="/account" className="flex items-center">
+          <DropdownMenuItem className="hover:cursor-pointer" asChild>
+            <Link href="/billetera" className="flex items-center">
               <User className="w-4 h-4 mr-3 text-muted-foreground" />
-              Account
+              Mi billetera
             </Link>
-          </DropdownMenuItem> */}
+          </DropdownMenuItem>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
+        {/* <DropdownMenuSeparator /> */}
+        {/* <DropdownMenuItem
           className="hover:cursor-pointer"
-          onClick={handleLogout}
+          onSelect={(event) => {
+            event.preventDefault();
+            setShowLogoutConfirm(true);
+          }}
         >
           <LogOut className="w-4 h-4 mr-3 text-muted-foreground" />
           Cerrar sesión
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
       </DropdownMenuContent>
     </DropdownMenu>
+    <LogoutConfirmDialog
+      open={showLogoutConfirm}
+      onOpenChange={setShowLogoutConfirm}
+    />
+    </>
   );
 }
