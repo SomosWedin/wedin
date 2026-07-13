@@ -8,6 +8,7 @@ import DeleteWishlistGiftDialog from '@/components/dialog/delete-wishlist-gift-d
 import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialog';
 import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
 import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
+import { computePercentage } from '@/components/guest/gift-progress';
 import { IoGiftOutline, IoSearchOutline, IoSparkles } from 'react-icons/io5';
 import type { Category, Prisma } from '@prisma/client';
 
@@ -32,8 +33,7 @@ const ESTADO_OPTIONS = [
 function getEstado(wishlistGift: WishlistGiftWithGift) {
   const price = Number(wishlistGift.gift.price) || 0;
   const contributed = Number(wishlistGift.groupGiftParts) || 0;
-  const groupPercentage =
-    price > 0 ? Math.min(100, Math.round((contributed / price) * 100)) : 0;
+  const groupPercentage = computePercentage(price, contributed);
 
   if (wishlistGift.isReceived) {
     return {
