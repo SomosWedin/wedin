@@ -54,7 +54,7 @@ export async function getWishlistGifts({
 export async function getWishlistGift(wishlistId: string, giftId: string) {
   try {
     return await prismaClient.wishlistGift.findFirst({
-      where: { wishlistId, giftId },
+      where: { wishlistId, giftId, isReceived: false },
     });
   } catch (error) {
     console.error('Error retrieving wishlist gift:', error);
@@ -107,7 +107,7 @@ export async function createWishlistGifts(
 
   try {
     const existing = await prismaClient.wishlistGift.findMany({
-      where: { wishlistId, giftId: { in: giftIds } },
+      where: { wishlistId, giftId: { in: giftIds }, isReceived: false },
       select: { giftId: true },
     });
     const existingGiftIds = new Set(existing.map(wishlistGift => wishlistGift.giftId));
@@ -140,20 +140,18 @@ export async function editWishlistGift(
   const { wishlistGiftId, giftId, isFavoriteGift, isGroupGift } =
     validatedFields.data;
 
-  const existing = await prismaClient.wishlistGift.findUnique({
-    where: { id: wishlistGiftId },
-    select: { isFullyPaid: true, groupGiftParts: true },
-  });
-
-  if (existing?.isFullyPaid || Number(existing?.groupGiftParts) > 0) {
-    return { error: 'No se puede editar un regalo que ya tiene contribuciones.' };
-  }
-
   try {
-    await prismaClient.wishlistGift.update({
-      where: { id: wishlistGiftId },
+    const result = await prismaClient.wishlistGift.updateMany({
+      where: {
+        id: wishlistGiftId,
+        transactions: { none: { status: 'COMPLETED' } },
+      },
       data: { giftId, isFavoriteGift, isGroupGift },
     });
+
+    if (result.count === 0) {
+      return { error: 'No se puede editar un regalo que ya tiene contribuciones.' };
+    }
 
     revalidatePath('/wishlist');
     return { success: true };
@@ -175,28 +173,17 @@ export async function deleteWishlistGift(
   const { wishlistId, giftId } = validatedFields.data;
 
   try {
-    const wishlistGift = await prismaClient.wishlistGift.findFirst({
-      where: { wishlistId, giftId },
-      include: { transactions: { where: { status: 'COMPLETED' }, take: 1 } },
+    // Transaction.wishlistGiftId is a required relation, so a hard delete
+    // fails (P2014) the moment any transaction of any status still
+    // references this gift — archive instead of deleting whenever one
+    // exists, and only hard-delete when none do.
+    const archived = await prismaClient.wishlistGift.updateMany({
+      where: { wishlistId, giftId, transactions: { some: {} } },
+      data: { isReceived: true },
     });
 
-    if (!wishlistGift) {
-      revalidatePath('/wishlist');
-      revalidatePath('/gifts');
-      return { success: true };
-    }
-
-    // Archiving instead of deleting avoids orphaning COMPLETED transactions
-    // still tied to this gift.
-    if (wishlistGift.transactions.length > 0) {
-      await prismaClient.wishlistGift.update({
-        where: { id: wishlistGift.id },
-        data: { isReceived: true },
-      });
-    } else {
-      await prismaClient.wishlistGift.delete({
-        where: { id: wishlistGift.id },
-      });
+    if (archived.count === 0) {
+      await prismaClient.wishlistGift.deleteMany({ where: { wishlistId, giftId } });
     }
 
     revalidatePath('/wishlist');

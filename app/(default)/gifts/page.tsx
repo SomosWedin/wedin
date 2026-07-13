@@ -34,7 +34,9 @@ export default async function GiftsPage({
   ]);
 
   const wishlistGiftIds = new Set(
-    wishlistGifts.map(wishlistGift => wishlistGift.giftId)
+    wishlistGifts
+      .filter(wishlistGift => !wishlistGift.isReceived)
+      .map(wishlistGift => wishlistGift.giftId)
   );
 
   return (
