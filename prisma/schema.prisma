@@ -194,6 +194,12 @@ model WishlistGift {
   isGroupGift    Boolean  @default(false)
   groupGiftParts String   @default("0")
   isFullyPaid    Boolean  @default(false)
+  // NOTE: repurposed as an "archived" flag — true means deleteWishlistGift
+  // hid this gift instead of hard-deleting it, because it had a Transaction
+  // (of any status) still pointing at it. Excluded from the guest site and
+  // the organizer's default /wishlist view, but the row and its
+  // transactions are kept. Not literally "physically received" despite the
+  // name — no dedicated concept for that exists yet.
   isReceived     Boolean  @default(false)
   wishlistId     String   @db.ObjectId
   giftId         String   @db.ObjectId
