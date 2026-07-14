@@ -90,9 +90,8 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
                 type="button"
                 aria-label={`Ver foto ${index + 1}`}
                 onClick={() => setActiveIndex(index)}
-                className={`h-2 rounded-full transition-all ${
-                  index === activeIndex ? 'w-6 bg-white' : 'w-2 bg-white/50'
-                }`}
+                className={`h-2 rounded-full transition-all ${index === activeIndex ? 'w-6 bg-white' : 'w-2 bg-white/50'
+                  }`}
               />
             ))}
           </div>
