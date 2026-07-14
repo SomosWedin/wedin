@@ -19,7 +19,7 @@ import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import OnboardingStepper from './Stepper';
+import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import Image from 'next/image';
 import { StepFourSchema } from '@/schemas/onboarding';
