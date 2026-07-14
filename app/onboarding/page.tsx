@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/actions/get-current-user';
-import OnboardingStepManager from '@/components/onboarding/StepManager';
+import OnboardingStepManager from '@/components/onboarding/step-manager';
 
 export default async function OnboardingPage() {
   const currentUser = await getCurrentUser();
