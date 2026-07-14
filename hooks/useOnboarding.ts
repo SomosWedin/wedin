@@ -38,7 +38,7 @@ export const useOnboarding = () => {
         setLoading(false);
         return;
       }
-      
+
       router.refresh();
     } catch (error) {
       toast({
@@ -78,7 +78,7 @@ export const useOnboarding = () => {
         setLoading(false);
         return;
       }
-      
+
       router.refresh();
     } catch (error) {
       toast({
@@ -120,7 +120,7 @@ export const useOnboarding = () => {
         setLoading(false);
         return;
       }
-      
+
       router.refresh();
     } catch (error) {
       toast({
@@ -162,7 +162,7 @@ export const useOnboarding = () => {
         setLoading(false);
         return;
       }
-      
+
       router.refresh();
     } catch (error) {
       toast({
