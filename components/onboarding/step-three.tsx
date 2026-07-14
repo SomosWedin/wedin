@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { Loader2 } from 'lucide-react';
-import OnboardingStepper from './Stepper';
+import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import Image from 'next/image';
 import { countries } from '@/lib/countries';

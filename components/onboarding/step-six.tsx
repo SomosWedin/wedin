@@ -3,9 +3,9 @@ import Image from 'next/image';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import { Progress } from '@/components/ui/progress';
 
-export default function StepSix() {
+export default function OnboardingStepSix() {
   const [progress, setProgress] = useState(0);
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress(prev => {
