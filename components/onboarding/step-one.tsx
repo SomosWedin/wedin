@@ -3,7 +3,7 @@ import { CiHeart } from 'react-icons/ci';
 import { FaChevronRight } from 'react-icons/fa6';
 import { GiWineGlass } from 'react-icons/gi';
 import { EventType } from '@prisma/client';
-import OnboardingStepper from './Stepper';
+import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import Image from 'next/image';
 import { useOnboarding } from '@/hooks/useOnboarding';
@@ -31,9 +31,8 @@ export default function OnboardingStepOne() {
 
       <div className="flex flex-col sm:flex-row gap-8 items-center">
         <Card
-          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${
-            loading ? 'cursor-not-allowed pointer-events-none opacity-65' : ''
-          }`}
+          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${loading ? 'cursor-not-allowed pointer-events-none opacity-65' : ''
+            }`}
           onClick={() => {
             handleCardClick(EventType.WEDDING);
           }}
@@ -52,9 +51,8 @@ export default function OnboardingStepOne() {
         <div className="h-12 border-r border-gray200 sm:block hidden"></div>
 
         <Card
-          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${
-            loading ? 'cursor-not-allowed pointer-events-none opacity-70' : ''
-          }`}
+          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${loading ? 'cursor-not-allowed pointer-events-none opacity-70' : ''
+            }`}
           onClick={() => {
             handleCardClick(EventType.OTHER);
           }}

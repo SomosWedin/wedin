@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import OnboardingStepper from './Stepper';
+import OnboardingStepper from './stepper';
 import illustration from '@/public/assets/onb-step-two-icon.svg';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import { EventType } from '@prisma/client';
@@ -46,7 +46,7 @@ export default function OnboardingStepTwo() {
   }, [form]);
 
   const {
-    formState: { isDirty, isValid },
+    formState: { isValid },
   } = form;
 
   const onSubmit = async (values: z.infer<typeof StepTwoSchema>) => {

@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import OnboardingStepper from './Stepper';
+import OnboardingStepper from './stepper';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import { Button } from '@/components/ui/button';
 import { CiSettings } from 'react-icons/ci';
