@@ -44,7 +44,7 @@ export default async function GiftsPage({
           <div>
             <Link
               href="/wishlist"
-              className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-2 gap-2"
+              className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-2 gap-2 w-fit"
             >
               <ChevronLeft className="w-4 h-4" />
               Volver
