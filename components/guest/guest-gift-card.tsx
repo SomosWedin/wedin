@@ -27,12 +27,14 @@ type GuestGiftCardProps = {
   wishlistGift: WishlistGiftWithGift;
   onAddFullPrice: (wishlistGift: WishlistGiftWithGift) => void;
   onOpenContributionDialog: (wishlistGift: WishlistGiftWithGift) => void;
+  onOpenGiftDetails: (wishlistGift: WishlistGiftWithGift) => void;
 };
 
 export default function GuestGiftCard({
   wishlistGift,
   onAddFullPrice,
   onOpenContributionDialog,
+  onOpenGiftDetails,
 }: GuestGiftCardProps) {
   const { gift } = wishlistGift;
   const { priceValue, remaining, percentage } = getGiftProgress(
@@ -41,16 +43,20 @@ export default function GuestGiftCard({
   );
   const isComplete =
     wishlistGift.isFullyPaid || (priceValue > 0 && remaining <= 0);
-  const isCardClickable = wishlistGift.isGroupGift && !isComplete;
+
+  const handleCardClick = () => {
+    if (isComplete) return;
+    if (wishlistGift.isGroupGift) {
+      onOpenContributionDialog(wishlistGift);
+    } else {
+      onOpenGiftDetails(wishlistGift);
+    }
+  };
 
   return (
     <div
-      className={`flex flex-col gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm justify-between bg-gray-50 ${isCardClickable ? 'cursor-pointer' : ''}`}
-      onClick={
-        isCardClickable
-          ? () => onOpenContributionDialog(wishlistGift)
-          : undefined
-      }
+      className={`flex flex-col gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm justify-between bg-gray-50 ${!isComplete ? 'cursor-pointer' : ''}`}
+      onClick={!isComplete ? handleCardClick : undefined}
     >
       <div className="relative overflow-hidden w-full bg-gray-100 rounded-lg aspect-square">
         {gift.image?.url ? (
@@ -121,7 +127,10 @@ export default function GuestGiftCard({
       ) : (
         <Button
           className={`gap-1 justify-between text-xs bg-gray-100 hover:bg-gray-200 transition-colors sm:gap-2 sm:text-sm ${isComplete ? 'bg-success/10 text-success' : ''}`}
-          onClick={() => onAddFullPrice(wishlistGift)}
+          onClick={event => {
+            event.stopPropagation();
+            onAddFullPrice(wishlistGift);
+          }}
           disabled={isComplete}
         >
           {isComplete ? 'Regalo recibido' : 'Agregar al carrito'}
