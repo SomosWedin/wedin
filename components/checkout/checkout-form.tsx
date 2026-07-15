@@ -1,0 +1,223 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { IoGiftOutline, IoLockClosedOutline } from 'react-icons/io5';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { useStore } from '@/hooks/use-store';
+import { useCartStore } from '@/hooks/use-cart-store';
+import { useCheckout } from '@/hooks/checkout/use-checkout';
+import type { z } from 'zod';
+import type { GuestCheckoutSchema } from '@/schemas/checkout';
+
+type PaymentMethod = z.infer<typeof GuestCheckoutSchema>['paymentMethod'];
+
+const PAYMENT_METHODS: {
+  value: PaymentMethod;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: 'CARD',
+    label: 'Online con tarjeta',
+    description: 'Pago inmediato con tarjeta de crédito o débito',
+  },
+  {
+    value: 'BANK_TRANSFER',
+    label: 'Transferencia bancaria',
+    description: 'Transferí y enviá el comprobante por WhatsApp',
+  },
+];
+
+type CheckoutFormProps = {
+  eventId: string;
+  eventSlug: string;
+};
+
+export default function CheckoutForm({
+  eventId,
+  eventSlug,
+}: CheckoutFormProps) {
+  const router = useRouter();
+  const cartStore = useCartStore(eventId);
+  const cartItems = useStore(cartStore, state => state.items);
+
+  const { loading, form, isValid, onSubmit } = useCheckout({
+    eventId,
+    eventSlug,
+    cartItems: cartItems ?? [],
+    onCheckoutStarted: () => cartStore.getState().clear(),
+  });
+
+  // `cartStore.persist` is undefined during SSR — zustand's persist
+  // middleware silently disables itself server-side since `localStorage`
+  // doesn't exist there, rather than throwing. Treat "no persist API" the
+  // same as "not yet hydrated": that's the truthful state on the server,
+  // and the client-side render (where `.persist` is always present) takes
+  // over correctly once it mounts.
+  const [hasHydrated, setHasHydrated] = useState(() =>
+    cartStore.persist?.hasHydrated() ?? false
+  );
+
+  useEffect(() => {
+    if (!cartStore.persist) return;
+    if (cartStore.persist.hasHydrated()) {
+      setHasHydrated(true);
+      return;
+    }
+    return cartStore.persist.onFinishHydration(() => setHasHydrated(true));
+  }, [cartStore]);
+
+  useEffect(() => {
+    if (hasHydrated && cartItems && cartItems.length === 0) {
+      router.replace(`/e/${eventSlug}`);
+    }
+  }, [hasHydrated, cartItems, eventSlug, router]);
+
+  if (!hasHydrated || !cartItems || cartItems.length === 0) return null;
+
+  const total = cartItems.reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0
+  );
+
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="grid gap-8 mx-auto max-w-3xl md:grid-cols-2"
+      >
+        <div className="order-2 flex flex-col gap-4 md:order-1">
+          <h2 className="text-lg font-semibold">Tus datos</h2>
+
+          <FormField
+            control={form.control}
+            name="payerName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre completo</FormLabel>
+                <FormControl>
+                  <Input placeholder="Tu nombre" {...field} />
+                </FormControl>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="payerEmail"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="tu@email.com" {...field} />
+                </FormControl>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="order-1 flex flex-col gap-6 md:order-2">
+          <div>
+            <h2 className="mb-4 text-lg font-semibold">Tu pedido</h2>
+            <div className="divide-y divide-gray-100">
+              {cartItems.map(item => (
+                <div key={item.id} className="flex gap-3 items-center py-3">
+                  <div className="flex overflow-hidden justify-center items-center w-12 h-12 bg-gray-100 rounded-md shrink-0">
+                    {item.giftImageUrl ? (
+                      <Image
+                        src={item.giftImageUrl}
+                        alt={item.giftName}
+                        className="object-cover w-full h-full"
+                        width={48}
+                        height={48}
+                      />
+                    ) : (
+                      <IoGiftOutline className="text-xl text-gray-400" />
+                    )}
+                  </div>
+                  <p className="flex-1 truncate">{item.giftName}</p>
+                  <p className="font-medium">
+                    Gs. {Number(item.amount).toLocaleString('es-PY')}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
+              <span className="text-textTertiary">Total</span>
+              <span className="text-xl font-semibold">
+                Gs. {total.toLocaleString('es-PY')}
+              </span>
+            </div>
+          </div>
+
+          <FormField
+            control={form.control}
+            name="paymentMethod"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Forma de pago</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    className="gap-3"
+                  >
+                    {PAYMENT_METHODS.map(method => (
+                      <label
+                        key={method.value}
+                        htmlFor={method.value}
+                        className="flex gap-2 items-start cursor-pointer"
+                      >
+                        <RadioGroupItem
+                          value={method.value}
+                          id={method.value}
+                          className="mt-1 border-gray-300 text-success focus-visible:ring-success data-[state=checked]:border-success"
+                        />
+                        <span>
+                          <span className="block">{method.label}</span>
+                          <span className="block text-sm text-textTertiary">
+                            {method.description}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <Button
+          type="submit"
+          variant="success"
+          className="order-3 gap-2 md:col-span-2 mt-6"
+          disabled={loading || !isValid}
+        >
+          {loading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <IoLockClosedOutline />
+          )}
+          Confirmar compra
+        </Button>
+      </form>
+    </Form>
+  );
+}

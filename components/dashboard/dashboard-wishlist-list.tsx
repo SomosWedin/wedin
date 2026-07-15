@@ -8,6 +8,7 @@ import DeleteWishlistGiftDialog from '@/components/dialog/delete-wishlist-gift-d
 import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialog';
 import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
 import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
+import { computePercentage } from '@/components/guest/gift-progress';
 import { IoGiftOutline, IoSearchOutline, IoSparkles } from 'react-icons/io5';
 import type { Category, Prisma } from '@prisma/client';
 
@@ -26,9 +27,23 @@ const ESTADO_OPTIONS = [
   { value: 'received', label: 'Regalo recibido' },
   { value: 'open_contribution', label: 'Contribución abierta' },
   { value: 'in_list', label: 'En lista' },
+  { value: 'archived', label: 'Archivado' },
 ] as const;
 
 function getEstado(wishlistGift: WishlistGiftWithGift) {
+  const price = Number(wishlistGift.gift.price) || 0;
+  const contributed = Number(wishlistGift.groupGiftParts) || 0;
+  const groupPercentage = computePercentage(price, contributed);
+
+  if (wishlistGift.isReceived) {
+    return {
+      status: 'archived' as const,
+      label: 'Archivado',
+      percentage: wishlistGift.isFullyPaid ? 100 : groupPercentage,
+      className: 'bg-gray100 text-textTertiary border-transparent',
+    };
+  }
+
   if (wishlistGift.isFullyPaid) {
     return {
       status: 'received' as const,
@@ -39,15 +54,10 @@ function getEstado(wishlistGift: WishlistGiftWithGift) {
   }
 
   if (wishlistGift.isGroupGift) {
-    const price = Number(wishlistGift.gift.price) || 0;
-    const contributed = Number(wishlistGift.groupGiftParts) || 0;
-    const percentage =
-      price > 0 ? Math.min(100, Math.round((contributed / price) * 100)) : 0;
-
     return {
       status: 'open_contribution' as const,
       label: 'Contribución abierta',
-      percentage,
+      percentage: groupPercentage,
       className: 'bg-warning/10 text-warning border-transparent',
     };
   }
@@ -78,11 +88,14 @@ export default function DashboardWishlistList({
   ).length;
 
   const filteredWishlistGifts = wishlistGifts.filter(wishlistGift => {
+    const estado = getEstado(wishlistGift);
+
+    if (!estadoFilter && estado.status === 'archived') return false;
+
     const matchesSearch = wishlistGift.gift.name
       .toLowerCase()
       .includes(search.trim().toLowerCase());
-    const matchesEstado =
-      !estadoFilter || getEstado(wishlistGift).status === estadoFilter;
+    const matchesEstado = !estadoFilter || estado.status === estadoFilter;
     const matchesCategory =
       !categoryFilter || wishlistGift.gift.categoryId === categoryFilter;
 
@@ -213,22 +226,28 @@ export default function DashboardWishlistList({
                 )}
               </div>
 
-              <div className="flex col-span-2 gap-2 justify-end opacity-0 transition-opacity group-hover:opacity-100">
-                <EditWishlistGiftDialog
-                  wishlistGiftId={wishlistGift.id}
-                  wishlistId={wishlistId}
-                  eventId={eventId}
-                  gift={wishlistGift.gift}
-                  categories={categories}
-                  isFavoriteGift={wishlistGift.isFavoriteGift}
-                  isGroupGift={wishlistGift.isGroupGift}
-                />
-                <DeleteWishlistGiftDialog
-                  wishlistId={wishlistId}
-                  giftId={wishlistGift.giftId}
-                  giftName={wishlistGift.gift.name}
-                />
-              </div>
+              {!wishlistGift.isReceived && (
+                <div className="flex col-span-2 gap-2 justify-end opacity-0 transition-opacity group-hover:opacity-100">
+                  <EditWishlistGiftDialog
+                    wishlistGiftId={wishlistGift.id}
+                    wishlistId={wishlistId}
+                    eventId={eventId}
+                    gift={wishlistGift.gift}
+                    categories={categories}
+                    isFavoriteGift={wishlistGift.isFavoriteGift}
+                    isGroupGift={wishlistGift.isGroupGift}
+                    disabled={
+                      wishlistGift.isFullyPaid ||
+                      Number(wishlistGift.groupGiftParts) > 0
+                    }
+                  />
+                  <DeleteWishlistGiftDialog
+                    wishlistId={wishlistId}
+                    giftId={wishlistGift.giftId}
+                    giftName={wishlistGift.gift.name}
+                  />
+                </div>
+              )}
             </div>
           );
         })}

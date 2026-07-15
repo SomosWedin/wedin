@@ -10,6 +10,7 @@ import GuestGiftCard, {
   type WishlistGiftWithGift,
 } from '@/components/guest/guest-gift-card';
 import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog';
+import GiftDetailDialog from '@/components/dialog/gift-detail-dialog';
 import CartStickyBar from '@/components/cart/cart-sticky-bar';
 import CartDrawer from '@/components/cart/cart-drawer';
 import { getGiftProgress } from '@/components/guest/gift-progress';
@@ -49,6 +50,8 @@ export default function GuestGiftCatalog({
   const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(
     null
   );
+  const [detailWishlistGift, setDetailWishlistGift] =
+    useState<WishlistGiftWithGift | null>(null);
 
   const cartTotal = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
@@ -77,6 +80,10 @@ export default function GuestGiftCatalog({
 
   const handleOpenContributionDialog = (wishlistGift: WishlistGiftWithGift) => {
     setSelectedWishlistGift(wishlistGift);
+  };
+
+  const handleOpenGiftDetails = (wishlistGift: WishlistGiftWithGift) => {
+    setDetailWishlistGift(wishlistGift);
   };
 
   const handleEditCartItem = (item: CartItem) => {
@@ -218,6 +225,7 @@ export default function GuestGiftCatalog({
               wishlistGift={wishlistGift}
               onAddFullPrice={handleAddFullPrice}
               onOpenContributionDialog={handleOpenContributionDialog}
+              onOpenGiftDetails={handleOpenGiftDetails}
             />
           ))}
         </div>
@@ -233,6 +241,18 @@ export default function GuestGiftCatalog({
           percentage={selectedProgress.percentage}
           onAddToCart={handleContributionSubmit}
           initialAmount={editingCartItem?.amount}
+        />
+      )}
+
+      {detailWishlistGift && (
+        <GiftDetailDialog
+          open={!!detailWishlistGift}
+          onOpenChange={open => {
+            if (!open) setDetailWishlistGift(null);
+          }}
+          gift={detailWishlistGift.gift}
+          isFavoriteGift={detailWishlistGift.isFavoriteGift}
+          onAddToCart={() => handleAddFullPrice(detailWishlistGift)}
         />
       )}
 

@@ -108,7 +108,7 @@ export default function DashboardEventSettingsForm({
             render={({ field }) => (
               <FormItem className="max-w-sm">
                 <FormLabel>Dirección de tu evento</FormLabel>
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 !mt-0">
                   <FormControl className="!mt-1.5">
                     <div className="flex items-center w-full rounded-md border border-input focus-within:ring-1 focus-within:ring-ring">
                       <span className="pl-3 text-sm text-textTertiary select-none">
@@ -179,7 +179,7 @@ export default function DashboardEventSettingsForm({
             )}
           />
 
-          <div className="w-full flex flex-col h-full justify-end gap-2.5">
+          <div className="w-full flex flex-col h-full justify-end gap-2.5 mt-1.5">
             <Label>Email</Label>
             <Input
               type="email"

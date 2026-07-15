@@ -34,6 +34,11 @@ enum PayoutStatus {
   REJECTED
 }
 
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+}
+
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
   userId            String  @db.ObjectId
@@ -119,12 +124,6 @@ model Event {
   eventType        EventType @default(WEDDING)
   guests           String?
   hasPYbankAccount Boolean   @default(false)
-  // Guest-facing visibility toggle ("Web visible" in the dashboard home
-  // site-link card), independent of the dashboard-home setup checklist —
-  // an event can be fully set up and still be hidden from guests on
-  // purpose. Existing documents lack this field in Mongo (no backfill on
-  // `db push`); Prisma's Mongo connector applies `@default` client-side on
-  // read, so older events still resolve to `true`.
   isPublished      Boolean   @default(true)
 
   wishlist Wishlist @relation(fields: [wishlistId], references: [id])
@@ -195,6 +194,12 @@ model WishlistGift {
   isGroupGift    Boolean  @default(false)
   groupGiftParts String   @default("0")
   isFullyPaid    Boolean  @default(false)
+  // NOTE: repurposed as an "archived" flag — true means deleteWishlistGift
+  // hid this gift instead of hard-deleting it, because it had a Transaction
+  // (of any status) still pointing at it. Excluded from the guest site and
+  // the organizer's default /wishlist view, but the row and its
+  // transactions are kept. Not literally "physically received" despite the
+  // name — no dedicated concept for that exists yet.
   isReceived     Boolean  @default(false)
   wishlistId     String   @db.ObjectId
   giftId         String   @db.ObjectId
@@ -223,17 +228,8 @@ model Transaction {
   payeeRole       UserType          @default(ORGANIZER)
   payerName       String?
   payerEmail      String?
-  // NOTE: the underlying Mongo index (Transaction_dlocalPaymentId_key) must
-  // stay `sparse: true`. Every Transaction created before Phase 6's checkout
-  // exists (or any dummy/test row) has no dlocalPaymentId — Prisma's
-  // `@unique` gives no sparse option, so `db push` won't create/repair this —
-  // a non-sparse unique index only allows ONE transaction with a missing
-  // dlocalPaymentId ever; the second throws P2002. Found live while seeding
-  // test data for Phase 7. If this index is ever recreated (e.g. on a new
-  // environment), run manually:
-  //   db.Transaction.dropIndex("Transaction_dlocalPaymentId_key")
-  //   db.Transaction.createIndex({ dlocalPaymentId: 1 }, { unique: true, sparse: true, name: "Transaction_dlocalPaymentId_key" })
-  dlocalPaymentId String?           @unique
+  paymentMethod   PaymentMethod     @default(CARD)
+  dlocalPaymentId String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -246,6 +242,7 @@ model Transaction {
   @@index([wishlistGiftId])
   @@index([eventId])
   @@index([wishlistId])
+  @@index([dlocalPaymentId])
 }
 
 model TransactionStatusLog {

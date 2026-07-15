@@ -767,6 +767,233 @@ exercised.
   double-submitting the same webhook payload manually confirms
   idempotency.
 
+**Status: 🟡 Built, real sandbox credentials still not exercised**, on
+`feature/guest-checkout` → base `docs/guest-checkout-wallet-plan`,
+https://github.com/wedin-app/wedin/compare/docs/guest-checkout-wallet-plan...feature/guest-checkout?expand=1.
+Delivered as planned: `schemas/checkout.ts`, `actions/data/checkout.ts`
+(`createTransactionsForCart`, `createDlocalCheckoutSession`, plus a new
+`getCheckoutTransactions` not in the original plan text — reads back the
+transfer page's line items by id), `lib/dlocal.ts` (stubs responses when
+`DLOCAL_GO_API_KEY`/`DLOCAL_GO_SECRET_KEY` are unset, so the flow is
+click-through-able end to end without sandbox creds — real creds/live
+sandbox call still outstanding), `app/e/[slug]/checkout/page.tsx` +
+`hooks/checkout/use-checkout.ts`, `app/api/webhooks/dlocal/route.ts`.
+
+**Scope addition beyond the original plan text, decided live with the
+user**: bank transfer is a first-class second payment method, not deferred.
+`GuestCheckoutSchema.paymentMethod: 'CARD' | 'BANK_TRANSFER'` (guest picks
+one at checkout, `components/checkout/checkout-form.tsx` +
+`components/ui/radio-group.tsx`); `BANK_TRANSFER` transactions are created
+`PENDING` (vs. `CARD`'s `OPEN`) and skip `createDlocalCheckoutSession`
+entirely — the guest instead lands on `app/e/[slug]/checkout/transfer/page.tsx`,
+which shows Wedin's own bank account (`lib/wedin-bank-account.ts`) and a
+"send proof via WhatsApp" deep-link to Wedin's ops number. Confirmation is
+manual and ops-side, not organizer-facing (see below) — there is no
+in-product path from "guest sent a transfer" to `COMPLETED`.
+
+**Payment-method naming reconciliation** (found and fixed mid-session, not
+an original plan item): partway through building this phase, manual
+in-progress renames had left the schema in a broken, half-migrated state —
+`prisma/schema.prisma` had a `paymentProcessor: PaymentProcessor
+(DLOCAL|BANCARD|UPAY|PAGOPAR)` field (gateway-tracking, only dLocal ever
+implemented), while `schemas/checkout.ts`/`actions/data/checkout.ts` had
+already moved to a different concept, `paymentMethod: 'CARD'|'BANK_TRANSFER'`
+(the guest's checkout choice) — these are genuinely different things that
+had gotten conflated under one renamed field, and the mismatch meant
+`actions/data/checkout.ts` didn't even type-check. Resolved, confirmed live
+with the user: collapsed to a single `Transaction.paymentMethod:
+PaymentMethod (CARD | BANK_TRANSFER)` field; dropped `paymentProcessor` and
+the `PaymentProcessor` enum (Bancard/Upay/Pagopar) entirely as YAGNI — only
+one gateway is implemented today, re-add a processor field if/when a second
+one actually is. `dashboard-transactions-list.tsx`'s `PAYMENT_METHOD_ICON`
+map (Phase 7, previously read the stale four-way enum) updated to match.
+
+**Manual bank-transfer confirmation → wallet sync gap, resolved via a
+staff-only `/admin` page** (superseding an earlier, now-retired ops-script
+approach — see below): since a transfer is confirmed by Wedin staff off a
+WhatsApp proof screenshot, not by the organizer in-app, nothing previously
+called `applyTransactionStatusChange` for a manually-confirmed transfer.
+`app/admin/page.tsx` lists every `Transaction` across every event (not
+scoped to one couple's session, via new `getAllTransactionsForAdmin()`) and
+lets staff change a row's status via a `<select>`
+(`components/admin/admin-transactions-list.tsx` +
+`hooks/admin/use-admin-transaction-status.ts`), which calls the new
+`updateTransactionStatusAsAdmin(transactionId, status)` — this reuses the
+real `applyTransactionStatusChange` directly (no duplicated logic) and
+records the actual logged-in staff user as `changedById`, fixing the
+audit-trail gap the earlier script had.
+
+Access is gated on `User.role === 'ADMIN'` (enum value already existed,
+unused until now) two ways: `middleware.ts`'s admin-route check — previously
+dead code (`console.log` with no redirect) — now does
+`Response.redirect(new URL(isLoggedIn ? '/dashboard' : '/login', nextUrl))`
+for any non-admin hitting `/admin`; and the page/actions independently
+re-check `getCurrentUser().role === 'ADMIN'` (DB-fresh, not the JWT-cached
+session role) as defense-in-depth, since server actions are callable
+independent of what page renders them. Staff accounts are flagged `ADMIN`
+by hand in the DB (`yarn prisma studio`) — no self-serve role-assignment UI,
+by explicit scope decision. No sidebar/nav entry either; staff navigate to
+`/admin` directly by URL.
+
+**`scripts/confirm-bank-transfer.ts` retired**: it was the original fix for
+the confirmation gap above, but duplicated
+`recomputeWishlistGiftProgress`/the status-update transaction from
+`actions/data/transaction.ts` instead of reusing it, and hardcoded
+`changedById: null` (no record of which staffer ran it). Once the `/admin`
+page existed to do the same job through the real action with a proper audit
+trail, the script became redundant — deleted, along with its `package.json`
+entry. `CLAUDE.md`'s "one-off ops scripts" convention note stays (still
+valid for a future script), just without this now-dead example.
+
+**Known gaps found by a post-implementation code review — fixed in a
+follow-up pass**:
+- ~~No server-side re-validation of a cart line's `amount`~~ — fixed:
+  `createTransactionsForCart` now batch-fetches the cart's `WishlistGift`s
+  and rejects any item whose amount doesn't match the gift's price
+  (non-group) or exceeds the remaining unpaid balance (group gift), before
+  creating any `Transaction` rows.
+- ~~Webhook only handled `PAID`~~ — fixed: `REJECTED`/`CANCELLED`/`EXPIRED`
+  now flip the transaction to `FAILED` via the same
+  `applyTransactionStatusChange` loop `PAID` already used; only genuinely
+  unhandled statuses (`PENDING`) still just ack.
+- ~~`getCheckoutTransactions` had no `eventId`/ownership check~~ — fixed:
+  it now takes a required `eventId`, and the transfer page resolves it via
+  `getEventByUrl(slug)` before calling it. Residual, accepted risk: guessing
+  a transaction id *within the same event* still isn't blocked — true guest
+  checkout has no account/session to check ownership against; closing that
+  fully would mean signed/opaque references, out of scope for this pass.
+- ~~Orphaned `OPEN` transactions on dLocal session failure~~ — fixed:
+  `createDlocalCheckoutSession` now flips the cart's just-created
+  transactions to `FAILED` (via the same status-change path) on both its
+  error branches, instead of leaving them silently `OPEN`/`PENDING` forever.
+- ~~Non-atomic idempotency check in `applyTransactionStatusChange`~~ —
+  fixed: the plain `update` became a conditional `updateMany({ where: { id,
+  status: { not: status } } })`; only the caller that actually flips the
+  status (`count === 1`) proceeds to write the `TransactionStatusLog` and
+  recompute progress, so concurrent/duplicate webhook deliveries can't both
+  log the same transition.
+
+**Live end-to-end verification** (real dev server + real DB, not just
+`tsc`/`biome`, since server actions and middleware redirects can't be
+unit-tested in isolation here): logged in through the actual `/login` form
+(credentials flow, cookie jar via `curl`) against `me+parejas@avilaca.com`
+with a password rotated for this purpose — confirmed `/admin` redirects a
+logged-in non-admin to `/dashboard` and a logged-out visitor to `/login`;
+after flipping the account's `role` to `ADMIN` in the DB and re-logging in,
+`/admin` returned 200 and rendered real cross-event data. Confirmed the
+IDOR fix directly: a real `BANK_TRANSFER` transaction's id, requested under
+a *different* event's slug, 404s without leaking the amount; under its own
+event's slug it still works. Confirmed the atomic idempotency fix by firing
+two concurrent conditional status updates at the same transaction — exactly
+one won and exactly one `TransactionStatusLog` row was written. **Testing
+technique note for future sessions**: getting an authenticated session for
+this kind of test by minting a raw session JWT directly (`next-auth/jwt`
+`encode`) was attempted first and correctly blocked by the permission
+system as a forged-credential action — the right way is to rotate a known
+test account's password (bcrypt, same method as `actions/auth/register.ts`)
+and log in through the real `/login` form, which is what the verification
+above actually did.
+
+**Second-pass code review on the fixes above found 4 more regressions,
+fixed immediately since they were defects in work just shipped, not new
+scope**:
+- Individual (non-group) gift price validation only checked
+  `amount === price`, never whether the gift already had a completed
+  payment — a gift meant to be bought once could be bought twice. Fixed:
+  also rejects if `wishlistGift.transactions.length > 0` (the already-fetched
+  `COMPLETED` set).
+- A freshly-`ADMIN`-flagged account defaults to `isOnboarded: false` (the
+  Prisma default) and was getting redirected from `/admin` into the
+  couple-onboarding wizard by `middleware.ts`'s onboarding check — would
+  have completely blocked real staff usage, since a hand-created staff row
+  never goes through couple onboarding. Fixed: admin routes are exempt from
+  that redirect (`!isAdminRoute` added to the condition; safe because
+  reaching that line with `isAdminRoute: true` already implies `isAdmin:
+  true`, per the earlier check).
+- The atomic idempotency fix above (conditional `updateMany`) had
+  regressed the original code's all-or-nothing guarantee between the status
+  update and its `TransactionStatusLog` write — they'd become two
+  unwrapped operations. Fixed: both now run inside one
+  `prismaClient.$transaction(async tx => {...})`, re-verified live (one
+  winner, exactly one log row).
+- `PAYMENT_METHOD_ICON` had been copy-pasted verbatim into the new
+  `admin-transactions-list.tsx` instead of reusing the existing shared one.
+  Extracted into `components/dashboard/transaction-estado.tsx` (which
+  already held `ESTADO_BY_STATUS`/`ESTADO_OPTIONS`), both list components
+  now import it.
+
+**Open, deliberately unfixed as of this pass — flagged for a decision**:
+`updateTransactionStatusAsAdmin` lets staff set *any* transaction —
+including `CARD` ones — to *any* status. The retired ops script explicitly
+refused to touch `CARD` transactions ("card payments are confirmed by the
+dLocal webhook, not this script"); that guard wasn't carried over into the
+admin action. Risk is asymmetric by direction: staff moving a stuck `CARD`
+transaction *to* `FAILED` is safe and self-correcting (if the webhook later
+fires with a different status, `applyTransactionStatusChange`'s guard just
+sees a different current status and updates normally). Staff setting a
+`CARD` transaction *to* `COMPLETED` is the dangerous direction — it
+triggers `recomputeWishlistGiftProgress` exactly like a real payment, and
+Phase 8's `getEventBalance` would count it toward a withdrawable balance,
+with no reconciliation job anywhere that would ever catch a card
+transaction marked paid that dLocal never actually processed. Recommended
+fix, not yet applied: block admin from setting `CARD` transactions to
+`COMPLETED` specifically (leave that transition to the webhook only), while
+still allowing `FAILED`/other transitions for recovery.
+
+**Also found, pre-existing and unrelated to this diff, same bug class as
+the `getCheckoutTransactions` IDOR fixed above**: `getTransactions` in
+`actions/data/transaction.ts` (used by the couple's own `/transactions`
+ledger) has no auth/ownership check and takes an arbitrary `eventId` — any
+client could call it directly as a server action with someone else's
+`eventId` and read that event's full transaction ledger (payer names,
+emails, amounts). Not touched in this pass; flagged for a future one.
+
+**Git state**: `feature/guest-checkout` → base `docs/guest-checkout-wallet-plan`,
+https://github.com/wedin-app/wedin/compare/docs/guest-checkout-wallet-plan...feature/guest-checkout?expand=1,
+pushed through commit `f6da8a2`. Not yet opened as a PR.
+
+**Stale-enum data bug found live, fixed**: after pushing, `/admin` showed
+"Sin transacciones" despite the dev DB having 26 real `Transaction` rows —
+the couple's own `/transactions` ledger would have hit the identical bug.
+Root cause: collapsing `paymentProcessor`/`paymentMethod` into one field
+(above) only changed `schema.prisma` and ran `prisma db push`, which never
+rewrites existing MongoDB documents — so every pre-existing row still
+carried an old string value (`DLOCAL`/`MANUAL_TRANSFER` from before any of
+this session's renames, or no `paymentMethod` field at all on the oldest
+Phase 7 dummy rows, predating the field's existence). Prisma threw `Value
+'DLOCAL' not found in enum 'PaymentMethod'` reading them back;
+`getAllTransactionsForAdmin`'s `try/catch` swallowed it into `[]`, so the
+page just looked empty instead of erroring visibly. Fixed by backfilling in
+place via `$runCommandRaw` (`DLOCAL`/`BANCARD`/`UPAY`/`PAGOPAR` → `CARD`,
+`MANUAL_TRANSFER` → `BANK_TRANSFER`, missing field → `CARD`) rather than
+wiping the dataset — preserves the existing test fixtures (payer names,
+`COMPLETED` statuses, thank-you notes) other phases' testing already
+depends on. Documented as a general rule in `CLAUDE.md` (enum value changes
+need a data backfill in the same pass, same root cause as the sparse-index
+gotcha). All 26 rows now read cleanly (verified: `19 CARD / 7
+BANK_TRANSFER`).
+
+**Checkout page SSR crash found live, fixed**: a hard/direct load of
+`/e/[slug]/checkout` (not a client-side navigation into it) 500'd on
+`cartStore.persist.hasHydrated()` — `cartStore.persist` was `undefined`.
+Root-caused by reproducing `hooks/use-cart-store.ts`'s `createCartStore` in
+isolation under plain Node (no `window`/`localStorage`, i.e. the same
+environment Next.js SSR runs client components in for the initial
+HTML/RSC payload): zustand's persist middleware, when its `storage` option
+can't be resolved (`createJSONStorage(() => localStorage)` throws internally
+on the server and is caught, returning `undefined`), silently degrades to a
+plain non-persisted store rather than throwing — it just never attaches
+`.persist` at all. `components/checkout/checkout-form.tsx`'s `hasHydrated`
+gate (added by an earlier session's cart-hydration-race fix, `hooks/use-cart-store.ts`
++ `checkout-form.tsx`) assumed `.persist` always exists; true on the client
+(browser has `localStorage`), false on the very first server render. Fixed
+by treating a missing `.persist` as `hasHydrated: false` (`cartStore.persist?.hasHydrated() ?? false`
+in the `useState` initializer, an early return in the `useEffect`) — the
+semantically correct value for SSR anyway (the cart genuinely hasn't loaded
+yet), and the client-side render naturally takes over once mounted.
+Live-verified: `curl` against a fresh dev server, `/e/30dealee/checkout`
+200s (was 500), full real HTML returned, no error in the server log.
+
 ### Phase 7 — Regalos recibidos ledger + "Agradecer"
 
 **Reference (Figma):**
