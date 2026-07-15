@@ -70,7 +70,7 @@ export default async function DashboardHome() {
         <DashboardHomeSiteLinkCard event={event} />
       ) : (
         <div className="border border-borderDefault bg-gray-50 w-full rounded-lg px-6 py-8">
-          <div className="flex justify-between items-center border-b border-gray-200 pb-6">
+          <div className="flex sm:flex-row flex-col justify-between items-start sm:items-center border-b border-gray-200 pb-6 gap-4">
             <h2 className="text-xl font-medium">
               Completá los campos para publicar la página
             </h2>

@@ -9,8 +9,8 @@ import { getCategories } from '@/actions/data/category';
 import GiftRow from '@/components/dashboard/gift-row';
 import GiftsFilterBar from '@/components/dashboard/gifts-filter-bar';
 import CreateGiftDialog from '@/components/dialog/create-gift-dialog';
+import { PiSquaresFour } from 'react-icons/pi';
 import { IoGiftOutline } from 'react-icons/io5';
-import { PiPackageFill } from 'react-icons/pi';
 import { ChevronLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -41,8 +41,8 @@ export default async function GiftsPage({
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-8 gap-4">
           <div>
             <Link
               href="/wishlist"
@@ -65,14 +65,14 @@ export default async function GiftsPage({
         </div>
 
         <Tabs defaultValue="todos" className="w-full">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <TabsList className="gap-3">
-              <TabsTrigger value="todos" className="gap-2">
+          <div className="flex flex-col lg:flex-row items-center sm:items-start justify-between gap-4 mb-6">
+            <TabsList className="gap-2 sm:gap-3">
+              <TabsTrigger value="todos" className="gap-2 text-xs sm:text-base">
                 <IoGiftOutline className="text-lg" />
                 Todos los productos
               </TabsTrigger>
-              <TabsTrigger value="predefinidas" className="gap-2">
-                <PiPackageFill className="text-lg" />
+              <TabsTrigger value="predefinidas" className="gap-2 text-xs sm:text-base">
+                <PiSquaresFour className="text-lg" />
                 Listas predefinidas
               </TabsTrigger>
             </TabsList>

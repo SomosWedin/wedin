@@ -43,8 +43,8 @@ export default function GiftsFilterBar({ categories }: GiftsFilterBarProps) {
   }, [debouncedUpdateSearch]);
 
   return (
-    <div className="flex items-center gap-3 w-full sm:w-auto">
-      <div className="relative flex-1 sm:w-64">
+    <div className="flex flex-col gap-3 w-full sm:flex-row sm:items-center">
+      <div className="relative w-full">
         <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <Input
           type="text"
@@ -58,16 +58,27 @@ export default function GiftsFilterBar({ categories }: GiftsFilterBarProps) {
         />
       </div>
       <select
-        className="h-10 rounded-md border border-input bg-white px-3 py-2 text-sm"
+        className="h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm sm:w-auto"
         defaultValue={searchParams.get('category') ?? ''}
         onChange={event => updateParam('category', event.target.value)}
+        id="category-filter"
       >
-        <option value="">Categoría</option>
+        <option value="">Categoría: Todas</option>
         {categories.map(category => (
           <option key={category.id} value={category.id}>
             {category.name}
           </option>
         ))}
+      </select>
+      <select
+        className="h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm sm:w-auto"
+        defaultValue={searchParams.get('sort') ?? ''}
+        onChange={event => updateParam('sort', event.target.value)}
+        id="sort-filter"
+      >
+        <option value="">Ordenar por</option>
+        <option value="price-asc">Precio: menor a mayor</option>
+        <option value="price-desc">Precio: mayor a menor</option>
       </select>
     </div>
   );

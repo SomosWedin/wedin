@@ -15,7 +15,7 @@ export default function RegisterPage() {
           className="w-full h-full object-cover"
         />
       </div>
-      <div className="w-4/6 p-10 flex flex-col items-center justify-center max-w-5xl m-auto gap-8">
+      <div className="w-full sm:w-4/6 p-4 sm:p-10 flex flex-col items-center justify-center max-w-5xl m-auto gap-8">
         <div className="flex flex-col gap-6 items-center">
           <Image src={logoImg} alt="Logo" className="w-48" />
           <p className="text-3xl font-semibold text-center text-textPrimary sm:text-5xl">
