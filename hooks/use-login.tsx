@@ -13,6 +13,7 @@ import debounce from 'lodash.debounce';
 export function useLoginForm() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [userExists, setUserExists] = useState(false);
+  const [isCheckingUser, setCheckingUser] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -27,28 +28,28 @@ export function useLoginForm() {
   const mutation = useMutation({
     mutationFn: (values: z.infer<typeof LoginSchema>) =>
       login(values, 'credentials'),
-    onSuccess: data => {},
-    onError: error => {},
+    onSuccess: data => { },
+    onError: error => { },
   });
 
   const checkUser = async (email: string) => {
+    setCheckingUser(true)
     const exists = await checkUserExists(email);
+    setCheckingUser(false)
     if (exists) {
       setUserExists(true);
+      toast({
+        variant: 'success',
+        description: 'Cuenta encontrada',
+      });
+
     } else {
       localStorage.setItem('registerEmail', email);
       toast({
         variant: 'destructive',
         description: `Todavía no tenés una cuenta con ${email}.`,
-        action: (
-          <ToastAction
-            altText="Registrarme"
-            onClick={() => router.push('/register')}
-          >
-            Registrarme
-          </ToastAction>
-        ),
       });
+      router.push('/register')
     }
   };
 
@@ -80,5 +81,6 @@ export function useLoginForm() {
     handleLogin,
     isLoading: mutation.isPending,
     userExists,
+    isCheckingUser,
   };
 }

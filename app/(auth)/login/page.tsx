@@ -32,7 +32,12 @@ export default function LoginPage() {
         </div>
 
         <div className="flex items-center justify-center w-full">
-          <SociaMediaLoginButton provider={'google'}  />
+          <SociaMediaLoginButton provider={'google'} />
+        </div>
+
+
+        <div className="flex items-center justify-center w-full">
+          <SociaMediaLoginButton provider={'facebook'} />
         </div>
 
         <div className="flex items-center justify-center gap-4 w-full text-sm">

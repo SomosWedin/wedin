@@ -84,39 +84,7 @@ export default function RegisterForm() {
               )}
             />
           </div>
-
-          {/* <Button type="submit" variant="success" disabled={isLoading} className='mt-4'>
-            {isLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              'Crear cuenta'
-            )}
-          </Button> */}
-
-          {/* <div className="flex flex-col gap-2">
-            <FormField
-              control={form.control}
-              name="passwordConfirmation"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirma tu contraseña</FormLabel>
-                  <FormControl>
-                    <div className="flex">
-                      <Input
-                        {...field}
-                        type={isPasswordVisible ? 'text' : 'password'}
-                        className="!-mt-1"
-                        placeholder="**********"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
-          </div> */}
         </div>
-
         <AuthFormButton label="Crear cuenta" isLoading={isLoading} />
       </form>
     </Form>

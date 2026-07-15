@@ -1,4 +1,5 @@
 import Google from 'next-auth/providers/google';
+import Facebook from 'next-auth/providers/facebook';
 import type { NextAuthConfig } from 'next-auth';
 
 // Edge-safe config: no Prisma/adapter/DB calls here.
@@ -9,6 +10,11 @@ const authConfig: NextAuthConfig = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      allowDangerousEmailAccountLinking: true,
+    }),
+    Facebook({
+      clientId: process.env.FACEBOOK_CLIENT_ID as string,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET as string,
       allowDangerousEmailAccountLinking: true,
     }),
   ],

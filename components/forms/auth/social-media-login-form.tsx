@@ -2,10 +2,10 @@
 
 import { signIn } from 'next-auth/react';
 import { useState } from 'react';
-import AuthFormButton from './auth-form-button';
+import AuthFormButton, { SocialProvider } from './auth-form-button';
 
 type SocialMediaLoginButtonType = {
-  provider: 'google' | 'facebook';
+  provider: SocialProvider;
   callbackUrl?: string;
 };
 function SociaMediaLoginButton({
@@ -24,7 +24,7 @@ function SociaMediaLoginButton({
   return (
     <AuthFormButton
       variant="socialMediaLogin"
-      label={provider}
+      provider={provider}
       isLoading={isLoading}
       handleSignIn={handleSignIn}
     />

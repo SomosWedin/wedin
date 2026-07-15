@@ -23,6 +23,7 @@ export default function LoginForm() {
     handleLogin,
     isLoading,
     userExists,
+    isCheckingUser
   } = useLoginForm();
   return (
     <Form {...form}>
@@ -50,6 +51,17 @@ export default function LoginForm() {
               )}
             />
           </div>
+
+          {isCheckingUser && (
+            <div
+              className="flex items-center gap-2 text-sm text-textTertiary"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Buscando tu cuenta...</span>
+            </div>
+          )}
 
           {userExists && (
             <>
