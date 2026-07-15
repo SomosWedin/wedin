@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type TransitionStartFunction } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import debounce from 'lodash.debounce';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,13 @@ import type { Category } from '@prisma/client';
 
 type GiftsFilterBarProps = {
   categories: Category[];
+  startTransition?: TransitionStartFunction;
 };
 
-export default function GiftsFilterBar({ categories }: GiftsFilterBarProps) {
+export default function GiftsFilterBar({
+  categories,
+  startTransition,
+}: GiftsFilterBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -29,7 +33,12 @@ export default function GiftsFilterBar({ categories }: GiftsFilterBarProps) {
       params.delete(key);
     }
 
-    router.replace(`${pathname}?${params.toString()}`);
+    const url = `${pathname}?${params.toString()}`;
+    if (startTransition) {
+      startTransition(() => router.replace(url));
+    } else {
+      router.replace(url);
+    }
   };
 
   const debouncedUpdateSearch = useRef(
@@ -43,8 +52,8 @@ export default function GiftsFilterBar({ categories }: GiftsFilterBarProps) {
   }, [debouncedUpdateSearch]);
 
   return (
-    <div className="flex flex-col gap-3 w-full sm:flex-row sm:items-center">
-      <div className="relative w-full">
+    <div className="flex flex-col justify-start lg:justify-end gap-3 w-full sm:flex-row sm:items-center">
+      <div className="relative w-full max-w-[unset] lg:max-w-64">
         <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <Input
           type="text"
