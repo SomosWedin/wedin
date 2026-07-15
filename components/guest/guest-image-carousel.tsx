@@ -12,8 +12,11 @@ type GuestImageCarouselProps = {
   images: ImageModel[];
 };
 
+const SWIPE_THRESHOLD_PX = 40;
+
 export default function GuestImageCarousel({ images }: GuestImageCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const visibleImages = images.filter(image => !!image.url);
   const showControls = visibleImages.length > 1;
 
@@ -23,6 +26,22 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
     );
   const goToNext = () =>
     setActiveIndex(previous => (previous + 1) % visibleImages.length);
+
+  const handleTouchStart = (event: React.TouchEvent) => {
+    setTouchStartX(event.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent) => {
+    if (touchStartX === null || !showControls) return;
+
+    const deltaX = event.changedTouches[0].clientX - touchStartX;
+    if (deltaX <= -SWIPE_THRESHOLD_PX) {
+      goToNext();
+    } else if (deltaX >= SWIPE_THRESHOLD_PX) {
+      goToPrevious();
+    }
+    setTouchStartX(null);
+  };
 
   // Restarting the interval on every `activeIndex` change means a manual
   // chevron/dot click also resets the 5s countdown, instead of the
@@ -43,7 +62,11 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
   }
 
   return (
-    <div className="overflow-hidden relative w-full h-full rounded-2xl shadow-inner">
+    <div
+      className="overflow-hidden relative w-full h-full rounded-2xl shadow-inner touch-pan-y"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <div
         className="flex h-full transition-transform duration-700 ease-in-out"
         style={{ transform: `translateX(-${activeIndex * 100}%)` }}

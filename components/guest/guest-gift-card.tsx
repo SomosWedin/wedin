@@ -41,9 +41,17 @@ export default function GuestGiftCard({
   );
   const isComplete =
     wishlistGift.isFullyPaid || (priceValue > 0 && remaining <= 0);
+  const isCardClickable = wishlistGift.isGroupGift && !isComplete;
 
   return (
-    <div className="flex flex-col gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm justify-between bg-gray-50">
+    <div
+      className={`flex flex-col gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm justify-between bg-gray-50 ${isCardClickable ? 'cursor-pointer' : ''}`}
+      onClick={
+        isCardClickable
+          ? () => onOpenContributionDialog(wishlistGift)
+          : undefined
+      }
+    >
       <div className="relative overflow-hidden w-full bg-gray-100 rounded-lg aspect-square">
         {gift.image?.url ? (
           <Image
@@ -101,7 +109,10 @@ export default function GuestGiftCard({
       {wishlistGift.isGroupGift ? (
         <Button
           className={`gap-1 justify-between text-xs bg-gray-100 hover:bg-gray-200 transition-colors sm:gap-2 sm:text-sm ${isComplete ? 'bg-success/10 text-success' : ''}`}
-          onClick={() => onOpenContributionDialog(wishlistGift)}
+          onClick={event => {
+            event.stopPropagation();
+            onOpenContributionDialog(wishlistGift);
+          }}
           disabled={isComplete}
         >
           {isComplete ? 'Regalo recibido' : 'Seleccionar monto'}
