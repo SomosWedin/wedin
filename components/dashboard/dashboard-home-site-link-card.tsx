@@ -50,6 +50,8 @@ export default function DashboardHomeSiteLinkCard({
     }
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
   return (
     <div className="border border-borderDefault bg-gray-50 w-full rounded-lg px-6 py-8 flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4 border-b border-gray-200 pb-6">
@@ -115,7 +117,7 @@ export default function DashboardHomeSiteLinkCard({
 
         <div className="flex gap-3">
           <Button variant="outline" className="gap-2" onClick={handleShare}>
-            Copiar link de tu sitio
+            {isMobile ? 'Copiar link' : 'Copiar link de tu sitio'}
             <IoLinkOutline className="text-lg" />
           </Button>
           <Link href={`/e/${event.url}`} target="_blank" rel="noopener noreferrer">

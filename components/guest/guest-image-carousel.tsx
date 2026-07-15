@@ -6,7 +6,7 @@ import type { Image as ImageModel } from '@prisma/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { IoGiftOutline } from 'react-icons/io5';
 
-const AUTO_SLIDE_INTERVAL_MS = 5000;
+const AUTO_SLIDE_INTERVAL_MS = 3000;
 
 type GuestImageCarouselProps = {
   images: ImageModel[];
@@ -43,9 +43,6 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
     setTouchStartX(null);
   };
 
-  // Restarting the interval on every `activeIndex` change means a manual
-  // chevron/dot click also resets the 5s countdown, instead of the
-  // auto-advance firing right on top of it.
   useEffect(() => {
     if (!showControls) return;
 
@@ -84,7 +81,6 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
         ))}
       </div>
 
-      {/* Bottom gradient so the dots stay legible over any photo */}
       <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
 
       {showControls && (

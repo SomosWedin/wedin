@@ -16,7 +16,7 @@ import { getGiftProgress } from '@/components/guest/gift-progress';
 import type { Category } from '@prisma/client';
 
 type TypeFilter = 'todos' | 'individual' | 'grupal';
-type SortOption = 'recientes' | 'precio-asc' | 'precio-desc';
+type SortOption = 'recent' | 'price-asc' | 'price-desc';
 
 type GuestGiftCatalogProps = {
   eventId: string;
@@ -42,7 +42,7 @@ export default function GuestGiftCatalog({
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [sort, setSort] = useState<SortOption>('recientes');
+  const [sort, setSort] = useState<SortOption>('recent');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedWishlistGift, setSelectedWishlistGift] =
     useState<WishlistGiftWithGift | null>(null);
@@ -131,8 +131,8 @@ export default function GuestGiftCatalog({
       return matchesType && matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
-      if (sort === 'precio-asc') return Number(a.gift.price) - Number(b.gift.price);
-      if (sort === 'precio-desc') return Number(b.gift.price) - Number(a.gift.price);
+      if (sort === 'price-asc') return Number(a.gift.price) - Number(b.gift.price);
+      if (sort === 'price-desc') return Number(b.gift.price) - Number(a.gift.price);
       return 0;
     });
 
@@ -199,9 +199,9 @@ export default function GuestGiftCatalog({
             value={sort}
             onChange={event => setSort(event.target.value as SortOption)}
           >
-            <option value="recientes">Ordenar por</option>
-            <option value="precio-asc">Precio: menor a mayor</option>
-            <option value="precio-desc">Precio: mayor a menor</option>
+            <option value="recent">Ordenar por</option>
+            <option value="price-asc">Precio: menor a mayor</option>
+            <option value="price-desc">Precio: mayor a menor</option>
           </select>
         </div>
       </div>

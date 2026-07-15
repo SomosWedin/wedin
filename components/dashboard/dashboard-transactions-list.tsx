@@ -132,7 +132,7 @@ export default function DashboardTransactionsList({
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-24">
+      <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-[unset] sm:max-h-24">
         <div className="flex flex-col gap-1 p-6 w-full justify-center">
           <h2 className="text-lg font-bold">
             Resúmen de los regalos recibidos

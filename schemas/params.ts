@@ -29,6 +29,7 @@ export const GetGiftsParams = z
     itemsPerPage: z.number().optional(),
     page: z.string().optional(),
     name: z.string().optional(),
+    sort: z.enum(['price-asc', 'price-desc']).optional(),
   })
   .refine(
     data => {
