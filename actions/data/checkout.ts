@@ -1,6 +1,6 @@
 'use server';
 
-import { createPayment } from '@/lib/dlocal';
+import { createOrder } from '@/lib/pagopar';
 import prismaClient from '@/prisma/client';
 import { GuestCheckoutSchema } from '@/schemas/checkout';
 import type { z } from 'zod';
@@ -27,7 +27,8 @@ export async function createTransactionsForCart(
     return { error: 'Tu carrito está vacío.' };
   }
 
-  const { payerName, payerEmail, paymentMethod } = validatedPayer.data;
+  const { payerName, payerEmail, payerDocument, paymentMethod } =
+    validatedPayer.data;
 
   const wishlistGifts = await prismaClient.wishlistGift.findMany({
     where: { id: { in: cartItems.map(item => item.wishlistGiftId) } },
@@ -74,6 +75,7 @@ export async function createTransactionsForCart(
             amount: item.amount,
             payerName,
             payerEmail,
+            payerDocument,
             paymentMethod,
             payerRole: 'INVITEE',
             payeeRole: 'ORGANIZER',
@@ -90,7 +92,7 @@ export async function createTransactionsForCart(
   }
 }
 
-export async function createDlocalCheckoutSession(
+export async function createPagoparCheckoutSession(
   eventSlug: string,
   transactions: { id: string; amount: string }[]
 ) {
@@ -99,37 +101,57 @@ export async function createDlocalCheckoutSession(
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const orderId = transactions.map(transaction => transaction.id).join(',');
   const total = transactions.reduce(
     (sum, transaction) => sum + Number(transaction.amount),
     0
   );
-  const orderId = transactions.map(transaction => transaction.id).join(',');
 
-  const payment = await createPayment({
-    amount: total,
-    currency: 'PYG',
-    country: 'PY',
-    orderId,
-    description: 'Regalo de boda',
-    successUrl: `${appUrl}/e/${eventSlug}/checkout/success`,
-    backUrl: `${appUrl}/e/${eventSlug}/checkout`,
-    notificationUrl: `${appUrl}/api/webhooks/dlocal`,
+  const fullTransactions = await prismaClient.transaction.findMany({
+    where: { id: { in: transactions.map(transaction => transaction.id) } },
+    include: { wishlistGift: { include: { gift: true } } },
   });
 
-  if ('error' in payment) {
+  if (fullTransactions.length !== transactions.length) {
     await markTransactionsFailed(transactions.map(transaction => transaction.id));
-    return { error: payment.error };
+    return { error: 'Una de las transacciones ya no está disponible.' };
+  }
+
+  const [payer] = fullTransactions;
+
+  const order = await createOrder({
+    orderId,
+    totalAmount: total,
+    description: 'Regalo de boda',
+    payer: {
+      name: payer.payerName || '',
+      email: payer.payerEmail || '',
+      documento: payer.payerDocument || '',
+    },
+    items: fullTransactions.map(transaction => ({
+      name: transaction.wishlistGift.gift.name,
+      amount: Number(transaction.amount),
+    })),
+  });
+
+  if ('error' in order) {
+    await markTransactionsFailed(transactions.map(transaction => transaction.id));
+    return { error: order.error };
   }
 
   try {
     await prismaClient.transaction.updateMany({
       where: { id: { in: transactions.map(transaction => transaction.id) } },
-      data: { dlocalPaymentId: payment.success.id, status: 'PENDING' },
+      data: { pagoparHash: order.success.hash, status: 'PENDING' },
     });
 
-    return { success: true, redirectUrl: payment.success.redirect_url };
+    const redirectUrl = order.success.hash.startsWith('STUB-')
+      ? `${appUrl}/checkout/pagopar/result/${order.success.hash}?stub=1`
+      : `https://www.pagopar.com/pagos/${order.success.hash}`;
+
+    return { success: true, redirectUrl };
   } catch (error) {
-    console.error('Error persisting dLocal payment id:', error);
+    console.error('Error persisting Pagopar order hash:', error);
     await markTransactionsFailed(transactions.map(transaction => transaction.id));
     return { error: getErrorMessage(error) };
   }

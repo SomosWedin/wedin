@@ -86,6 +86,8 @@ export default function CheckoutForm({
     }
   }, [hasHydrated, cartItems, eventSlug, router]);
 
+  const paymentMethod = form.watch('paymentMethod');
+
   if (!hasHydrated || !cartItems || cartItems.length === 0) return null;
 
   const total = cartItems.reduce(
@@ -129,6 +131,22 @@ export default function CheckoutForm({
               </FormItem>
             )}
           />
+
+          {paymentMethod === 'CARD' && (
+            <FormField
+              control={form.control}
+              name="payerDocument"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cédula de identidad</FormLabel>
+                  <FormControl>
+                    <Input placeholder="1234567" {...field} />
+                  </FormControl>
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         <div className="order-1 flex flex-col gap-6 md:order-2">

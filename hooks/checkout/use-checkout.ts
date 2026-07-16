@@ -5,7 +5,7 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
-  createDlocalCheckoutSession,
+  createPagoparCheckoutSession,
   createTransactionsForCart,
 } from '@/actions/data/checkout';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +31,12 @@ export function useCheckout({
   const form = useForm<z.infer<typeof GuestCheckoutSchema>>({
     resolver: zodResolver(GuestCheckoutSchema),
     mode: 'onTouched',
-    defaultValues: { payerName: '', payerEmail: '', paymentMethod: 'CARD' },
+    defaultValues: {
+      payerName: '',
+      payerEmail: '',
+      payerDocument: '',
+      paymentMethod: 'CARD',
+    },
   });
   const { isValid } = form.formState;
 
@@ -69,7 +74,7 @@ export function useCheckout({
       return;
     }
 
-    const sessionResponse = await createDlocalCheckoutSession(
+    const sessionResponse = await createPagoparCheckoutSession(
       eventSlug,
       transactionsResponse.success.map(transaction => ({
         id: transaction.id,

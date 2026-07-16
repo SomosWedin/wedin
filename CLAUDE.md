@@ -30,12 +30,20 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
 - **Monto libre** — open-ended cash gift, no fixed price.
 
 ### Payments & transactions
-- `Transaction.paymentMethod: PaymentMethod` — `CARD` (dLocal Go hosted
-  checkout, `lib/dlocal.ts`) or `BANK_TRANSFER` (manual: guest sees Wedin's
+- `Transaction.paymentMethod: PaymentMethod` — `CARD` (Pagopar hosted
+  checkout, `lib/pagopar.ts`) or `BANK_TRANSFER` (manual: guest sees Wedin's
   own bank account + a WhatsApp link to send proof, staff confirm by hand).
-  There's no per-gateway processor field — only dLocal is implemented today,
-  re-add one if/when a second card gateway actually exists (don't build it
-  ahead of need).
+  There's no per-gateway processor field — only Pagopar is implemented
+  today, re-add one if/when a second card gateway actually exists (don't
+  build it ahead of need). Pagopar replaced dLocal Go entirely (2026-07-16)
+  — dLocal was never actually live (no real sandbox credentials were ever
+  configured), so this was a clean swap, not a cutover with in-flight
+  payments. Pagopar's redirect/webhook URLs are configured once in its
+  dashboard for the whole merchant account, not per-request like dLocal's
+  were — see `app/checkout/pagopar/result/[hash]/page.tsx` for why a
+  hash-keyed landing route exists instead of reusing
+  `app/e/[slug]/checkout/success/page.tsx` (still used by `BANK_TRANSFER`,
+  which never leaves the app).
 - `Transaction.status` lifecycle: `OPEN` (card, pre-session) / `PENDING`
   (card, session created; or a submitted bank transfer awaiting proof) →
   `COMPLETED` or `FAILED`. All status changes go through
@@ -43,11 +51,11 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
   single place that writes `TransactionStatusLog` and recomputes
   `WishlistGift.isFullyPaid`/`groupGiftParts`; never update
   `Transaction.status` directly.
-- **`CARD` transactions should only ever be completed by the dLocal
-  webhook** (`app/api/webhooks/dlocal/route.ts`), never by a human — a
+- **`CARD` transactions should only ever be completed by the Pagopar
+  webhook** (`app/api/webhooks/pagopar/route.ts`), never by a human — a
   `COMPLETED` status is what makes a gift look funded and counts toward the
   couple's withdrawable wallet balance (Phase 8's `getEventBalance`), and
-  nothing reconciles that against what dLocal actually processed. This is
+  nothing reconciles that against what Pagopar actually processed. This is
   currently a convention, not an enforced guard — `/admin`'s status editor
   (see below) doesn't yet block it. `BANK_TRANSFER` transactions have no
   automated path to `COMPLETED` at all; that's the one case staff are

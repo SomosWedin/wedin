@@ -1313,3 +1313,76 @@ site work).
   conventions), `components/forms/common/price-input.tsx` (masked Gs.
   input), `components/dashboard/gifts-filter-bar.tsx` (URL-searchParams
   filter bar pattern), `app/not-found.tsx` (custom 404, now exists)
+## Phase 6 pivot — dLocal Go → Pagopar (2026-07-16)
+
+**Status: ✅ Done.** Phase 6 above was built and planned against dLocal Go,
+but dLocal was never actually live in this environment — `.env` never had
+`DLOCAL_GO_API_KEY`/`DLOCAL_GO_SECRET_KEY` set, so the app only ever ran
+in dLocal's stub mode. The organizer got a real, working Pagopar merchant
+account and asked to swap the `CARD` gateway from dLocal to Pagopar
+entirely (not add it as a second option). Because dLocal was never live,
+this was a clean swap with no in-flight-payment cutover risk.
+
+Sandbox spike findings (verified live against `api.pagopar.com` with real
+staging credentials, not assumed from docs alone):
+- Auth is per-request, not a header: `token = sha1(private_key + <context
+  string>)` embedded in the body — `iniciar-transaccion` uses `private_key
+  + id_pedido_comercio + monto_total` (monto as a plain integer string, no
+  decimals — decimal-suffixed variants produced a token mismatch);
+  `traer` (status query) uses `private_key + "CONSULTA"`; the webhook uses
+  `private_key + hash_pedido`.
+- One base URL (`api.pagopar.com`) for both staging and production —
+  which environment is active is a dashboard toggle on the merchant
+  account, not a URL switch like dLocal's `api-sbx.` vs `api.`.
+- Redirect ("URL DE REDIRECCIONAMIENTO") and webhook ("URL DE RESPUESTA")
+  URLs are configured once in Pagopar's dashboard for the whole merchant
+  account, not per-request — the single biggest architectural difference
+  from dLocal. This is why `app/checkout/pagopar/result/[hash]/page.tsx`
+  exists as a new top-level route: it can't be nested under
+  `/e/[slug]/checkout/...` since the slug isn't known until the hash is
+  looked up, and it has to distinguish success from cancelled itself since
+  Pagopar redirects to the same URL either way.
+- `comprador.documento`/`tipo_documento: "CI"` are genuinely required —
+  `GuestCheckoutSchema` gained a conditional `payerDocument` field
+  (required only for `CARD`, since `BANK_TRANSFER` never calls Pagopar).
+  `comprador.telefono` is not required.
+- `compras_items[].categoria: 4` ("productos y servicios virtuales") is
+  the correct category for a cash-gift contribution — this is exactly the
+  permission Pagopar had to enable on the merchant account by hand
+  (`soporte.pagopar.com/portal/es/kb/articles/habilitar-permisos`); before
+  that was granted, both categoria 4 and 5 returned "Tu comercio no se
+  encuentra habilitado para ofrecer servicios o productos virtuales."
+  Physical-goods categories worked but pull in real courier/shipping
+  fields — not a fit, ruled out as a workaround.
+- The webhook payload includes `pagado`/`cancelado` directly, but the
+  token only authenticates `hash_pedido`, not those fields — kept the
+  fetch-then-update discipline from the dLocal webhook (query `traer` for
+  the authoritative status) rather than trusting the payload body.
+- Webhook response contract: must return HTTP 200 with the received
+  `resultado` array echoed back verbatim on every successfully-processed
+  branch (including "still pending, no status change"), or Pagopar retries
+  every ~10 min. `app/api/webhooks/pagopar/route.ts` only withholds the
+  200 when it genuinely wants a retry (status-fetch failure, DB error) —
+  malformed payload/bad token get 400/401 instead, no retry expected.
+- Real webhook delivery can't reach `localhost` — Pagopar's dashboard has
+  one fixed "URL DE RESPUESTA" for the whole account, and the org's Vercel
+  preview deployment for this branch became the real target once it
+  existed, unblocking genuine end-to-end webhook testing without a tunnel.
+  Pagopar's dashboard also ships a "Simular pago del último pedido" button
+  in staging that fires a real webhook call to whatever URL DE RESPUESTA
+  is configured — the actual mechanism used to verify the webhook route
+  live, not a hand-constructed payload.
+
+Implementation: `lib/pagopar.ts` (replaces `lib/dlocal.ts`, same
+module-scope-config-from-env/no-abstraction-layer/stub-mode conventions —
+`createOrder`, `getOrderStatus`, `verifyWebhookToken`) ·
+`prisma/schema.prisma` (`Transaction.dlocalPaymentId` →
+`Transaction.pagoparHash`, added `Transaction.payerDocument`) ·
+`actions/data/checkout.ts` (`createDlocalCheckoutSession` →
+`createPagoparCheckoutSession`, now builds `compras_items` from the cart's
+gift names instead of one lump sum) · `app/api/webhooks/pagopar/route.ts`
+(replaces `app/api/webhooks/dlocal/route.ts`) ·
+`app/checkout/pagopar/result/[hash]/page.tsx` (new) ·
+`schemas/checkout.ts` + `components/checkout/checkout-form.tsx` +
+`hooks/checkout/use-checkout.ts` (conditional CI field) · `lib/dlocal.ts`
+and `app/api/webhooks/dlocal/route.ts` deleted.
