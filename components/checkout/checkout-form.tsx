@@ -141,7 +141,15 @@ export default function CheckoutForm({
                 <FormItem>
                   <FormLabel>Cédula de identidad</FormLabel>
                   <FormControl>
-                    <Input placeholder="1234567" {...field} />
+                    <Input
+                      placeholder="1234567"
+                      inputMode="numeric"
+                      maxLength={10}
+                      {...field}
+                      onChange={e =>
+                        field.onChange(e.target.value.replace(/\D/g, ''))
+                      }
+                    />
                   </FormControl>
                   <FormMessage className="font-normal text-red-600" />
                 </FormItem>

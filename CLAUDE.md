@@ -70,10 +70,6 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
 - evento → the wedding/event
 - listas predefinidas / `Giftlist` → pre-built gift bundles/categories
 
-### Current implementation state
-For what's done vs. missing and the build sequence for the guest
-checkout/wallet loop, see `plan-ultraplan.md`.
-
 ### Staff-only access (`/admin`)
 Gated on `User.role === 'ADMIN'` (`UserType` enum). Staff accounts are
 flagged by hand in the DB (`yarn prisma studio`) — there's no self-serve

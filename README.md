@@ -1,7 +1,6 @@
 Wedin — a wedding gift-list / cash-registry web app (Next.js App Router).
 See `CLAUDE.md` for the product overview, stack, conventions, and current
-implementation state; `plan-ultraplan.md` for the build history and status
-of the guest checkout/wallet loop.
+implementation state.
 
 ## Getting Started
 

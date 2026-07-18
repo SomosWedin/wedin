@@ -15,6 +15,17 @@ This plan sequences the work to make the guest → payment → wallet loop real,
 using **dLocal Go** as the payment gateway and **true guest checkout**
 (name/email only, no account).
 
+**Branch/repo housekeeping note (added 2026-07-18, applies retroactively to
+every phase below)**: every `base docs/guest-checkout-wallet-plan` /
+`github.com/wedin-app/wedin/compare/...` reference in this doc (Phases 4, 5,
+6, 8) points at the repo's pre-migration remote. The repo has since moved
+from `wedin-app/wedin` to `SomosWedin/wedin`; `docs/guest-checkout-wallet-plan`
+only still exists on the old remote (kept locally as `old-origin`) and isn't
+a real base branch anymore — the actual base is `dev`. Treat those links as
+historical/dead rather than updating each one individually. `feature/guest-checkout`
+itself is live: **PR #5**, https://github.com/SomosWedin/wedin/pull/5,
+`feature/guest-checkout` → `dev`, open since 2026-07-15.
+
 Every fact below was independently re-verified by reading the current code
 in this session (not carried over from an earlier draft): `prisma/schema.prisma`,
 `middleware.ts`, `lib/routes.ts`, `actions/data/event.ts`, `actions/data/gift.ts`,
@@ -767,9 +778,12 @@ exercised.
   double-submitting the same webhook payload manually confirms
   idempotency.
 
-**Status: 🟡 Built, real sandbox credentials still not exercised**, on
-`feature/guest-checkout` → base `docs/guest-checkout-wallet-plan`,
-https://github.com/wedin-app/wedin/compare/docs/guest-checkout-wallet-plan...feature/guest-checkout?expand=1.
+**Status: ✅ Built, and since superseded — the payment gateway itself was
+swapped from dLocal Go to Pagopar (2026-07-16) before dLocal credentials
+were ever exercised; see "Phase 6 pivot" below for the live-verified Pagopar
+integration** (originally "🟡 real sandbox credentials still not exercised,"
+which described dLocal, not Pagopar). On `feature/guest-checkout` → `dev`
+(see branch/repo housekeeping note above).
 Delivered as planned: `schemas/checkout.ts`, `actions/data/checkout.ts`
 (`createTransactionsForCart`, `createDlocalCheckoutSession`, plus a new
 `getCheckoutTransactions` not in the original plan text — reads back the
@@ -948,9 +962,12 @@ client could call it directly as a server action with someone else's
 `eventId` and read that event's full transaction ledger (payer names,
 emails, amounts). Not touched in this pass; flagged for a future one.
 
-**Git state**: `feature/guest-checkout` → base `docs/guest-checkout-wallet-plan`,
-https://github.com/wedin-app/wedin/compare/docs/guest-checkout-wallet-plan...feature/guest-checkout?expand=1,
-pushed through commit `f6da8a2`. Not yet opened as a PR.
+**Git state**: `feature/guest-checkout` → `dev` (see branch/repo housekeeping
+note above), pushed through commit `f6da8a2` at the time this was written.
+**Correction (2026-07-18)**: this is now open as **PR #5**,
+https://github.com/SomosWedin/wedin/pull/5, and has had substantially more
+work land on top since (Pagopar pivot, forma_pago changes, route-protection
+fix, mobile checkout redirect fix — see the trailing sections of this doc).
 
 **Stale-enum data bug found live, fixed**: after pushing, `/admin` showed
 "Sin transacciones" despite the dev DB having 26 real `Transaction` rows —
@@ -1386,3 +1403,69 @@ gift names instead of one lump sum) · `app/api/webhooks/pagopar/route.ts`
 `schemas/checkout.ts` + `components/checkout/checkout-form.tsx` +
 `hooks/checkout/use-checkout.ts` (conditional CI field) · `lib/dlocal.ts`
 and `app/api/webhooks/dlocal/route.ts` deleted.
+
+## Post-pivot fixes (2026-07-16 to 2026-07-18)
+
+Four more real, live-found issues landed on `feature/guest-checkout` after
+the Pagopar pivot above, none previously logged in this doc.
+
+**`forma_pago:9` forced, then reverted (commits `1135945`, `48c0d4e`)**:
+after the pivot, Pagopar's hosted checkout was still showing its own
+QR/billetera/transferencia/efectivo picker instead of going straight to
+card — confirmed via `traer` that orders already defaulted to `forma_pago 9`
+(Bancard, the Visa/Mastercard/Amex processor), so `lib/pagopar.ts` was
+changed to send `forma_pago: 9` explicitly in `iniciar-transaccion`, forcing
+card-only and skipping Pagopar's picker (which would otherwise bypass
+Wedin's own bank-transfer confirmation flow). This turned out not to be the
+actual fix — card payments started working once Pagopar enabled the card
+processor on the merchant account itself, unrelated to `forma_pago`. Reverted
+two days later: `forma_pago: 9` removed from `lib/pagopar.ts`, and a `TODO`
+left in `actions/data/checkout.ts` (`createPagoparCheckoutSession`) noting
+that restricting the payment-method picker at redirect time (e.g.
+`?forma_pago=<id>`) needs Pagopar support to confirm it's a supported,
+approved parameter for this account before trying again — not something to
+silently re-add.
+
+**Route-protection gap found and fixed (commit `2bf31e5`)**: `lib/routes.ts`'s
+`publicRoutes` still had pre-guest-checkout paths (`/gifts`, `/events`,
+`/giftlists`, `/`) that no longer matched the app's real routing, and
+`/gifts` (the couple's dashboard gift catalog) was missing from
+`protectedRoutes` entirely — reachable while logged out. Fixed: `/gifts`
+moved into `protectedRoutes`; `publicRoutes` now just `['/e', '/email-verfiy']`.
+**This also further corrects the "Verified facts" section's claim above**
+that `isPublicRoute` is "computed and never read again" in `middleware.ts` —
+that's now stale in the other direction: current `middleware.ts` doesn't
+compute `isPublicRoute` at all anymore (not imported, not referenced), so
+`publicRoutes` has no runtime effect either way today; only
+`protectedRoutes`/`adminRoutes`/`authRoutes`/`onboardingRoute` (exact-string
+match) are enforced. Keep `publicRoutes` accurate anyway (as this fix did)
+since it's the array a future middleware change would naturally wire back up.
+
+**Mobile (iOS Safari) checkout redirect race, found and fixed (commit
+`23728a9`)**: guests on iPhone reported that after paying on Pagopar's
+hosted checkout, "Confirmar compra" redirected back to the event's store
+page (`/e/{slug}`) instead of to Pagopar — reproducible only on real
+iOS Safari, not desktop Chrome or Chrome's device-emulation mode (still V8
+under the hood). Root cause: `hooks/checkout/use-checkout.ts`'s `onSubmit`
+clears the cart (`onCheckoutStarted()` → `cartStore.getState().clear()`)
+immediately before setting `window.location.href` to the Pagopar redirect
+URL — but `components/checkout/checkout-form.tsx` also has an effect that
+bounces the guest to `/e/{slug}` whenever the cart is empty (originally
+meant only for a guest who lands on `/checkout` with nothing in cart).
+Clearing the cart to start checkout armed that same effect, racing the
+external Pagopar navigation. Cross-origin navigations initiated this late
+(two `await`s removed from the tap's synchronous gesture context) are
+apparently deprioritized by iOS Safari relative to Chrome, letting the
+internal `router.replace` win. Fixed by gating both the bounce effect and
+the render bail-out on the existing `loading` state
+(`checkout-form.tsx:83-92`), so no competing internal navigation can exist
+while a Pagopar/bank-transfer redirect is in flight, regardless of browser
+navigation-scheduling differences. Verified live on a real iPhone 12 Pro
+against the Vercel preview deploy for this branch.
+
+**Cédula input accepted non-numeric characters**: `payerDocument`'s Zod
+schema (`schemas/checkout.ts`) already validated `^\d{5,10}$`, but the raw
+`Input` in `checkout-form.tsx` let a guest type letters, only rejected on
+blur/submit. Fixed by stripping non-digits on every `onChange`
+(`e.target.value.replace(/\D/g, '')`), capping `maxLength={10}`, and adding
+`inputMode="numeric"` for a numeric mobile keyboard.
