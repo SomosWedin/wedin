@@ -81,14 +81,15 @@ export default function CheckoutForm({
   }, [cartStore]);
 
   useEffect(() => {
-    if (hasHydrated && cartItems && cartItems.length === 0) {
+    if (hasHydrated && cartItems && cartItems.length === 0 && !loading) {
       router.replace(`/e/${eventSlug}`);
     }
-  }, [hasHydrated, cartItems, eventSlug, router]);
+  }, [hasHydrated, cartItems, eventSlug, router, loading]);
 
   const paymentMethod = form.watch('paymentMethod');
 
-  if (!hasHydrated || !cartItems || cartItems.length === 0) return null;
+  if (!hasHydrated || !cartItems) return null;
+  if (cartItems.length === 0 && !loading) return null;
 
   const total = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
