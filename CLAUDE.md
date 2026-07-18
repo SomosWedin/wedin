@@ -41,9 +41,11 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
   payments. Pagopar's redirect/webhook URLs are configured once in its
   dashboard for the whole merchant account, not per-request like dLocal's
   were — see `app/checkout/pagopar/result/[hash]/page.tsx` for why a
-  hash-keyed landing route exists instead of reusing
-  `app/e/[slug]/checkout/success/page.tsx` (still used by `BANK_TRANSFER`,
-  which never leaves the app).
+  hash-keyed landing route exists instead of reusing a slug-scoped one.
+  `BANK_TRANSFER` never leaves the app either, but lands on
+  `app/e/[slug]/checkout/transfer/page.tsx` (bank details + WhatsApp proof
+  link), not a separate success page — an earlier `checkout/success/page.tsx`
+  was dead code (never linked to) and was deleted.
 - `Transaction.status` lifecycle: `OPEN` (card, pre-session) / `PENDING`
   (card, session created; or a submitted bank transfer awaiting proof) →
   `COMPLETED` or `FAILED`. All status changes go through
