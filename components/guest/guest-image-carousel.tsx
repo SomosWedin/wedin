@@ -6,6 +6,7 @@ import type { Image as ImageModel } from '@prisma/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { IoGiftOutline } from 'react-icons/io5';
 import Autoplay from 'embla-carousel-autoplay';
+import { cn } from '@/lib/utils';
 import {
   Carousel,
   CarouselContent,
@@ -17,9 +18,13 @@ const AUTO_SLIDE_INTERVAL_MS = 3000;
 
 type GuestImageCarouselProps = {
   images: ImageModel[];
+  className?: string;
 };
 
-export default function GuestImageCarousel({ images }: GuestImageCarouselProps) {
+export default function GuestImageCarousel({
+  images,
+  className,
+}: GuestImageCarouselProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const visibleImages = images.filter(image => !!image.url);
@@ -39,7 +44,12 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
 
   if (visibleImages.length === 0) {
     return (
-      <div className="flex justify-center items-center w-full h-full bg-gray-100 rounded-2xl shadow-inner">
+      <div
+        className={cn(
+          'flex justify-center items-center w-full h-full bg-gray-100 rounded-2xl shadow-inner',
+          className
+        )}
+      >
         <IoGiftOutline className="text-6xl text-gray-300" />
       </div>
     );
@@ -54,7 +64,10 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
           ? [Autoplay({ delay: AUTO_SLIDE_INTERVAL_MS, stopOnInteraction: false })]
           : []
       }
-      className="overflow-hidden relative w-full h-full rounded-2xl shadow-inner"
+      className={cn(
+        'overflow-hidden relative w-full h-full rounded-2xl shadow-inner',
+        className
+      )}
     >
       <CarouselContent className="ml-0 h-full">
         {visibleImages.map((image, index) => (
