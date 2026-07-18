@@ -11,7 +11,7 @@ export default function GuestLayout({
   return (
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-100">
-        <div className="flex justify-between items-center px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center px-4 py-3 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <Link href="/" className="flex gap-1 items-center text-wedinMain">
             <Image src={wedinIcon} alt="wedin icon" width={36} />
             <span className="text-xl font-bold">wedin</span>
