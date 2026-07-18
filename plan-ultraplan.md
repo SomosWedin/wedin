@@ -1409,23 +1409,6 @@ and `app/api/webhooks/dlocal/route.ts` deleted.
 Four more real, live-found issues landed on `feature/guest-checkout` after
 the Pagopar pivot above, none previously logged in this doc.
 
-**`forma_pago:9` forced, then reverted (commits `1135945`, `48c0d4e`)**:
-after the pivot, Pagopar's hosted checkout was still showing its own
-QR/billetera/transferencia/efectivo picker instead of going straight to
-card — confirmed via `traer` that orders already defaulted to `forma_pago 9`
-(Bancard, the Visa/Mastercard/Amex processor), so `lib/pagopar.ts` was
-changed to send `forma_pago: 9` explicitly in `iniciar-transaccion`, forcing
-card-only and skipping Pagopar's picker (which would otherwise bypass
-Wedin's own bank-transfer confirmation flow). This turned out not to be the
-actual fix — card payments started working once Pagopar enabled the card
-processor on the merchant account itself, unrelated to `forma_pago`. Reverted
-two days later: `forma_pago: 9` removed from `lib/pagopar.ts`, and a `TODO`
-left in `actions/data/checkout.ts` (`createPagoparCheckoutSession`) noting
-that restricting the payment-method picker at redirect time (e.g.
-`?forma_pago=<id>`) needs Pagopar support to confirm it's a supported,
-approved parameter for this account before trying again — not something to
-silently re-add.
-
 **Route-protection gap found and fixed (commit `2bf31e5`)**: `lib/routes.ts`'s
 `publicRoutes` still had pre-guest-checkout paths (`/gifts`, `/events`,
 `/giftlists`, `/`) that no longer matched the app's real routing, and

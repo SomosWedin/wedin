@@ -5,6 +5,7 @@ import prismaClient from '@/prisma/client';
 import { GuestCheckoutSchema } from '@/schemas/checkout';
 import type { z } from 'zod';
 import { getErrorMessage } from '../helper';
+import { getEventByUrl } from './public-event';
 import { applyTransactionStatusChange } from './transaction';
 
 export type CheckoutCartItem = {
@@ -31,12 +32,18 @@ export async function createTransactionsForCart(
     validatedPayer.data;
 
   const wishlistGifts = await prismaClient.wishlistGift.findMany({
-    where: { id: { in: cartItems.map(item => item.wishlistGiftId) } },
+    where: {
+      id: { in: cartItems.map(item => item.wishlistGiftId) },
+      eventId,
+      isReceived: false,
+    },
     include: {
       gift: true,
-      transactions: { where: { status: 'COMPLETED' } },
+      transactions: { where: { status: { in: ['OPEN', 'PENDING', 'COMPLETED'] } } },
     },
   });
+
+  const seenIndividualGiftIds = new Set<string>();
 
   for (const item of cartItems) {
     const wishlistGift = wishlistGifts.find(
@@ -51,17 +58,23 @@ export async function createTransactionsForCart(
     const price = Number(wishlistGift.gift.price) || 0;
 
     if (wishlistGift.isGroupGift) {
-      const contributed = wishlistGift.transactions.reduce(
-        (sum, transaction) => sum + (Number(transaction.amount) || 0),
-        0
-      );
+      const contributed = wishlistGift.transactions
+        .filter(transaction => transaction.status === 'COMPLETED')
+        .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
       const remaining = price - contributed;
 
       if (amount <= 0 || amount > remaining) {
         return { error: 'El monto ingresado no es válido para este regalo.' };
       }
-    } else if (amount !== price || wishlistGift.transactions.length > 0) {
-      return { error: 'Este regalo ya fue comprado.' };
+    } else {
+      if (seenIndividualGiftIds.has(item.wishlistGiftId)) {
+        return { error: 'Este regalo ya fue comprado.' };
+      }
+      seenIndividualGiftIds.add(item.wishlistGiftId);
+
+      if (amount !== price || wishlistGift.transactions.length > 0) {
+        return { error: 'Este regalo ya fue comprado.' };
+      }
     }
   }
 
@@ -94,28 +107,35 @@ export async function createTransactionsForCart(
 
 export async function createPagoparCheckoutSession(
   eventSlug: string,
-  transactions: { id: string; amount: string }[]
+  transactionIds: string[]
 ) {
-  if (transactions.length === 0) {
+  if (transactionIds.length === 0) {
     return { error: 'No hay transacciones para procesar.' };
   }
 
+  const event = await getEventByUrl(eventSlug);
+
+  if (!event) {
+    return { error: 'Evento no encontrado.' };
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const orderId = transactions.map(transaction => transaction.id).join(',');
-  const total = transactions.reduce(
-    (sum, transaction) => sum + Number(transaction.amount),
-    0
-  );
+  const orderId = transactionIds.join(',');
 
   const fullTransactions = await prismaClient.transaction.findMany({
-    where: { id: { in: transactions.map(transaction => transaction.id) } },
+    where: { id: { in: transactionIds }, eventId: event.id, status: 'OPEN' },
     include: { wishlistGift: { include: { gift: true } } },
   });
 
-  if (fullTransactions.length !== transactions.length) {
-    await markTransactionsFailed(transactions.map(transaction => transaction.id));
+  if (fullTransactions.length !== transactionIds.length) {
+    await markTransactionsFailed(transactionIds);
     return { error: 'Una de las transacciones ya no está disponible.' };
   }
+
+  const total = fullTransactions.reduce(
+    (sum, transaction) => sum + (Number(transaction.amount) || 0),
+    0
+  );
 
   const [payer] = fullTransactions;
 
@@ -135,15 +155,19 @@ export async function createPagoparCheckoutSession(
   });
 
   if ('error' in order) {
-    await markTransactionsFailed(transactions.map(transaction => transaction.id));
+    await markTransactionsFailed(transactionIds);
     return { error: order.error };
   }
 
   try {
     await prismaClient.transaction.updateMany({
-      where: { id: { in: transactions.map(transaction => transaction.id) } },
-      data: { pagoparHash: order.success.hash, status: 'PENDING' },
+      where: { id: { in: transactionIds } },
+      data: { pagoparHash: order.success.hash },
     });
+
+    await Promise.all(
+      transactionIds.map(id => applyTransactionStatusChange(id, 'PENDING', null))
+    );
 
     // TODO: append ?forma_pago=<id> once Pagopar support confirms the
     // value(s) for Tarjeta de crédito/QR and approves this account for the
@@ -156,7 +180,7 @@ export async function createPagoparCheckoutSession(
     return { success: true, redirectUrl };
   } catch (error) {
     console.error('Error persisting Pagopar order hash:', error);
-    await markTransactionsFailed(transactions.map(transaction => transaction.id));
+    await markTransactionsFailed(transactionIds);
     return { error: getErrorMessage(error) };
   }
 }

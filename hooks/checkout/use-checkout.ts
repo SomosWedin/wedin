@@ -76,10 +76,7 @@ export function useCheckout({
 
     const sessionResponse = await createPagoparCheckoutSession(
       eventSlug,
-      transactionsResponse.success.map(transaction => ({
-        id: transaction.id,
-        amount: transaction.amount,
-      }))
+      transactionIds
     );
 
     if ('error' in sessionResponse) {
