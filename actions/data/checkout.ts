@@ -145,6 +145,10 @@ export async function createPagoparCheckoutSession(
       data: { pagoparHash: order.success.hash, status: 'PENDING' },
     });
 
+    // TODO: append ?forma_pago=<id> once Pagopar support confirms the
+    // value(s) for Tarjeta de crédito/QR and approves this account for the
+    // redirect-time payment-method restriction (docs say it's gated,
+    // separate from having the payment methods themselves enabled).
     const redirectUrl = order.success.hash.startsWith('STUB-')
       ? `${appUrl}/checkout/pagopar/result/${order.success.hash}?stub=1`
       : `https://www.pagopar.com/pagos/${order.success.hash}`;

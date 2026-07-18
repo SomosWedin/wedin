@@ -83,11 +83,6 @@ export async function createOrder(
             new Date(Date.now() + 24 * 60 * 60 * 1000)
           ),
           descripcion_resumen: params.description,
-          // forma_pago 9 = Bancard (Visa/Mastercard/Amex/Discover/Diners) —
-          // forces the hosted checkout straight to card, skipping Pagopar's
-          // own QR/billetera/transferencia/efectivo options entirely, which
-          // would otherwise bypass our own bank-transfer confirmation flow.
-          forma_pago: 9,
           comprador: {
             ruc: '',
             email: params.payer.email,
