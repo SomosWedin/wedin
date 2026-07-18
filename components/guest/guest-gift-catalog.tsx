@@ -194,7 +194,7 @@ export default function GuestGiftCatalog({
             value={categoryFilter}
             onChange={event => setCategoryFilter(event.target.value)}
           >
-            <option value="">Categoria</option>
+            <option value="">Categoría: Todas</option>
             {categories.map(category => (
               <option key={category.id} value={category.id}>
                 {category.name}
