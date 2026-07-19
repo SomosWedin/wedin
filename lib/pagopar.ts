@@ -177,10 +177,6 @@ export async function verifyWebhookToken(
   hashPedido: string,
   token: string | null | undefined
 ): Promise<boolean> {
-  // Stub/dev mode: same bypass convention as lib/dlocal.ts's
-  // verifyWebhookSignature — there's no real secret to check against when
-  // credentials aren't configured, and createOrder/getOrderStatus already
-  // stub their responses in that case.
   if (!hasCredentials) return true;
 
   if (!token || !privateKey) return false;

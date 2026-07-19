@@ -35,12 +35,7 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
   own bank account + a WhatsApp link to send proof, staff confirm by hand).
   There's no per-gateway processor field — only Pagopar is implemented
   today, re-add one if/when a second card gateway actually exists (don't
-  build it ahead of need). Pagopar replaced dLocal Go entirely (2026-07-16)
-  — dLocal was never actually live (no real sandbox credentials were ever
-  configured), so this was a clean swap, not a cutover with in-flight
-  payments. Pagopar's redirect/webhook URLs are configured once in its
-  dashboard for the whole merchant account, not per-request like dLocal's
-  were — see `app/checkout/pagopar/result/[hash]/page.tsx` for why a
+  build it ahead of need). See `app/checkout/pagopar/result/[hash]/page.tsx` for why a
   hash-keyed landing route exists instead of reusing a slug-scoped one.
   `BANK_TRANSFER` never leaves the app either, but lands on
   `app/e/[slug]/checkout/transfer/page.tsx` (bank details + WhatsApp proof

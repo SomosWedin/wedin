@@ -28,10 +28,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  // The webhook payload's token only authenticates hash_pedido, not
-  // pagado/monto — fetch the authoritative status instead of trusting the
-  // payload directly, same fetch-then-update discipline as the dLocal
-  // webhook this replaces.
   const status = await getOrderStatus(hashPedido);
 
   if ('error' in status) {
