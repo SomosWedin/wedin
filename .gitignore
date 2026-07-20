@@ -39,3 +39,6 @@ next-env.d.ts
 # claude code (local config + vendored skills, machine-specific)
 .claude/
 skills-lock.json
+
+# local planning doc, not for the repo
+plan.md

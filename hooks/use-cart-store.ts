@@ -1,4 +1,4 @@
-import { create, type StoreApi, type UseBoundStore } from 'zustand';
+import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type CartItem = {
@@ -18,7 +18,7 @@ type CartState = {
   clear: () => void;
 };
 
-type CartStore = UseBoundStore<StoreApi<CartState>>;
+type CartStore = ReturnType<typeof createCartStore>;
 
 // A guest could have multiple couples' sites open in the same browser, so
 // the store — and its localStorage key — must be scoped per event, not
@@ -26,7 +26,7 @@ type CartStore = UseBoundStore<StoreApi<CartState>>;
 // and cached for the lifetime of the tab.
 const storesByEventId = new Map<string, CartStore>();
 
-function createCartStore(eventId: string): CartStore {
+function createCartStore(eventId: string) {
   return create<CartState>()(
     persist(
       set => ({

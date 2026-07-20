@@ -3,22 +3,22 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import {
-  IoArrowUndoOutline,
   IoCashOutline,
-  IoCheckmark,
   IoChevronDown,
   IoChevronUp,
-  IoClose,
   IoGiftOutline,
   IoSearchOutline,
   IoSwapVerticalOutline,
-  IoSync,
-  IoTimeOutline,
 } from 'react-icons/io5';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import ThankTransactionDialog from '@/components/dialog/thank-transaction-dialog';
-import type { Prisma, TransactionStatus } from '@prisma/client';
+import {
+  ESTADO_BY_STATUS,
+  ESTADO_OPTIONS,
+  PAYMENT_METHOD_ICON,
+} from './transaction-estado';
+import type { Prisma } from '@prisma/client';
 
 type TransactionWithGift = Prisma.TransactionGetPayload<{
   include: { wishlistGift: { include: { gift: true } } };
@@ -27,41 +27,6 @@ type TransactionWithGift = Prisma.TransactionGetPayload<{
 type DashboardTransactionsListProps = {
   transactions: TransactionWithGift[];
 };
-
-const ESTADO_BY_STATUS: Record<
-  TransactionStatus,
-  { label: string; className: string; icon: React.ReactNode }
-> = {
-  COMPLETED: {
-    label: 'Recibido',
-    className: 'bg-success/10 text-success border-transparent',
-    icon: <IoCheckmark className="mr-1" />,
-  },
-  PENDING: {
-    label: 'En proceso',
-    className: 'bg-warning/10 text-warning border-transparent',
-    icon: <IoSync className="mr-1" />,
-  },
-  OPEN: {
-    label: 'Pendiente',
-    className: 'bg-gray100 text-textTertiary border-transparent',
-    icon: <IoTimeOutline className="mr-1" />,
-  },
-  FAILED: {
-    label: 'Fallido',
-    className: 'bg-error/10 text-error border-transparent',
-    icon: <IoClose className="mr-1" />,
-  },
-  REFUNDED: {
-    label: 'Reembolsado',
-    className: 'bg-gray100 text-textTertiary border-transparent',
-    icon: <IoArrowUndoOutline className="mr-1" />,
-  },
-};
-
-const ESTADO_OPTIONS = (
-  Object.entries(ESTADO_BY_STATUS) as [TransactionStatus, { label: string }][]
-).map(([status, { label }]) => ({ value: status, label }));
 
 type SortColumn = 'createdAt' | 'amount';
 type SortDirection = 'asc' | 'desc';
@@ -100,7 +65,15 @@ export default function DashboardTransactionsList({
     setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'));
   };
 
-  const total = transactions.reduce(
+  const completedTransactions = transactions.filter(
+    transaction => transaction.status === 'COMPLETED'
+  );
+  const receivedCount = new Set(
+    completedTransactions
+      .filter(transaction => transaction.wishlistGift.isFullyPaid)
+      .map(transaction => transaction.wishlistGiftId)
+  ).size;
+  const total = completedTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
   );
@@ -132,7 +105,7 @@ export default function DashboardTransactionsList({
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-24">
+      <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-[unset] sm:max-h-24">
         <div className="flex flex-col gap-1 p-6 w-full justify-center">
           <h2 className="text-lg font-bold">
             Resúmen de los regalos recibidos
@@ -143,7 +116,7 @@ export default function DashboardTransactionsList({
             <IoGiftOutline className="text-xl" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold">{transactions.length}</span>
+            <span className="text-lg font-bold">{receivedCount}</span>
             <span className="text-sm whitespace-nowrap text-textTertiary">
               Regalos recibidos
             </span>
@@ -229,6 +202,7 @@ export default function DashboardTransactionsList({
 
         {sortedTransactions.map(transaction => {
           const payerName = transaction.payerName ?? 'Anónimo';
+          const paymentMethod = PAYMENT_METHOD_ICON[transaction.paymentMethod];
           const estado = ESTADO_BY_STATUS[transaction.status];
 
           return (
@@ -236,7 +210,15 @@ export default function DashboardTransactionsList({
               key={transaction.id}
               className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 hover:bg-gray-50"
             >
-              <div className="col-span-2">{payerName}</div>
+              <div className="flex col-span-2 gap-4 items-center">
+                <span
+                  className="shrink-0 text-xl text-gray-400"
+                  title={paymentMethod.title}
+                >
+                  {paymentMethod.icon}
+                </span>
+                {payerName}
+              </div>
               <div className="col-span-2 text-textTertiary text-sm">
                 {format(transaction.createdAt, 'dd/MM/yyyy')}
               </div>

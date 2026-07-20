@@ -32,7 +32,7 @@ export async function getGifts({
 
   if (!validatedParams.success) return [];
 
-  const { category, giftlistId, name, page, itemsPerPage } =
+  const { category, giftlistId, name, page, itemsPerPage, sort } =
     validatedParams.data;
   const query: Prisma.GiftWhereInput = { isDefault: true };
 
@@ -56,6 +56,26 @@ export async function getGifts({
   const take = itemsPerPage ? Number(itemsPerPage) : undefined;
 
   try {
+    // Gift.price is a String field, so numeric sorting can't be done via
+    // Prisma's `orderBy` (it would sort lexicographically) — fetch, sort in
+    // JS, then apply pagination manually.
+    if (sort) {
+      const gifts = await prismaClient.gift.findMany({
+        where: query,
+        include: { image: true },
+      });
+
+      gifts.sort((a, b) =>
+        sort === 'price-asc'
+          ? Number(a.price) - Number(b.price)
+          : Number(b.price) - Number(a.price)
+      );
+
+      return skip !== undefined && take !== undefined
+        ? gifts.slice(skip, skip + take)
+        : gifts;
+    }
+
     return await prismaClient.gift.findMany({
       where: query,
       include: { image: true },

@@ -80,8 +80,8 @@ export const {
     }),
   ],
   pages: {
-    signIn: '(auth)/login',
-    error: '(auth)/error',
+    signIn: '/login',
+    error: '/error',
   },
   events: {
     async linkAccount({ user }) {
