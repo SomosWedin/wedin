@@ -38,16 +38,6 @@ export default function LoginPage() {
         {/* <div className="flex items-center justify-center w-full"> */}
         {/*   <SociaMediaLoginButton provider={'facebook'} /> */}
         {/* </div> */}
-
-        <div className="flex items-center justify-center gap-4 w-full text-sm">
-          <p className="text-secondary-400">¿Primera vez en wedin? Registrate en un minuto</p>
-          <Link
-            href="/register"
-            className="flex justify-center items-center border border-borderDefault bg-gray600 rounded-md text-textSecondary font-medium px-4 py-2 hover:bg-borderDefault cursor-pointer transition-all duration-150"
-          >
-            Registrate
-          </Link>
-        </div>
       </div>
     </div>
   );

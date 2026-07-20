@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -7,19 +7,19 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
-import OnboardingStepper from './stepper';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import illustration from '@/public/assets/onb-step-two-icon.svg';
 import wedinIcon from '@/public/assets/w-icon.svg';
-import { EventType } from '@prisma/client';
-import { useOnboarding } from '@/hooks/useOnboarding';
 import { StepTwoSchema } from '@/schemas/onboarding';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { EventType } from '@prisma/client';
+import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
+import OnboardingStepper from './stepper';
 
 export default function OnboardingStepTwo() {
   const { handleProfileUpdate, loading } = useOnboarding();

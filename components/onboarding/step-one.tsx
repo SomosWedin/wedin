@@ -1,12 +1,12 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { useOnboarding } from '@/hooks/useOnboarding';
+import wedinIcon from '@/public/assets/w-icon.svg';
+import { EventType } from '@prisma/client';
+import Image from 'next/image';
 import { CiHeart } from 'react-icons/ci';
 import { FaChevronRight } from 'react-icons/fa6';
 import { GiWineGlass } from 'react-icons/gi';
-import { EventType } from '@prisma/client';
 import OnboardingStepper from './stepper';
-import wedinIcon from '@/public/assets/w-icon.svg';
-import Image from 'next/image';
-import { useOnboarding } from '@/hooks/useOnboarding';
 
 export default function OnboardingStepOne() {
   const { handleEventTypeUpdate, saveEventTypeToLocalStorage, loading } = useOnboarding();

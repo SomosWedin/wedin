@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Form,
   FormControl,
@@ -7,21 +9,19 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Combobox } from '@/components/ui/combobox';
-import { Loader2 } from 'lucide-react';
-import OnboardingStepper from './stepper';
-import wedinIcon from '@/public/assets/w-icon.svg';
-import Image from 'next/image';
-import { countries } from '@/lib/countries';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { countries } from '@/lib/countries';
+import wedinIcon from '@/public/assets/w-icon.svg';
 import { StepThreeSchema } from '@/schemas/onboarding';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
+import OnboardingStepper from './stepper';
 
 export default function OnboardingStepThree() {
   const { handleEventLocationUpdate, loading } = useOnboarding();

@@ -6,6 +6,7 @@ import Google from 'next-auth/providers/google';
 // This is used directly by middleware.ts (Edge runtime) and merged
 // into the full config in auth.ts (Node.js runtime).
 const authConfig: NextAuthConfig = {
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
