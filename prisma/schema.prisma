@@ -84,7 +84,7 @@ model User {
   //   db.User.createIndex({ email: 1 }, { unique: true, sparse: true, name: "User_email_key" })
   email            String?   @unique
   // password         String?
-  // emailVerified    DateTime?
+  emailVerified    DateTime?
   image            String?
   isPrimary        Boolean   @default(true)
   role             UserType  @default(ORGANIZER)
