@@ -39,7 +39,7 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
 
   if (visibleImages.length === 0) {
     return (
-      <div className="flex justify-center items-center w-full h-full bg-gray-100 shadow-inner">
+      <div className="flex justify-center items-center w-full h-full bg-gray-100 shadow-inner rounded-none sm:rounded-2xl">
         <IoGiftOutline className="text-6xl text-gray-300" />
       </div>
     );
@@ -54,7 +54,7 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
           ? [Autoplay({ delay: AUTO_SLIDE_INTERVAL_MS, stopOnInteraction: false })]
           : []
       }
-      className="overflow-hidden relative w-full h-full shadow-inner"
+      className="overflow-hidden relative w-full h-full shadow-inner rounded-none sm:rounded-2xl"
     >
       <CarouselContent className="ml-0 h-full">
         {visibleImages.map((image, index) => (
