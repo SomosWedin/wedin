@@ -15,7 +15,7 @@ const ERROR_MESSAGES: Record<string, string> = {
     'Ese email ya está registrado con otro método de inicio de sesión.',
   AccessDenied: 'No tenés permiso para acceder con esa cuenta.',
   Configuration: 'Hubo un problema con la configuración de acceso.',
-  Verification: 'El enlace de verificación venció o ya fue usado.',
+  Verification: 'El enlace de verificación venció o ya fue usado. Asegurese que fue el ulitmo email enviado',
 };
 
 const DEFAULT_MESSAGE = 'Ocurrió un error al iniciar sesión.';

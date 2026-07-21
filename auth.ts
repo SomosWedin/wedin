@@ -15,22 +15,10 @@ export function isError(response: unknown): response is ErrorResponse {
 }
 
 const emailProvider =
-  process.env.NODE_ENV === 'development'
-    ? Resend({
-      apiKey: 'unused-locally',
-      from: 'local@wedin.test',
-
-      async sendVerificationRequest({ identifier, url }) {
-        console.log('\n====================================');
-        console.log(`Magic link for: ${identifier}`);
-        console.log(url);
-        console.log('====================================\n');
-      },
-    })
-    : Resend({
-      apiKey: process.env.RESEND_API_KEY,
-      from: 'Wedin <no-reply@somoswedin.com>',
-    });
+  Resend({
+    apiKey: process.env.RESEND_API_KEY,
+    from: 'Wedin <no-reply@somoswedin.com>',
+  });
 
 declare module 'next-auth' {
   interface Session {
