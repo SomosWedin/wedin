@@ -36,7 +36,6 @@ export const updateEventTypeStepOne = async (values: EventType) => {
     return { error: 'Error creando evento' };
   }
 
-  // Update user onboarding step
   try {
     await prismaClient.user.update({
       where: {
@@ -143,7 +142,7 @@ export const updateEventLocationStepThree = async (
 
   const session = await auth();
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id || session?.user?.eventId == null) {
     return { error: 'Error obteniendo tu sesión' };
   }
 
@@ -199,7 +198,7 @@ export const updateEventDateStepFour = async (
 
   const session = await auth();
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id || session?.user?.eventId == null) {
     return { error: 'Error obteniendo tu sesión' };
   }
 

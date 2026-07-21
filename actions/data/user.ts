@@ -6,7 +6,7 @@ const prismaClient = new PrismaClient();
 
 export const getUserByEmail = async (
   email: string
-): Promise<any | ErrorResponse> => {
+): Promise<User | ErrorResponse> => {
   try {
     const currentUser = await prismaClient.user.findUnique({
       where: { email },

@@ -1,22 +1,35 @@
 import { Button } from '@/components/ui/button';
 import { capitalizeFirstLetter } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import { FaGoogle } from 'react-icons/fa';
+import type { IconType } from 'react-icons';
+import { FaApple, FaFacebookF, FaGoogle } from 'react-icons/fa';
+
+export type SocialProvider = 'google' | 'facebook' | 'apple';
 
 type AuthFormButtonProps = {
   variant?: string;
   label?: string;
+  provider?: SocialProvider;
   isLoading?: boolean;
   handleSignIn?: () => void;
 };
 
+const providerIcons: Record<SocialProvider, IconType> = {
+  google: FaGoogle,
+  facebook: FaFacebookF,
+  apple: FaApple,
+};
+
 export default function AuthFormButton({
-  variant,
-  label = 'Iniciar sesión',
   isLoading, // we use this because the login is using on submit and not action
+  label = 'Iniciar sesión',
+  provider,
+  variant,
   handleSignIn, // we use this because the login is using on submit and not action
 }: AuthFormButtonProps) {
-  if (variant === 'socialMediaLogin') {
+  if (variant === 'socialMediaLogin' && provider) {
+    const ProviderIcon = providerIcons[provider];
+
     return (
       <Button
         onClick={handleSignIn}
@@ -28,8 +41,8 @@ export default function AuthFormButton({
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
           <>
-            <FaGoogle />
-            Iniciar sesión con {capitalizeFirstLetter(label)}
+            <ProviderIcon aria-hidden="true" />
+            Continuar con {capitalizeFirstLetter(provider)}
           </>
         )}
       </Button>

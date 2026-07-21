@@ -1,65 +1,36 @@
 'use server';
 
 import { signIn } from '@/auth';
-import { generateVerificationToken } from '@/lib/tokens';
-import { LoginSchema } from '@/schemas/auth';
-import AuthError from 'next-auth';
-import type * as z from 'zod';
-import { getLoginUserByEmail } from '../data/user';
+import { MagicLoginSchema } from '@/schemas/auth';
+import { AuthError } from 'next-auth';
+import type { z } from 'zod';
 
-export const checkUserExists = async (email: string) => {
-  const existingUser = await getLoginUserByEmail(email);
-  return !!existingUser;
-};
+export type LoginValues = z.infer<typeof MagicLoginSchema>;
 
-export const login = async (
-  values: z.infer<typeof LoginSchema>,
-  type = 'credentials',
-  redirectTo = '/dashboard'
-) => {
-  const validatedFields = LoginSchema.safeParse(values);
+export async function login(values: LoginValues) {
+  const parsed = MagicLoginSchema.safeParse(values);
 
-  if (!validatedFields.success) {
-    return { error: 'Campos inválidos' };
+  if (!parsed.success) {
+    return { error: 'Correo inválido' };
   }
 
-  if (validatedFields.success) {
-    const { email, password } = validatedFields.data;
+  try {
+    await signIn('resend', {
+      email: parsed.data.email,
+      redirect: false,
+      redirectTo: '/onboarding'
+    });
 
-    const existingUser = await getLoginUserByEmail(email);
-
-    if (!existingUser) {
-      return { error: 'Usuario no encontrado' };
+    return {
+      success: 'Te enviamos un enlace para que confirmes e inicies sesión',
+    };
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return {
+        error: 'No pudimos enviar el enlace. Intentá nuevamente.',
+      };
     }
 
-    if (!existingUser.emailVerified) {
-      await generateVerificationToken(email);
-
-      // send email
-    }
-
-    if (existingUser.password === null) {
-      return { error: 'Deberias de ingresar sin contraseña' };
-    }
-
-    try {
-      await signIn(type, {
-        email,
-        password,
-        redirectTo,
-      });
-    } catch (error) {
-      if (error instanceof AuthError) {
-        const authError = error as (typeof AuthError) & { type: string };
-        switch (authError.type) {
-          case 'CredentialsSignin':
-            return { error: 'Credenciales incorrectas' };
-          default:
-            return { error: 'An error occurred' };
-        }
-      }
-
-      throw error;
-    }
+    throw error;
   }
-};
+}

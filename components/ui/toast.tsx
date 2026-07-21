@@ -30,18 +30,20 @@ const toastVariants = cva(
         default: "border bg-white text-foreground",
         destructive:
           "destructive group border-red-500 bg-red-500 text-white",
+        success:
+          "success group border-emerald-600 bg-emerald-600 text-white",
       },
     },
     defaultVariants: {
       variant: "default",
     },
-  }
-)
+  },
+);
 
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
-    VariantProps<typeof toastVariants>
+  VariantProps<typeof toastVariants>
 >(({ className, variant, ...props }, ref) => {
   return (
     <ToastPrimitives.Root
@@ -75,10 +77,11 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
-      className
-    )}
-    toast-close=""
+      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100",
+      "group-[.destructive]:text-red-200 group-[.destructive]:hover:text-white group-[.destructive]:focus:ring-red-300",
+      "group-[.success]:text-emerald-100 group-[.success]:hover:text-white group-[.success]:focus:ring-emerald-200",
+      className,
+    )} oast-close=""
     {...props}
   >
     <X className="h-4 w-4" />

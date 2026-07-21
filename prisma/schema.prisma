@@ -83,7 +83,7 @@ model User {
   //   db.User.dropIndex("User_email_key")
   //   db.User.createIndex({ email: 1 }, { unique: true, sparse: true, name: "User_email_key" })
   email            String?   @unique
-  password         String?
+  // password         String?
   emailVerified    DateTime?
   image            String?
   isPrimary        Boolean   @default(true)
@@ -302,15 +302,6 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-}
-
-model PasswordResetToken {
-  id      String   @id @default(auto()) @map("_id") @db.ObjectId
-  email   String
-  token   String   @unique
-  expires DateTime
-
-  @@unique([email, token])
 }
 
 model Image {

@@ -5,7 +5,7 @@ import {
   onboardingRoute,
   protectedRoutes,
 } from '@/lib/routes';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import NextAuth from 'next-auth';
 import authConfig from '@/auth.config';
 
@@ -18,8 +18,6 @@ export async function middleware(request: NextRequest) {
   const isLoggedIn = !!session?.user;
   const isOnboarded = isLoggedIn ? session.user.isOnboarded : false;
   const isAdmin = isLoggedIn ? session.user.role === 'ADMIN' : false;
-  const isExistingUser = isLoggedIn ? session.user.isExistingUser : false;
-
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
   const isAdminRoute = adminRoutes.includes(nextUrl.pathname);
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
@@ -27,18 +25,14 @@ export async function middleware(request: NextRequest) {
   const isOnboardingRoute = onboardingRoute.includes(nextUrl.pathname);
 
   if (isApiAuthRoute) {
-    return;
+    return NextResponse.next();
   }
 
   if (!isAdmin && isAdminRoute) {
     return Response.redirect(new URL('/dashboard', nextUrl));
   }
 
-  if (isLoggedIn && !isExistingUser) {
-    return Response.redirect(new URL('/api/auth/signout', nextUrl));
-  }
-
-  if (isLoggedIn && !isOnboarded && !isOnboardingRoute && !isAdminRoute) {
+  if (isLoggedIn && !isOnboarded && !isOnboardingRoute) {
     return Response.redirect(new URL('/onboarding', nextUrl));
   }
 
@@ -49,6 +43,8 @@ export async function middleware(request: NextRequest) {
   if (!isLoggedIn && (isProtectedRoute || isOnboardingRoute)) {
     return Response.redirect(new URL('/login', nextUrl));
   }
+
+  return NextResponse.next();
 }
 
 export const config = {
