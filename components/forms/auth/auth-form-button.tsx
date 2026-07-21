@@ -42,7 +42,7 @@ export default function AuthFormButton({
         ) : (
           <>
             <ProviderIcon aria-hidden="true" />
-            Iniciar sesión con {capitalizeFirstLetter(provider)}
+            Continuar con {capitalizeFirstLetter(provider)}
           </>
         )}
       </Button>
