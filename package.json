@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest",
+    "test:run": "vitest:run"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,scss,md}": [
@@ -46,6 +48,8 @@
     "@tanstack/react-query-devtools": "^5.55.0",
     "@tanstack/react-table": "^8.20.5",
     "@types/bcrypt": "^5.0.2",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "arg": "^5.0.2",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.0",
