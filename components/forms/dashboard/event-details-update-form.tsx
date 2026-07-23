@@ -58,7 +58,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
           </div>
 
           <div className="flex flex-col gap-6 justify-end items-end w-full sm:w-1/2">
-            <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
+            <div className="flex flex-wrap gap-2 justify-end">
               {slots.map((_, index) => {
                 const eventImage = currentImages[index];
                 return (

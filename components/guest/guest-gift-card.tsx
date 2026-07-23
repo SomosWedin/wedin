@@ -3,12 +3,9 @@
 import Image from 'next/image';
 import {
   IoCartOutline,
-  IoCheckmarkCircle,
   IoCheckmarkCircleOutline,
-  IoChevronForward,
   IoGiftOutline,
 } from 'react-icons/io5';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
@@ -27,12 +24,14 @@ type GuestGiftCardProps = {
   wishlistGift: WishlistGiftWithGift;
   onAddFullPrice: (wishlistGift: WishlistGiftWithGift) => void;
   onOpenContributionDialog: (wishlistGift: WishlistGiftWithGift) => void;
+  onOpenGiftDetails: (wishlistGift: WishlistGiftWithGift) => void;
 };
 
 export default function GuestGiftCard({
   wishlistGift,
   onAddFullPrice,
   onOpenContributionDialog,
+  onOpenGiftDetails,
 }: GuestGiftCardProps) {
   const { gift } = wishlistGift;
   const { priceValue, remaining, percentage } = getGiftProgress(
@@ -42,8 +41,20 @@ export default function GuestGiftCard({
   const isComplete =
     wishlistGift.isFullyPaid || (priceValue > 0 && remaining <= 0);
 
+  const handleCardClick = () => {
+    if (isComplete) return;
+    if (wishlistGift.isGroupGift) {
+      onOpenContributionDialog(wishlistGift);
+    } else {
+      onOpenGiftDetails(wishlistGift);
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm justify-between bg-gray-50">
+    <div
+      className={`flex flex-col gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm justify-between bg-gray-50 ${!isComplete ? 'cursor-pointer' : ''}`}
+      onClick={!isComplete ? handleCardClick : undefined}
+    >
       <div className="relative overflow-hidden w-full bg-gray-100 rounded-lg aspect-square">
         {gift.image?.url ? (
           <Image
@@ -59,11 +70,9 @@ export default function GuestGiftCard({
         )}
         {isComplete && (
           <div className="flex absolute inset-0 justify-center items-center">
-            <div className="flex gap-1.5 items-center px-3 py-1.5 bg-white rounded-full shadow-sm">
+            <div className="flex gap-1.5 items-center px-3 py-1.5 bg-white rounded-full shadow-sm z-10">
               <IoCheckmarkCircleOutline className="text-lg text-success" />
-              <span className="text-sm font-medium text-success">
-                Recibido
-              </span>
+              <span className="text-sm font-medium text-success">Recibido</span>
             </div>
           </div>
         )}
@@ -87,34 +96,46 @@ export default function GuestGiftCard({
           <div className="flex flex-col gap-1.5">
             <div className="flex flex-col gap-0.5 text-xs sm:flex-row sm:justify-between sm:gap-0 sm:text-sm">
               <span>Faltan: Gs. {remaining.toLocaleString('es-PY')}</span>
-              <span>{percentage}% {isComplete && '🎉'}</span>
+              <span>
+                {percentage}% {isComplete && '✅'}
+              </span>
             </div>
             <Progress value={percentage} />
           </div>
         ) : (
           <p className="font-semibold text-lg">
-            Gs. {Number(gift.price).toLocaleString('es-PY')} {isComplete && '🎉'}
+            Gs. {Number(gift.price).toLocaleString('es-PY')}
           </p>
         )}
       </div>
 
       {wishlistGift.isGroupGift ? (
         <Button
-          className={`gap-1 justify-between text-xs bg-gray-100 hover:bg-gray-200 transition-colors sm:gap-2 sm:text-sm ${isComplete ? 'bg-success/10 text-success' : ''}`}
-          onClick={() => onOpenContributionDialog(wishlistGift)}
+          variant="success"
+          className="gap-1 justify-between text-xs sm:gap-2 sm:text-sm"
+          onClick={event => {
+            event.stopPropagation();
+            onOpenContributionDialog(wishlistGift);
+          }}
           disabled={isComplete}
         >
-          {isComplete ? 'Regalo recibido' : 'Seleccionar monto'}
-          <IoChevronForward className="text-lg shrink-0" />
+          {isComplete ? 'Regalo recibido' : 'Contribuir'}{' '}
+          {isComplete && '🎉'}
+          {!isComplete && <IoCartOutline className="text-lg shrink-0" />}
         </Button>
       ) : (
         <Button
-          className={`gap-1 justify-between text-xs bg-gray-100 hover:bg-gray-200 transition-colors sm:gap-2 sm:text-sm ${isComplete ? 'bg-success/10 text-success' : ''}`}
-          onClick={() => onAddFullPrice(wishlistGift)}
+          variant="success"
+          className="gap-1 justify-between text-xs sm:gap-2 sm:text-sm"
+          onClick={event => {
+            event.stopPropagation();
+            onAddFullPrice(wishlistGift);
+          }}
           disabled={isComplete}
         >
-          {isComplete ? 'Regalo recibido' : 'Agregar al carrito'}
-          <IoCartOutline className="text-lg shrink-0" />
+          {isComplete ? 'Regalo recibido' : 'Agregar al carrito'}{' '}
+          {isComplete && '🎉'}
+          {!isComplete && <IoCartOutline className="text-lg shrink-0" />}
         </Button>
       )}
     </div>

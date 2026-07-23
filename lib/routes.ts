@@ -1,8 +1,5 @@
 export const publicRoutes: string[] = [
-  '/gifts',
-  '/events',
-  '/giftlists',
-  '/',
+  '/e',
   '/email-verfiy',
 ];
 
@@ -14,6 +11,7 @@ export const authRoutes: string[] = [
 ];
 
 export const protectedRoutes: string[] = [
+  '/gifts',
   '/bank-details',
   '/billetera',
   '/dashboard',

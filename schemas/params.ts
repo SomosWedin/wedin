@@ -29,6 +29,7 @@ export const GetGiftsParams = z
     itemsPerPage: z.number().optional(),
     page: z.string().optional(),
     name: z.string().optional(),
+    sort: z.enum(['price-asc', 'price-desc']).optional(),
   })
   .refine(
     data => {
@@ -64,7 +65,7 @@ export const CreateTransactionParams = z.object({
   amount: z
     .string()
     .min(4, { message: 'El precio debe ser mayor a 999 guaraníes' })
-    .max(10, {
+    .refine(value => Number(value) <= 99999999, {
       message: 'El precio no puede ser mayor de PYG 99,999,999',
     }),
 });

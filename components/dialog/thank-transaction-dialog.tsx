@@ -50,7 +50,7 @@ export default function ThankTransactionDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" className="gap-2">
+        <Button type="button" variant="outline" className="gap-2" size="sm">
           <IoHeartOutline className="text-base" />
           Agradecer
         </Button>

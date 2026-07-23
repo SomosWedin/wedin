@@ -4,7 +4,6 @@ import {
   authRoutes,
   onboardingRoute,
   protectedRoutes,
-  publicRoutes,
 } from '@/lib/routes';
 import { NextRequest, NextResponse } from 'next/server';
 import NextAuth from 'next-auth';
@@ -19,25 +18,18 @@ export async function middleware(request: NextRequest) {
   const isLoggedIn = !!session?.user;
   const isOnboarded = isLoggedIn ? session.user.isOnboarded : false;
   const isAdmin = isLoggedIn ? session.user.role === 'ADMIN' : false;
-  const isExistingUser = isLoggedIn ? session.user.isExistingUser : false;
-
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
-  const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
   const isAdminRoute = adminRoutes.includes(nextUrl.pathname);
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
   const isProtectedRoute = protectedRoutes.includes(nextUrl.pathname);
   const isOnboardingRoute = onboardingRoute.includes(nextUrl.pathname);
 
   if (isApiAuthRoute) {
-    return;
+    return NextResponse.next();
   }
 
   if (!isAdmin && isAdminRoute) {
-    console.log('redirecting to dashboard');
-  }
-
-  if (isLoggedIn && !isExistingUser) {
-    return Response.redirect(new URL('/api/auth/signout', nextUrl));
+    return Response.redirect(new URL('/dashboard', nextUrl));
   }
 
   if (isLoggedIn && !isOnboarded && !isOnboardingRoute) {
@@ -51,6 +43,8 @@ export async function middleware(request: NextRequest) {
   if (!isLoggedIn && (isProtectedRoute || isOnboardingRoute)) {
     return Response.redirect(new URL('/login', nextUrl));
   }
+
+  return NextResponse.next();
 }
 
 export const config = {

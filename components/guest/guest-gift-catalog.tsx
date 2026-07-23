@@ -10,13 +10,14 @@ import GuestGiftCard, {
   type WishlistGiftWithGift,
 } from '@/components/guest/guest-gift-card';
 import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog';
+import GiftDetailDialog from '@/components/dialog/gift-detail-dialog';
 import CartStickyBar from '@/components/cart/cart-sticky-bar';
 import CartDrawer from '@/components/cart/cart-drawer';
 import { getGiftProgress } from '@/components/guest/gift-progress';
 import type { Category } from '@prisma/client';
 
 type TypeFilter = 'todos' | 'individual' | 'grupal';
-type SortOption = 'recientes' | 'precio-asc' | 'precio-desc';
+type SortOption = 'recent' | 'price-asc' | 'price-desc';
 
 type GuestGiftCatalogProps = {
   eventId: string;
@@ -42,13 +43,15 @@ export default function GuestGiftCatalog({
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [sort, setSort] = useState<SortOption>('recientes');
+  const [sort, setSort] = useState<SortOption>('recent');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedWishlistGift, setSelectedWishlistGift] =
     useState<WishlistGiftWithGift | null>(null);
   const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(
     null
   );
+  const [detailWishlistGift, setDetailWishlistGift] =
+    useState<WishlistGiftWithGift | null>(null);
 
   const cartTotal = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
@@ -77,6 +80,10 @@ export default function GuestGiftCatalog({
 
   const handleOpenContributionDialog = (wishlistGift: WishlistGiftWithGift) => {
     setSelectedWishlistGift(wishlistGift);
+  };
+
+  const handleOpenGiftDetails = (wishlistGift: WishlistGiftWithGift) => {
+    setDetailWishlistGift(wishlistGift);
   };
 
   const handleEditCartItem = (item: CartItem) => {
@@ -131,8 +138,8 @@ export default function GuestGiftCatalog({
       return matchesType && matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
-      if (sort === 'precio-asc') return Number(a.gift.price) - Number(b.gift.price);
-      if (sort === 'precio-desc') return Number(b.gift.price) - Number(a.gift.price);
+      if (sort === 'price-asc') return Number(a.gift.price) - Number(b.gift.price);
+      if (sort === 'price-desc') return Number(b.gift.price) - Number(a.gift.price);
       return 0;
     });
 
@@ -187,7 +194,7 @@ export default function GuestGiftCatalog({
             value={categoryFilter}
             onChange={event => setCategoryFilter(event.target.value)}
           >
-            <option value="">Categoria</option>
+            <option value="">Categoría: Todas</option>
             {categories.map(category => (
               <option key={category.id} value={category.id}>
                 {category.name}
@@ -199,9 +206,9 @@ export default function GuestGiftCatalog({
             value={sort}
             onChange={event => setSort(event.target.value as SortOption)}
           >
-            <option value="recientes">Ordenar por</option>
-            <option value="precio-asc">Precio: menor a mayor</option>
-            <option value="precio-desc">Precio: mayor a menor</option>
+            <option value="recent">Ordenar por</option>
+            <option value="price-asc">Precio: menor a mayor</option>
+            <option value="price-desc">Precio: mayor a menor</option>
           </select>
         </div>
       </div>
@@ -218,6 +225,7 @@ export default function GuestGiftCatalog({
               wishlistGift={wishlistGift}
               onAddFullPrice={handleAddFullPrice}
               onOpenContributionDialog={handleOpenContributionDialog}
+              onOpenGiftDetails={handleOpenGiftDetails}
             />
           ))}
         </div>
@@ -233,6 +241,18 @@ export default function GuestGiftCatalog({
           percentage={selectedProgress.percentage}
           onAddToCart={handleContributionSubmit}
           initialAmount={editingCartItem?.amount}
+        />
+      )}
+
+      {detailWishlistGift && (
+        <GiftDetailDialog
+          open={!!detailWishlistGift}
+          onOpenChange={open => {
+            if (!open) setDetailWishlistGift(null);
+          }}
+          gift={detailWishlistGift.gift}
+          isFavoriteGift={detailWishlistGift.isFavoriteGift}
+          onAddToCart={() => handleAddFullPrice(detailWishlistGift)}
         />
       )}
 

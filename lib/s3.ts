@@ -38,7 +38,7 @@ export const uploadEventCoverImagesToAws = async ({
       return { error: 'Failed to upload image' };
     }
 
-    const awsImagePosting = await fetch(imageUrl, {
+    const awsImagePosting = await fetch(presignResponse.success, {
       method: 'PUT',
       body: file,
       headers: {
@@ -85,7 +85,7 @@ export const uploadGiftImageToAws = async ({
     return { error: 'Failed to upload image' };
   }
 
-  const awsImagePosting = await fetch(imageUrl, {
+  const awsImagePosting = await fetch(presignResponse.success, {
     method: 'PUT',
     body: file,
     headers: {

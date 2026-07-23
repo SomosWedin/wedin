@@ -26,12 +26,12 @@ export default function GuestHero({ event }: GuestHeroProps) {
 
   return (
     <div className="bg-gray-50">
-      <section className="grid grid-cols-1 gap-6 sm:gap-8 items-center px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 lg:grid-cols-2">
-        <div className="w-full aspect-[3/4]">
+      <section className="grid grid-cols-1 gap-0 lg:gap-8 items-center mx-auto max-w-7xl lg:grid-cols-2">
+        <div className="w-full aspect-[3/4] px-0 sm:px-4 py-0 sm:py-8">
           <GuestImageCarousel images={event.images} />
         </div>
 
-        <div className="flex flex-col gap-4 sm:gap-8">
+        <div className="flex flex-col gap-4 sm:gap-8 px-4 lg:px-0 py-6 lg:py-0">
           {dateLabel && (
             <span className="inline-flex gap-2 items-center py-0.5 px-3 w-fit font-medium text-sm rounded-full bg-success/10 text-success shadow-sm">
               {dateLabel} <span className="text-base">📅</span>
