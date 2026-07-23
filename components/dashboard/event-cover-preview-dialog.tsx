@@ -35,7 +35,7 @@ const EventCoverPreviewDialog = ({
         <DialogHeader className="p-6 pb-4">
           <DialogTitle>Así lo verán tus invitados</DialogTitle>
         </DialogHeader>
-        <div className="overflow-y-auto max-h-[68vh]">
+        <div className="overflow-y-auto">
           <GuestHero event={{ ...event, images, coverMessage }} />
         </div>
       </DialogContent>
