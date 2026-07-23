@@ -37,7 +37,7 @@ export default function GuestHero({ event }: GuestHeroProps) {
               {dateLabel} <span className="text-base">📅</span>
             </span>
           )}
-          <h1 className="text-4xl font-semibold sm:text-5xl">{coupleName}</h1>
+          <h1 className="text-4xl font-semibold sm:text-5xl whitespace-nowrap">{coupleName}</h1>
           {event.coverMessage && (
             <p className="text-textTertiary font-light">{event.coverMessage}</p>
           )}
