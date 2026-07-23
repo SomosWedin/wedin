@@ -1,6 +1,7 @@
 'use client';
 
 import ResetEventCoverFormDialog from '@/components/dialog/reset-event-cover-form-dialog';
+import EventCoverPreviewDialog from '@/components/dashboard/event-cover-preview-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -11,7 +12,7 @@ import {
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { useEventCover } from '@/hooks/dashboard/use-event-cover';
-import { Event, Image as ImageModel } from '@prisma/client';
+import { Event, Image as ImageModel, User } from '@prisma/client';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { CiImageOn } from 'react-icons/ci';
@@ -22,6 +23,7 @@ import { RxCross2 } from 'react-icons/rx';
 type EventDetailsUpdateFormProps = {
   event: Event & {
     images: ImageModel[];
+    users: User[];
   };
 };
 
@@ -37,10 +39,11 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
     handleRemoveImage,
     handleOnSubmit,
     handleReset,
-    isDirty,
+    hasChanges,
     loading,
     slots,
   } = useEventCover({ eventId: id, coverMessage: coverMessage, images });
+  const previewCoverMessage = form.watch('coverMessage');
 
   return (
     <Form {...form}>
@@ -150,16 +153,21 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
             />
           </div>
         </div>
-        <div className="flex gap-2 justify-end w-full">
+        <div className="flex flex-wrap gap-2 justify-end w-full">
+          <EventCoverPreviewDialog
+            event={event}
+            images={currentImages}
+            coverMessage={previewCoverMessage}
+          />
           <ResetEventCoverFormDialog
             handleReset={handleReset}
-            isDirty={isDirty}
+            isDirty={hasChanges}
           />
           <Button
             type="submit"
             variant="success"
             className="gap-2"
-            disabled={loading}
+            disabled={loading || !hasChanges}
           >
             Guardar
             {loading ? (

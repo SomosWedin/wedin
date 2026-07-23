@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { ToastAction } from '@/components/ui/toast';
 import PriceInput from '@/components/forms/common/price-input';
 import type { Category, Gift, Image as ImageModel } from '@prisma/client';
 
@@ -184,7 +185,14 @@ export default function AddExistingGiftDialog({
       return;
     }
 
-    toast({ title: 'Regalo agregado a tu lista. 🎁' });
+    toast({
+      title: 'Regalo agregado a tu lista. 🎁',
+      action: (
+        <ToastAction altText="Ver lista" onClick={() => router.push('/wishlist')}>
+          Ver lista
+        </ToastAction>
+      ),
+    });
     setLoading(false);
     handleOpenChange(false);
     router.refresh();

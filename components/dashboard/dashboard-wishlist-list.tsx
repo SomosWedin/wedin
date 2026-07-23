@@ -83,8 +83,9 @@ export default function DashboardWishlistList({
   const categoryNameById = new Map(
     categories.map(category => [category.id, category.name])
   );
-  const receivedCount = wishlistGifts.filter(
-    wishlistGift => wishlistGift.isFullyPaid
+  const recommendedGiftCount = 20;
+  const addedGiftCount = wishlistGifts.filter(
+    wishlistGift => !wishlistGift.isReceived
   ).length;
 
   const filteredWishlistGifts = wishlistGifts.filter(wishlistGift => {
@@ -116,9 +117,11 @@ export default function DashboardWishlistList({
             <IoGiftOutline className="text-xl" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold">{receivedCount}</span>
+            <span className="text-lg font-bold">
+              {addedGiftCount}/{recommendedGiftCount}
+            </span>
             <span className="text-sm whitespace-nowrap text-textTertiary">
-              Regalos recibidos
+              Regalos agregados
             </span>
           </div>
         </div>

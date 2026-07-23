@@ -9,6 +9,7 @@ import {
   editWishlistGift,
 } from '@/actions/data/wishlist-gift';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import type {
   WishlistGiftCreateSchema,
   WishlistGiftDeleteSchema,
@@ -38,7 +39,14 @@ export function useWishlistGift() {
       return response;
     }
 
-    toast({ title: 'Regalo agregado a tu lista. 🎁' });
+    toast({
+      title: 'Regalo agregado a tu lista. 🎁',
+      action: (
+        <ToastAction altText="Ver lista" onClick={() => router.push('/wishlist')}>
+          Ver lista
+        </ToastAction>
+      ),
+    });
     router.refresh();
     setLoading(false);
     return response;
