@@ -3,7 +3,12 @@
 import { getCurrentUser } from '@/actions/get-current-user';
 import type { ErrorResponse } from '@/auth';
 import { EventUrlFormSchema } from '@/schemas/form';
-import { Event, Image as ImageModel, PrismaClient } from '@prisma/client';
+import {
+  Event,
+  Image as ImageModel,
+  PrismaClient,
+  User,
+} from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 
 const prismaClient = new PrismaClient();
@@ -11,6 +16,7 @@ const prismaClient = new PrismaClient();
 export const getEvent = async (): Promise<
   | (Event & {
       images: ImageModel[];
+      users: User[];
     })
   | ErrorResponse
 > => {

@@ -79,6 +79,12 @@ export function useEventCover({
   const { formState } = form;
   const { isDirty, dirtyFields } = formState;
 
+  const hasImageChanges =
+    newImages.length > 0 ||
+    updatedImages.length > 0 ||
+    replacedImages.length > 0;
+  const hasChanges = isDirty || hasImageChanges;
+
   useEffect(() => {
     const imagesWithIsNew: ExistingImage[] = images.map(img => ({
       ...img,
@@ -483,6 +489,7 @@ export function useEventCover({
     handleRemoveImage,
     handleOnSubmit,
     handleReset,
+    hasChanges,
     isDirty,
     loading,
     slots,
