@@ -80,7 +80,7 @@ export default function ThankTransactionDialog({
             disabled={loading || !notes.trim()}
             onClick={handleSubmit}
           >
-            Guardar
+            Enviar
           </Button>
         </div>
       </DialogContent>
