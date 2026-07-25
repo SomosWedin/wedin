@@ -120,7 +120,7 @@ export default function WalletPayoutsList({
           value={estadoFilter}
           onChange={event => setEstadoFilter(event.target.value)}
         >
-          <option value="">Estado</option>
+          <option value="">Estado: Todos</option>
           {ESTADO_OPTIONS_PAYOUT.map(option => (
             <option key={option.value} value={option.value}>
               {option.label}

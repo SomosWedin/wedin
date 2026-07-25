@@ -168,7 +168,7 @@ export default function DashboardTransactionsList({
           value={estadoFilter}
           onChange={event => setEstadoFilter(event.target.value)}
         >
-          <option value="">Estado</option>
+          <option value="">Estado: Todos</option>
           {ESTADO_OPTIONS.map(option => (
             <option key={option.value} value={option.value}>
               {option.label}

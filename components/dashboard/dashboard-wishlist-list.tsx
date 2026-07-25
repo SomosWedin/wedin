@@ -143,7 +143,7 @@ export default function DashboardWishlistList({
           value={estadoFilter}
           onChange={event => setEstadoFilter(event.target.value)}
         >
-          <option value="">Estado</option>
+          <option value="">Estado: Todos</option>
           {ESTADO_OPTIONS.map(option => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -230,7 +230,7 @@ export default function DashboardWishlistList({
               </div>
 
               {!wishlistGift.isReceived && (
-                <div className="flex col-span-2 gap-2 justify-end opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="flex col-span-2 gap-2 justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                   <EditWishlistGiftDialog
                     wishlistGiftId={wishlistGift.id}
                     wishlistId={wishlistId}
