@@ -1,8 +1,20 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { User } from '@prisma/client';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function coupleName(users: User[]): string {
+  const primaryUser = users.find(user => user.isPrimary) ?? users[0];
+  const secondaryUser = users.find(user => !user.isPrimary);
+
+  if (!primaryUser?.name) return 'Evento sin organizador';
+
+  return secondaryUser?.name
+    ? `${primaryUser.name} & ${secondaryUser.name}`
+    : primaryUser.name;
 }
 
 export function formatPrice(price: number): string {

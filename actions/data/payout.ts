@@ -1,7 +1,9 @@
 'use server';
 
 import prismaClient from '@/prisma/client';
+import { PayoutEditSchema } from '@/schemas/form';
 import { RequestPayoutParams } from '@/schemas/params';
+import type { PayoutStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import type { z } from 'zod';
 import { getCurrentUser } from '../get-current-user';
@@ -132,6 +134,55 @@ export async function requestPayout(
     return { success: true };
   } catch (error) {
     console.error('Error creating payout request:', error);
+    return { error: getErrorMessage(error) };
+  }
+}
+
+export async function getAllPayoutsForAdmin() {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser || currentUser.role !== 'ADMIN') return [];
+
+  try {
+    return await prismaClient.payout.findMany({
+      include: {
+        bankDetails: true,
+        event: { include: { users: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  } catch (error) {
+    console.error('Error retrieving payouts for admin:', error);
+    return [];
+  }
+}
+
+export async function updatePayoutStatusAsAdmin(
+  payoutId: string,
+  status: PayoutStatus
+) {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser || currentUser.role !== 'ADMIN') {
+    return { error: 'No autorizado.' };
+  }
+
+  const validatedStatus = PayoutEditSchema.shape.status.safeParse(status);
+
+  if (!validatedStatus.success) {
+    return { error: 'Estado inválido.' };
+  }
+
+  try {
+    await prismaClient.payout.update({
+      where: { id: payoutId },
+      data: { status: validatedStatus.data },
+    });
+
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating payout status as admin:', error);
     return { error: getErrorMessage(error) };
   }
 }

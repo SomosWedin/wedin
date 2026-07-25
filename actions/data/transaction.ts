@@ -215,6 +215,17 @@ export async function updateTransactionStatusAsAdmin(
     return { error: 'Estado inválido.' };
   }
 
+  const transaction = await prismaClient.transaction.findUnique({
+    where: { id: transactionId },
+    select: { paymentMethod: true },
+  });
+
+  if (transaction?.paymentMethod === 'CARD') {
+    return {
+      error: 'El estado de pagos con tarjeta lo administra Pagopar.',
+    };
+  }
+
   try {
     await applyTransactionStatusChange(
       transactionId,
