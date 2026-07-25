@@ -7,7 +7,7 @@ import { GetTransactionsParams } from '@/schemas/params';
 import type { Prisma, TransactionStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import type { z } from 'zod';
-import { getErrorMessage } from '../helper';
+import { getErrorMessage, retryOnTransientWriteConflict } from '../helper';
 
 export async function getTransactions({
   searchParams,
@@ -64,6 +64,37 @@ export async function updateTransactionNotes(
   }
 }
 
+// Undoes the atomic claim from createTransactionsForCart (actions/data/checkout.ts).
+async function releaseWishlistGiftClaim(transaction: {
+  id: string;
+  wishlistGiftId: string;
+  amount: string;
+}) {
+  const wishlistGift = await prismaClient.wishlistGift.findUnique({
+    where: { id: transaction.wishlistGiftId },
+    select: { isGroupGift: true, claimedTransactionId: true },
+  });
+
+  if (!wishlistGift) return;
+
+  if (wishlistGift.isGroupGift) {
+    await prismaClient.wishlistGift.update({
+      where: { id: transaction.wishlistGiftId },
+      data: {
+        reservedAmount: { decrement: Number(transaction.amount) || 0 },
+      },
+    });
+    return;
+  }
+
+  if (wishlistGift.claimedTransactionId === transaction.id) {
+    await prismaClient.wishlistGift.update({
+      where: { id: transaction.wishlistGiftId },
+      data: { claimedTransactionId: null, claimedAt: null },
+    });
+  }
+}
+
 async function recomputeWishlistGiftProgress(wishlistGiftId: string) {
   const wishlistGift = await prismaClient.wishlistGift.findUnique({
     where: { id: wishlistGiftId },
@@ -103,32 +134,45 @@ export async function applyTransactionStatusChange(
 
   if (!transaction || transaction.status === status) return;
 
-  // The updateMany's where-clause is conditional on the current status, so
-  // a concurrent/duplicate call that loses the race (e.g. two overlapping
-  // webhook deliveries) gets count: 0 and is a no-op here instead of both
-  // writing a TransactionStatusLog row. Wrapped with the log write in one
-  // transaction so the two stay all-or-nothing, same as before.
-  const count = await prismaClient.$transaction(async tx => {
-    const result = await tx.transaction.updateMany({
-      where: { id: transactionId, status: { not: status } },
-      data: { status },
-    });
+  // A delayed webhook can't resurrect a released (FAILED/REFUNDED)
+  // transaction into COMPLETED — its slot may already be reclaimed.
+  // Only an admin override (changedById set) is allowed to do that.
+  if (
+    changedById === null &&
+    status === 'COMPLETED' &&
+    (transaction.status === 'FAILED' || transaction.status === 'REFUNDED')
+  ) {
+    return;
+  }
 
-    if (result.count === 0) return 0;
+  // Conditional updateMany makes a duplicate/concurrent call a no-op (count: 0).
+  const count = await retryOnTransientWriteConflict(() =>
+    prismaClient.$transaction(async tx => {
+      const result = await tx.transaction.updateMany({
+        where: { id: transactionId, status: { not: status } },
+        data: { status },
+      });
 
-    await tx.transactionStatusLog.create({
-      data: {
-        transactionId,
-        previousStatus: transaction.status,
-        status,
-        changedById,
-      },
-    });
+      if (result.count === 0) return 0;
 
-    return result.count;
-  });
+      await tx.transactionStatusLog.create({
+        data: {
+          transactionId,
+          previousStatus: transaction.status,
+          status,
+          changedById,
+        },
+      });
+
+      return result.count;
+    })
+  );
 
   if (count === 0) return;
+
+  if (status === 'FAILED' || status === 'REFUNDED') {
+    await releaseWishlistGiftClaim(transaction);
+  }
 
   await recomputeWishlistGiftProgress(transaction.wishlistGiftId);
 }
