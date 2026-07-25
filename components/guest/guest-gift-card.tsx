@@ -89,7 +89,7 @@ export default function GuestGiftCard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className={`flex flex-col gap-1 ${isComplete ? 'opacity-50' : ''}`}>
         <p className="font-normal text-sm line-clamp-2 min-h-[2.5rem] sm:min-h-0 sm:text-lg sm:truncate sm:line-clamp-none">
           {gift.name}
         </p>
