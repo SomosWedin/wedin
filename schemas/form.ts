@@ -98,6 +98,13 @@ export const TransactionEditSchema = z.object({
   notes: z.string().optional(),
 });
 
+// Define the PayoutStatus enum to match your Prisma schema
+const PayoutStatus = z.enum(['REQUESTED', 'PROCESSING', 'COMPLETED', 'REJECTED']);
+
+export const PayoutEditSchema = z.object({
+  status: PayoutStatus,
+});
+
 export const TransactionStatusLogUpdateSchema = z.object({
   transaction: z.object({
     id: z.string().min(1, { message: 'No se encontró un ID de transacción' }),

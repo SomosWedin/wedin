@@ -48,9 +48,9 @@ export const PAYMENT_METHOD_ICON: Record<
   PaymentMethod,
   { icon: React.ReactNode; title: string }
 > = {
-  CARD: { icon: <IoCardOutline />, title: 'Pago con tarjeta' },
+  CARD: { icon: <IoCardOutline />, title: 'Tarjeta' },
   BANK_TRANSFER: {
     icon: <IoBusinessOutline />,
-    title: 'Transferencia bancaria',
+    title: 'Transferencia',
   },
 };

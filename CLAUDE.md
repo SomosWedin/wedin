@@ -153,10 +153,10 @@ route group outside `app/admin/` would need the same exemption.
   of the staff-only `/admin` page, which calls the real
   `applyTransactionStatusChange` action directly instead of a duplicated
   copy.)
-- **Testing an authenticated flow live**: don't mint a raw session JWT
-  (`next-auth/jwt`'s `encode`) to impersonate a user for testing — that's a
-  forged credential and gets (correctly) blocked. Instead rotate a known
-  test account's password directly in the DB (bcrypt, same method as
-  `actions/auth/register.ts`) and log in through the real `/login` form (a
-  `curl` cookie-jar login via `/api/auth/csrf` +
-  `/api/auth/callback/credentials` works fine, no browser needed).
+- **Testing an authenticated flow live**: there's no password/credentials
+  provider — auth is Google, Facebook, or Resend magic-link email only (see
+  `auth.ts`/`auth.config.ts`). Don't mint a raw session JWT to impersonate a
+  user; that's a forged credential and gets (correctly) blocked. To log in
+  as a real test account, either use an email address you can actually
+  receive mail at and click the real magic link, or ask the user to log in
+  and hand off.
