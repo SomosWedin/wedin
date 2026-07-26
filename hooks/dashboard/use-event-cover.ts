@@ -1,5 +1,6 @@
 'use client';
 
+import { suggestCoverMessage } from '@/actions/ai/suggest-cover-message';
 import { updateEvent } from '@/actions/data/event';
 import { addImages, deleteImages, updateImage } from '@/actions/data/images';
 import { useToast } from '@/hooks/use-toast';
@@ -58,6 +59,8 @@ export function useEventCover({
   images,
 }: EventCoverUpdateFormProps) {
   const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggesting, setSuggesting] = useState(false);
   const [initialImages, setInitialImages] = useState<ExistingImage[]>([]); // Images initially fetched from the database
   const [existingImages, setExistingImages] = useState<ExistingImage[]>([]); // Images currently displayed from the database
   const [newImages, setNewImages] = useState<NewImage[]>([]); // New images added by the user
@@ -478,7 +481,32 @@ export function useEventCover({
     fileInputRef.current?.click();
   };
 
+  const handleSuggestCoverMessage = async () => {
+    setSuggesting(true);
+    const result = await suggestCoverMessage(eventId);
+    setSuggesting(false);
+
+    if (!result.success) {
+      toast({
+        title: result.error ?? 'No se pudieron generar sugerencias',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSuggestions(result.success);
+  };
+
+  const applySuggestion = (suggestion: string) => {
+    form.setValue('coverMessage', suggestion, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setSuggestions([]);
+  };
+
   return {
+    applySuggestion,
     currentImages,
     dirtyFields,
     fileInputRef,
@@ -489,9 +517,12 @@ export function useEventCover({
     handleRemoveImage,
     handleOnSubmit,
     handleReset,
+    handleSuggestCoverMessage,
     hasChanges,
     isDirty,
     loading,
     slots,
+    suggesting,
+    suggestions,
   };
 }

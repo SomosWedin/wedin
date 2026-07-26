@@ -13,7 +13,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useEventCover } from '@/hooks/dashboard/use-event-cover';
 import { Event, Image as ImageModel, User } from '@prisma/client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { CiImageOn } from 'react-icons/ci';
 import { FaCheck } from 'react-icons/fa6';
@@ -30,6 +30,7 @@ type EventDetailsUpdateFormProps = {
 const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
   const { images, coverMessage, id } = event;
   const {
+    applySuggestion,
     currentImages,
     fileInputRef,
     form,
@@ -39,9 +40,12 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
     handleRemoveImage,
     handleOnSubmit,
     handleReset,
+    handleSuggestCoverMessage,
     hasChanges,
     loading,
     slots,
+    suggesting,
+    suggestions,
   } = useEventCover({ eventId: id, coverMessage: coverMessage, images });
   const previewCoverMessage = form.watch('coverMessage');
 
@@ -49,7 +53,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleOnSubmit)}
-        className="w-full flex flex-col gap-8"
+        className="w-full flex flex-col gap-6 sm:gap-8"
       >
         <div className="flex flex-col gap-6 items-center pb-10 w-full border-b border-gray-200 sm:flex-row">
           <div className="flex flex-col gap-2 w-full sm:w-1/2">
@@ -135,22 +139,54 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
               hasta 255 caracteres
             </p>
           </div>
-          <div className="flex flex-col gap-6 items-end w-full sm:w-1/2">
+          <div className="flex flex-col gap-4 items-end w-full sm:w-1/2">
             <FormField
               control={form.control}
               name="coverMessage"
               render={({ field }) => (
                 <FormItem className="w-full">
                   <FormControl>
-                    <Textarea
-                      placeholder="Escribe un mensaje de bienvenida"
-                      {...field}
-                    />
+                    <div className="relative w-full">
+                      <Textarea
+                        placeholder="Escribe un mensaje de bienvenida"
+                        className="min-h-32 resize-none"
+                        {...field}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="absolute right-2 bottom-2 gap-2"
+                        onClick={handleSuggestCoverMessage}
+                        disabled={suggesting}
+                      >
+                        {suggesting ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4" />
+                        )}
+                        <span className="hidden sm:inline">Sugerir con IA</span>
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage className="font-normal text-red-600" />
                 </FormItem>
               )}
             />
+            {suggestions.length > 0 && (
+              <div className="flex flex-col gap-2 w-full">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => applySuggestion(suggestion)}
+                    className="p-3 text-xs sm:text-sm text-left rounded-md border transition-colors border-borderSecondary hover:border-primary hover:bg-gray-50"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap gap-2 justify-end w-full">
