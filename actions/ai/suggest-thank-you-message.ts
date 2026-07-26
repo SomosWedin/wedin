@@ -40,17 +40,21 @@ export async function suggestThankYouMessage(transactionId: string) {
     return { error: 'Transaction not found' };
   }
 
-  // Several gifts bought in one card checkout share pagoparHash and get
-  // thanked together (see updateTransactionNotes) — so the draft should
-  // name every gift in the group, not just the one the organizer clicked.
+  // Several gifts bought in one checkout share pagoparHash (CARD) or
+  // bankTransferGroupId (BANK_TRANSFER) and get thanked together (see
+  // updateTransactionNotes) — so the draft should name every gift in the
+  // group, not just the one the organizer clicked.
+  const groupWhere = transaction.pagoparHash
+    ? { pagoparHash: transaction.pagoparHash }
+    : transaction.bankTransferGroupId
+      ? { bankTransferGroupId: transaction.bankTransferGroupId }
+      : null;
+
   let giftNames: string[];
 
-  if (transaction.pagoparHash) {
+  if (groupWhere) {
     const siblings = await prismaClient.transaction.findMany({
-      where: {
-        pagoparHash: transaction.pagoparHash,
-        eventId: transaction.eventId,
-      },
+      where: { ...groupWhere, eventId: transaction.eventId },
       include: { wishlistGift: { include: { gift: true } } },
     });
     giftNames = Array.from(

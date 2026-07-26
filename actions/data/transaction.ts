@@ -53,22 +53,30 @@ export async function updateTransactionNotes(
   try {
     const transaction = await prismaClient.transaction.findUnique({
       where: { id: transactionId },
-      select: { pagoparHash: true, eventId: true },
+      select: {
+        pagoparHash: true,
+        bankTransferGroupId: true,
+        eventId: true,
+      },
     });
 
     if (!transaction) {
       return { error: 'Transacción no encontrada.' };
     }
 
-    // A guest can pay for several gifts in one Pagopar checkout — those
-    // transactions share pagoparHash. Thanking one thanks the whole
-    // checkout, so the organizer doesn't have to repeat it per gift.
-    if (transaction.pagoparHash) {
+    // A guest can pay for several gifts in one checkout — CARD transactions
+    // share pagoparHash, BANK_TRANSFER ones share bankTransferGroupId.
+    // Thanking one thanks the whole checkout, so the organizer doesn't have
+    // to repeat it per gift.
+    const groupWhere = transaction.pagoparHash
+      ? { pagoparHash: transaction.pagoparHash }
+      : transaction.bankTransferGroupId
+        ? { bankTransferGroupId: transaction.bankTransferGroupId }
+        : null;
+
+    if (groupWhere) {
       await prismaClient.transaction.updateMany({
-        where: {
-          pagoparHash: transaction.pagoparHash,
-          eventId: transaction.eventId,
-        },
+        where: { ...groupWhere, eventId: transaction.eventId },
         data: { notes: validatedFields.data.notes },
       });
     } else {
@@ -239,7 +247,7 @@ export async function updateTransactionStatusAsAdmin(
 
   const transaction = await prismaClient.transaction.findUnique({
     where: { id: transactionId },
-    select: { paymentMethod: true },
+    select: { paymentMethod: true, bankTransferGroupId: true, eventId: true },
   });
 
   if (transaction?.paymentMethod === 'CARD') {
@@ -249,11 +257,28 @@ export async function updateTransactionStatusAsAdmin(
   }
 
   try {
-    await applyTransactionStatusChange(
-      transactionId,
-      validatedStatus.data,
-      currentUser.id
-    );
+    // A guest can pay for several gifts in one bank transfer — those
+    // transactions share bankTransferGroupId. One proof of transfer covers
+    // the whole group, so confirming (or rejecting) one confirms them all.
+    const transactionIds = transaction?.bankTransferGroupId
+      ? (
+          await prismaClient.transaction.findMany({
+            where: {
+              bankTransferGroupId: transaction.bankTransferGroupId,
+              eventId: transaction.eventId,
+            },
+            select: { id: true },
+          })
+        ).map(({ id }) => id)
+      : [transactionId];
+
+    for (const id of transactionIds) {
+      await applyTransactionStatusChange(
+        id,
+        validatedStatus.data,
+        currentUser.id
+      );
+    }
 
     revalidatePath('/admin');
     return { success: true };
