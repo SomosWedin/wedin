@@ -12,10 +12,16 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useTransaction } from '@/hooks/dashboard/use-transaction';
 import { useToast } from '@/hooks/use-toast';
+import { buildWhatsappLink, toParaguayInternationalPhone } from '@/lib/whatsapp';
 import type { Transaction } from '@prisma/client';
 import { Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
-import { IoHeart, IoHeartOutline } from 'react-icons/io5';
+import {
+  IoHeart,
+  IoHeartOutline,
+  IoLogoWhatsapp,
+  IoMailOutline,
+} from 'react-icons/io5';
 
 type ThankTransactionDialogProps = {
   transaction: Transaction;
@@ -45,12 +51,31 @@ export default function ThankTransactionDialog({
   }
 
   const handleSubmit = async () => {
+    // Opened synchronously (before the await below) so browsers don't
+    // treat it as a popup — a window.open() after an await falls outside
+    // the user-gesture window and gets blocked.
+    const whatsappWindow = transaction.payerPhone
+      ? window.open('', '_blank')
+      : null;
+
     const response = await thankTransaction(transaction.id, {
       status: transaction.status,
       notes,
     });
 
-    if (!response.error) setOpen(false);
+    if (response.error) {
+      whatsappWindow?.close();
+      return;
+    }
+
+    if (transaction.payerPhone && whatsappWindow) {
+      whatsappWindow.location.href = buildWhatsappLink(
+        toParaguayInternationalPhone(transaction.payerPhone),
+        notes
+      );
+    }
+
+    setOpen(false);
   };
 
   const handleSuggest = async () => {
@@ -140,10 +165,16 @@ export default function ThankTransactionDialog({
           <Button
             type="button"
             variant="success"
+            className="gap-2"
             disabled={loading || !notes.trim()}
             onClick={handleSubmit}
           >
-            Enviar
+            {transaction.payerPhone ? (
+              <IoLogoWhatsapp className="text-base" />
+            ) : (
+              <IoMailOutline className="text-base" />
+            )}
+            {transaction.payerPhone ? 'Enviar WhatsApp' : 'Enviar email'}
           </Button>
         </div>
       </DialogContent>

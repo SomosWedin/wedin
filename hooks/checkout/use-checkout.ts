@@ -35,6 +35,8 @@ export function useCheckout({
       payerName: '',
       payerEmail: '',
       payerDocument: '',
+      payerPhone: '',
+      payerMessage: '',
       paymentMethod: 'CARD',
     },
   });

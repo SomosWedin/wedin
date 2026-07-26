@@ -1,5 +1,6 @@
 'use server';
 
+import { randomUUID } from 'node:crypto';
 import { createOrder } from '@/lib/pagopar';
 import prismaClient from '@/prisma/client';
 import { GuestCheckoutSchema } from '@/schemas/checkout';
@@ -55,8 +56,21 @@ export async function createTransactionsForCart(
     return { error: 'Tu carrito está vacío.' };
   }
 
-  const { payerName, payerEmail, payerDocument, paymentMethod } =
-    validatedPayer.data;
+  const {
+    payerName,
+    payerEmail,
+    payerDocument,
+    payerPhone,
+    payerMessage,
+    paymentMethod,
+  } = validatedPayer.data;
+
+  // CARD transactions get grouped later by Pagopar's own hash
+  // (createPagoparCheckoutSession), which never runs for BANK_TRANSFER —
+  // so it needs its own group id, generated once per cart checkout, to
+  // let "Agradecer" thank every gift from the same transfer at once.
+  const bankTransferGroupId =
+    paymentMethod === 'BANK_TRANSFER' ? randomUUID() : undefined;
 
   await expireStaleHolds(cartItems.map(item => item.wishlistGiftId));
 
@@ -141,7 +155,10 @@ export async function createTransactionsForCart(
             payerName,
             payerEmail,
             payerDocument,
+            payerPhone,
+            payerMessage,
             paymentMethod,
+            bankTransferGroupId,
             payerRole: 'INVITEE',
             payeeRole: 'ORGANIZER',
             status: paymentMethod === 'BANK_TRANSFER' ? 'PENDING' : 'OPEN',

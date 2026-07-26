@@ -222,22 +222,28 @@ model WishlistGift {
 }
 
 model Transaction {
-  id             String            @id @default(auto()) @map("_id") @db.ObjectId
-  wishlistGiftId String            @db.ObjectId
-  wishlistId     String?           @db.ObjectId
-  eventId        String            @db.ObjectId
-  amount         String
-  status         TransactionStatus @default(OPEN)
-  notes          String?
-  payerRole      UserType          @default(INVITEE)
-  payeeRole      UserType          @default(ORGANIZER)
-  payerName      String?
-  payerEmail     String?
-  payerDocument  String?
-  paymentMethod  PaymentMethod     @default(CARD)
-  pagoparHash    String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
+  wishlistGiftId      String            @db.ObjectId
+  wishlistId          String?           @db.ObjectId
+  eventId             String            @db.ObjectId
+  amount              String
+  status              TransactionStatus @default(OPEN)
+  notes               String?
+  payerRole           UserType          @default(INVITEE)
+  payeeRole           UserType          @default(ORGANIZER)
+  payerName           String?
+  payerEmail          String?
+  payerDocument       String?
+  payerPhone          String?
+  payerMessage        String?
+  paymentMethod       PaymentMethod     @default(CARD)
+  pagoparHash         String?
+  // Shared by every transaction created from the same BANK_TRANSFER cart
+  // checkout — the equivalent of pagoparHash for CARD, since bank transfer
+  // never gets a Pagopar-issued hash to group by.
+  bankTransferGroupId String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   wishlistGift          WishlistGift           @relation(fields: [wishlistGiftId], references: [id])
   event                 Event                  @relation(fields: [eventId], references: [id])
@@ -249,6 +255,7 @@ model Transaction {
   @@index([eventId])
   @@index([wishlistId])
   @@index([pagoparHash])
+  @@index([bankTransferGroupId])
 }
 
 model TransactionStatusLog {

@@ -6,8 +6,10 @@ import Image from 'next/image';
 import { IoGiftOutline, IoLockClosedOutline } from 'react-icons/io5';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -87,6 +89,7 @@ export default function CheckoutForm({
   }, [hasHydrated, cartItems, eventSlug, router, loading]);
 
   const paymentMethod = form.watch('paymentMethod');
+  const [wantsMessage, setWantsMessage] = useState(false);
 
   if (!hasHydrated || !cartItems) return null;
   if (cartItems.length === 0 && !loading) return null;
@@ -119,19 +122,47 @@ export default function CheckoutForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="payerEmail"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="tu@email.com" {...field} />
-                </FormControl>
-                <FormMessage className="font-normal text-red-600" />
-              </FormItem>
-            )}
-          />
+          {paymentMethod === 'CARD' ? (
+            <FormField
+              control={form.control}
+              name="payerEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="tu@email.com"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
+          ) : (
+            <FormField
+              control={form.control}
+              name="payerPhone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Teléfono</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="0981234567"
+                      inputMode="numeric"
+                      maxLength={15}
+                      {...field}
+                      onChange={e =>
+                        field.onChange(e.target.value.replace(/\D/g, ''))
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
+          )}
 
           {paymentMethod === 'CARD' && (
             <FormField
@@ -156,6 +187,39 @@ export default function CheckoutForm({
               )}
             />
           )}
+
+          <div className="flex flex-col gap-3">
+            <label className="flex gap-2 items-center cursor-pointer">
+              <Checkbox
+                checked={wantsMessage}
+                onCheckedChange={checked => {
+                  const next = checked === true;
+                  setWantsMessage(next);
+                  if (!next) form.setValue('payerMessage', '');
+                }}
+              />
+              <span className="text-sm">Te gustaría dejar un mensaje con tu regalo?</span>
+            </label>
+
+            {wantsMessage && (
+              <FormField
+                control={form.control}
+                name="payerMessage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Deja un mensaje con tu regalo"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="font-normal text-red-600" />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
         </div>
 
         <div className="order-1 flex flex-col gap-6 md:order-2">
