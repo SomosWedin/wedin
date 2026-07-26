@@ -51,10 +51,32 @@ export async function updateTransactionNotes(
   }
 
   try {
-    await prismaClient.transaction.update({
+    const transaction = await prismaClient.transaction.findUnique({
       where: { id: transactionId },
-      data: { notes: validatedFields.data.notes },
+      select: { pagoparHash: true, eventId: true },
     });
+
+    if (!transaction) {
+      return { error: 'Transacción no encontrada.' };
+    }
+
+    // A guest can pay for several gifts in one Pagopar checkout — those
+    // transactions share pagoparHash. Thanking one thanks the whole
+    // checkout, so the organizer doesn't have to repeat it per gift.
+    if (transaction.pagoparHash) {
+      await prismaClient.transaction.updateMany({
+        where: {
+          pagoparHash: transaction.pagoparHash,
+          eventId: transaction.eventId,
+        },
+        data: { notes: validatedFields.data.notes },
+      });
+    } else {
+      await prismaClient.transaction.update({
+        where: { id: transactionId },
+        data: { notes: validatedFields.data.notes },
+      });
+    }
 
     revalidatePath('/transactions');
     return { success: true };
