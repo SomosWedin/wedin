@@ -28,7 +28,7 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <div className="w-full h-full flex items-center flex-col gap-6 p-8">
+    <div className="container w-full h-full flex items-center flex-col gap-6 p-8">
       <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-200 pb-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-black">Panel de staff</h1>
