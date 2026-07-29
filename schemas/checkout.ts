@@ -23,14 +23,12 @@ export const GuestCheckoutSchema = z
       .regex(/^\d{5,10}$/, { message: 'Ingresá un número de cédula válido' })
       .optional()
       .or(z.literal('')),
-    // Only required for BANK_TRANSFER, since that's the guest-thanking flow
-    // that prefers WhatsApp over email.
+    // Required for every payment method — the only way the organizer can
+    // thank a guest is via WhatsApp, so we need a number on every guest.
     payerPhone: z
       .string()
-      .regex(/^\d{6,15}$/, { message: 'Ingresá un número de teléfono válido' })
-      .optional()
-      .or(z.literal('')),
-    payerMessage: z.string().max(500).optional().or(z.literal('')),
+      .regex(/^\d{6,15}$/, { message: 'Ingresá un número de teléfono válido' }),
+    payerMessage: z.string().max(255).optional().or(z.literal('')),
     paymentMethod: z
       .enum(['CARD', 'BANK_TRANSFER'], {
         required_error: 'Elegí una forma de pago',
@@ -53,13 +51,5 @@ export const GuestCheckoutSchema = z
           path: ['payerDocument'],
         });
       }
-    }
-
-    if (data.paymentMethod === 'BANK_TRANSFER' && !data.payerPhone) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'El teléfono es obligatorio para transferencia bancaria',
-        path: ['payerPhone'],
-      });
     }
   });

@@ -16,12 +16,7 @@ import { buildWhatsappLink, toParaguayInternationalPhone } from '@/lib/whatsapp'
 import type { Transaction } from '@prisma/client';
 import { Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
-import {
-  IoHeart,
-  IoHeartOutline,
-  IoLogoWhatsapp,
-  IoMailOutline,
-} from 'react-icons/io5';
+import { IoHeart, IoHeartOutline, IoLogoWhatsapp } from 'react-icons/io5';
 
 type ThankTransactionDialogProps = {
   transaction: Transaction;
@@ -53,10 +48,9 @@ export default function ThankTransactionDialog({
   const handleSubmit = async () => {
     // Opened synchronously (before the await below) so browsers don't
     // treat it as a popup — a window.open() after an await falls outside
-    // the user-gesture window and gets blocked.
-    const whatsappWindow = transaction.payerPhone
-      ? window.open('', '_blank')
-      : null;
+    // the user-gesture window and gets blocked. The send button is disabled
+    // without a payerPhone, so it's always set here.
+    const whatsappWindow = window.open('', '_blank');
 
     const response = await thankTransaction(transaction.id, {
       status: transaction.status,
@@ -68,7 +62,7 @@ export default function ThankTransactionDialog({
       return;
     }
 
-    if (transaction.payerPhone && whatsappWindow) {
+    if (whatsappWindow && transaction.payerPhone) {
       whatsappWindow.location.href = buildWhatsappLink(
         toParaguayInternationalPhone(transaction.payerPhone),
         notes
@@ -154,7 +148,12 @@ export default function ThankTransactionDialog({
           </div>
         )}
 
-        <div className="flex gap-2 justify-end pt-4 -mx-6 -mb-6 px-6 pb-6 bg-gray-50 rounded-b-lg">
+        <div className="flex gap-2 justify-end items-center pt-4 -mx-6 -mb-6 px-6 pb-6 bg-gray-50 rounded-b-lg">
+          {!transaction.payerPhone && (
+            <p className="mr-auto text-xs text-textTertiary">
+              Este invitado no tiene teléfono registrado
+            </p>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -166,15 +165,11 @@ export default function ThankTransactionDialog({
             type="button"
             variant="success"
             className="gap-2"
-            disabled={loading || !notes.trim()}
+            disabled={loading || !notes.trim() || !transaction.payerPhone}
             onClick={handleSubmit}
           >
-            {transaction.payerPhone ? (
-              <IoLogoWhatsapp className="text-base" />
-            ) : (
-              <IoMailOutline className="text-base" />
-            )}
-            {transaction.payerPhone ? 'Enviar WhatsApp' : 'Enviar email'}
+            <IoLogoWhatsapp className="text-base" />
+            Enviar WhatsApp
           </Button>
         </div>
       </DialogContent>

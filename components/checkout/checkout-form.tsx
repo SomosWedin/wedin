@@ -122,7 +122,7 @@ export default function CheckoutForm({
             )}
           />
 
-          {paymentMethod === 'CARD' ? (
+          {paymentMethod === 'CARD' && (
             <FormField
               control={form.control}
               name="payerEmail"
@@ -134,28 +134,6 @@ export default function CheckoutForm({
                       type="email"
                       placeholder="tu@email.com"
                       {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
-          ) : (
-            <FormField
-              control={form.control}
-              name="payerPhone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Teléfono</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="0981234567"
-                      inputMode="numeric"
-                      maxLength={15}
-                      {...field}
-                      onChange={e =>
-                        field.onChange(e.target.value.replace(/\D/g, ''))
-                      }
                     />
                   </FormControl>
                   <FormMessage className="font-normal text-red-600" />
@@ -188,6 +166,28 @@ export default function CheckoutForm({
             />
           )}
 
+          <FormField
+            control={form.control}
+            name="payerPhone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Teléfono</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="0981234567"
+                    inputMode="numeric"
+                    maxLength={15}
+                    {...field}
+                    onChange={e =>
+                      field.onChange(e.target.value.replace(/\D/g, ''))
+                    }
+                  />
+                </FormControl>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+
           <div className="flex flex-col gap-3">
             <label className="flex gap-2 items-center cursor-pointer">
               <Checkbox
@@ -212,6 +212,15 @@ export default function CheckoutForm({
                         placeholder="Deja un mensaje con tu regalo"
                         className="resize-none"
                         {...field}
+                        maxLength={255}
+                        onChange={e =>
+                          field.onChange(
+                            e.target.value.replace(
+                              /[^a-zA-ZÀ-ÿ0-9\s.,!?'-]/g,
+                              ''
+                            )
+                          )
+                        }
                       />
                     </FormControl>
                     <FormMessage className="font-normal text-red-600" />
