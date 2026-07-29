@@ -77,17 +77,19 @@ export default function GuestGiftCard({
           </div>
         )}
         <div className="flex absolute bottom-3 left-3 flex-col gap-1.5 items-start max-w-[calc(100%-1.5rem)]">
-          <GiftTypeBadge
-            isGroupGift={wishlistGift.isGroupGift}
-            className="text-[11px] px-2 sm:text-xs sm:px-2.5"
-          />
+          {wishlistGift.isGroupGift && (
+            <GiftTypeBadge
+              isGroupGift={wishlistGift.isGroupGift}
+              className="text-[11px] px-2 sm:text-xs sm:px-2.5"
+            />
+          )}
           {wishlistGift.isFavoriteGift && (
             <GiftFavoriteBadge className="text-[11px] px-2 sm:text-xs sm:px-2.5" />
           )}
         </div>
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className={`flex flex-col gap-1 ${isComplete ? 'opacity-50' : ''}`}>
         <p className="font-normal text-sm line-clamp-2 min-h-[2.5rem] sm:min-h-0 sm:text-lg sm:truncate sm:line-clamp-none">
           {gift.name}
         </p>

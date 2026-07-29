@@ -4,17 +4,17 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import {
   IoCashOutline,
-  IoCheckmark,
-  IoClose,
   IoGiftOutline,
   IoSwapVerticalOutline,
-  IoSync,
-  IoTimeOutline,
   IoChevronDown,
   IoChevronUp,
 } from 'react-icons/io5';
 import { Badge } from '@/components/ui/badge';
-import type { Payout, PayoutStatus } from '@prisma/client';
+import {
+  ESTADO_BY_PAYOUT_STATUS,
+  ESTADO_OPTIONS_PAYOUT,
+} from '@/components/dashboard/payout-estado';
+import type { Payout } from '@prisma/client';
 
 type WalletSummary = {
   totalReceived: number;
@@ -26,39 +26,6 @@ type WalletPayoutsListProps = {
   summary: WalletSummary;
   payouts: Payout[];
 };
-
-const ESTADO_BY_PAYOUT_STATUS: Record<
-  PayoutStatus,
-  { label: string; className: string; icon: React.ReactNode }
-> = {
-  REQUESTED: {
-    label: 'Pendiente',
-    className: 'bg-gray100 text-textTertiary border-transparent',
-    icon: <IoTimeOutline className="mr-1" />,
-  },
-  PROCESSING: {
-    label: 'En proceso',
-    className: 'bg-warning/10 text-warning border-transparent',
-    icon: <IoSync className="mr-1" />,
-  },
-  COMPLETED: {
-    label: 'Confirmado',
-    className: 'bg-success/10 text-success border-transparent',
-    icon: <IoCheckmark className="mr-1" />,
-  },
-  REJECTED: {
-    label: 'Rechazado',
-    className: 'bg-error/10 text-error border-transparent',
-    icon: <IoClose className="mr-1" />,
-  },
-};
-
-const ESTADO_OPTIONS = (
-  Object.entries(ESTADO_BY_PAYOUT_STATUS) as [
-    PayoutStatus,
-    { label: string },
-  ][]
-).map(([status, { label }]) => ({ value: status, label }));
 
 type SortColumn = 'createdAt' | 'amount';
 type SortDirection = 'asc' | 'desc';
@@ -153,8 +120,8 @@ export default function WalletPayoutsList({
           value={estadoFilter}
           onChange={event => setEstadoFilter(event.target.value)}
         >
-          <option value="">Estado</option>
-          {ESTADO_OPTIONS.map(option => (
+          <option value="">Estado: Todos</option>
+          {ESTADO_OPTIONS_PAYOUT.map(option => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

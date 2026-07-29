@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { IoShareSocialOutline } from 'react-icons/io5';
+import { IoLinkOutline } from 'react-icons/io5';
 
 export default function ShareListButton() {
   const { toast } = useToast();
@@ -21,9 +21,9 @@ export default function ShareListButton() {
   };
 
   return (
-    <Button variant="outline" className="gap-2" onClick={handleShare}>
+    <Button variant="outline" className="gap-2" onClick={handleShare} size="sm">
       Compartir lista
-      <IoShareSocialOutline className="text-lg" />
+      <IoLinkOutline className="text-lg" />
     </Button>
   );
 }

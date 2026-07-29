@@ -7,6 +7,14 @@
   resolved "https://registry.npmjs.org/@alloc/quick-lru/-/quick-lru-5.2.0.tgz"
   integrity sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==
 
+"@anthropic-ai/sdk@^0.115.0":
+  version "0.115.0"
+  resolved "https://registry.yarnpkg.com/@anthropic-ai/sdk/-/sdk-0.115.0.tgz#f71ce711306e45e2122066ae50f7f89d8b5ed598"
+  integrity sha512-BJrFIVyjNuU8lfDyIJTvlRYzgQg+zEl78BxE7fq8esULsGz9IRQvGtW5spq3tydmtjQb/GFdooKGdGsetpx+lQ==
+  dependencies:
+    json-schema-to-ts "^3.1.1"
+    standardwebhooks "^1.0.0"
+
 "@auth/core@0.34.2":
   version "0.34.2"
   resolved "https://registry.npmjs.org/@auth/core/-/core-0.34.2.tgz"
@@ -671,6 +679,11 @@
   integrity sha512-VBj9MYyDb9tuLq7yzqjgzt6Q+IBQLrGZfdjOekyEirZPHxXWoTSGUTMrpsfi58Up73d13NfYLv8HT9vmznjzhQ==
   dependencies:
     regenerator-runtime "^0.14.0"
+
+"@babel/runtime@^7.18.3":
+  version "7.29.7"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.29.7.tgz#12022450c45a4da6d8d8287b18a4ff2ddb23f768"
+  integrity sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==
 
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
@@ -2333,7 +2346,12 @@
     "@smithy/types" "^3.4.0"
     tslib "^2.6.2"
 
-"@standard-schema/spec@^1.0.0", "@standard-schema/spec@^1.1.0":
+"@stablelib/base64@^1.0.0":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@stablelib/base64/-/base64-1.0.1.tgz#bdfc1c6d3a62d7a3b7bbc65b6cce1bb4561641be"
+  integrity sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==
+
+"@standard-schema/spec@^1.0.0":
   version "1.1.0"
   resolved "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz"
   integrity sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==
@@ -4444,6 +4462,11 @@ fast-levenshtein@^2.0.6:
   resolved "https://registry.npmjs.org/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz"
   integrity sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==
 
+fast-sha256@^1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/fast-sha256/-/fast-sha256-1.3.0.tgz#7916ba2054eeb255982608cccd0f6660c79b7ae6"
+  integrity sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ==
+
 fast-xml-parser@4.4.1:
   version "4.4.1"
   resolved "https://registry.npmjs.org/fast-xml-parser/-/fast-xml-parser-4.4.1.tgz"
@@ -5529,6 +5552,14 @@ json-parse-even-better-errors@^2.3.0:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/json-parse-even-better-errors/-/json-parse-even-better-errors-2.3.1.tgz#7c47805a94319928e05777405dc12e1f7a4ee02d"
   integrity sha512-xyFwyhro/JEof6Ghe2iz2NcXoj2sloNsWr/XsERDK/oiPCfaNhl5ONfp+jQdAZRQQ0IJWNzH9zIZF7li91kh2w==
+
+json-schema-to-ts@^3.1.1:
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/json-schema-to-ts/-/json-schema-to-ts-3.1.1.tgz#81f3acaf5a34736492f6f5f51870ef9ece1ca853"
+  integrity sha512-+DWg8jCJG2TEnpy7kOm/7/AxaYoaRbjVB4LFZLySZlWn8exGs3A4OLJR966cVvU26N7X9TWxl+Jsw7dzAqKT6g==
+  dependencies:
+    "@babel/runtime" "^7.18.3"
+    ts-algebra "^2.0.0"
 
 json-schema-traverse@^0.4.1:
   version "0.4.1"
@@ -7638,6 +7669,7 @@ sshpk@^1.7.0:
     safer-buffer "^2.0.2"
     tweetnacl "~0.14.0"
 
+<<<<<<< HEAD
 stackback@0.0.2:
   version "0.0.2"
   resolved "https://registry.npmjs.org/stackback/-/stackback-0.0.2.tgz#1ac8a0d9483848d1695e418b6d031a3c3ce68e3b"
@@ -7647,6 +7679,15 @@ std-env@^4.0.0-rc.1:
   version "4.2.0"
   resolved "https://registry.npmjs.org/std-env/-/std-env-4.2.0.tgz#8ebe0ec60485668ab47227b312f4254cdf80c9d3"
   integrity sha512-oCUKSupKTHX53EyjDtuZQ64pjLJ6yYCtpmEw0goYxtjG9KpbRe8KAsl2tBUGU9DyMcJ0RwJ8GqJAFzMXcXW1Rw==
+=======
+standardwebhooks@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/standardwebhooks/-/standardwebhooks-1.0.0.tgz#5faa23ceacbf9accd344361101d9e3033b64324f"
+  integrity sha512-BbHGOQK9olHPMvQNHWul6MYlrRTAOKn03rOe4A8O3CLWhNf4YHBqq2HJKKC+sfqpxiBY52pNeesD6jIiLDz8jg==
+  dependencies:
+    "@stablelib/base64" "^1.0.0"
+    fast-sha256 "^1.3.0"
+>>>>>>> dev
 
 stop-iteration-iterator@^1.0.0:
   version "1.0.0"
@@ -8018,6 +8059,11 @@ tr46@~0.0.3:
   version "0.0.3"
   resolved "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
+
+ts-algebra@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/ts-algebra/-/ts-algebra-2.0.0.tgz#4e3e0953878f26518fce7f6bb115064a65388b7a"
+  integrity sha512-FPAhNPFMrkwz76P7cdjdmiShwMynZYN6SgOujD1urY4oNm80Ou9oMdmbR45LotcKOXoy7wSmHkRFE6Mxbrhefw==
 
 ts-api-utils@^1.0.1:
   version "1.3.0"

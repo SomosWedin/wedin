@@ -27,7 +27,7 @@ export default function OnboardingStepTwo() {
 
   const form = useForm<z.infer<typeof StepTwoSchema>>({
     resolver: zodResolver(StepTwoSchema),
-    mode: 'all',
+    mode: "onBlur",
     defaultValues: {
       name: '',
       lastName: '',
@@ -73,7 +73,7 @@ export default function OnboardingStepTwo() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex flex-col gap-4 w-full"
         >
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <FormField
               control={form.control}
               name="name"
@@ -82,7 +82,7 @@ export default function OnboardingStepTwo() {
                   <FormLabel>Tu nombre</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Santiago"
+                      placeholder="John"
                       className="!mt-1.5"
                       {...field}
                     />
@@ -100,7 +100,7 @@ export default function OnboardingStepTwo() {
                   <FormLabel>Tu apellido</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Figueiredo"
+                      placeholder="Doe"
                       className="!mt-1.5"
                       {...field}
                     />
@@ -132,7 +132,7 @@ export default function OnboardingStepTwo() {
                 <Image src={illustration} alt="illustration" width={42} />
                 <div className="border-b border-gray200 w-full h-full -mt-6"></div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <FormField
                   control={form.control}
                   name="partnerName"
@@ -141,7 +141,7 @@ export default function OnboardingStepTwo() {
                       <FormLabel>El nombre de tu pareja</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Crisley"
+                          placeholder="Jane"
                           className="!mt-1.5"
                           {...field}
                         />
@@ -159,7 +159,7 @@ export default function OnboardingStepTwo() {
                       <FormLabel>El apellido de tu pareja</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Dominguez"
+                          placeholder="Doe"
                           className="!mt-1.5"
                           {...field}
                         />

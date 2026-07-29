@@ -16,7 +16,7 @@ import {
 const AUTO_SLIDE_INTERVAL_MS = 3000;
 
 type GuestImageCarouselProps = {
-  images: ImageModel[];
+  images: Pick<ImageModel, 'id' | 'url'>[];
 };
 
 export default function GuestImageCarousel({ images }: GuestImageCarouselProps) {

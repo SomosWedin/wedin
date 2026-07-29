@@ -78,6 +78,18 @@ export default function DashboardTransactionsList({
     0
   );
 
+  const uniqueWishlistGifts = new Map(
+    transactions.map(transaction => [
+      transaction.wishlistGiftId,
+      transaction.wishlistGift,
+    ])
+  );
+  const totalWishlistGifts = uniqueWishlistGifts.size;
+  const totalGiftsPrice = Array.from(uniqueWishlistGifts.values()).reduce(
+    (sum, wishlistGift) => sum + (Number(wishlistGift.gift.price) || 0),
+    0
+  );
+
   const filteredTransactions = transactions.filter(transaction => {
     const normalizedSearch = search.trim().toLowerCase();
     const matchesSearch =
@@ -86,8 +98,7 @@ export default function DashboardTransactionsList({
       transaction.wishlistGift.gift.name
         .toLowerCase()
         .includes(normalizedSearch);
-    const matchesEstado =
-      !estadoFilter || transaction.status === estadoFilter;
+    const matchesEstado = !estadoFilter || transaction.status === estadoFilter;
 
     return matchesSearch && matchesEstado;
   });
@@ -111,27 +122,31 @@ export default function DashboardTransactionsList({
             Resúmen de los regalos recibidos
           </h2>
         </div>
-        <div className="flex gap-3 items-center p-6 w-1/2">
-          <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
-            <IoGiftOutline className="text-xl" />
+        {receivedCount >= 1 && (
+          <div className="flex gap-3 items-center p-6 w-1/2">
+            <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
+              <IoGiftOutline className="text-xl" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold">
+                {receivedCount} / {totalWishlistGifts}
+              </span>
+              <span className="text-sm whitespace-nowrap text-textTertiary">
+                Regalos recibidos
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold">{receivedCount}</span>
-            <span className="text-sm whitespace-nowrap text-textTertiary">
-              Regalos recibidos
-            </span>
-          </div>
-        </div>
+        )}
         <div className="flex gap-3 items-center p-6 w-1/2">
           <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
             <IoCashOutline className="text-xl" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold">
-              Gs. {total.toLocaleString('es-PY')}
+            <span className="text-sm whitespace-nowrap text-textTertiary">
+              <span className="text-lg font-bold text-textPrimary">Gs. {total.toLocaleString('es-PY')}</span> alcanzados
             </span>
             <span className="text-sm whitespace-nowrap text-textTertiary">
-              Equivalente en efectivo
+              de <span className="text-lg font-bold text-textPrimary">Gs. {totalGiftsPrice.toLocaleString('es-PY')}</span>
             </span>
           </div>
         </div>
@@ -153,7 +168,7 @@ export default function DashboardTransactionsList({
           value={estadoFilter}
           onChange={event => setEstadoFilter(event.target.value)}
         >
-          <option value="">Estado</option>
+          <option value="">Estado: Todos</option>
           {ESTADO_OPTIONS.map(option => (
             <option key={option.value} value={option.value}>
               {option.label}

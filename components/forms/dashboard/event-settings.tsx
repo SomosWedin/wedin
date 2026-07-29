@@ -115,7 +115,7 @@ export default function DashboardEventSettingsForm({
                         wedin.com/e/
                       </span>
                       <Input
-                        placeholder="crisley-y-yayo"
+                        placeholder="30deAmelie"
                         className="border-0 !mt-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                         {...field}
                       />
@@ -151,7 +151,7 @@ export default function DashboardEventSettingsForm({
                 <FormLabel>Tu nombre</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Santiago"
+                    placeholder="John"
                     className="!mt-1.5"
                     {...field}
                   />
@@ -169,7 +169,7 @@ export default function DashboardEventSettingsForm({
                 <FormLabel>Tu apellido</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Figueiredo"
+                    placeholder="Doe"
                     className="!mt-1.5"
                     {...field}
                   />
@@ -199,7 +199,7 @@ export default function DashboardEventSettingsForm({
                   <FormLabel>El nombre de tu pareja</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Crisley"
+                      placeholder="Jane"
                       className="!mt-1.5"
                       {...field}
                       value={field.value ?? ''}
@@ -218,7 +218,7 @@ export default function DashboardEventSettingsForm({
                   <FormLabel>El apellido de tu pareja</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Dominguez"
+                      placeholder="Smith"
                       className="!mt-1.5"
                       {...field}
                       value={field.value ?? ''}
@@ -237,7 +237,7 @@ export default function DashboardEventSettingsForm({
                   <FormLabel>Email de tu pareja</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="crisley@wedin.app"
+                      placeholder="correodetupareja@ejemplo.com"
                       className="!mt-1.5"
                       {...field}
                       value={field.value ?? ''}

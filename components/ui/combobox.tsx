@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { LuPlusCircle } from 'react-icons/lu';
@@ -33,6 +33,7 @@ interface ComboboxProps {
   onCreate?: (value: string) => void;
   width?: string;
   searchPlaceholder?: string;
+  clearable?: boolean;
 }
 
 export function Combobox({
@@ -44,6 +45,7 @@ export function Combobox({
   onCreate,
   width,
   searchPlaceholder,
+  clearable,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState<string>('');
@@ -88,7 +90,29 @@ export function Combobox({
                 {placeholder ?? 'Select Item...'}
               </p>
             )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            {clearable && selected ? (
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label="Limpiar selección"
+                className="ml-2 shrink-0 rounded-sm p-0.5 hover:bg-gray-100"
+                onClick={event => {
+                  event.stopPropagation();
+                  onChange?.('');
+                }}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onChange?.('');
+                  }
+                }}
+              >
+                <X className="h-4 w-4 opacity-50" />
+              </span>
+            ) : (
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className={`${width} max-w-sm p-0 bg-white`}>

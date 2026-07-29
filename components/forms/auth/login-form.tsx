@@ -34,7 +34,7 @@ export default function LoginForm() {
                   {...field}
                   type="email"
                   autoComplete="email"
-                  placeholder="tucorreo@wedin.app"
+                  placeholder="tucorreo@ejemplo.com"
                   className="!mt-1"
                   disabled={isLoading}
                 />

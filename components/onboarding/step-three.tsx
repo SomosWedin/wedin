@@ -31,7 +31,7 @@ export default function OnboardingStepThree() {
     resolver: zodResolver(StepThreeSchema),
     mode: 'all',
     defaultValues: {
-      eventCountry: '',
+      eventCountry: 'Paraguay',
       eventCity: '',
       isDecidingEventLocation: false,
     },
@@ -73,7 +73,7 @@ export default function OnboardingStepThree() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="w-full flex flex-col gap-4"
         >
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
             {isDeciding ? (
               <div className="w-full">
                 <Label>País</Label>

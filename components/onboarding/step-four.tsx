@@ -30,6 +30,7 @@ import { useOnboarding } from '@/hooks/useOnboarding';
 
 export default function OnboardingStepFour() {
   const [isDeciding, setIsDeciding] = useState<boolean | string>(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const { loading, handleEventDateUpdate } = useOnboarding();
 
   const form = useForm<z.infer<typeof StepFourSchema>>({
@@ -84,7 +85,10 @@ export default function OnboardingStepFour() {
                 render={({ field }) => (
                   <FormItem className="w-full">
                     <FormLabel>Fecha</FormLabel>
-                    <Popover>
+                    <Popover
+                      open={isCalendarOpen}
+                      onOpenChange={setIsCalendarOpen}
+                    >
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -111,7 +115,10 @@ export default function OnboardingStepFour() {
                           locale={es}
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={date => {
+                            field.onChange(date);
+                            setIsCalendarOpen(false);
+                          }}
                           disabled={date => date < new Date()}
                           initialFocus
                         />
