@@ -21,11 +21,11 @@ const providerIcons: Record<SocialProvider, IconType> = {
 };
 
 export default function AuthFormButton({
-  isLoading, // we use this because the login is using on submit and not action
+  isLoading,
   label = 'Iniciar sesión',
   provider,
   variant,
-  handleSignIn, // we use this because the login is using on submit and not action
+  handleSignIn,
 }: AuthFormButtonProps) {
   if (variant === 'socialMediaLogin' && provider) {
     const ProviderIcon = providerIcons[provider];

@@ -1,9 +1,8 @@
 import LoginForm from '@/components/forms/auth/login-form';
-import Link from "next/link";
-import Image from "next/image";
+import SociaMediaLoginButton from '@/components/forms/auth/social-media-login-form';
 import backgroundImg from "@/public/assets/login-background.webp";
 import logoImg from "@/public/assets/w-logo.svg";
-import SociaMediaLoginButton from '@/components/forms/auth/social-media-login-form';
+import Image from "next/image";
 
 export default function LoginPage() {
   return (
