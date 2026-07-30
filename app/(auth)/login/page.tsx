@@ -33,10 +33,6 @@ export default function LoginPage() {
         <div className="flex items-center justify-center w-full">
           <SociaMediaLoginButton provider={'google'} />
         </div>
-
-        {/* <div className="flex items-center justify-center w-full"> */}
-        {/*   <SociaMediaLoginButton provider={'facebook'} /> */}
-        {/* </div> */}
       </div>
     </div>
   );

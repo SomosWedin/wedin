@@ -88,9 +88,8 @@ export async function suggestThankYouMessage(transactionId: string) {
       messages: [
         {
           role: 'user',
-          content: `Escribí 3 mensajes de agradecimiento distintos para ${payerName}, que contribuyó con ${giftDescription}${
-            coupleNames ? `, de parte de ${coupleNames}` : ''
-          }.${payerMessageClause}`,
+          content: `Escribí 3 mensajes de agradecimiento distintos para ${payerName}, que contribuyó con ${giftDescription}${coupleNames ? `, de parte de ${coupleNames}` : ''
+            }.`,
         },
       ],
       output_config: {

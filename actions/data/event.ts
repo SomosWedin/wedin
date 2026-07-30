@@ -15,9 +15,9 @@ const prismaClient = new PrismaClient();
 
 export const getEvent = async (): Promise<
   | (Event & {
-      images: ImageModel[];
-      users: User[];
-    })
+    images: ImageModel[];
+    users: User[];
+  })
   | ErrorResponse
 > => {
   const user = await getCurrentUser();
