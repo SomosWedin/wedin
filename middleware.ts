@@ -1,5 +1,10 @@
 import authConfig from '@/auth.config';
-import { getEventSlugFromHost } from '@/lib/event-domain';
+import {
+  EVENT_SLUG_PATTERN,
+  getConfiguredRootDomain,
+  getEventSlugFromHost,
+  getPublicEventUrl,
+} from '@/lib/event-domain';
 import {
   adminRoutes,
   apiAuthPrefix,
@@ -8,130 +13,155 @@ import {
   protectedRoutes,
 } from '@/lib/routes';
 import NextAuth from 'next-auth';
-import { type NextRequest, NextResponse } from 'next/server';
+import {
+  type NextRequest,
+  NextResponse,
+} from 'next/server';
 
 const { auth } = NextAuth(authConfig);
 
-const EVENT_SLUG_PATTERN =
-  /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/;
-
-export async function middleware(request: NextRequest) {
-  const { nextUrl } = request;
-
-  const configuredRootDomain =
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost';
-
-  const rootDomain = configuredRootDomain
-    .trim()
-    .toLowerCase()
-    .split(':')[0]
-    .replace(/\.$/, '');
-
-  const hostHeader = request.headers.get('host') ?? '';
-
-  const hostname = hostHeader
-    .trim()
-    .toLowerCase()
-    .split(':')[0]
-    .replace(/\.$/, '');
-
-  const isApiOrRpcRoute =
-    nextUrl.pathname === '/api' ||
-    nextUrl.pathname.startsWith('/api/') ||
-    nextUrl.pathname === '/trpc' ||
-    nextUrl.pathname.startsWith('/trpc/');
-
-  /*
-   * Rewrite event subdomains internally.
-   *
-   * john-and-jane.somoswedin.com
-   * becomes internally:
-   * /e/john-and-jane 
-   *
-   * The URL displayed in the browser does not change.
-   */
-  const eventSlug = getEventSlugFromHost(
-    hostHeader,
-    rootDomain,
+function matchesRoute(
+  pathname: string,
+  routes: string[],
+) {
+  return routes.some(
+    route =>
+      pathname === route ||
+      pathname.startsWith(`${route}/`),
   );
+}
 
-  if (eventSlug && !isApiOrRpcRoute) {
-    const rewriteUrl = nextUrl.clone();
+export async function middleware(
+  request: NextRequest,
+) {
+  const { nextUrl } = request;
+  const pathname = nextUrl.pathname;
 
-    const eventPath =
-      nextUrl.pathname === '/' ? '' : nextUrl.pathname;
+  const isApiAuthRoute =
+    pathname.startsWith(apiAuthPrefix);
 
-    rewriteUrl.pathname = `/e/${eventSlug}${eventPath}`;
+  const isPagoparWebhookRoute =
+    pathname === '/api/webhooks/pagopar';
 
-    return NextResponse.rewrite(rewriteUrl);
+  if (isApiAuthRoute || isPagoparWebhookRoute) {
+    return NextResponse.next();
   }
 
-  /*
-   * Redirect old public event URLs to the new subdomain format.
-   *
-   * somoswedin.com/e/john-and-jane
-   * redirects to:
-   * john-and-jane.somoswedin.com
-   *
-   * Nested paths and query parameters are preserved.
-   */
-  const isRootHostname =
-    hostname === rootDomain ||
-    hostname === `www.${rootDomain}`;
+  const isApiOrRpcRoute =
+    pathname === '/api' ||
+    pathname.startsWith('/api/') ||
+    pathname === '/trpc' ||
+    pathname.startsWith('/trpc/');
 
-  const legacyEventMatch = nextUrl.pathname.match(
-    /^\/e\/([^/]+)(\/.*)?$/,
-  );
+  if (!isApiOrRpcRoute) {
+    const legacyEventMatch = pathname.match(
+      /^\/e\/([^/]+)(\/.*)?$/,
+    );
 
-  if (isRootHostname && legacyEventMatch) {
-    const [, legacySlug, remainingPath = ''] =
-      legacyEventMatch;
+    if (legacyEventMatch) {
+      const [, legacySlug, remainingPath = ''] =
+        legacyEventMatch;
 
-    if (EVENT_SLUG_PATTERN.test(legacySlug)) {
-      const destination = nextUrl.clone();
+      if (EVENT_SLUG_PATTERN.test(legacySlug)) {
+        const destination = new URL(
+          getPublicEventUrl(
+            legacySlug,
+            remainingPath || '/',
+          ),
+        );
 
-      destination.protocol =
-        rootDomain === 'localhost' ? 'http:' : 'https:';
+        destination.search = nextUrl.search;
 
-      destination.hostname = `${legacySlug}.${rootDomain}`;
-      destination.pathname = remainingPath || '/';
-
-      // Keep localhost:3000 when testing locally.
-      if (rootDomain !== 'localhost') {
-        destination.port = '';
+        return NextResponse.redirect(
+          destination,
+          307,
+        );
       }
+    }
 
-      // Use 307 while testing. Change to 308 when everything is stable.
-      return NextResponse.redirect(destination, 307);
+    const rootDomain = getConfiguredRootDomain();
+
+    const eventSlug = getEventSlugFromHost(
+      request.headers.get('host'),
+      rootDomain,
+    );
+
+    if (eventSlug) {
+      const rewriteUrl = nextUrl.clone();
+
+      const eventPath =
+        pathname === '/' ? '' : pathname;
+
+      rewriteUrl.pathname =
+        `/e/${eventSlug}${eventPath}`;
+
+      return NextResponse.rewrite(rewriteUrl);
     }
   }
 
-  /*
-   * Auth.js routes must pass through without authentication middleware.
-   */
-  const isApiAuthRoute =
-    nextUrl.pathname.startsWith(apiAuthPrefix);
+  const isPagoparResultRoute =
+    pathname.startsWith(
+      '/checkout/pagopar/result/',
+    );
 
-  if (isApiAuthRoute) {
+  if (isPagoparResultRoute) {
     return NextResponse.next();
   }
 
   const session = await auth();
 
   const isLoggedIn = Boolean(session?.user);
-  const isOnboarded = session?.user?.isOnboarded ?? false;
-  const isAdmin = session?.user?.role === 'ADMIN';
+  const isOnboarded =
+    session?.user?.isOnboarded ?? false;
+  const isAdmin =
+    session?.user?.role === 'ADMIN';
 
-  const isAdminRoute = adminRoutes.includes(nextUrl.pathname);
-  const isAuthRoute = authRoutes.includes(nextUrl.pathname);
-  const isProtectedRoute = protectedRoutes.includes(nextUrl.pathname);
-  const isOnboardingRoute = onboardingRoute.includes(nextUrl.pathname);
+  const isAdminRoute = matchesRoute(
+    pathname,
+    adminRoutes,
+  );
 
-  if (!isAdmin && isAdminRoute) {
-    return NextResponse.redirect(new URL('/dashboard', nextUrl));
+  const isAuthRoute = matchesRoute(
+    pathname,
+    authRoutes,
+  );
+
+  const isProtectedRoute = matchesRoute(
+    pathname,
+    protectedRoutes,
+  );
+
+  const isOnboardingRoute = matchesRoute(
+    pathname,
+    onboardingRoute,
+  );
+
+  if (
+    !isLoggedIn &&
+    (isAdminRoute ||
+      isProtectedRoute ||
+      isOnboardingRoute)
+  ) {
+    return NextResponse.redirect(
+      new URL('/login', nextUrl),
+    );
   }
 
-  if (isLoggedIn && !isOnboarded && !isOnboardingRoute) {
+  if (
+    isLoggedIn &&
+    !isAdmin &&
+    isAdminRoute
+  ) {
+    return NextResponse.redirect(
+      new URL('/dashboard', nextUrl),
+    );
+  }
+
+  if (
+    isLoggedIn &&
+    !isOnboarded &&
+    !isOnboardingRoute
+  ) {
     return NextResponse.redirect(
       new URL('/onboarding', nextUrl),
     );
@@ -142,14 +172,9 @@ export async function middleware(request: NextRequest) {
     isOnboarded &&
     (isAuthRoute || isOnboardingRoute)
   ) {
-    return NextResponse.redirect(new URL('/dashboard', nextUrl));
-  }
-
-  if (
-    !isLoggedIn &&
-    (isProtectedRoute || isOnboardingRoute)
-  ) {
-    return NextResponse.redirect(new URL('/login', nextUrl));
+    return NextResponse.redirect(
+      new URL('/dashboard', nextUrl),
+    );
   }
 
   return NextResponse.next();

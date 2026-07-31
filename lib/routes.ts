@@ -1,13 +1,9 @@
 export const publicRoutes: string[] = [
   '/e',
-  '/email-verfiy',
 ];
 
 export const authRoutes: string[] = [
   '/login',
-  '/register',
-  '/password-reset',
-  '/new-password',
 ];
 
 export const protectedRoutes: string[] = [

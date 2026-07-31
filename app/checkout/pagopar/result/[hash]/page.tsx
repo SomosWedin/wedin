@@ -1,13 +1,14 @@
+import EmptyState from '@/components/common/empty-state';
+import { Button } from '@/components/ui/button';
+import { getPublicEventUrl } from '@/lib/event-domain';
+import { getOrderStatus } from '@/lib/pagopar';
+import prismaClient from '@/prisma/client';
 import Link from 'next/link';
 import {
   IoCloseCircleOutline,
   IoHeartOutline,
   IoTimeOutline,
 } from 'react-icons/io5';
-import EmptyState from '@/components/common/empty-state';
-import { Button } from '@/components/ui/button';
-import { getOrderStatus } from '@/lib/pagopar';
-import prismaClient from '@/prisma/client';
 
 type PagoparResultPageProps = {
   params: { hash: string };
@@ -42,7 +43,7 @@ export default async function PagoparResultPage({
     );
   }
 
-  const backHref = transaction.event.url ? `/e/${transaction.event.url}` : '/';
+  const backHref = transaction.event.url ? getPublicEventUrl(transaction.event.url) : '/';
 
   // Webhook delivery can lag a couple of minutes behind the redirect per
   // Pagopar's own docs, so this can't just trust Transaction.status at
