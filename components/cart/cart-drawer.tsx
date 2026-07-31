@@ -1,8 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { IoCartOutline } from 'react-icons/io5';
+import CartItemRow from '@/components/cart/cart-item-row';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,8 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import CartItemRow from '@/components/cart/cart-item-row';
 import type { CartItem } from '@/hooks/use-cart-store';
+import Link from 'next/link';
+import { IoCartOutline } from 'react-icons/io5';
 
 type CartDrawerProps = {
   open: boolean;
@@ -30,7 +29,6 @@ export default function CartDrawer({
   onRemoveItem,
   onEditItem,
 }: CartDrawerProps) {
-  const pathname = usePathname();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,7 +78,7 @@ export default function CartDrawer({
                 Cancelar
               </Button>
               <Button variant="success" className="flex-[7]" asChild>
-                <Link href={`${pathname}/checkout`}>Ir a pagar</Link>
+                <Link href={'/checkout'}>Ir a pagar</Link>
               </Button>
             </div>
           </div>

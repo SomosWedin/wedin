@@ -73,15 +73,19 @@ export default function DashboardHomeSiteLinkCard({
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <div className="flex items-center w-full max-w-sm rounded-md border border-input bg-white focus-within:ring-1 focus-within:ring-ring">
-                      <span className="pl-3 text-sm text-textTertiary select-none">
-                        wedin.com/e/
-                      </span>
+                    <div className="flex w-full max-w-md items-center rounded-md border border-input bg-white focus-within:ring-1 focus-within:ring-ring">
                       <Input
-                        className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                         {...field}
+                        placeholder="amelie-y-john"
+                        aria-label="Subdominio del evento"
+                        className="min-w-0 flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
-                      <Pencil className="w-4 h-4 mr-3 text-textTertiary shrink-0" />
+
+                      <span className="whitespace-nowrap pr-2 text-sm text-textTertiary select-none">
+                        .somoswedin
+                      </span>
+
+                      <Pencil className="mr-3 h-4 w-4 shrink-0 text-textTertiary" />
                     </div>
                   </FormControl>
                 </FormItem>

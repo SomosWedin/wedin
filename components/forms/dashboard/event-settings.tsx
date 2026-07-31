@@ -106,36 +106,46 @@ export default function DashboardEventSettingsForm({
             control={urlForm.control}
             name="eventUrl"
             render={({ field }) => (
-              <FormItem className="max-w-sm">
+              <FormItem className="w-full max-w-xl">
                 <FormLabel>Dirección de tu evento</FormLabel>
-                <div className="flex items-start gap-2 !mt-0">
-                  <FormControl className="!mt-1.5">
-                    <div className="flex items-center w-full rounded-md border border-input focus-within:ring-1 focus-within:ring-ring">
-                      <span className="pl-3 text-sm text-textTertiary select-none">
-                        wedin.com/e/
-                      </span>
+
+                <div className="!mt-0 flex flex-col items-stretch gap-2 sm:flex-row sm:items-start">
+                  <FormControl>
+                    <div className="mt-1.5 flex min-w-0 flex-1 items-center rounded-md border border-input bg-white focus-within:ring-1 focus-within:ring-ring">
                       <Input
-                        placeholder="30deAmelie"
-                        className="border-0 !mt-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                         {...field}
+                        placeholder="amelie-y-john"
+                        aria-label="Subdominio del evento"
+                        className="min-w-0 flex-1 border-0 bg-transparent !mt-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
+
+                      <span className="whitespace-nowrap pr-3 text-sm text-textTertiary select-none">
+                        .somoswedin
+                      </span>
                     </div>
                   </FormControl>
+
                   <Button
                     type="button"
                     variant="success"
-                    className="gap-2 mt-1.5 shrink-0"
-                    disabled={urlLoading || !isUrlDirty || !isUrlValid}
+                    className="gap-2 sm:mt-1.5 sm:shrink-0"
+                    disabled={
+                      urlLoading ||
+                      !isUrlDirty ||
+                      !isUrlValid
+                    }
                     onClick={urlForm.handleSubmit(onUrlSubmit)}
                   >
                     Guardar
+
                     {urlLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <FaCheck className="text-lg" />
                     )}
                   </Button>
                 </div>
+
                 <FormMessage className="font-normal text-red-600" />
               </FormItem>
             )}
