@@ -87,6 +87,7 @@ export const updateEvent = async (
   data: {
     coverMessage?: string;
     date?: Date;
+    url?: string;
   }
 ) => {
   try {
@@ -98,6 +99,10 @@ export const updateEvent = async (
 
     if (data.date) {
       updateData.date = data.date;
+    }
+
+    if (data.url) {
+      updateData.url = data.url
     }
 
     const updatedEvent = await prismaClient.event.update({

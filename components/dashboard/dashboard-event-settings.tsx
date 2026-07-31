@@ -12,7 +12,7 @@ const DashboardEventSettingsForm = lazy(
 export default async function DashboardEventSettings() {
   const event = await getEvent();
   const currentUser = await getCurrentUser();
-  let secondaryEventUser;
+  let secondaryEventUser = null;
 
   if (!event || 'error' in event || !currentUser || 'error' in currentUser) {
     return <div>Error</div>;

@@ -1,7 +1,6 @@
 'use server';
 
-import type { ErrorResponse } from '@/auth';
-import { EventImage } from '@/hooks/dashboard/use-event-cover';
+import { EventImage } from '@/hooks/dashboard/forms/use-event-cover';
 import { deleteEventCoverImageFromAws } from '@/lib/s3';
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';

@@ -11,7 +11,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { useEventCover } from '@/hooks/dashboard/use-event-cover';
+import { useEventCover } from '@/hooks/dashboard/forms/use-event-cover';
 import { Event, Image as ImageModel, User } from '@prisma/client';
 import { Loader2, Sparkles } from 'lucide-react';
 import Image from 'next/image';
@@ -20,14 +20,14 @@ import { FaCheck } from 'react-icons/fa6';
 import { MdOutlineFileUpload } from 'react-icons/md';
 import { RxCross2 } from 'react-icons/rx';
 
-type EventDetailsUpdateFormProps = {
+type EventCoverUpdateFormProps = {
   event: Event & {
     images: ImageModel[];
     users: User[];
   };
 };
 
-const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
+const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
   const { images, coverMessage, id } = event;
   const {
     applySuggestion,
@@ -218,4 +218,4 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
   );
 };
 
-export default EventDetailsUpdateForm;
+export default EventCoverUpdateForm;

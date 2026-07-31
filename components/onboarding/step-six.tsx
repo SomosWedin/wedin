@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import wedinIcon from '@/public/assets/w-icon.svg';
 import { Progress } from '@/components/ui/progress';
+import wedinIcon from '@/public/assets/w-icon.svg';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
 export default function OnboardingStepSix() {
   const [progress, setProgress] = useState(0);

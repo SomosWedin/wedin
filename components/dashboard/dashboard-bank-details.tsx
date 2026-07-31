@@ -4,7 +4,7 @@ import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings
 import { getBankDetails } from '@/actions/data/bank-details';
 
 const DashboardBankDetailsUpdateForm = lazy(
-  () => import('@/components/forms/dashboard/bank-details-update')
+  () => import('@/components/forms/dashboard/bank-details')
 );
 
 export default async function DashboardBankDetails() {

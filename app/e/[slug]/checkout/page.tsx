@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getEventByUrl } from '@/actions/data/public-event';
-import CheckoutForm from '@/components/checkout/checkout-form';
+import CheckoutForm from '@/components/forms/checkout/checkout';
 
 type CheckoutPageProps = {
   params: { slug: string };

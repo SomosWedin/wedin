@@ -2,7 +2,7 @@
 
 import type * as z from 'zod';
 import prismaClient from '@/prisma/client';
-import { BankDetailsFormSchema } from '@/schemas/dashboard';
+import { BankDetailsFormSchema } from '@/schemas/form';
 import { revalidatePath } from 'next/cache';
 
 export async function getBankDetails(eventId: string) {

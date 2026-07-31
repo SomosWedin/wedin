@@ -1,15 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { IoGiftOutline, IoLockClosedOutline } from 'react-icons/io5';
-import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -18,11 +10,19 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useStore } from '@/hooks/use-store';
+import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
+import { useCheckout } from '@/hooks/checkout/forms/use-checkout';
 import { useCartStore } from '@/hooks/use-cart-store';
-import { useCheckout } from '@/hooks/checkout/use-checkout';
-import type { z } from 'zod';
+import { useStore } from '@/hooks/use-store';
 import type { GuestCheckoutSchema } from '@/schemas/checkout';
+import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { IoGiftOutline, IoLockClosedOutline } from 'react-icons/io5';
+import type { z } from 'zod';
 
 type PaymentMethod = z.infer<typeof GuestCheckoutSchema>['paymentMethod'];
 

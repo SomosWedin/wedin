@@ -2,10 +2,6 @@
 
 import prismaClient from '@/prisma/client';
 
-// Deliberately no `getCurrentUser()` import anywhere in this file — every
-// function here backs the guest-facing `/e/[slug]` site and must stay
-// reachable logged-out. Session-gated reads belong in `actions/data/event.ts`.
-
 export async function getEventByUrl(slug: string) {
   try {
     const event = await prismaClient.event.findUnique({

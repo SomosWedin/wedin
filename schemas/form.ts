@@ -1,6 +1,97 @@
-import { fail } from 'assert';
-import { Zeyada } from 'next/font/google';
+import { EventType } from '@prisma/client';
 import { type ZodType, z } from 'zod';
+
+export const UpdateEventSettingsFormSchema = z
+  .object({
+    eventDate: z.date({
+      required_error: 'Debes seleccionar una fecha',
+      invalid_type_error: '¡Eso no es una fecha!',
+    }),
+    eventType: z.string(),
+    eventUrl: z.string(),
+    name: z
+      .string()
+      .min(1, { message: 'Tu nombre no puede estar vacío' })
+      .max(255, { message: 'Nombre muy largo' }),
+    lastName: z
+      .string()
+      .min(1, { message: 'Tu apellido no puede estar vacío' })
+      .max(255, { message: 'Apellido muy largo' }),
+    partnerName: z.string().nullable(),
+    partnerLastName: z.string().nullable(),
+    partnerEmail: z
+      .string()
+      .email({ message: 'Email de tu pareja no válido' })
+      .nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.eventType === EventType.WEDDING) {
+      if (!data.partnerName) {
+        ctx.addIssue({
+          path: ['partnerName'],
+          message:
+            'El nombre de tu pareja es obligatorio para este tipo de evento',
+          code: z.ZodIssueCode.custom,
+        });
+      }
+      if (!data.partnerLastName) {
+        ctx.addIssue({
+          path: ['partnerLastName'],
+          message:
+            'El apellido de tu pareja es obligatorio para este tipo de evento',
+          code: z.ZodIssueCode.custom,
+        });
+      }
+      if (!data.partnerEmail) {
+        ctx.addIssue({
+          path: ['partnerEmail'],
+          message:
+            'El email de tu pareja es obligatorio para este tipo de evento',
+          code: z.ZodIssueCode.custom,
+        });
+      }
+    }
+  });
+
+export const BankDetailsFormSchema = z.object({
+  eventId: z.string(),
+  bankName: z.string().min(1, { message: 'Debe seleccionar una entidad' }),
+  accountHolder: z
+    .string()
+    .min(1, { message: 'Nombre y apellido no puede estar vacío' })
+    .min(2, { message: 'Nombre y Apellido muy corto' })
+    .max(255, { message: 'Nombre y Apellido muy largo' }),
+  accountNumber: z
+    .string()
+    .min(1, { message: 'Número de cuenta no puede estar vacío' })
+    .max(24, { message: 'Número de cuenta muy largo' }),
+  accountType: z.string().min(1, { message: 'Debe seleccionar una moneda' }),
+  identificationType: z
+    .string()
+    .min(1, { message: 'Debe seleccionar un documento' }),
+  identificationNumber: z
+    .string()
+    .min(1, { message: 'Número de documento no puede estar vacío' })
+    .max(12, { message: 'Número de documento muy largo' }),
+  razonSocial: z.string().optional(),
+  ruc: z.string().optional(),
+});
+export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>;
+
+export const EventCoverFormSchema = z.object({
+  coverMessage: z
+    .string()
+    .min(1, { message: 'El mensaje para tus invitados no puede estar vacío' })
+    .min(3, {
+      message:
+        'El mensaje para tus invitados debe contener al menos 3 caracteres',
+    })
+    .max(255, {
+      message:
+        'El mensaje para tus invitados debe contener un máximo de 255 caracteres',
+    }),
+});
+
 
 export const GiftFormSchema = z.object({
   name: z
@@ -120,37 +211,6 @@ export const TransactionStatusLogUpdateSchema = z.object({
     .string()
     .min(1, { message: 'No se encontró un ID de usuario' }),
   changedAt: z.string().transform(str => new Date(str)), // Ensure changedAt is a valid Date
-});
-
-export const EventDetailsFormSchema = z.object({
-  eventId: z.string(),
-  eventType: z
-    .string()
-    .min(1, { message: 'Debes seleccionar un tipo de evento' }),
-  name: z
-    .string()
-    .min(1, { message: 'El nombre no puede estar vacío' })
-    .min(2, { message: 'Nombre muy corto' })
-    .max(255, { message: 'Nombre muy largo' }),
-  lastName: z
-    .string()
-    .min(1, { message: 'El apellido no puede estar vacío' })
-    .min(2, { message: 'Apellido muy corto' })
-    .max(255, { message: 'Apellido muy largo' }),
-  partnerName: z
-    .string()
-    .min(1, { message: 'El nombre de tu pareja no puede estar vacío' })
-    .min(2, { message: 'Nombre muy corto' })
-    .max(255, { message: 'Nombre muy largo' }),
-  partnerLastName: z
-    .string()
-    .min(1, { message: 'El apellido de tu pareja no puede estar vacío' })
-    .min(2, { message: 'Apellido muy corto' })
-    .max(255, { message: 'Apellido muy largo' }),
-  partnerEmail: z.string(),
-  eventCity: z.string().optional(),
-  eventCountry: z.string().optional(),
-  eventGuests: z.string().optional(),
 });
 
 // Reserved so an event slug can never collide with a real subdomain if we

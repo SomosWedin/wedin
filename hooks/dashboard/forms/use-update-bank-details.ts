@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { BankDetailsFormSchema } from '@/schemas/dashboard';
+import { BankDetailsFormSchema } from '@/schemas/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';

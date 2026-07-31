@@ -1,193 +1,56 @@
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { useOnboarding } from '@/hooks/useOnboarding';
-import illustration from '@/public/assets/onb-step-two-icon.svg';
+'use client';
+
+import StepTwoForm from '@/components/forms/onboarding/step-two';
+import { useStepTwo } from '@/hooks/onboarding/use-step-two';
+import { useOnboarding } from '@/hooks/use-onboarding';
 import wedinIcon from '@/public/assets/w-icon.svg';
-import { StepTwoSchema } from '@/schemas/onboarding';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { EventType } from '@prisma/client';
-import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import type { z } from 'zod';
 import OnboardingStepper from './stepper';
 
 export default function OnboardingStepTwo() {
-  const { handleProfileUpdate, loading } = useOnboarding();
-  const [eventType, setEventType] = useState<EventType | undefined>(undefined);
-
-  const form = useForm<z.infer<typeof StepTwoSchema>>({
-    resolver: zodResolver(StepTwoSchema),
-    mode: "onBlur",
-    defaultValues: {
-      name: '',
-      lastName: '',
-      partnerName: '',
-      partnerLastName: '',
-      eventType: EventType.WEDDING,
-    },
-  });
-
-  useEffect(() => {
-    const storedEventType = localStorage.getItem('eventType');
-    if (storedEventType) {
-      setEventType(storedEventType as EventType);
-      form.setValue('eventType', storedEventType as EventType, { shouldDirty: false });
-    }
-  }, [form]);
+  const {
+    handleProfileUpdate,
+    loading,
+  } = useOnboarding();
 
   const {
-    formState: { isValid },
-  } = form;
-
-  const onSubmit = async (values: z.infer<typeof StepTwoSchema>) => {
-    await handleProfileUpdate(values);
-  };
+    form,
+    eventType,
+    isValid,
+    handleSubmit,
+  } = useStepTwo({
+    onSubmit: handleProfileUpdate,
+  });
 
   return (
-    <div className="relative flex flex-col justify-center items-center gap-8 h-full">
-      <Image src={wedinIcon} alt="wedin icon" width={78} />
+    <div className="relative flex h-full flex-col items-center justify-center gap-8">
+      <Image
+        src={wedinIcon}
+        alt="wedin icon"
+        width={78}
+      />
 
       <div className="flex flex-col gap-4 text-center">
-        <h1 className="text-textSecondary text-2xl font-medium">
+        <h1 className="text-2xl font-medium text-textSecondary">
           {eventType === EventType.WEDDING
             ? '¿Cómo se llaman los protagonistas del evento?'
             : '¿Cómo te llamas?'}
         </h1>
+
         <p className="text-secondary400">
-          Este nombre será visible en tu página personalizada
+          Este nombre será visible en tu página
+          personalizada
         </p>
       </div>
 
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-4 w-full"
-        >
-          <div className="flex flex-col sm:flex-row gap-2">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem className="w-full">
-                  <FormLabel>Tu nombre</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="John"
-                      className="!mt-1.5"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem className="w-full">
-                  <FormLabel>Tu apellido</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Doe"
-                      className="!mt-1.5"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
-
-            {/* hidden input for eventType */}
-            <FormField
-              control={form.control}
-              name="eventType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input type="hidden" {...field} />
-                  </FormControl>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {eventType === EventType.WEDDING && (
-            <>
-              <div className="w-full flex items-center gap-2">
-                <div className="border-b border-gray200 w-full h-full -mt-6"></div>
-                <Image src={illustration} alt="illustration" width={42} />
-                <div className="border-b border-gray200 w-full h-full -mt-6"></div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <FormField
-                  control={form.control}
-                  name="partnerName"
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <FormLabel>El nombre de tu pareja</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Jane"
-                          className="!mt-1.5"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="font-normal text-red-600" />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="partnerLastName"
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <FormLabel>El apellido de tu pareja</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Doe"
-                          className="!mt-1.5"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="font-normal text-red-600" />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </>
-          )}
-
-          <div className="flex justify-center">
-            <Button
-              type="submit"
-              variant="success"
-              className="mt-6 w-72"
-              disabled={loading || !isValid}
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                'Continuar'
-              )}
-            </Button>
-          </div>
-        </form>
-      </Form>
+      <StepTwoForm
+        form={form}
+        eventType={eventType}
+        isValid={isValid}
+        loading={loading}
+        onSubmit={handleSubmit}
+      />
 
       <OnboardingStepper step={2} />
     </div>

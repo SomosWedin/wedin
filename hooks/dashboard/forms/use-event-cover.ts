@@ -8,7 +8,7 @@ import {
   deleteEventCoverImageFromAws,
   uploadEventCoverImagesToAws,
 } from '@/lib/s3';
-import { EventCoverFormSchema } from '@/schemas/dashboard';
+import { EventCoverFormSchema } from '@/schemas/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Image as ImageModel } from '@prisma/client';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
@@ -23,7 +23,7 @@ type EventCoverUpdateFormProps = {
 };
 
 interface BaseImage {
-  id: string; 
+  id: string;
   url: string | null;
 }
 
@@ -68,7 +68,6 @@ export function useEventCover({
   const [replacedImages, setReplacedImages] = useState<{ id: string }[]>([]); // IDs of images marked for replacement
   const [formError, setFormError] = useState<string | null>(null); // Form-level error state
   const [currentImages, setCurrentImages] = useState<BaseImage[]>([]);
-
   const slots = Array.from({ length: MAX_IMAGES });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -426,9 +425,7 @@ export function useEventCover({
     }
 
     if (data.coverMessage) {
-      const updateEventResponse = await updateEvent(eventId, {
-        coverMessage: data.coverMessage,
-      });
+      const updateEventResponse = await updateEvent(eventId, { coverMessage: data.coverMessage });
 
       if (updateEventResponse?.error) {
         toast({

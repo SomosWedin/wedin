@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Form,
   FormControl,
@@ -11,27 +12,24 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { es } from 'date-fns/locale';
-import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { useUpdateEventSettings } from '@/hooks/dashboard/forms/use-update-event-settings';
+import { cn } from '@/lib/utils';
+import { Event, EventType, User } from '@prisma/client';
 import { format } from 'date-fns';
-import { Event, User, EventType } from '@prisma/client';
-import { useUpdateEventAndUserData } from '@/hooks/dashboard/use-update-event-and-user-data';
-import { useEventUrl } from '@/hooks/dashboard/use-event-url';
-import { Loader2 } from 'lucide-react';
+import { es } from 'date-fns/locale';
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import React from 'react';
 import { FaCheck } from 'react-icons/fa6';
 
 type DashboardEventSettingsFormProps = {
   event: Event;
   currentUser: User;
-  secondaryEventUser?: User | null;
+  secondaryEventUser: User | null;
 };
 
 export default function DashboardEventSettingsForm({
@@ -40,19 +38,11 @@ export default function DashboardEventSettingsForm({
   secondaryEventUser,
 }: DashboardEventSettingsFormProps) {
   const { loading, form, onSubmit, isDirty, isValid } =
-    useUpdateEventAndUserData({
+    useUpdateEventSettings({
       event,
       currentUser,
       secondaryEventUser,
     });
-
-  const {
-    form: urlForm,
-    onSubmit: onUrlSubmit,
-    isDirty: isUrlDirty,
-    isValid: isUrlValid,
-    loading: urlLoading,
-  } = useEventUrl({ eventId: event.id, url: event.url });
 
   return (
     <Form {...form}>
@@ -60,53 +50,12 @@ export default function DashboardEventSettingsForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="w-full flex flex-col gap-8"
       >
-        <FormField
-          control={form.control}
-          name="eventDate"
-          render={({ field }) => (
-            <FormItem className="max-w-sm">
-              <FormLabel className="mb-[-10px]">Fecha del evento</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl className="!mt-1.5">
-                    <Button
-                      variant={'outline'}
-                      className={cn(
-                        'w-full pl-3 text-left font-normal',
-                        !field.value && 'text-[#94A3B8]'
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, 'PPP', { locale: es })
-                      ) : (
-                        <span className="text-[#94A3B8]">dd/mm/aa</span>
-                      )}
-                      <CalendarIcon className="ml-auto w-4 h-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="p-0 w-auto bg-white" align="end">
-                  <Calendar
-                    locale={es}
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={date => date < new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage className="font-normal text-red-600" />
-            </FormItem>
-          )}
-        />
-
-        <Form {...urlForm}>
+        <div className="flex gap-2">
           <FormField
-            control={urlForm.control}
+            control={form.control}
             name="eventUrl"
             render={({ field }) => (
-              <FormItem className="w-full max-w-xl">
+              <FormItem className="w-full">
                 <FormLabel>Dirección de tu evento</FormLabel>
 
                 <div className="!mt-0 flex flex-col items-stretch gap-2 sm:flex-row sm:items-start">
@@ -124,33 +73,55 @@ export default function DashboardEventSettingsForm({
                       </span>
                     </div>
                   </FormControl>
-
-                  <Button
-                    type="button"
-                    variant="success"
-                    className="gap-2 sm:mt-1.5 sm:shrink-0"
-                    disabled={
-                      urlLoading ||
-                      !isUrlDirty ||
-                      !isUrlValid
-                    }
-                    onClick={urlForm.handleSubmit(onUrlSubmit)}
-                  >
-                    Guardar
-
-                    {urlLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <FaCheck className="text-lg" />
-                    )}
-                  </Button>
                 </div>
 
                 <FormMessage className="font-normal text-red-600" />
               </FormItem>
             )}
           />
-        </Form>
+
+          <FormField
+            control={form.control}
+            name="eventDate"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel className="mb-[-10px]">Fecha del evento</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl className="!mt-1.5">
+                      <Button
+                        variant={'outline'}
+                        className={cn(
+                          'w-full pl-3 text-left font-normal',
+                          !field.value && 'text-[#94A3B8]'
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, 'PPP', { locale: es })
+                        ) : (
+                          <span className="text-[#94A3B8]">dd/mm/aa</span>
+                        )}
+                        <CalendarIcon className="ml-auto w-4 h-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-auto bg-white" align="end">
+                    <Calendar
+                      locale={es}
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={date => date < new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+          <div className="w-full"></div>
+        </div>
 
         <div className="flex gap-2">
           <FormField

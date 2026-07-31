@@ -1,6 +1,8 @@
 'use client';
 
-import * as React from 'react';
+import IdentificationNumberField from '@/components/forms/common/identification-number-field-input';
+import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Form,
   FormControl,
@@ -9,6 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -16,14 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Combobox } from '@/components/ui/combobox';
-import { Button } from '@/components/ui/button';
+import { useUpdateBankDetails } from '@/hooks/dashboard/forms/use-update-bank-details';
 import { bankEntitiesPY } from '@/lib/bank-entities-py';
-import IdentificationNumberField from '@/components/forms/common/identification-number-field-input';
 import { BankDetails } from '@prisma/client';
-import { useUpdateBankDetails } from '@/hooks/dashboard/useUpdateBankDetails';
 import { Loader2 } from 'lucide-react';
+import * as React from 'react';
 import { FaCheck } from 'react-icons/fa6';
 
 type BankDetailsFormProps = {

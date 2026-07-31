@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { useOnboarding } from '@/hooks/useOnboarding';
+import { useOnboarding } from '@/hooks/use-onboarding';
 import wedinIcon from '@/public/assets/w-icon.svg';
 import { EventType } from '@prisma/client';
 import Image from 'next/image';

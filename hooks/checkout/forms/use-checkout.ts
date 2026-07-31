@@ -11,6 +11,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { GuestCheckoutSchema } from '@/schemas/checkout';
 import type { CartItem } from '@/hooks/use-cart-store';
+import { publicEventPaths } from '@/lib/event-domain';
 
 type UseCheckoutProps = {
   eventId: string;
@@ -72,7 +73,7 @@ export function useCheckout({
 
     if (values.paymentMethod === 'BANK_TRANSFER') {
       onCheckoutStarted();
-      window.location.href = `/e/${eventSlug}/checkout/transfer?ref=${transactionIds.join(',')}`;
+      window.location.href = publicEventPaths.bankTransfer(transactionIds);
       return;
     }
 

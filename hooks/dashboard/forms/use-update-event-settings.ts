@@ -1,14 +1,14 @@
 'use client';
 
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { updateEvent } from '@/actions/data/event';
 import { updateUserById } from '@/actions/data/user';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { UpdateEventAndUserFormSchema } from '@/schemas/dashboard';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
+import { UpdateEventSettingsFormSchema } from '@/schemas/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Event, EventType, User } from '@prisma/client';
+import { useState } from 'react';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Event, User, EventType } from '@prisma/client';
 
 type UseUpdateEventAndUserDataProps = {
   event: Event;
@@ -16,14 +16,14 @@ type UseUpdateEventAndUserDataProps = {
   secondaryEventUser?: User | null;
 };
 
-export function useUpdateEventAndUserData({
+export function useUpdateEventSettings({
   event,
   currentUser,
   secondaryEventUser,
 }: UseUpdateEventAndUserDataProps) {
   const [loading, setLoading] = useState(false);
   const { name, lastName } = currentUser;
-  const { id, date, eventType } = event;
+  const { id, date, eventType, url } = event;
   const {
     id: partnerId,
     name: partnerName,
@@ -32,12 +32,13 @@ export function useUpdateEventAndUserData({
   } = secondaryEventUser || {};
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof UpdateEventAndUserFormSchema>>({
-    resolver: zodResolver(UpdateEventAndUserFormSchema),
+  const form = useForm<z.infer<typeof UpdateEventSettingsFormSchema>>({
+    resolver: zodResolver(UpdateEventSettingsFormSchema),
     mode: 'all',
     defaultValues: {
       eventDate: date || undefined,
       eventType: eventType,
+      eventUrl: url || undefined,
       name: name || '',
       lastName: lastName || '',
       partnerName: eventType === EventType.WEDDING ? partnerName || '' : null,
@@ -49,14 +50,14 @@ export function useUpdateEventAndUserData({
   const { isDirty, isValid } = form.formState;
 
   const onSubmit: SubmitHandler<
-    z.infer<typeof UpdateEventAndUserFormSchema>
+    z.infer<typeof UpdateEventSettingsFormSchema>
   > = async values => {
     setLoading(true);
 
-    const validatedFields = UpdateEventAndUserFormSchema.safeParse(values);
+    const validatedFields = UpdateEventSettingsFormSchema.safeParse(values);
 
     if (!validatedFields.success) {
-      console.log(validatedFields.error.errors);
+      console.error(validatedFields.error.errors);
       toast({
         title: 'Error en los campos del formulario',
         description: validatedFields.error.errors
@@ -69,7 +70,7 @@ export function useUpdateEventAndUserData({
     }
 
     try {
-      await updateEvent(id, { date: values.eventDate });
+      await updateEvent(id, { date: values.eventDate, url: values.eventUrl });
       await updateUserById(currentUser.id, values.name, values.lastName);
       if (
         partnerId &&
