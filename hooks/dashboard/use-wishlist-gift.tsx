@@ -4,16 +4,12 @@ import {
   createWishlistGift,
   createWishlistGifts,
   deleteWishlistGift,
-  editWishlistGift,
-  setWishlistGiftManuallyReceived,
 } from '@/actions/data/wishlist-gift';
 import { ToastAction } from '@/components/ui/toast';
 import { useToast } from '@/hooks/use-toast';
 import type {
   WishlistGiftCreateSchema,
   WishlistGiftDeleteSchema,
-  WishlistGiftEditSchema,
-  WishlistGiftReceivedToggleSchema,
   WishlistGiftsCreateSchema,
 } from '@/schemas/form';
 import { useRouter } from 'next/navigation';
