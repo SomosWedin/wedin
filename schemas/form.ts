@@ -92,7 +92,6 @@ export const EventCoverFormSchema = z.object({
     }),
 });
 
-
 export const GiftFormSchema = z.object({
   name: z
     .string()
