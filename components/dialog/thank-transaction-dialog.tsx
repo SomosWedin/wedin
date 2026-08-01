@@ -109,6 +109,15 @@ export default function ThankTransactionDialog({
           <DialogTitle>Agradecer a {payerName}</DialogTitle>
         </DialogHeader>
 
+        {transaction.payerMessage && (
+          <div className="p-3 text-sm rounded-md border bg-gray-50 border-borderSecondary">
+            <p className="mb-1 text-xs font-medium text-textTertiary">
+              Mensaje de {payerName}
+            </p>
+            <p className="italic">"{transaction.payerMessage}"</p>
+          </div>
+        )}
+
         <div className="relative">
           <Textarea
             value={notes}

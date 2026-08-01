@@ -57,6 +57,9 @@ export default function GuestGiftCatalog({
     (sum, item) => sum + (Number(item.amount) || 0),
     0
   );
+  const cartWishlistGiftIds = new Set(
+    cartItems.map(item => item.wishlistGiftId)
+  );
 
   const addToCart = (wishlistGift: WishlistGiftWithGift, amount: string) => {
     cartStore.getState().addItem({
@@ -223,6 +226,7 @@ export default function GuestGiftCatalog({
             <GuestGiftCard
               key={wishlistGift.id}
               wishlistGift={wishlistGift}
+              isInCart={cartWishlistGiftIds.has(wishlistGift.id)}
               onAddFullPrice={handleAddFullPrice}
               onOpenContributionDialog={handleOpenContributionDialog}
               onOpenGiftDetails={handleOpenGiftDetails}

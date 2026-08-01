@@ -7,6 +7,7 @@ import { LuArrowUpRight } from 'react-icons/lu';
 import DashboardTransactionsSkeleton from '@/components/skeletons/dashboard-transactions';
 import { getEvent } from '@/actions/data/event';
 import { getTransactions } from '@/actions/data/transaction';
+import { getWishlistGifts } from '@/actions/data/wishlist-gift';
 
 const DashboardTransactionsList = lazy(
   () => import('@/components/dashboard/dashboard-transactions-list')
@@ -19,9 +20,10 @@ export default async function DashboardTransactions() {
     return <div>Error</div>;
   }
 
-  const transactions = await getTransactions({
-    searchParams: { eventId: event.id },
-  });
+  const [transactions, wishlistGifts] = await Promise.all([
+    getTransactions({ searchParams: { eventId: event.id } }),
+    getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
+  ]);
 
   return (
     <div className="w-full h-full flex items-center flex-col gap-8">
@@ -49,7 +51,10 @@ export default async function DashboardTransactions() {
         />
       ) : (
         <Suspense fallback={<DashboardTransactionsSkeleton />}>
-          <DashboardTransactionsList transactions={transactions} />
+          <DashboardTransactionsList
+            transactions={transactions}
+            wishlistGifts={wishlistGifts}
+          />
         </Suspense>
       )}
     </div>

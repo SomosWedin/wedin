@@ -4,6 +4,7 @@ import Image from 'next/image';
 import {
   IoCartOutline,
   IoCheckmarkCircleOutline,
+  IoCheckmarkOutline,
   IoGiftOutline,
 } from 'react-icons/io5';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ export type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
 
 type GuestGiftCardProps = {
   wishlistGift: WishlistGiftWithGift;
+  isInCart: boolean;
   onAddFullPrice: (wishlistGift: WishlistGiftWithGift) => void;
   onOpenContributionDialog: (wishlistGift: WishlistGiftWithGift) => void;
   onOpenGiftDetails: (wishlistGift: WishlistGiftWithGift) => void;
@@ -29,6 +31,7 @@ type GuestGiftCardProps = {
 
 export default function GuestGiftCard({
   wishlistGift,
+  isInCart,
   onAddFullPrice,
   onOpenContributionDialog,
   onOpenGiftDetails,
@@ -40,9 +43,13 @@ export default function GuestGiftCard({
   );
   const isComplete =
     wishlistGift.isFullyPaid || (priceValue > 0 && remaining <= 0);
+  // Individual gifts are single-unit: once added, block re-adding instead of
+  // letting the guest reopen the detail dialog and add a duplicate cart item.
+  const isAddedToCart = !wishlistGift.isGroupGift && isInCart && !isComplete;
+  const isDisabled = isComplete || isAddedToCart;
 
   const handleCardClick = () => {
-    if (isComplete) return;
+    if (isDisabled) return;
     if (wishlistGift.isGroupGift) {
       onOpenContributionDialog(wishlistGift);
     } else {
@@ -52,8 +59,8 @@ export default function GuestGiftCard({
 
   return (
     <div
-      className={`flex flex-col gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm justify-between bg-gray-50 ${!isComplete ? 'cursor-pointer' : ''}`}
-      onClick={!isComplete ? handleCardClick : undefined}
+      className={`flex flex-col gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm justify-between bg-gray-50 ${!isDisabled ? 'cursor-pointer' : ''}`}
+      onClick={!isDisabled ? handleCardClick : undefined}
     >
       <div className="relative overflow-hidden w-full bg-gray-100 rounded-lg aspect-square">
         {gift.image?.url ? (
@@ -76,17 +83,19 @@ export default function GuestGiftCard({
             </div>
           </div>
         )}
-        <div className="flex absolute bottom-3 left-3 flex-col gap-1.5 items-start max-w-[calc(100%-1.5rem)]">
-          {wishlistGift.isGroupGift && (
-            <GiftTypeBadge
-              isGroupGift={wishlistGift.isGroupGift}
-              className="text-[11px] px-2 sm:text-xs sm:px-2.5"
-            />
-          )}
-          {wishlistGift.isFavoriteGift && (
-            <GiftFavoriteBadge className="text-[11px] px-2 sm:text-xs sm:px-2.5" />
-          )}
-        </div>
+        {!isComplete && (
+          <div className="flex absolute bottom-3 left-3 flex-col gap-1.5 items-start max-w-[calc(100%-1.5rem)]">
+            {wishlistGift.isGroupGift && (
+              <GiftTypeBadge
+                isGroupGift={wishlistGift.isGroupGift}
+                className="text-[11px] px-2 sm:text-xs sm:px-2.5"
+              />
+            )}
+            {wishlistGift.isFavoriteGift && (
+              <GiftFavoriteBadge className="text-[11px] px-2 sm:text-xs sm:px-2.5" />
+            )}
+          </div>
+        )}
       </div>
 
       <div className={`flex flex-col gap-1 ${isComplete ? 'opacity-50' : ''}`}>
@@ -133,11 +142,16 @@ export default function GuestGiftCard({
             event.stopPropagation();
             onAddFullPrice(wishlistGift);
           }}
-          disabled={isComplete}
+          disabled={isDisabled}
         >
-          {isComplete ? 'Regalo recibido' : 'Agregar al carrito'}{' '}
+          {isComplete
+            ? 'Regalo recibido'
+            : isAddedToCart
+              ? 'Agregado al carrito'
+              : 'Agregar al carrito'}{' '}
           {isComplete && '🎉'}
-          {!isComplete && <IoCartOutline className="text-lg shrink-0" />}
+          {isAddedToCart && <IoCheckmarkOutline className="text-lg shrink-0" />}
+          {!isDisabled && <IoCartOutline className="text-lg shrink-0" />}
         </Button>
       )}
     </div>

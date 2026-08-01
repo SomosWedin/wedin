@@ -39,6 +39,7 @@ export default function DashboardBankDetailsUpdateForm({
     eventId: eventId,
     bankDetails: bankDetails,
   });
+  const identificationType = form.watch('identificationType');
 
   return (
     <Form {...form}>
@@ -46,12 +47,12 @@ export default function DashboardBankDetailsUpdateForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="w-full flex flex-col gap-8"
       >
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <FormField
             control={form.control}
             name="accountHolder"
             render={({ field }) => (
-              <FormItem className="w-full">
+              <FormItem className="col-span-2 sm:col-span-1">
                 <FormLabel>Nombre y apellido</FormLabel>
                 <FormControl>
                   <Input
@@ -69,7 +70,7 @@ export default function DashboardBankDetailsUpdateForm({
             control={form.control}
             name="identificationType"
             render={({ field }) => (
-              <FormItem className="w-full">
+              <FormItem>
                 <FormLabel>Tipo de documento</FormLabel>
                 <Select
                   onValueChange={field.onChange}
@@ -90,28 +91,27 @@ export default function DashboardBankDetailsUpdateForm({
             )}
           />
 
-          <div className="w-full">
-            <FormField
-              name="identificationNumber"
-              control={form.control}
-              render={({ field }) => (
-                <IdentificationNumberField
-                  field={{
-                    ...field,
-                    value: field.value || '',
-                  }}
-                />
-              )}
-            />
-          </div>
+          <FormField
+            name="identificationNumber"
+            control={form.control}
+            render={({ field }) => (
+              <IdentificationNumberField
+                field={{
+                  ...field,
+                  value: field.value || '',
+                }}
+                identificationType={identificationType}
+              />
+            )}
+          />
         </div>
 
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <FormField
             control={form.control}
             name="bankName"
             render={({ field }) => (
-              <FormItem className="w-full">
+              <FormItem className="col-span-2 sm:col-span-1">
                 <FormLabel>Entidad</FormLabel>
                 <FormControl className="!mt-1.5">
                   <Combobox
@@ -131,7 +131,7 @@ export default function DashboardBankDetailsUpdateForm({
             control={form.control}
             name="accountNumber"
             render={({ field }) => (
-              <FormItem className="w-full">
+              <FormItem>
                 <FormLabel>Número de cuenta</FormLabel>
                 <FormControl>
                   <Input
@@ -149,7 +149,7 @@ export default function DashboardBankDetailsUpdateForm({
             control={form.control}
             name="accountType"
             render={({ field }) => (
-              <FormItem className="w-full">
+              <FormItem>
                 <FormLabel>Moneda de la cuenta</FormLabel>
                 <Select
                   onValueChange={field.onChange}

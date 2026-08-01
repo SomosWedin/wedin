@@ -27,7 +27,7 @@ export default function GuestHero({ event }: GuestHeroProps) {
   return (
     <div className="bg-gray-50">
       <section className="grid grid-cols-1 gap-0 lg:gap-4 items-center mx-auto max-w-7xl lg:grid-cols-2">
-        <div className="w-full aspect-[3/4] px-0 sm:px-4 py-0 sm:py-8">
+        <div className="w-full aspect-[1/1] px-0 sm:px-4 py-0 sm:py-8">
           <GuestImageCarousel images={event.images} />
         </div>
 
@@ -37,7 +37,7 @@ export default function GuestHero({ event }: GuestHeroProps) {
               {dateLabel} <span className="text-base">📅</span>
             </span>
           )}
-          <h1 className="text-4xl font-semibold sm:text-5xl whitespace-nowrap">{coupleName}</h1>
+          <h1 className="text-4xl font-semibold sm:text-5xl">{coupleName}</h1>
           {event.coverMessage && (
             <p className="text-textTertiary font-light">{event.coverMessage}</p>
           )}

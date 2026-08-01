@@ -9,7 +9,12 @@ import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialo
 import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
 import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
 import { computePercentage } from '@/components/guest/gift-progress';
-import { IoGiftOutline, IoSearchOutline, IoSparkles } from 'react-icons/io5';
+import {
+  IoCashOutline,
+  IoGiftOutline,
+  IoSearchOutline,
+  IoSparkles,
+} from 'react-icons/io5';
 import type { Category, Prisma } from '@prisma/client';
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
@@ -83,10 +88,14 @@ export default function DashboardWishlistList({
   const categoryNameById = new Map(
     categories.map(category => [category.id, category.name])
   );
-  const recommendedGiftCount = 20;
-  const addedGiftCount = wishlistGifts.filter(
+  const activeWishlistGifts = wishlistGifts.filter(
     wishlistGift => !wishlistGift.isReceived
-  ).length;
+  );
+  const addedGiftCount = activeWishlistGifts.length;
+  const totalGiftsValue = activeWishlistGifts.reduce(
+    (sum, wishlistGift) => sum + (Number(wishlistGift.gift.price) || 0),
+    0
+  );
 
   const filteredWishlistGifts = wishlistGifts.filter(wishlistGift => {
     const estado = getEstado(wishlistGift);
@@ -106,22 +115,30 @@ export default function DashboardWishlistList({
   return (
     <div className="flex flex-col gap-6 w-full">
       <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-[unset] sm:max-h-24">
-        <div className="flex flex-col gap-1 px-6 py-5 w-full justify-center">
+        <div className="flex flex-col gap-1 p-4 sm:p-6 w-full justify-center">
           <h2 className="text-lg font-bold">Regalos agregados a tu lista</h2>
-          <p className="text-sm text-textTertiary">
-            Según la cantidad de invitados te recomendamos tener 20 regalos
-          </p>
         </div>
-        <div className="flex gap-3 items-center p-6">
-          <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
+        <div className="flex gap-3 items-center p-4 sm:p-6 w-full sm:w-1/2">
+          <div className="flex shrink-0 justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
             <IoGiftOutline className="text-xl" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold">
-              {addedGiftCount}/{recommendedGiftCount}
-            </span>
+            <span className="text-lg font-bold">{addedGiftCount}</span>
             <span className="text-sm whitespace-nowrap text-textTertiary">
               Regalos agregados
+            </span>
+          </div>
+        </div>
+        <div className="flex gap-3 items-center p-4 sm:p-6 w-full sm:w-1/2">
+          <div className="flex shrink-0 justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
+            <IoCashOutline className="text-xl" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-lg font-bold text-textPrimary">
+              Gs. {totalGiftsValue.toLocaleString('es-PY')}
+            </span>
+            <span className="text-sm whitespace-nowrap text-textTertiary">
+              en tu lista de regalos
             </span>
           </div>
         </div>
