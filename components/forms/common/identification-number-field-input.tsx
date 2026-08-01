@@ -36,6 +36,9 @@ const IdentificationNumberField = ({
   identificationType = 'ci',
   disabled = false,
 }: IdentificationNumberFieldProps) => {
+  const formatIdentificationNumber = (value: string) =>
+    identificationType === 'ruc' ? formatRuc(value) : groupByThousands(value);
+
   const [displayValue, setDisplayValue] = useState(field.value);
 
   useEffect(() => {
