@@ -10,7 +10,6 @@ import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialo
 import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
 import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
 import { computePercentage } from '@/components/guest/gift-progress';
-import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift';
 import {
   IoCashOutline,
   IoGiftOutline,

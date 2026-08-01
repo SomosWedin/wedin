@@ -42,9 +42,7 @@ export default function GuestGiftCard({
     wishlistGift.transactions
   );
   const isComplete =
-    wishlistGift.isFullyPaid ||
-    wishlistGift.isManuallyReceived ||
-    (priceValue > 0 && remaining <= 0);
+    wishlistGift.isFullyPaid || (priceValue > 0 && remaining <= 0);
   // Individual gifts are single-unit: once added, block re-adding instead of
   // letting the guest reopen the detail dialog and add a duplicate cart item.
   const isAddedToCart = !wishlistGift.isGroupGift && isInCart && !isComplete;
