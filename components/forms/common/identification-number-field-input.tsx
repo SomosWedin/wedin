@@ -36,18 +36,22 @@ const IdentificationNumberField = ({
   identificationType = 'ci',
   disabled = false,
 }: IdentificationNumberFieldProps) => {
-  const formatIdentificationNumber = (value: string) =>
-    identificationType === 'ruc' ? formatRuc(value) : groupByThousands(value);
-
   const [displayValue, setDisplayValue] = useState(field.value);
 
   useEffect(() => {
-    setDisplayValue(formatIdentificationNumber(field.value));
+    setDisplayValue(
+      identificationType === 'ruc'
+        ? formatRuc(field.value)
+        : groupByThousands(field.value)
+    );
   }, [field.value, identificationType]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.replace(/[^0-9]/g, '');
-    const formattedValue = formatIdentificationNumber(rawValue);
+    const formattedValue =
+      identificationType === 'ruc'
+        ? formatRuc(rawValue)
+        : groupByThousands(rawValue);
 
     setDisplayValue(formattedValue);
     field.onChange(rawValue);

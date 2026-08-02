@@ -114,7 +114,7 @@ export default function ThankTransactionDialog({
             <p className="mb-1 text-xs font-medium text-textTertiary">
               Mensaje de {payerName}
             </p>
-            <p className="italic">"{transaction.payerMessage}"</p>
+            <p className="italic">&ldquo;{transaction.payerMessage}&rdquo;</p>
           </div>
         )}
 
