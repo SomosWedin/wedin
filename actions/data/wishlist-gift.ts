@@ -5,6 +5,7 @@ import {
   WishlistGiftCreateSchema,
   WishlistGiftDeleteSchema,
   WishlistGiftEditSchema,
+  WishlistGiftReceivedToggleSchema,
   WishlistGiftsCreateSchema,
 } from '@/schemas/form';
 import { GetwishlistGiftsParams } from '@/schemas/params';
@@ -157,6 +158,31 @@ export async function editWishlistGift(
     return { success: true };
   } catch (error) {
     console.error('Error editing wishlist gift:', error);
+    return { error: getErrorMessage(error) };
+  }
+}
+
+export async function setWishlistGiftManuallyReceived(
+  formData: z.infer<typeof WishlistGiftReceivedToggleSchema>
+) {
+  const validatedFields = WishlistGiftReceivedToggleSchema.safeParse(formData);
+
+  if (!validatedFields.success) {
+    return { error: 'Datos inválidos, por favor verifica tus datos.' };
+  }
+
+  const { wishlistGiftId, isManuallyReceived } = validatedFields.data;
+
+  try {
+    await prismaClient.wishlistGift.update({
+      where: { id: wishlistGiftId },
+      data: { isManuallyReceived },
+    });
+
+    revalidatePath('/wishlist');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating wishlist gift received flag:', error);
     return { error: getErrorMessage(error) };
   }
 }

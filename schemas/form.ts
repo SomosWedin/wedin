@@ -75,6 +75,11 @@ export const WishlistGiftDeleteSchema = z.object({
   giftId: z.string().min(1, { message: 'No se encontro un gift ID' }),
 });
 
+export const WishlistGiftReceivedToggleSchema = z.object({
+  wishlistGiftId: z.string().min(1, { message: 'No se encontro un ID' }),
+  isManuallyReceived: z.boolean(),
+});
+
 export const TransactionCreateSchema = z.object({
   amount: z
     .string()
