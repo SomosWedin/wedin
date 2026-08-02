@@ -74,15 +74,6 @@ export default function DashboardTransactionsList({
   const completedTransactions = transactions.filter(
     transaction => transaction.status === 'COMPLETED'
   );
-  const receivedCount = new Set(
-    completedTransactions
-      .filter(
-        transaction =>
-          transaction.wishlistGift.isFullyPaid &&
-          !transaction.wishlistGift.isReceived
-      )
-      .map(transaction => transaction.wishlistGiftId)
-  ).size;
   const total = completedTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
@@ -91,6 +82,9 @@ export default function DashboardTransactionsList({
   const activeWishlistGifts = wishlistGifts.filter(
     wishlistGift => !wishlistGift.isReceived
   );
+  const receivedCount = activeWishlistGifts.filter(
+    wishlistGift => wishlistGift.isFullyPaid || wishlistGift.isManuallyReceived
+  ).length;
   const totalWishlistGifts = activeWishlistGifts.length;
   const totalGiftsPrice = activeWishlistGifts.reduce(
     (sum, wishlistGift) => sum + (Number(wishlistGift.gift.price) || 0),
