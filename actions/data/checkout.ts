@@ -79,6 +79,7 @@ export async function createTransactionsForCart(
       id: { in: cartItems.map(item => item.wishlistGiftId) },
       eventId,
       isReceived: false,
+      isManuallyReceived: false,
     },
     include: {
       gift: true,

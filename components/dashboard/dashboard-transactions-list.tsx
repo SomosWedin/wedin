@@ -24,8 +24,13 @@ type TransactionWithGift = Prisma.TransactionGetPayload<{
   include: { wishlistGift: { include: { gift: true } } };
 }>;
 
+type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
+  include: { gift: { include: { image: true } } };
+}>;
+
 type DashboardTransactionsListProps = {
   transactions: TransactionWithGift[];
+  wishlistGifts: WishlistGiftWithGift[];
 };
 
 type SortColumn = 'createdAt' | 'amount';
@@ -49,6 +54,7 @@ function SortIcon({
 
 export default function DashboardTransactionsList({
   transactions,
+  wishlistGifts,
 }: DashboardTransactionsListProps) {
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
@@ -68,24 +74,19 @@ export default function DashboardTransactionsList({
   const completedTransactions = transactions.filter(
     transaction => transaction.status === 'COMPLETED'
   );
-  const receivedCount = new Set(
-    completedTransactions
-      .filter(transaction => transaction.wishlistGift.isFullyPaid)
-      .map(transaction => transaction.wishlistGiftId)
-  ).size;
   const total = completedTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
   );
 
-  const uniqueWishlistGifts = new Map(
-    transactions.map(transaction => [
-      transaction.wishlistGiftId,
-      transaction.wishlistGift,
-    ])
+  const activeWishlistGifts = wishlistGifts.filter(
+    wishlistGift => !wishlistGift.isReceived
   );
-  const totalWishlistGifts = uniqueWishlistGifts.size;
-  const totalGiftsPrice = Array.from(uniqueWishlistGifts.values()).reduce(
+  const receivedCount = activeWishlistGifts.filter(
+    wishlistGift => wishlistGift.isFullyPaid || wishlistGift.isManuallyReceived
+  ).length;
+  const totalWishlistGifts = activeWishlistGifts.length;
+  const totalGiftsPrice = activeWishlistGifts.reduce(
     (sum, wishlistGift) => sum + (Number(wishlistGift.gift.price) || 0),
     0
   );
@@ -117,14 +118,14 @@ export default function DashboardTransactionsList({
   return (
     <div className="flex flex-col gap-6 w-full">
       <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-[unset] sm:max-h-24">
-        <div className="flex flex-col gap-1 p-6 w-full justify-center">
+        <div className="flex flex-col gap-1 p-4 sm:p-6 w-full justify-center">
           <h2 className="text-lg font-bold">
             Resúmen de los regalos recibidos
           </h2>
         </div>
         {receivedCount >= 1 && (
-          <div className="flex gap-3 items-center p-6 w-1/2">
-            <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
+          <div className="flex gap-3 items-center p-4 sm:p-6 w-full sm:w-1/2">
+            <div className="flex shrink-0 justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
               <IoGiftOutline className="text-xl" />
             </div>
             <div className="flex flex-col">
@@ -137,16 +138,16 @@ export default function DashboardTransactionsList({
             </div>
           </div>
         )}
-        <div className="flex gap-3 items-center p-6 w-1/2">
-          <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
+        <div className="flex gap-3 items-center p-4 sm:p-6 w-full sm:w-1/2">
+          <div className="flex shrink-0 justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
             <IoCashOutline className="text-xl" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm whitespace-nowrap text-textTertiary">
-              <span className="text-lg font-bold text-textPrimary">Gs. {total.toLocaleString('es-PY')}</span> alcanzados
+            <span className="text-lg font-bold text-textPrimary">
+              Gs. {total.toLocaleString('es-PY')}
             </span>
             <span className="text-sm whitespace-nowrap text-textTertiary">
-              de <span className="text-lg font-bold text-textPrimary">Gs. {totalGiftsPrice.toLocaleString('es-PY')}</span>
+              recaudados de Gs. {totalGiftsPrice.toLocaleString('es-PY')}
             </span>
           </div>
         </div>
@@ -223,39 +224,47 @@ export default function DashboardTransactionsList({
           return (
             <div
               key={transaction.id}
-              className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 hover:bg-gray-50"
+              className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:gap-4 items-center px-4 py-4 border-b border-gray-100 hover:bg-gray-50"
             >
-              <div className="flex col-span-2 gap-4 items-center">
-                <span
-                  className="shrink-0 text-xl text-gray-400"
-                  title={paymentMethod.title}
-                >
-                  {paymentMethod.icon}
-                </span>
-                {payerName}
+              <div className="flex justify-between items-center gap-2 sm:contents">
+                <div className="flex col-span-2 gap-2 sm:gap-4 items-center">
+                  <span
+                    className="shrink-0 text-xl text-gray-400"
+                    title={paymentMethod.title}
+                  >
+                    {paymentMethod.icon}
+                  </span>
+                  {payerName}
+                </div>
+                <div className="col-span-2 text-textTertiary text-sm">
+                  {format(transaction.createdAt, 'dd/MM/yyyy')}
+                </div>
               </div>
-              <div className="col-span-2 text-textTertiary text-sm">
-                {format(transaction.createdAt, 'dd/MM/yyyy')}
+
+              <div className="flex justify-between items-center gap-2 sm:contents">
+                <div className="col-span-2">
+                  Gs. {Number(transaction.amount).toLocaleString('es-PY')}
+                </div>
+                <div className="col-span-2 text-textTertiary text-sm">
+                  {transaction.wishlistGift.gift.name}
+                </div>
               </div>
-              <div className="col-span-2">
-                Gs. {Number(transaction.amount).toLocaleString('es-PY')}
-              </div>
-              <div className="col-span-2 text-textTertiary text-sm">
-                {transaction.wishlistGift.gift.name}
-              </div>
-              <div className="col-span-2">
-                <Badge className={estado.className}>
-                  {estado.icon}
-                  {estado.label}
-                </Badge>
-              </div>
-              <div className="flex col-span-2 justify-start sm:justify-end">
-                {transaction.status === 'COMPLETED' && (
-                  <ThankTransactionDialog
-                    transaction={transaction}
-                    payerName={payerName}
-                  />
-                )}
+
+              <div className="flex justify-between items-center gap-2 sm:contents">
+                <div className="col-span-2">
+                  <Badge className={estado.className}>
+                    {estado.icon}
+                    {estado.label}
+                  </Badge>
+                </div>
+                <div className="flex col-span-2 justify-start sm:justify-end">
+                  {transaction.status === 'COMPLETED' && (
+                    <ThankTransactionDialog
+                      transaction={transaction}
+                      payerName={payerName}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           );

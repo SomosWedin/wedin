@@ -113,7 +113,7 @@ export default function CheckoutForm({
             name="payerName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nombre completo</FormLabel>
+                <FormLabel>Nombre y apellido</FormLabel>
                 <FormControl>
                   <Input placeholder="Tu nombre" {...field} />
                 </FormControl>

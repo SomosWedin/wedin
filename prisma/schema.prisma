@@ -194,6 +194,7 @@ model WishlistGift {
   isGroupGift          Boolean   @default(false)
   groupGiftParts       String    @default("0")
   isFullyPaid          Boolean   @default(false)
+  isManuallyReceived   Boolean   @default(false)
   // NOTE: repurposed as an "archived" flag — true means deleteWishlistGift
   // hid this gift instead of hard-deleting it, because it had a Transaction
   // (of any status) still pointing at it. Excluded from the guest site and

@@ -7,6 +7,7 @@ import {
   createWishlistGifts,
   deleteWishlistGift,
   editWishlistGift,
+  setWishlistGiftManuallyReceived,
 } from '@/actions/data/wishlist-gift';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -14,6 +15,7 @@ import type {
   WishlistGiftCreateSchema,
   WishlistGiftDeleteSchema,
   WishlistGiftEditSchema,
+  WishlistGiftReceivedToggleSchema,
   WishlistGiftsCreateSchema,
 } from '@/schemas/form';
 import type { z } from 'zod';
@@ -118,11 +120,35 @@ export function useWishlistGift() {
     return response;
   };
 
+  const setManuallyReceived = async (
+    values: z.infer<typeof WishlistGiftReceivedToggleSchema>
+  ) => {
+    const response = await setWishlistGiftManuallyReceived(values);
+
+    if (response.error) {
+      toast({
+        title: 'Error al actualizar el regalo',
+        description: response.error,
+        variant: 'destructive',
+      });
+      return response;
+    }
+
+    toast({
+      title: values.isManuallyReceived
+        ? 'Marcado como recibido. ✅'
+        : 'Marcado como no recibido.',
+    });
+    router.refresh();
+    return response;
+  };
+
   return {
     loading,
     addToWishlist,
     addAllToWishlist,
     removeFromWishlist,
     updateWishlistGift,
+    setManuallyReceived,
   };
 }

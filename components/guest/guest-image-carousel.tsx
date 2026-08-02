@@ -63,7 +63,7 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
                 `fill` needs a concretely-sized ancestor, and the carousel's
                 own viewport div (from components/ui/carousel.tsx) is
                 content-sized, not stretched to its parent's height. */}
-            <div className="relative w-full aspect-[3/4]">
+            <div className="relative w-full aspect-[1/1]">
               <Image
                 src={image.url as string}
                 alt="Foto de la pareja"

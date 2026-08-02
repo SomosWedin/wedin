@@ -75,6 +75,9 @@ export async function suggestThankYouMessage(transactionId: string) {
     .join(' y ');
 
   const payerName = transaction.payerName ?? 'un invitado anónimo';
+  const payerMessageClause = transaction.payerMessage
+    ? ` El invitado dejó este mensaje junto con su regalo: "${transaction.payerMessage}". Si el mensaje es coherente y tiene sentido, tenelo en cuenta al redactar las respuestas. Si es texto sin sentido, aleatorio o irrelevante, ignoralo por completo y no lo menciones.`
+    : '';
 
   try {
     const response = await anthropic.messages.create({
@@ -87,7 +90,7 @@ export async function suggestThankYouMessage(transactionId: string) {
           role: 'user',
           content: `Escribí 3 mensajes de agradecimiento distintos para ${payerName}, que contribuyó con ${giftDescription}${
             coupleNames ? `, de parte de ${coupleNames}` : ''
-          }.`,
+          }.${payerMessageClause}`,
         },
       ],
       output_config: {
