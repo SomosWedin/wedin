@@ -1,3 +1,4 @@
+import type { PaymentMethod, TransactionStatus } from '@prisma/client';
 import {
   IoArrowUndoOutline,
   IoBusinessOutline,
@@ -7,7 +8,6 @@ import {
   IoSync,
   IoTimeOutline,
 } from 'react-icons/io5';
-import type { PaymentMethod, TransactionStatus } from '@prisma/client';
 
 export const ESTADO_BY_STATUS: Record<
   TransactionStatus,

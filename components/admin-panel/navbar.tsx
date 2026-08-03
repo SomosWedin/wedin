@@ -1,7 +1,7 @@
 // import { Suspense } from 'react';
-import { UserNav } from '@/components/admin-panel/user-nav';
-import { SheetMenu } from '@/components/admin-panel/sheet-menu';
 import { getCurrentUser } from '@/actions/get-current-user';
+import { SheetMenu } from '@/components/admin-panel/sheet-menu';
+import { UserNav } from '@/components/admin-panel/user-nav';
 import { UserNavSkeleton } from '../skeletons/user-nav-skeleton';
 
 interface NavbarProps {

@@ -1,8 +1,8 @@
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { EventType, type Event, type Image as ImageModel, type User } from '@prisma/client';
 import GuestImageCarousel from '@/components/guest/guest-image-carousel';
 import ViewGiftsButton from '@/components/guest/view-gifts-button';
+import { EventType, type Event, type Image as ImageModel, type User } from '@prisma/client';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 type GuestHeroProps = {
   event: Event & { images: Pick<ImageModel, 'id' | 'url'>[]; users: User[] };

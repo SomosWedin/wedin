@@ -1,13 +1,5 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { endOfDay, format } from 'date-fns';
-import {
-  IoChevronDown,
-  IoChevronUp,
-  IoSearchOutline,
-  IoSwapVerticalOutline,
-} from 'react-icons/io5';
 import {
   ESTADO_BY_PAYOUT_STATUS,
   ESTADO_OPTIONS_PAYOUT,
@@ -16,7 +8,15 @@ import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { useAdminPayoutStatus } from '@/hooks/admin/use-admin-payout-status';
 import { coupleName } from '@/lib/utils';
-import type { Prisma, PayoutStatus } from '@prisma/client';
+import type { PayoutStatus, Prisma } from '@prisma/client';
+import { endOfDay, format } from 'date-fns';
+import { useMemo, useState } from 'react';
+import {
+  IoChevronDown,
+  IoChevronUp,
+  IoSearchOutline,
+  IoSwapVerticalOutline,
+} from 'react-icons/io5';
 
 type PayoutWithBankDetailsAndEvent = Prisma.PayoutGetPayload<{
   include: {
@@ -107,13 +107,13 @@ export default function AdminPayoutsList({ payouts }: AdminPayoutsListProps) {
 
   const sortedPayouts = sortColumn
     ? [...filteredPayouts].sort((a, b) => {
-        const diff =
-          sortColumn === 'createdAt'
-            ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.amount) - Number(b.amount);
+      const diff =
+        sortColumn === 'createdAt'
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : Number(a.amount) - Number(b.amount);
 
-        return sortDirection === 'asc' ? diff : -diff;
-      })
+      return sortDirection === 'asc' ? diff : -diff;
+    })
     : filteredPayouts;
 
   return (

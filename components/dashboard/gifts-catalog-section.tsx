@@ -1,18 +1,18 @@
 'use client';
 
-import { useTransition } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { IoGiftOutline } from 'react-icons/io5';
-import { PiSquaresFour } from 'react-icons/pi';
 import type { getCategories } from '@/actions/data/category';
-import type { getGiftlists } from '@/actions/data/giftlist';
 import type { getGifts } from '@/actions/data/gift';
+import type { getGiftlists } from '@/actions/data/giftlist';
 import GiftRow from '@/components/dashboard/gift-row';
 import GiftsFilterBar from '@/components/dashboard/gifts-filter-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useTransition } from 'react';
+import { IoGiftOutline } from 'react-icons/io5';
+import { PiSquaresFour } from 'react-icons/pi';
 
 type GiftsCatalogSectionProps = {
   gifts: Awaited<ReturnType<typeof getGifts>>;
@@ -52,9 +52,8 @@ export default function GiftsCatalogSection({
 
       <TabsContent value="todos" className="mt-6">
         <div
-          className={`bg-white rounded-lg transition-opacity ${
-            isPending ? 'opacity-50 pointer-events-none' : ''
-          }`}
+          className={`bg-white rounded-lg transition-opacity ${isPending ? 'opacity-50 pointer-events-none' : ''
+            }`}
         >
           <div className="grid grid-cols-1 gap-4">
             <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-3 bg-gray-50 rounded-t-lg text-sm font-medium text-gray-600">

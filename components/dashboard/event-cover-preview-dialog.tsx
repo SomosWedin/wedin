@@ -1,7 +1,5 @@
 'use client';
 
-import { IoEyeOutline } from 'react-icons/io5';
-import type { Event, Image as ImageModel, User } from '@prisma/client';
 import GuestHero from '@/components/guest/guest-hero';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,6 +9,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import type { Event, Image as ImageModel, User } from '@prisma/client';
+import { IoEyeOutline } from 'react-icons/io5';
 
 type EventCoverPreviewDialogProps = {
   event: Event & { users: User[] };

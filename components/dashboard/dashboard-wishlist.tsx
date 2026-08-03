@@ -1,12 +1,12 @@
-import { Suspense, lazy } from 'react';
-import Link from 'next/link';
-import { IoAdd, IoGiftOutline } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
-import EmptyState from '@/components/common/empty-state';
-import DashboardWishlistSkeleton from '@/components/skeletons/dashboard-wishlist';
+import { getCategories } from '@/actions/data/category';
 import { getEvent } from '@/actions/data/event';
 import { getWishlistGifts } from '@/actions/data/wishlist-gift';
-import { getCategories } from '@/actions/data/category';
+import EmptyState from '@/components/common/empty-state';
+import DashboardWishlistSkeleton from '@/components/skeletons/dashboard-wishlist';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Suspense, lazy } from 'react';
+import { IoAdd, IoGiftOutline } from 'react-icons/io5';
 
 const DashboardWishlistList = lazy(
   () => import('@/components/dashboard/dashboard-wishlist-list')

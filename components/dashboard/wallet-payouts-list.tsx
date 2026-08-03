@@ -1,20 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import { format } from 'date-fns';
-import {
-  IoCashOutline,
-  IoGiftOutline,
-  IoSwapVerticalOutline,
-  IoChevronDown,
-  IoChevronUp,
-} from 'react-icons/io5';
-import { Badge } from '@/components/ui/badge';
 import {
   ESTADO_BY_PAYOUT_STATUS,
   ESTADO_OPTIONS_PAYOUT,
 } from '@/components/dashboard/payout-estado';
+import { Badge } from '@/components/ui/badge';
 import type { Payout } from '@prisma/client';
+import { format } from 'date-fns';
+import { useState } from 'react';
+import {
+  IoCashOutline,
+  IoChevronDown,
+  IoChevronUp,
+  IoGiftOutline,
+  IoSwapVerticalOutline,
+} from 'react-icons/io5';
 
 type WalletSummary = {
   totalReceived: number;
@@ -70,13 +70,13 @@ export default function WalletPayoutsList({
 
   const sortedPayouts = sortColumn
     ? [...filteredPayouts].sort((a, b) => {
-        const diff =
-          sortColumn === 'createdAt'
-            ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.amount) - Number(b.amount);
+      const diff =
+        sortColumn === 'createdAt'
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : Number(a.amount) - Number(b.amount);
 
-        return sortDirection === 'asc' ? diff : -diff;
-      })
+      return sortDirection === 'asc' ? diff : -diff;
+    })
     : filteredPayouts;
 
   return (

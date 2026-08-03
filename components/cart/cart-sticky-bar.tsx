@@ -1,7 +1,7 @@
 'use client';
 
-import { IoCartOutline } from 'react-icons/io5';
 import { Button } from '@/components/ui/button';
+import { IoCartOutline } from 'react-icons/io5';
 
 type CartStickyBarProps = {
   itemCount: number;

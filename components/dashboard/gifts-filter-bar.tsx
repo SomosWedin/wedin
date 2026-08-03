@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState, type TransitionStartFunction } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import debounce from 'lodash.debounce';
 import { Input } from '@/components/ui/input';
-import { IoSearchOutline } from 'react-icons/io5';
 import type { Category } from '@prisma/client';
+import debounce from 'lodash.debounce';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState, type TransitionStartFunction } from 'react';
+import { IoSearchOutline } from 'react-icons/io5';
 
 type GiftsFilterBarProps = {
   categories: Category[];

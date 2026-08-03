@@ -1,17 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import type { Image as ImageModel } from '@prisma/client';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { IoGiftOutline } from 'react-icons/io5';
-import Autoplay from 'embla-carousel-autoplay';
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   type CarouselApi,
 } from '@/components/ui/carousel';
+import type { Image as ImageModel } from '@prisma/client';
+import Autoplay from 'embla-carousel-autoplay';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { IoGiftOutline } from 'react-icons/io5';
 
 const AUTO_SLIDE_INTERVAL_MS = 3000;
 

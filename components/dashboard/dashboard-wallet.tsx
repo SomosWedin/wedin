@@ -1,10 +1,10 @@
-import { Suspense, lazy } from 'react';
-import { IoWalletOutline } from 'react-icons/io5';
-import EmptyState from '@/components/common/empty-state';
-import DashboardTransactionsSkeleton from '@/components/skeletons/dashboard-transactions';
-import RequestPayoutDialog from '@/components/dialog/request-payout-dialog';
 import { getEvent } from '@/actions/data/event';
 import { getPayouts, getWalletSummary } from '@/actions/data/payout';
+import EmptyState from '@/components/common/empty-state';
+import RequestPayoutDialog from '@/components/dialog/request-payout-dialog';
+import DashboardTransactionsSkeleton from '@/components/skeletons/dashboard-transactions';
+import { Suspense, lazy } from 'react';
+import { IoWalletOutline } from 'react-icons/io5';
 
 const WalletPayoutsList = lazy(
   () => import('@/components/dashboard/wallet-payouts-list')

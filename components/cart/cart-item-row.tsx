@@ -1,9 +1,9 @@
 'use client';
 
-import Image from 'next/image';
-import { IoGiftOutline, IoPencilOutline, IoTrashOutline } from 'react-icons/io5';
 import { Button } from '@/components/ui/button';
 import type { CartItem } from '@/hooks/use-cart-store';
+import Image from 'next/image';
+import { IoGiftOutline, IoPencilOutline, IoTrashOutline } from 'react-icons/io5';
 
 type CartItemRowProps = {
   item: CartItem;

@@ -1,9 +1,9 @@
-import { Suspense, lazy } from 'react';
 import { getEvent } from '@/actions/data/event';
-import { getCurrentUser } from '@/actions/get-current-user';
 import { getSecondaryUser } from '@/actions/data/user';
+import { getCurrentUser } from '@/actions/get-current-user';
 import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
 import { EventType } from '@prisma/client';
+import { Suspense, lazy } from 'react';
 
 const DashboardEventSettingsForm = lazy(
   () => import('@/components/forms/dashboard/event-settings')

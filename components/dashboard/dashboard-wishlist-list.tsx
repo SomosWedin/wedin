@@ -1,23 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
+import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
+import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
+import DeleteWishlistGiftDialog from '@/components/dialog/delete-wishlist-gift-dialog';
+import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialog';
+import { computePercentage } from '@/components/guest/gift-progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import DeleteWishlistGiftDialog from '@/components/dialog/delete-wishlist-gift-dialog';
-import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialog';
-import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
-import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
-import { computePercentage } from '@/components/guest/gift-progress';
 import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift';
+import type { Category, Prisma } from '@prisma/client';
+import Image from 'next/image';
+import { useState } from 'react';
 import {
   IoCashOutline,
   IoGiftOutline,
   IoSearchOutline,
   IoSparkles,
 } from 'react-icons/io5';
-import type { Category, Prisma } from '@prisma/client';
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
   include: { gift: { include: { image: true } } };

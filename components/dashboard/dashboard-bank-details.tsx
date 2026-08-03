@@ -1,7 +1,7 @@
-import { Suspense, lazy } from 'react';
+import { getBankDetails } from '@/actions/data/bank-details';
 import { getEvent } from '@/actions/data/event';
 import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
-import { getBankDetails } from '@/actions/data/bank-details';
+import { Suspense, lazy } from 'react';
 
 const DashboardBankDetailsUpdateForm = lazy(
   () => import('@/components/forms/dashboard/bank-details')

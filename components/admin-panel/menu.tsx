@@ -1,22 +1,21 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Ellipsis, LogOut } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-
-import { cn } from '@/lib/utils';
-import { getMenuList } from '@/lib/menu-list';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { CollapseMenuButton } from '@/components/admin-panel/collapse-menu-button';
 import LogoutConfirmDialog from '@/components/dialog/logout-confirm-dialog';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Tooltip,
-  TooltipTrigger,
   TooltipContent,
   TooltipProvider,
+  TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getMenuList } from '@/lib/menu-list';
+import { cn } from '@/lib/utils';
+import { Ellipsis, LogOut } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 interface MenuProps {
   isOpen: boolean | undefined;
@@ -64,7 +63,7 @@ export function Menu({ isOpen }: MenuProps) {
                               variant={
                                 (active === undefined &&
                                   pathname.startsWith(href)) ||
-                                active
+                                  active
                                   ? 'secondary'
                                   : 'ghost'
                               }

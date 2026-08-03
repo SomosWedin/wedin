@@ -1,5 +1,5 @@
-import { IoCheckmark, IoClose, IoSync, IoTimeOutline } from 'react-icons/io5';
 import type { PayoutStatus } from '@prisma/client';
+import { IoCheckmark, IoClose, IoSync, IoTimeOutline } from 'react-icons/io5';
 
 export const ESTADO_BY_PAYOUT_STATUS: Record<
   PayoutStatus,
