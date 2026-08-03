@@ -43,14 +43,14 @@ export default function EventUrlForm({
           control={form.control}
           name="eventUrl"
           render={({ field }) => (
-            <FormItem className="w-full sm:w-64">
+            <FormItem>
               <FormControl>
                 <div className="flex w-full items-center rounded-md border border-input bg-white focus-within:ring-1 focus-within:ring-ring">
                   <Input
                     {...field}
                     placeholder="amelie-y-john"
                     aria-label="Subdominio del evento"
-                    className="min-w-0 flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                    className="min-w-0 flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 max-w-36"
                   />
 
                   <span className="whitespace-nowrap pr-2 text-sm text-textTertiary select-none">
