@@ -43,9 +43,9 @@ export default function EventUrlForm({
           control={form.control}
           name="eventUrl"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="w-full sm:w-64">
               <FormControl>
-                <div className="flex w-full max-w-md items-center rounded-md border border-input bg-white focus-within:ring-1 focus-within:ring-ring">
+                <div className="flex w-full items-center rounded-md border border-input bg-white focus-within:ring-1 focus-within:ring-ring">
                   <Input
                     {...field}
                     placeholder="amelie-y-john"
@@ -61,7 +61,9 @@ export default function EventUrlForm({
                 </div>
               </FormControl>
 
-              <FormMessage className="font-normal text-red-600" />
+              {isDirty && (
+                <FormMessage className="font-normal text-red-600 text-xs" />
+              )}
             </FormItem>
           )}
         />
@@ -72,6 +74,7 @@ export default function EventUrlForm({
             variant="success"
             size="icon"
             disabled={loading || !isValid}
+            className="shrink-0"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

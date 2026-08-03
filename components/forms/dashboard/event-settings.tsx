@@ -4,6 +4,7 @@ import { type Event, EventType, type User } from '@prisma/client'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 import { FaCheck } from 'react-icons/fa6'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -41,6 +42,7 @@ export default function DashboardEventSettingsForm({
     currentUser,
     secondaryEventUser,
   })
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
 
   return (
     <Form {...form}>
@@ -48,7 +50,7 @@ export default function DashboardEventSettingsForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="w-full flex flex-col gap-8"
       >
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-4 sm:grid sm:grid-cols-3 sm:gap-2">
           <FormField
             control={form.control}
             name="eventUrl"
@@ -58,7 +60,7 @@ export default function DashboardEventSettingsForm({
 
                 <div className="!mt-0 flex flex-col items-stretch gap-2 sm:flex-row sm:items-start">
                   <FormControl>
-                    <div className="mt-1.5 flex min-w-0 flex-1 items-center rounded-md border border-input bg-white focus-within:ring-1 focus-within:ring-ring">
+                    <div className="mt-1.5 flex min-w-0 flex-1 items-center rounded-md border border-input bg-white focus-within:ring-1 focus-within:ring-ring !max-h-[40px]">
                       <Input
                         {...field}
                         placeholder="amelie-y-john"
@@ -67,7 +69,7 @@ export default function DashboardEventSettingsForm({
                       />
 
                       <span className="whitespace-nowrap pr-3 text-sm text-textTertiary select-none">
-                        .somoswedin
+                        .somoswedin.com
                       </span>
                     </div>
                   </FormControl>
@@ -84,7 +86,10 @@ export default function DashboardEventSettingsForm({
             render={({ field }) => (
               <FormItem className="w-full">
                 <FormLabel className="mb-[-10px]">Fecha del evento</FormLabel>
-                <Popover>
+                <Popover
+                  open={isDatePickerOpen}
+                  onOpenChange={setIsDatePickerOpen}
+                >
                   <PopoverTrigger asChild>
                     <FormControl className="!mt-1.5">
                       <Button
@@ -105,10 +110,15 @@ export default function DashboardEventSettingsForm({
                   </PopoverTrigger>
                   <PopoverContent className="p-0 w-auto bg-white" align="end">
                     <Calendar
+                      key={isDatePickerOpen ? 'open' : 'closed'}
                       locale={es}
                       mode="single"
+                      defaultMonth={field.value}
                       selected={field.value}
-                      onSelect={field.onChange}
+                      onSelect={date => {
+                        field.onChange(date)
+                        setIsDatePickerOpen(false)
+                      }}
                       disabled={date => date < new Date()}
                       initialFocus
                     />
@@ -118,10 +128,9 @@ export default function DashboardEventSettingsForm({
               </FormItem>
             )}
           />
-          <div className="w-full"></div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-4 sm:grid sm:grid-cols-3 sm:gap-2">
           <FormField
             control={form.control}
             name="name"
@@ -150,7 +159,7 @@ export default function DashboardEventSettingsForm({
             )}
           />
 
-          <div className="w-full flex flex-col h-full justify-end gap-2.5 mt-1.5">
+          <div className="w-full flex flex-col gap-2.5">
             <Label>Email</Label>
             <Input
               type="email"
@@ -161,7 +170,7 @@ export default function DashboardEventSettingsForm({
         </div>
 
         {event.eventType === EventType.WEDDING && (
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-4 sm:grid sm:grid-cols-3 sm:gap-2">
             <FormField
               control={form.control}
               name="partnerName"

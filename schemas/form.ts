@@ -12,10 +12,12 @@ export const UpdateEventSettingsFormSchema = z
     name: z
       .string()
       .min(1, { message: 'Tu nombre no puede estar vacío' })
+      .min(3, { message: 'Tu nombre debe contener al menos 3 caracteres' })
       .max(255, { message: 'Nombre muy largo' }),
     lastName: z
       .string()
       .min(1, { message: 'Tu apellido no puede estar vacío' })
+      .min(3, { message: 'Tu apellido debe contener al menos 3 caracteres' })
       .max(255, { message: 'Apellido muy largo' }),
     partnerName: z.string().nullable(),
     partnerLastName: z.string().nullable(),
@@ -33,12 +35,25 @@ export const UpdateEventSettingsFormSchema = z
             'El nombre de tu pareja es obligatorio para este tipo de evento',
           code: z.ZodIssueCode.custom,
         })
+      } else if (data.partnerName.length < 3) {
+        ctx.addIssue({
+          path: ['partnerName'],
+          message: 'El nombre de tu pareja debe contener al menos 3 caracteres',
+          code: z.ZodIssueCode.custom,
+        })
       }
       if (!data.partnerLastName) {
         ctx.addIssue({
           path: ['partnerLastName'],
           message:
             'El apellido de tu pareja es obligatorio para este tipo de evento',
+          code: z.ZodIssueCode.custom,
+        })
+      } else if (data.partnerLastName.length < 3) {
+        ctx.addIssue({
+          path: ['partnerLastName'],
+          message:
+            'El apellido de tu pareja debe contener al menos 3 caracteres',
           code: z.ZodIssueCode.custom,
         })
       }
