@@ -7,7 +7,6 @@ import {
 } from '@/lib/event-domain';
 import {
   adminRoutes,
-  apiAuthPrefix,
   authRoutes,
   onboardingRoute,
   protectedRoutes,
@@ -37,71 +36,70 @@ export async function middleware(
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
 
-  const isApiAuthRoute =
-    pathname.startsWith(apiAuthPrefix);
-
-  const isPagoparWebhookRoute =
-    pathname === '/api/webhooks/pagopar';
-
-  if (isApiAuthRoute || isPagoparWebhookRoute) {
-    return NextResponse.next();
-  }
-
   const isApiOrRpcRoute =
     pathname === '/api' ||
     pathname.startsWith('/api/') ||
     pathname === '/trpc' ||
     pathname.startsWith('/trpc/');
 
-  if (!isApiOrRpcRoute) {
-    const legacyEventMatch = pathname.match(
-      /^\/e\/([^/]+)(\/.*)?$/,
-    );
+  if (isApiOrRpcRoute) {
+    return NextResponse.next();
+  }
 
-    if (legacyEventMatch) {
-      const [, legacySlug, remainingPath = ''] =
-        legacyEventMatch;
+  // /e/amelie-y-john
+  const legacyEventMatch = pathname.match(
+    /^\/e\/([^/]+)(\/.*)?$/
+  );
 
-      if (EVENT_SLUG_PATTERN.test(legacySlug)) {
-        const destination = new URL(
-          getPublicEventUrl(
-            legacySlug,
-            remainingPath || '/',
-          ),
-        );
+  if (legacyEventMatch) {
+    const [
+      ,
+      legacySlug,
+      remainingPath = '',
+    ] = legacyEventMatch;
 
-        destination.search = nextUrl.search;
+    if (
+      EVENT_SLUG_PATTERN.test(legacySlug)
+    ) {
+      const destination = new URL(
+        getPublicEventUrl(
+          legacySlug,
+          remainingPath || '/'
+        )
+      );
 
-        return NextResponse.redirect(
-          destination,
-          307,
-        );
-      }
+      destination.search = nextUrl.search;
+
+      return NextResponse.redirect(
+        destination,
+        307
+      );
     }
+  }
 
-    const rootDomain = getConfiguredRootDomain();
+  const rootDomain =
+    getConfiguredRootDomain();
 
-    const eventSlug = getEventSlugFromHost(
-      request.headers.get('host'),
-      rootDomain,
-    );
+  const eventSlug = getEventSlugFromHost(
+    request.headers.get('host'),
+    rootDomain
+  );
 
-    if (eventSlug) {
-      const rewriteUrl = nextUrl.clone();
+  if (eventSlug) {
+    const rewriteUrl = nextUrl.clone();
 
-      const eventPath =
-        pathname === '/' ? '' : pathname;
+    const eventPath =
+      pathname === '/' ? '' : pathname;
 
-      rewriteUrl.pathname =
-        `/e/${eventSlug}${eventPath}`;
+    rewriteUrl.pathname =
+      `/e/${eventSlug}${eventPath}`;
 
-      return NextResponse.rewrite(rewriteUrl);
-    }
+    return NextResponse.rewrite(rewriteUrl);
   }
 
   const isPagoparResultRoute =
     pathname.startsWith(
-      '/checkout/pagopar/result/',
+      '/checkout/pagopar/result/'
     );
 
   if (isPagoparResultRoute) {
@@ -110,40 +108,46 @@ export async function middleware(
 
   const session = await auth();
 
-  const isLoggedIn = Boolean(session?.user);
+  const isLoggedIn = Boolean(
+    session?.user
+  );
+
   const isOnboarded =
     session?.user?.isOnboarded ?? false;
+
   const isAdmin =
     session?.user?.role === 'ADMIN';
 
   const isAdminRoute = matchesRoute(
     pathname,
-    adminRoutes,
+    adminRoutes
   );
 
   const isAuthRoute = matchesRoute(
     pathname,
-    authRoutes,
+    authRoutes
   );
 
   const isProtectedRoute = matchesRoute(
     pathname,
-    protectedRoutes,
+    protectedRoutes
   );
 
   const isOnboardingRoute = matchesRoute(
     pathname,
-    onboardingRoute,
+    onboardingRoute
   );
 
   if (
     !isLoggedIn &&
-    (isAdminRoute ||
+    (
+      isAdminRoute ||
       isProtectedRoute ||
-      isOnboardingRoute)
+      isOnboardingRoute
+    )
   ) {
     return NextResponse.redirect(
-      new URL('/login', nextUrl),
+      new URL('/login', nextUrl)
     );
   }
 
@@ -153,7 +157,7 @@ export async function middleware(
     isAdminRoute
   ) {
     return NextResponse.redirect(
-      new URL('/dashboard', nextUrl),
+      new URL('/dashboard', nextUrl)
     );
   }
 
@@ -163,7 +167,7 @@ export async function middleware(
     !isOnboardingRoute
   ) {
     return NextResponse.redirect(
-      new URL('/onboarding', nextUrl),
+      new URL('/onboarding', nextUrl)
     );
   }
 
@@ -173,7 +177,7 @@ export async function middleware(
     (isAuthRoute || isOnboardingRoute)
   ) {
     return NextResponse.redirect(
-      new URL('/dashboard', nextUrl),
+      new URL('/dashboard', nextUrl)
     );
   }
 

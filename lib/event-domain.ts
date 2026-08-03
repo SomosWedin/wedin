@@ -61,6 +61,10 @@ export function getPublicEventUrl(
   eventSlug: string,
   pathname = '/',
 ) {
+  if (!EVENT_SLUG_PATTERN.test(eventSlug)) {
+    throw new Error(`Invalid event slug: ${eventSlug}`);
+  }
+
   const rootDomain = getConfiguredRootDomain();
 
   const appUrl = new URL(

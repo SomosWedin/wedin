@@ -249,6 +249,9 @@ const RESERVED_EVENT_URLS = [
   'null',
   'undefined',
   'wedin',
+  'wedin-staging',
+  'send',
+  'resend'
 ];
 
 export const EventUrlFormSchema = z.object({
