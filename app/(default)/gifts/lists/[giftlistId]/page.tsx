@@ -1,52 +1,52 @@
-import { redirect } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
-import { getGiftlist } from '@/actions/data/giftlist';
-import { getEvent } from '@/actions/data/event';
-import { getWishlistGifts } from '@/actions/data/wishlist-gift';
-import { getCategories } from '@/actions/data/category';
-import AddGiftlistToWishlistButton from '@/components/dashboard/add-giftlist-to-wishlist-button';
-import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
-import GiftAddedBadge from '@/components/dashboard/gift-added-badge';
-import { IoGiftOutline } from 'react-icons/io5';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { IoGiftOutline } from 'react-icons/io5'
+import { getCategories } from '@/actions/data/category'
+import { getEvent } from '@/actions/data/event'
+import { getGiftlist } from '@/actions/data/giftlist'
+import { getWishlistGifts } from '@/actions/data/wishlist-gift'
+import AddGiftlistToWishlistButton from '@/components/dashboard/add-giftlist-to-wishlist-button'
+import GiftAddedBadge from '@/components/dashboard/gift-added-badge'
+import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
 
 export default async function GiftlistDetailPage({
   params,
 }: {
-  params: { giftlistId: string };
+  params: { giftlistId: string }
 }) {
-  const event = await getEvent();
+  const event = await getEvent()
 
   if (!event || 'error' in event) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
   const [giftlist, wishlistGifts, categories] = await Promise.all([
     getGiftlist(params.giftlistId),
     getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
     getCategories(),
-  ]);
+  ])
 
   if (!giftlist) {
-    redirect('/gifts');
+    redirect('/gifts')
   }
 
   const categoryNameById = new Map(
     categories.map(category => [category.id, category.name])
-  );
+  )
   const wishlistGiftIds = new Set(
     wishlistGifts
       .filter(wishlistGift => !wishlistGift.isReceived)
       .map(wishlistGift => wishlistGift.giftId)
-  );
-  const giftIds = giftlist.gifts.map(gift => gift.id);
+  )
+  const giftIds = giftlist.gifts.map(gift => gift.id)
   const allInWishlist =
-    giftIds.length > 0 && giftIds.every(giftId => wishlistGiftIds.has(giftId));
+    giftIds.length > 0 && giftIds.every(giftId => wishlistGiftIds.has(giftId))
   const totalPrice = giftlist.gifts.reduce(
     (sum, gift) => sum + Number(gift.price || 0),
     0
-  );
+  )
 
   return (
     <div className="min-h-screen bg-white">
@@ -90,7 +90,7 @@ export default async function GiftlistDetailPage({
               </div>
             ) : (
               giftlist.gifts.map(gift => {
-                const isInWishlist = wishlistGiftIds.has(gift.id);
+                const isInWishlist = wishlistGiftIds.has(gift.id)
 
                 return (
                   <div
@@ -131,12 +131,12 @@ export default async function GiftlistDetailPage({
                       <GiftAddedBadge isInWishlist={isInWishlist} />
                     </div>
                   </div>
-                );
+                )
               })
             )}
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

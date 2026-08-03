@@ -1,33 +1,33 @@
-'use client';
+'use client'
 
-import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
-import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
-import { getGiftProgress } from '@/components/guest/gift-progress';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import type { Prisma } from '@prisma/client';
-import Image from 'next/image';
+import type { Prisma } from '@prisma/client'
+import Image from 'next/image'
 import {
   IoCartOutline,
   IoCheckmarkCircleOutline,
   IoCheckmarkOutline,
   IoGiftOutline,
-} from 'react-icons/io5';
+} from 'react-icons/io5'
+import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge'
+import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
+import { getGiftProgress } from '@/components/guest/gift-progress'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 
 export type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
   include: {
-    gift: { include: { image: true } };
-    transactions: { select: { amount: true } };
-  };
-}>;
+    gift: { include: { image: true } }
+    transactions: { select: { amount: true } }
+  }
+}>
 
 type GuestGiftCardProps = {
-  wishlistGift: WishlistGiftWithGift;
-  isInCart: boolean;
-  onAddFullPrice: (wishlistGift: WishlistGiftWithGift) => void;
-  onOpenContributionDialog: (wishlistGift: WishlistGiftWithGift) => void;
-  onOpenGiftDetails: (wishlistGift: WishlistGiftWithGift) => void;
-};
+  wishlistGift: WishlistGiftWithGift
+  isInCart: boolean
+  onAddFullPrice: (wishlistGift: WishlistGiftWithGift) => void
+  onOpenContributionDialog: (wishlistGift: WishlistGiftWithGift) => void
+  onOpenGiftDetails: (wishlistGift: WishlistGiftWithGift) => void
+}
 
 export default function GuestGiftCard({
   wishlistGift,
@@ -36,28 +36,28 @@ export default function GuestGiftCard({
   onOpenContributionDialog,
   onOpenGiftDetails,
 }: GuestGiftCardProps) {
-  const { gift } = wishlistGift;
+  const { gift } = wishlistGift
   const { priceValue, remaining, percentage } = getGiftProgress(
     gift.price,
     wishlistGift.transactions
-  );
+  )
   const isComplete =
     wishlistGift.isFullyPaid ||
     wishlistGift.isManuallyReceived ||
-    (priceValue > 0 && remaining <= 0);
+    (priceValue > 0 && remaining <= 0)
   // Individual gifts are single-unit: once added, block re-adding instead of
   // letting the guest reopen the detail dialog and add a duplicate cart item.
-  const isAddedToCart = !wishlistGift.isGroupGift && isInCart && !isComplete;
-  const isDisabled = isComplete || isAddedToCart;
+  const isAddedToCart = !wishlistGift.isGroupGift && isInCart && !isComplete
+  const isDisabled = isComplete || isAddedToCart
 
   const handleCardClick = () => {
-    if (isDisabled) return;
+    if (isDisabled) return
     if (wishlistGift.isGroupGift) {
-      onOpenContributionDialog(wishlistGift);
+      onOpenContributionDialog(wishlistGift)
     } else {
-      onOpenGiftDetails(wishlistGift);
+      onOpenGiftDetails(wishlistGift)
     }
-  };
+  }
 
   return (
     <div
@@ -127,13 +127,12 @@ export default function GuestGiftCard({
           variant="success"
           className="gap-1 justify-between text-xs sm:gap-2 sm:text-sm"
           onClick={event => {
-            event.stopPropagation();
-            onOpenContributionDialog(wishlistGift);
+            event.stopPropagation()
+            onOpenContributionDialog(wishlistGift)
           }}
           disabled={isComplete}
         >
-          {isComplete ? 'Regalo recibido' : 'Contribuir'}{' '}
-          {isComplete && '🎉'}
+          {isComplete ? 'Regalo recibido' : 'Contribuir'} {isComplete && '🎉'}
           {!isComplete && <IoCartOutline className="text-lg shrink-0" />}
         </Button>
       ) : (
@@ -141,8 +140,8 @@ export default function GuestGiftCard({
           variant="success"
           className="gap-1 justify-between text-xs sm:gap-2 sm:text-sm"
           onClick={event => {
-            event.stopPropagation();
-            onAddFullPrice(wishlistGift);
+            event.stopPropagation()
+            onAddFullPrice(wishlistGift)
           }}
           disabled={isDisabled}
         >
@@ -157,5 +156,5 @@ export default function GuestGiftCard({
         </Button>
       )}
     </div>
-  );
+  )
 }

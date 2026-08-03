@@ -1,25 +1,25 @@
-'use client';
+'use client'
 
-import CartItemRow from '@/components/cart/cart-item-row';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link'
+import { IoCartOutline } from 'react-icons/io5'
+import CartItemRow from '@/components/cart/cart-item-row'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import type { CartItem } from '@/hooks/use-cart-store';
-import Link from 'next/link';
-import { IoCartOutline } from 'react-icons/io5';
+} from '@/components/ui/dialog'
+import type { CartItem } from '@/hooks/use-cart-store'
 
 type CartDrawerProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  items: CartItem[];
-  total: number;
-  onRemoveItem: (id: string) => void;
-  onEditItem: (item: CartItem) => void;
-};
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  items: CartItem[]
+  total: number
+  onRemoveItem: (id: string) => void
+  onEditItem: (item: CartItem) => void
+}
 
 export default function CartDrawer({
   open,
@@ -29,7 +29,6 @@ export default function CartDrawer({
   onRemoveItem,
   onEditItem,
 }: CartDrawerProps) {
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -85,5 +84,5 @@ export default function CartDrawer({
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

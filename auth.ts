@@ -1,17 +1,17 @@
-import { getUserByEmail, updateVerifiedOn } from '@/actions/data/user';
-import prismaClient from '@/prisma/client';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-import NextAuth, { type DefaultSession } from 'next-auth';
-import { JWT } from 'next-auth/jwt';
-import Resend from "next-auth/providers/resend";
-import authConfig from './auth.config';
+import { PrismaAdapter } from '@auth/prisma-adapter'
+import NextAuth, { type DefaultSession } from 'next-auth'
+import { JWT } from 'next-auth/jwt'
+import Resend from 'next-auth/providers/resend'
+import { getUserByEmail, updateVerifiedOn } from '@/actions/data/user'
+import prismaClient from '@/prisma/client'
+import authConfig from './auth.config'
 
 export type ErrorResponse = {
-  error: string;
-};
+  error: string
+}
 
 export function isError(response: unknown): response is ErrorResponse {
-  return (response as ErrorResponse).error !== undefined;
+  return (response as ErrorResponse).error !== undefined
 }
 
 const emailProvider = Resend({
@@ -26,29 +26,27 @@ const emailProvider = Resend({
       select: {
         id: true,
       },
-    });
+    })
 
-    const isNewUser = !existingUser;
+    const isNewUser = !existingUser
 
-    const actionText = isNewUser
-      ? 'Autenticar cuenta'
-      : 'Iniciar sesión';
+    const actionText = isNewUser ? 'Autenticar cuenta' : 'Iniciar sesión'
 
     const heading = isNewUser
       ? 'Confirmá tu cuenta de Wedin'
-      : 'Ingresá a Wedin';
+      : 'Ingresá a Wedin'
 
     const subject = isNewUser
       ? 'Autenticá tu cuenta de Wedin'
-      : 'Tu enlace para iniciar sesión en Wedin';
+      : 'Tu enlace para iniciar sesión en Wedin'
 
     const body = isNewUser
       ? 'Confirmá tu correo para crear tu cuenta y comenzar el onboarding.'
-      : 'Usá el siguiente enlace para ingresar a tu cuenta.';
+      : 'Usá el siguiente enlace para ingresar a tu cuenta.'
 
     const textBody = isNewUser
       ? 'Confirmá tu correo para crear tu cuenta:'
-      : 'Abrí este enlace para iniciar sesión:';
+      : 'Abrí este enlace para iniciar sesión:'
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -106,31 +104,31 @@ ${textBody}
 ${url}
         `.trim(),
       }),
-    });
+    })
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Resend error: ${error}`);
+      const error = await response.text()
+      throw new Error(`Resend error: ${error}`)
     }
   },
-});
+})
 
 declare module 'next-auth' {
   interface Session {
     user: {
-      isOnboarded: boolean;
-      role: string;
-      eventId: string | null;
-    } & DefaultSession['user'];
+      isOnboarded: boolean
+      role: string
+      eventId: string | null
+    } & DefaultSession['user']
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    isOnboarded: boolean;
-    role: string;
-    eventId: string | null;
-    id: string;
+    isOnboarded: boolean
+    role: string
+    eventId: string | null
+    id: string
   }
 }
 
@@ -142,38 +140,35 @@ export const {
 } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prismaClient),
-  providers: [
-    ...authConfig.providers,
-    emailProvider
-  ],
+  providers: [...authConfig.providers, emailProvider],
   pages: {
     signIn: '/login',
     error: '/error',
   },
   events: {
     async linkAccount({ user }) {
-      if (!user.email) return;
+      if (!user.email) return
 
-      await updateVerifiedOn(user.email);
+      await updateVerifiedOn(user.email)
     },
   },
   callbacks: {
     ...authConfig.callbacks,
     async jwt({ token }) {
-      if (!token || !token.email) return token;
+      if (!token?.email) return token
 
-      const user = await getUserByEmail(token.email);
+      const user = await getUserByEmail(token.email)
 
       if (isError(user)) {
-        return null;
+        return null
       }
 
-      token.isOnboarded = user.isOnboarded;
-      token.role = user.role;
-      token.id = user.id;
-      token.eventId = user.eventId;
+      token.isOnboarded = user.isOnboarded
+      token.role = user.role
+      token.id = user.id
+      token.eventId = user.eventId
 
-      return token;
+      return token
     },
   },
-});
+})

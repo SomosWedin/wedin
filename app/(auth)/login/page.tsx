@@ -1,8 +1,8 @@
-import LoginForm from '@/components/forms/auth/login-form';
-import SociaMediaLoginButton from '@/components/forms/auth/social-media-login-form';
-import backgroundImg from "@/public/assets/login-background.webp";
-import logoImg from "@/public/assets/w-logo.svg";
-import Image from "next/image";
+import Image from 'next/image'
+import LoginForm from '@/components/forms/auth/login-form'
+import SociaMediaLoginButton from '@/components/forms/auth/social-media-login-form'
+import backgroundImg from '@/public/assets/login-background.webp'
+import logoImg from '@/public/assets/w-logo.svg'
 
 export default function LoginPage() {
   return (
@@ -35,5 +35,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,16 +1,16 @@
-import { getEvent } from '@/actions/data/event';
-import DashboardEventCoverSkeleton from '@/components/skeletons/dashboard-event-details';
-import { Suspense, lazy } from 'react';
+import { lazy, Suspense } from 'react'
+import { getEvent } from '@/actions/data/event'
+import DashboardEventCoverSkeleton from '@/components/skeletons/dashboard-event-details'
 
 const EventCoverUpdateForm = lazy(
   () => import('@/components/forms/dashboard/event-cover')
-);
+)
 
 export default async function DashboardEventCover() {
-  const event = await getEvent();
+  const event = await getEvent()
 
   if (!event || 'error' in event) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
   return (
@@ -27,5 +27,5 @@ export default async function DashboardEventCover() {
         <EventCoverUpdateForm event={event} />
       </Suspense>
     </section>
-  );
+  )
 }

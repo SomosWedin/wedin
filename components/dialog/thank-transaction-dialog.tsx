@@ -1,48 +1,54 @@
-'use client';
+'use client'
 
-import { suggestThankYouMessage } from '@/actions/ai/suggest-thank-you-message';
-import { Button } from '@/components/ui/button';
+import type { Transaction } from '@prisma/client'
+import { Loader2, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { IoHeart, IoHeartOutline, IoLogoWhatsapp } from 'react-icons/io5'
+import { suggestThankYouMessage } from '@/actions/ai/suggest-thank-you-message'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { useTransaction } from '@/hooks/dashboard/use-transaction';
-import { useToast } from '@/hooks/use-toast';
-import { buildWhatsappLink, toParaguayInternationalPhone } from '@/lib/whatsapp';
-import type { Transaction } from '@prisma/client';
-import { Loader2, Sparkles } from 'lucide-react';
-import { useState } from 'react';
-import { IoHeart, IoHeartOutline, IoLogoWhatsapp } from 'react-icons/io5';
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { useTransaction } from '@/hooks/dashboard/use-transaction'
+import { useToast } from '@/hooks/use-toast'
+import { buildWhatsappLink, toParaguayInternationalPhone } from '@/lib/whatsapp'
 
 type ThankTransactionDialogProps = {
-  transaction: Transaction;
-  payerName: string;
-};
+  transaction: Transaction
+  payerName: string
+}
 
 export default function ThankTransactionDialog({
   transaction,
   payerName,
 }: ThankTransactionDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [notes, setNotes] = useState(`¡Muchas gracias, ${payerName}! 💚`);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [suggesting, setSuggesting] = useState(false);
-  const { loading, thankTransaction } = useTransaction();
-  const { toast } = useToast();
+  const [open, setOpen] = useState(false)
+  const [notes, setNotes] = useState(`¡Muchas gracias, ${payerName}! 💚`)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [suggesting, setSuggesting] = useState(false)
+  const { loading, thankTransaction } = useTransaction()
+  const { toast } = useToast()
 
   // Agradecer is one-time — once notes exist, this stays a disabled
   // "Agradecido" marker instead of reopening the dialog to edit it.
   if (transaction.notes) {
     return (
-      <Button type="button" variant="outline" className="gap-2" size="sm" disabled>
+      <Button
+        type="button"
+        variant="outline"
+        className="gap-2"
+        size="sm"
+        disabled
+      >
         <IoHeart className="text-base" />
         Agradecido
       </Button>
-    );
+    )
   }
 
   const handleSubmit = async () => {
@@ -50,48 +56,48 @@ export default function ThankTransactionDialog({
     // treat it as a popup — a window.open() after an await falls outside
     // the user-gesture window and gets blocked. The send button is disabled
     // without a payerPhone, so it's always set here.
-    const whatsappWindow = window.open('', '_blank');
+    const whatsappWindow = window.open('', '_blank')
 
     const response = await thankTransaction(transaction.id, {
       status: transaction.status,
       notes,
-    });
+    })
 
     if (response.error) {
-      whatsappWindow?.close();
-      return;
+      whatsappWindow?.close()
+      return
     }
 
     if (whatsappWindow && transaction.payerPhone) {
       whatsappWindow.location.href = buildWhatsappLink(
         toParaguayInternationalPhone(transaction.payerPhone),
         notes
-      );
+      )
     }
 
-    setOpen(false);
-  };
+    setOpen(false)
+  }
 
   const handleSuggest = async () => {
-    setSuggesting(true);
-    const result = await suggestThankYouMessage(transaction.id);
-    setSuggesting(false);
+    setSuggesting(true)
+    const result = await suggestThankYouMessage(transaction.id)
+    setSuggesting(false)
 
     if (!result.success) {
       toast({
         title: result.error ?? 'No se pudieron generar sugerencias',
         variant: 'destructive',
-      });
-      return;
+      })
+      return
     }
 
-    setSuggestions(result.success);
-  };
+    setSuggestions(result.success)
+  }
 
   const applySuggestion = (suggestion: string) => {
-    setNotes(suggestion);
-    setSuggestions([]);
-  };
+    setNotes(suggestion)
+    setSuggestions([])
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -183,5 +189,5 @@ export default function ThankTransactionDialog({
         </div>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

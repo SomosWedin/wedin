@@ -1,8 +1,11 @@
-'use client';
+'use client'
 
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Checkbox } from '@/components/ui/checkbox';
+import { format, startOfToday } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -10,38 +13,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from '@/components/ui/form'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@/components/ui/popover'
 import {
   type StepFourValues,
   useStepFour,
-} from '@/hooks/onboarding/use-step-four';
-import { cn } from '@/lib/utils';
-import {
-  format,
-  startOfToday,
-} from 'date-fns';
-import { es } from 'date-fns/locale';
-import {
-  Calendar as CalendarIcon,
-  Loader2,
-} from 'lucide-react';
+} from '@/hooks/onboarding/use-step-four'
+import { cn } from '@/lib/utils'
 
 type StepFourFormProps = {
-  loading: boolean;
-  onSubmit: (
-    values: StepFourValues,
-  ) => Promise<void>;
-};
+  loading: boolean
+  onSubmit: (values: StepFourValues) => Promise<void>
+}
 
-export default function StepFourForm({
-  loading,
-  onSubmit,
-}: StepFourFormProps) {
+export default function StepFourForm({ loading, onSubmit }: StepFourFormProps) {
   const {
     form,
     eventDate,
@@ -52,14 +41,11 @@ export default function StepFourForm({
     handleDateChange,
     handleDecidingChange,
     handleSubmit,
-  } = useStepFour({ onSubmit });
+  } = useStepFour({ onSubmit })
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full flex-col gap-8"
-      >
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-8">
         <div className="flex flex-col gap-4">
           <FormField
             control={form.control}
@@ -69,26 +55,18 @@ export default function StepFourForm({
                 <FormLabel>Fecha</FormLabel>
 
                 <Popover
-                  open={
-                    !isDecidingEventDate &&
-                    isCalendarOpen
-                  }
-                  onOpenChange={
-                    handleCalendarOpenChange
-                  }
+                  open={!isDecidingEventDate && isCalendarOpen}
+                  onOpenChange={handleCalendarOpenChange}
                 >
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
                         type="button"
                         variant="outline"
-                        disabled={
-                          isDecidingEventDate
-                        }
+                        disabled={isDecidingEventDate}
                         className={cn(
                           'w-full pl-3 text-left font-normal',
-                          !eventDate &&
-                          'text-[#94A3B8]',
+                          !eventDate && 'text-[#94A3B8]'
                         )}
                       >
                         {eventDate ? (
@@ -104,18 +82,13 @@ export default function StepFourForm({
                     </FormControl>
                   </PopoverTrigger>
 
-                  <PopoverContent
-                    className="w-auto bg-white p-0"
-                    align="end"
-                  >
+                  <PopoverContent className="w-auto bg-white p-0" align="end">
                     <Calendar
                       locale={es}
                       mode="single"
                       selected={eventDate}
                       onSelect={handleDateChange}
-                      disabled={date =>
-                        date < startOfToday()
-                      }
+                      disabled={date => date < startOfToday()}
                       initialFocus
                     />
                   </PopoverContent>
@@ -133,12 +106,8 @@ export default function StepFourForm({
               <FormItem className="flex items-center gap-2">
                 <FormControl>
                   <Checkbox
-                    checked={
-                      isDecidingEventDate
-                    }
-                    onCheckedChange={
-                      handleDecidingChange
-                    }
+                    checked={isDecidingEventDate}
+                    onCheckedChange={handleDecidingChange}
                   />
                 </FormControl>
 
@@ -154,9 +123,7 @@ export default function StepFourForm({
           <Button
             type="submit"
             variant="success"
-            disabled={
-              loading || !isButtonEnabled
-            }
+            disabled={loading || !isButtonEnabled}
             className="w-72"
           >
             {loading ? (
@@ -168,5 +135,5 @@ export default function StepFourForm({
         </div>
       </form>
     </Form>
-  );
+  )
 }

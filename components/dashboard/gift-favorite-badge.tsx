@@ -1,10 +1,10 @@
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { IoStarOutline } from 'react-icons/io5';
+import { IoStarOutline } from 'react-icons/io5'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 type GiftFavoriteBadgeProps = {
-  className?: string;
-};
+  className?: string
+}
 
 export default function GiftFavoriteBadge({
   className,
@@ -20,5 +20,5 @@ export default function GiftFavoriteBadge({
       <span className="sm:hidden">Favorito</span>
       <span className="hidden sm:inline">El que más queremos</span>
     </Badge>
-  );
+  )
 }

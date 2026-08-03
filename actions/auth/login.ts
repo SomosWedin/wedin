@@ -1,76 +1,66 @@
-'use server';
+'use server'
 
-import { signIn } from '@/auth';
+import { createHmac } from 'node:crypto'
+import { headers } from 'next/headers'
+import type { z } from 'zod'
+import { signIn } from '@/auth'
 import {
   magicLinkCooldown,
   magicLinkEmailLimit,
   magicLinkIpLimit,
-} from '@/lib/rate-limit';
-import { MagicLoginSchema } from '@/schemas/auth';
-import { headers } from 'next/headers';
-import { createHmac } from 'node:crypto';
-import type { z } from 'zod';
+} from '@/lib/rate-limit'
+import { MagicLoginSchema } from '@/schemas/auth'
 
-export type LoginValues = z.infer<typeof MagicLoginSchema>;
+export type LoginValues = z.infer<typeof MagicLoginSchema>
 
 const genericMessage =
-  'Si el correo es válido y no solicitaste un enlace recientemente, lo recibirás en unos minutos.';
+  'Si el correo es válido y no solicitaste un enlace recientemente, lo recibirás en unos minutos.'
 
 function createRateLimitKey(value: string) {
-  const secret = process.env.RATE_LIMIT_SECRET;
+  const secret = process.env.RATE_LIMIT_SECRET
 
   if (!secret) {
-    throw new Error('RATE_LIMIT_SECRET is not configured.');
+    throw new Error('RATE_LIMIT_SECRET is not configured.')
   }
 
-  return createHmac('sha256', secret)
-    .update(value)
-    .digest('hex');
+  return createHmac('sha256', secret).update(value).digest('hex')
 }
 
 export async function login(values: LoginValues) {
-  const parsed = MagicLoginSchema.safeParse(values);
+  const parsed = MagicLoginSchema.safeParse(values)
 
   if (!parsed.success) {
     return {
       error: 'Ingresá un correo válido.',
-    };
+    }
   }
 
-  const email = parsed.data.email.trim().toLowerCase();
+  const email = parsed.data.email.trim().toLowerCase()
 
-  const emailKey = createRateLimitKey(email);
+  const emailKey = createRateLimitKey(email)
 
-  const requestHeaders = await headers();
+  const requestHeaders = await headers()
 
   const ip =
-    requestHeaders
-      .get('x-forwarded-for')
-      ?.split(',')[0]
-      ?.trim() ??
-    requestHeaders.get('x-real-ip');
+    requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    requestHeaders.get('x-real-ip')
 
-  const ipKey = ip ? createRateLimitKey(ip) : null;
+  const ipKey = ip ? createRateLimitKey(ip) : null
 
-  const [cooldownResult, emailResult, ipResult] =
-    await Promise.all([
-      magicLinkCooldown.limit(emailKey),
-      magicLinkEmailLimit.limit(emailKey),
+  const [cooldownResult, emailResult, ipResult] = await Promise.all([
+    magicLinkCooldown.limit(emailKey),
+    magicLinkEmailLimit.limit(emailKey),
 
-      ipKey
-        ? magicLinkIpLimit.limit(ipKey)
-        : Promise.resolve({ success: true }),
-    ]);
+    ipKey ? magicLinkIpLimit.limit(ipKey) : Promise.resolve({ success: true }),
+  ])
 
   const isRateLimited =
-    !cooldownResult.success ||
-    !emailResult.success ||
-    !ipResult.success;
+    !cooldownResult.success || !emailResult.success || !ipResult.success
 
   if (isRateLimited) {
     return {
       success: genericMessage,
-    };
+    }
   }
 
   try {
@@ -78,16 +68,16 @@ export async function login(values: LoginValues) {
       email,
       redirect: false,
       redirectTo: '/onboarding',
-    });
+    })
 
     return {
       success: genericMessage,
-    };
+    }
   } catch (error) {
-    console.error('Unable to send magic link:', error);
+    console.error('Unable to send magic link:', error)
 
     return {
       error: 'No pudimos enviar el enlace. Intentá nuevamente.',
-    };
+    }
   }
 }

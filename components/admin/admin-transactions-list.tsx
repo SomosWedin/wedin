@@ -1,97 +1,95 @@
-'use client';
+'use client'
 
-import {
-  ESTADO_BY_STATUS,
-  ESTADO_OPTIONS,
-  PAYMENT_METHOD_ICON,
-} from '@/components/dashboard/transaction-estado';
-import { Combobox } from '@/components/ui/combobox';
-import { Input } from '@/components/ui/input';
-import { useAdminTransactionStatus } from '@/hooks/admin/use-admin-transaction-status';
-import { coupleName } from '@/lib/utils';
-import type { PaymentMethod, Prisma, TransactionStatus } from '@prisma/client';
-import { endOfDay, format } from 'date-fns';
-import { useMemo, useState } from 'react';
+import type { PaymentMethod, Prisma, TransactionStatus } from '@prisma/client'
+import { endOfDay, format } from 'date-fns'
+import { useMemo, useState } from 'react'
 import {
   IoChevronDown,
   IoChevronUp,
   IoSearchOutline,
   IoSwapVerticalOutline,
-} from 'react-icons/io5';
+} from 'react-icons/io5'
+import {
+  ESTADO_BY_STATUS,
+  ESTADO_OPTIONS,
+  PAYMENT_METHOD_ICON,
+} from '@/components/dashboard/transaction-estado'
+import { Combobox } from '@/components/ui/combobox'
+import { Input } from '@/components/ui/input'
+import { useAdminTransactionStatus } from '@/hooks/admin/use-admin-transaction-status'
+import { coupleName } from '@/lib/utils'
 
 type TransactionWithGiftAndEvent = Prisma.TransactionGetPayload<{
   include: {
-    wishlistGift: { include: { gift: true } };
-    event: { include: { users: true } };
-  };
-}>;
+    wishlistGift: { include: { gift: true } }
+    event: { include: { users: true } }
+  }
+}>
 
 type AdminTransactionsListProps = {
-  transactions: TransactionWithGiftAndEvent[];
-};
+  transactions: TransactionWithGiftAndEvent[]
+}
 
-type SortColumn = 'createdAt' | 'amount';
-type SortDirection = 'asc' | 'desc';
+type SortColumn = 'createdAt' | 'amount'
+type SortDirection = 'asc' | 'desc'
 
 function SortIcon({
   column,
   activeColumn,
   direction,
 }: {
-  column: SortColumn;
-  activeColumn: SortColumn | null;
-  direction: SortDirection;
+  column: SortColumn
+  activeColumn: SortColumn | null
+  direction: SortDirection
 }) {
   if (activeColumn !== column) {
-    return <IoSwapVerticalOutline className="text-gray-400" />;
+    return <IoSwapVerticalOutline className="text-gray-400" />
   }
 
-  return direction === 'asc' ? <IoChevronUp /> : <IoChevronDown />;
+  return direction === 'asc' ? <IoChevronUp /> : <IoChevronDown />
 }
 
 export default function AdminTransactionsList({
   transactions,
 }: AdminTransactionsListProps) {
-  const [search, setSearch] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('');
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState('');
-  const [eventFilter, setEventFilter] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(
-    'createdAt'
-  );
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const { loading, updateStatus } = useAdminTransactionStatus();
+  const [search, setSearch] = useState('')
+  const [estadoFilter, setEstadoFilter] = useState('')
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('')
+  const [eventFilter, setEventFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>('createdAt')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const { loading, updateStatus } = useAdminTransactionStatus()
 
   const eventOptions = useMemo(() => {
-    const byLabel = new Map<string, string>();
+    const byLabel = new Map<string, string>()
 
     for (const transaction of transactions) {
-      const label = coupleName(transaction.event.users);
-      byLabel.set(label, transaction.event.id);
+      const label = coupleName(transaction.event.users)
+      byLabel.set(label, transaction.event.id)
     }
 
     return Array.from(byLabel, ([label, value]) => ({ value, label })).sort(
       (a, b) => a.label.localeCompare(b.label)
-    );
-  }, [transactions]);
+    )
+  }, [transactions])
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn !== column) {
-      setSortColumn(column);
-      setSortDirection('desc');
-      return;
+      setSortColumn(column)
+      setSortDirection('desc')
+      return
     }
 
-    setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'));
-  };
+    setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'))
+  }
 
-  const fromDate = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null;
-  const toDate = dateTo ? endOfDay(new Date(`${dateTo}T00:00:00`)) : null;
+  const fromDate = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null
+  const toDate = dateTo ? endOfDay(new Date(`${dateTo}T00:00:00`)) : null
 
   const filteredTransactions = transactions.filter(transaction => {
-    const normalizedSearch = search.trim().toLowerCase();
+    const normalizedSearch = search.trim().toLowerCase()
     const matchesSearch =
       !normalizedSearch ||
       (transaction.payerName ?? '').toLowerCase().includes(normalizedSearch) ||
@@ -100,17 +98,15 @@ export default function AdminTransactionsList({
         .includes(normalizedSearch) ||
       coupleName(transaction.event.users)
         .toLowerCase()
-        .includes(normalizedSearch);
-    const matchesEstado =
-      !estadoFilter || transaction.status === estadoFilter;
+        .includes(normalizedSearch)
+    const matchesEstado = !estadoFilter || transaction.status === estadoFilter
     const matchesPaymentMethod =
-      !paymentMethodFilter ||
-      transaction.paymentMethod === paymentMethodFilter;
+      !paymentMethodFilter || transaction.paymentMethod === paymentMethodFilter
     const matchesEvent =
-      !eventFilter || coupleName(transaction.event.users) === eventFilter;
+      !eventFilter || coupleName(transaction.event.users) === eventFilter
     const matchesDateRange =
       (!fromDate || transaction.createdAt >= fromDate) &&
-      (!toDate || transaction.createdAt <= toDate);
+      (!toDate || transaction.createdAt <= toDate)
 
     return (
       matchesSearch &&
@@ -118,19 +114,19 @@ export default function AdminTransactionsList({
       matchesPaymentMethod &&
       matchesEvent &&
       matchesDateRange
-    );
-  });
+    )
+  })
 
   const sortedTransactions = sortColumn
     ? [...filteredTransactions].sort((a, b) => {
-      const diff =
-        sortColumn === 'createdAt'
-          ? a.createdAt.getTime() - b.createdAt.getTime()
-          : Number(a.amount) - Number(b.amount);
+        const diff =
+          sortColumn === 'createdAt'
+            ? a.createdAt.getTime() - b.createdAt.getTime()
+            : Number(a.amount) - Number(b.amount)
 
-      return sortDirection === 'asc' ? diff : -diff;
-    })
-    : filteredTransactions;
+        return sortDirection === 'asc' ? diff : -diff
+      })
+    : filteredTransactions
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -245,9 +241,9 @@ export default function AdminTransactionsList({
         )}
 
         {sortedTransactions.map(transaction => {
-          const payerName = transaction.payerName ?? 'Anónimo';
-          const paymentMethod = PAYMENT_METHOD_ICON[transaction.paymentMethod];
-          const estado = ESTADO_BY_STATUS[transaction.status];
+          const payerName = transaction.payerName ?? 'Anónimo'
+          const paymentMethod = PAYMENT_METHOD_ICON[transaction.paymentMethod]
+          const estado = ESTADO_BY_STATUS[transaction.status]
 
           return (
             <div
@@ -305,9 +301,9 @@ export default function AdminTransactionsList({
                 )}
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

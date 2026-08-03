@@ -1,34 +1,37 @@
-'use client';
+'use client'
 
-import GiftForm from '@/components/forms/dialog/gift';
-import { Button } from '@/components/ui/button';
+import type { Category } from '@prisma/client'
+import { IoPencilOutline } from 'react-icons/io5'
+import GiftForm from '@/components/forms/dialog/gift'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { EditableGift, useEditWishlistGift } from '@/hooks/dialog/forms/use-edit-wishlist';
-import type { Category } from '@prisma/client';
-import { IoPencilOutline } from 'react-icons/io5';
+} from '@/components/ui/tooltip'
+import {
+  type EditableGift,
+  useEditWishlistGift,
+} from '@/hooks/dialog/forms/use-edit-wishlist'
 
 type EditWishlistGiftDialogProps = {
-  wishlistGiftId: string;
-  wishlistId: string;
-  eventId: string;
-  gift: EditableGift;
-  categories: Category[];
-  isFavoriteGift: boolean;
-  isGroupGift: boolean;
-  disabled?: boolean;
-};
+  wishlistGiftId: string
+  wishlistId: string
+  eventId: string
+  gift: EditableGift
+  categories: Category[]
+  isFavoriteGift: boolean
+  isGroupGift: boolean
+  disabled?: boolean
+}
 
 export default function EditWishlistGiftDialog({
   wishlistGiftId,
@@ -57,7 +60,7 @@ export default function EditWishlistGiftDialog({
     gift,
     isFavoriteGift,
     isGroupGift,
-  });
+  })
 
   if (disabled) {
     return (
@@ -65,46 +68,31 @@ export default function EditWishlistGiftDialog({
         <Tooltip delayDuration={100}>
           <TooltipTrigger asChild>
             <span tabIndex={0}>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                disabled
-              >
+              <Button type="button" variant="outline" size="icon" disabled>
                 <IoPencilOutline />
               </Button>
             </span>
           </TooltipTrigger>
 
           <TooltipContent side="top">
-            Un regalo con contribuciones no se
-            puede editar
+            Un regalo con contribuciones no se puede editar
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-    );
+    )
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-        >
+        <Button type="button" variant="outline" size="icon">
           <IoPencilOutline />
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            Editar regalo
-          </DialogTitle>
+          <DialogTitle>Editar regalo</DialogTitle>
         </DialogHeader>
 
         <GiftForm
@@ -118,11 +106,9 @@ export default function EditWishlistGiftDialog({
           submitLabel="Guardar"
           onFileChange={handleFileChange}
           onSubmit={handleSubmit}
-          onCancel={() =>
-            handleOpenChange(false)
-          }
+          onCancel={() => handleOpenChange(false)}
         />
       </DialogContent>
     </Dialog>
-  );
+  )
 }

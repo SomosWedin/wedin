@@ -1,26 +1,26 @@
-import { getEvent } from '@/actions/data/event';
-import { getPayouts, getWalletSummary } from '@/actions/data/payout';
-import EmptyState from '@/components/common/empty-state';
-import RequestPayoutDialog from '@/components/dialog/request-payout-dialog';
-import DashboardTransactionsSkeleton from '@/components/skeletons/dashboard-transactions';
-import { Suspense, lazy } from 'react';
-import { IoWalletOutline } from 'react-icons/io5';
+import { lazy, Suspense } from 'react'
+import { IoWalletOutline } from 'react-icons/io5'
+import { getEvent } from '@/actions/data/event'
+import { getPayouts, getWalletSummary } from '@/actions/data/payout'
+import EmptyState from '@/components/common/empty-state'
+import RequestPayoutDialog from '@/components/dialog/request-payout-dialog'
+import DashboardTransactionsSkeleton from '@/components/skeletons/dashboard-transactions'
 
 const WalletPayoutsList = lazy(
   () => import('@/components/dashboard/wallet-payouts-list')
-);
+)
 
 export default async function DashboardWallet() {
-  const event = await getEvent();
+  const event = await getEvent()
 
   if (!event || 'error' in event) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
   const [summary, payouts] = await Promise.all([
     getWalletSummary(event.id),
     getPayouts(event.id),
-  ]);
+  ])
 
   return (
     <div className="w-full h-full flex items-center flex-col gap-8">
@@ -46,5 +46,5 @@ export default async function DashboardWallet() {
         </Suspense>
       )}
     </div>
-  );
+  )
 }

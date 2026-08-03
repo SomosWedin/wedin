@@ -1,16 +1,16 @@
-import { Menu } from '@/components/admin-panel/menu';
-import { Button } from '@/components/ui/button';
+import { MenuIcon } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { Menu } from '@/components/admin-panel/menu'
+import { Button } from '@/components/ui/button'
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
-import wedinIcon from '@/public/assets/w-icon.svg';
-import { MenuIcon } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
+} from '@/components/ui/sheet'
+import wedinIcon from '@/public/assets/w-icon.svg'
 
 export function SheetMenu() {
   return (
@@ -41,5 +41,5 @@ export function SheetMenu() {
         <Menu isOpen />
       </SheetContent>
     </Sheet>
-  );
+  )
 }

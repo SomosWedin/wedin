@@ -15,4 +15,4 @@ export const bankEntitiesPY = [
   { value: '14', label: 'Banco BASA' },
   { value: '15', label: 'Banco Rio' },
   { value: '16', label: 'Banco Interfisa' },
-];
+]

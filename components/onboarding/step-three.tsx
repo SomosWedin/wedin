@@ -1,25 +1,17 @@
-'use client';
+'use client'
 
-import { useOnboarding } from '@/hooks/use-onboarding';
-import wedinIcon from '@/public/assets/w-icon.svg';
-import Image from 'next/image';
-import OnboardingStepper from './stepper';
-import StepThreeForm from '@/components/forms/onboarding/step-three';
-
+import Image from 'next/image'
+import StepThreeForm from '@/components/forms/onboarding/step-three'
+import { useOnboarding } from '@/hooks/use-onboarding'
+import wedinIcon from '@/public/assets/w-icon.svg'
+import OnboardingStepper from './stepper'
 
 export default function OnboardingStepThree() {
-  const {
-    handleEventLocationUpdate,
-    loading,
-  } = useOnboarding();
+  const { handleEventLocationUpdate, loading } = useOnboarding()
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-8">
-      <Image
-        src={wedinIcon}
-        alt="wedin icon"
-        width={78}
-      />
+      <Image src={wedinIcon} alt="wedin icon" width={78} />
 
       <div className="flex flex-col gap-4 text-center">
         <h1 className="text-2xl font-medium text-textSecondary">
@@ -27,17 +19,13 @@ export default function OnboardingStepThree() {
         </h1>
 
         <p className="text-secondary400">
-          La ubicación ayudará a personalizar la
-          experiencia de tus invitados
+          La ubicación ayudará a personalizar la experiencia de tus invitados
         </p>
       </div>
 
-      <StepThreeForm
-        loading={loading}
-        onSubmit={handleEventLocationUpdate}
-      />
+      <StepThreeForm loading={loading} onSubmit={handleEventLocationUpdate} />
 
       <OnboardingStepper step={3} />
     </div>
-  );
+  )
 }

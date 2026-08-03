@@ -1,9 +1,9 @@
-'use server';
+'use server'
 
-import type * as z from 'zod';
-import prismaClient from '@/prisma/client';
-import { BankDetailsFormSchema } from '@/schemas/form';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath } from 'next/cache'
+import type * as z from 'zod'
+import prismaClient from '@/prisma/client'
+import { BankDetailsFormSchema } from '@/schemas/form'
 
 export async function getBankDetails(eventId: string) {
   try {
@@ -11,10 +11,10 @@ export async function getBankDetails(eventId: string) {
       where: {
         eventId: eventId,
       },
-    });
+    })
   } catch (error) {
-    console.error('Error getting bank details:', error);
-    return null;
+    console.error('Error getting bank details:', error)
+    return null
   }
 }
 
@@ -32,7 +32,7 @@ export async function updateBankDetails(
       identificationType,
       razonSocial,
       ruc,
-    } = values;
+    } = values
 
     await prismaClient.bankDetails.upsert({
       where: {
@@ -59,12 +59,12 @@ export async function updateBankDetails(
         razonSocial: razonSocial,
         ruc: ruc,
       },
-    });
+    })
 
-    revalidatePath('/bank-details');
-    return { success: true };
+    revalidatePath('/bank-details')
+    return { success: true }
   } catch (error) {
-    console.error('Error upserting bank details:', error);
-    return { error: 'Failed to upsert bank details' };
+    console.error('Error upserting bank details:', error)
+    return { error: 'Failed to upsert bank details' }
   }
 }

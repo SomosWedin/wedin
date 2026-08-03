@@ -1,59 +1,59 @@
-import { useState } from 'react';
-import { EventType } from '@prisma/client';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { EventType } from '@prisma/client'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useState } from 'react'
+import type { z } from 'zod'
 import {
+  updateEventDateStepFour,
+  updateEventLocationStepThree,
   updateEventTypeStepOne,
   updateProfileStepTwo,
-  updateEventLocationStepThree,
-  updateEventDateStepFour,
   updateUserOnboardedStepFive,
-} from '@/actions/common/onboarding';
+} from '@/actions/common/onboarding'
+import { useToast } from '@/hooks/use-toast'
 import {
-  StepTwoSchema,
-  StepThreeSchema,
   StepFourSchema,
-} from '@/schemas/onboarding';
-import type { z } from 'zod';
+  StepThreeSchema,
+  StepTwoSchema,
+} from '@/schemas/onboarding'
 
 export const useOnboarding = () => {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-  const router = useRouter();
-  const { update } = useSession();
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
+  const router = useRouter()
+  const { update } = useSession()
 
   // Step One
   const handleEventTypeUpdate = async (eventType: EventType) => {
-    setLoading(true);
+    setLoading(true)
 
     try {
-      const response = await updateEventTypeStepOne(eventType);
+      const response = await updateEventTypeStepOne(eventType)
 
       if (!response.success) {
         toast({
           variant: 'destructive',
           description: response.error,
-        });
-        setLoading(false);
-        return;
+        })
+        setLoading(false)
+        return
       }
 
-      router.refresh();
+      router.refresh()
     } catch (error) {
       toast({
         variant: 'destructive',
         description: 'Ocurrió un error al crear tu evento, intenta de nuevo.',
-      });
-      setLoading(false);
+      })
+      setLoading(false)
     }
-  };
+  }
 
   // Step Two
   const handleProfileUpdate = async (values: z.infer<typeof StepTwoSchema>) => {
-    setLoading(true);
+    setLoading(true)
 
-    const validatedFields = StepTwoSchema.safeParse(values);
+    const validatedFields = StepTwoSchema.safeParse(values)
 
     if (!validatedFields.success) {
       toast({
@@ -61,41 +61,41 @@ export const useOnboarding = () => {
         description: validatedFields.error.errors
           .map(err => err.message)
           .join(', '),
-      });
-      setLoading(false);
-      return;
+      })
+      setLoading(false)
+      return
     }
 
     try {
-      const response = await updateProfileStepTwo(validatedFields.data);
+      const response = await updateProfileStepTwo(validatedFields.data)
 
       if (!response?.success) {
         toast({
           variant: 'destructive',
           title: 'Error en el paso 2. Intenta de nuevo.',
           description: response?.error,
-        });
-        setLoading(false);
-        return;
+        })
+        setLoading(false)
+        return
       }
 
-      router.refresh();
+      router.refresh()
     } catch (error) {
       toast({
         variant: 'destructive',
         description:
           'Ocurrió un error procesando tu solicitud. Intenta de nuevo.',
-      });
-      setLoading(false);
+      })
+      setLoading(false)
     }
-  };
+  }
 
   // Step Three
   const handleEventLocationUpdate = async (
     values: z.infer<typeof StepThreeSchema>
   ) => {
-    setLoading(true);
-    const validatedFields = StepThreeSchema.safeParse(values);
+    setLoading(true)
+    const validatedFields = StepThreeSchema.safeParse(values)
 
     if (!validatedFields.success) {
       toast({
@@ -103,41 +103,41 @@ export const useOnboarding = () => {
         description: validatedFields.error.errors
           .map(err => err.message)
           .join(', '),
-      });
-      setLoading(false);
-      return;
+      })
+      setLoading(false)
+      return
     }
 
     try {
-      const response = await updateEventLocationStepThree(validatedFields.data);
+      const response = await updateEventLocationStepThree(validatedFields.data)
 
       if (!response?.success) {
         toast({
           variant: 'destructive',
           title: 'Error en el paso 3. Intenta de nuevo.',
           description: response?.error,
-        });
-        setLoading(false);
-        return;
+        })
+        setLoading(false)
+        return
       }
 
-      router.refresh();
+      router.refresh()
     } catch (error) {
       toast({
         variant: 'destructive',
         description:
           'Ocurrió un error procesando tu solicitud. Intenta de nuevo.',
-      });
-      setLoading(false);
+      })
+      setLoading(false)
     }
-  };
+  }
 
   //Step Four
   const handleEventDateUpdate = async (
     values: z.infer<typeof StepFourSchema>
   ) => {
-    setLoading(true);
-    const validatedFields = StepFourSchema.safeParse(values);
+    setLoading(true)
+    const validatedFields = StepFourSchema.safeParse(values)
 
     if (!validatedFields.success) {
       toast({
@@ -145,66 +145,66 @@ export const useOnboarding = () => {
         description: validatedFields.error.errors
           .map(err => err.message)
           .join(', '),
-      });
-      setLoading(false);
-      return;
+      })
+      setLoading(false)
+      return
     }
 
     try {
-      const response = await updateEventDateStepFour(validatedFields.data);
+      const response = await updateEventDateStepFour(validatedFields.data)
 
       if (!response?.success) {
         toast({
           variant: 'destructive',
           title: 'Error en el paso 4. Intenta de nuevo.',
           description: response?.error,
-        });
-        setLoading(false);
-        return;
+        })
+        setLoading(false)
+        return
       }
 
-      router.refresh();
+      router.refresh()
     } catch (error) {
       toast({
         variant: 'destructive',
         description:
           'Ocurrió un error procesando tu solicitud. Intenta de nuevo.',
-      });
-      setLoading(false);
+      })
+      setLoading(false)
     }
-  };
+  }
 
   // Step Five
   const handleCompleteOnboarding = async () => {
-    setLoading(true);
+    setLoading(true)
 
     try {
-      const response = await updateUserOnboardedStepFive();
+      const response = await updateUserOnboardedStepFive()
 
       if (response?.error) {
         toast({
           variant: 'destructive',
           title: 'Error finalizando el onboarding. Intenta de nuevo.',
           description: response.error,
-        });
-        setLoading(false);
-        return;
+        })
+        setLoading(false)
+        return
       }
 
-      await update();
-      window.location.href = '/dashboard';
+      await update()
+      window.location.href = '/dashboard'
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error inesperado. Intenta de nuevo.',
         description: 'Ocurrió un error al completar el onboarding.',
-      });
-      setLoading(false);
+      })
+      setLoading(false)
     }
-  };
+  }
 
   const saveEventTypeToLocalStorage = (eventType: EventType) => {
-    localStorage.setItem('eventType', eventType);
+    localStorage.setItem('eventType', eventType)
   }
 
   return {
@@ -215,5 +215,5 @@ export const useOnboarding = () => {
     handleEventDateUpdate,
     handleCompleteOnboarding,
     saveEventTypeToLocalStorage,
-  };
-};
+  }
+}

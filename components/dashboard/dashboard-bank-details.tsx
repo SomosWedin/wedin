@@ -1,20 +1,20 @@
-import { getBankDetails } from '@/actions/data/bank-details';
-import { getEvent } from '@/actions/data/event';
-import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
-import { Suspense, lazy } from 'react';
+import { lazy, Suspense } from 'react'
+import { getBankDetails } from '@/actions/data/bank-details'
+import { getEvent } from '@/actions/data/event'
+import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings'
 
 const DashboardBankDetailsUpdateForm = lazy(
   () => import('@/components/forms/dashboard/bank-details')
-);
+)
 
 export default async function DashboardBankDetails() {
-  const event = await getEvent();
+  const event = await getEvent()
 
   if (!event || 'error' in event) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
-  const bankDetails = await getBankDetails(event.id);
+  const bankDetails = await getBankDetails(event.id)
 
   return (
     <section className="w-full h-full flex flex-col gap-12 sm:gap-8 justify-start items-center">
@@ -32,5 +32,5 @@ export default async function DashboardBankDetails() {
         />
       </Suspense>
     </section>
-  );
+  )
 }

@@ -1,8 +1,9 @@
-'use client';
+'use client'
 
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Combobox } from '@/components/ui/combobox';
+import { Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Combobox } from '@/components/ui/combobox'
 import {
   Form,
   FormControl,
@@ -10,22 +11,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   type StepThreeValues,
   useStepThree,
-} from '@/hooks/onboarding/use-step-three';
-import { countries } from '@/lib/countries';
-import { Loader2 } from 'lucide-react';
+} from '@/hooks/onboarding/use-step-three'
+import { countries } from '@/lib/countries'
 
 type StepThreeFormProps = {
-  loading: boolean;
-  onSubmit: (
-    values: StepThreeValues
-  ) => Promise<void> | void;
-};
+  loading: boolean
+  onSubmit: (values: StepThreeValues) => Promise<void> | void
+}
 
 export default function StepThreeForm({
   loading,
@@ -37,20 +35,15 @@ export default function StepThreeForm({
     isButtonEnabled,
     isDecidingEventLocation,
     handleDecidingChange,
-  } = useStepThree({ onSubmit });
+  } = useStepThree({ onSubmit })
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full flex-col gap-4"
-      >
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
         <div className="flex flex-col items-center gap-4 sm:flex-row">
           {isDecidingEventLocation ? (
             <div className="w-full">
-              <Label htmlFor="disabled-event-country">
-                País
-              </Label>
+              <Label htmlFor="disabled-event-country">País</Label>
 
               <Input
                 id="disabled-event-country"
@@ -146,5 +139,5 @@ export default function StepThreeForm({
         </div>
       </form>
     </Form>
-  );
+  )
 }

@@ -1,21 +1,21 @@
-'use server';
+'use server'
 
-import { EventImage } from '@/hooks/dashboard/forms/use-event-cover';
-import { deleteEventCoverImageFromAws } from '@/lib/s3';
-import { PrismaClient } from '@prisma/client';
-import { revalidatePath } from 'next/cache';
+import { PrismaClient } from '@prisma/client'
+import { revalidatePath } from 'next/cache'
+import { EventImage } from '@/hooks/dashboard/forms/use-event-cover'
+import { deleteEventCoverImageFromAws } from '@/lib/s3'
 
-const prismaClient = new PrismaClient();
+const prismaClient = new PrismaClient()
 
 export async function addImages({
   eventId,
   imageUrls,
 }: {
-  eventId: string;
-  imageUrls: string[];
+  eventId: string
+  imageUrls: string[]
 }) {
   if (!imageUrls || imageUrls.length === 0) {
-    return { error: 'No image URLs provided' };
+    return { error: 'No image URLs provided' }
   }
 
   try {
@@ -23,12 +23,12 @@ export async function addImages({
       imageUrls.map(url =>
         prismaClient.image.create({ data: { eventId, url } })
       )
-    );
-    revalidatePath('/event-details');
-    return { success: true, images };
+    )
+    revalidatePath('/event-details')
+    return { success: true, images }
   } catch (error) {
-    console.error('Error uploading event images:', error);
-    return { error: 'Error uploading event images' };
+    console.error('Error uploading event images:', error)
+    return { error: 'Error uploading event images' }
   }
 }
 
@@ -36,41 +36,41 @@ export async function updateImage({
   imageId,
   imageUrl,
 }: {
-  imageId: string;
-  imageUrl: string;
+  imageId: string
+  imageUrl: string
 }) {
   if (!imageUrl || imageUrl.length === 0) {
-    return { error: 'No image URL provided' };
+    return { error: 'No image URL provided' }
   }
 
   try {
     const image = await prismaClient.image.update({
       where: { id: imageId }, // Target the specific image by ID
       data: { url: imageUrl }, // Update the image URL
-    });
-    revalidatePath('/event-details');
-    return { success: true, image };
+    })
+    revalidatePath('/event-details')
+    return { success: true, image }
   } catch (error) {
-    console.error('Error updating event image:', error);
-    console.error('imageId', imageId);
-    return { error: 'Error updating event image' };
+    console.error('Error updating event image:', error)
+    console.error('imageId', imageId)
+    return { error: 'Error updating event image' }
   }
 }
 
 export async function deleteImages({ imageIds }: { imageIds: string[] }) {
   if (!imageIds || imageIds.length === 0) {
-    return { error: 'No image IDs provided' };
+    return { error: 'No image IDs provided' }
   }
 
   try {
     await prismaClient.image.deleteMany({
       where: { id: { in: imageIds } }, // Delete all images with IDs in the provided array
-    });
-    revalidatePath('/event-details');
-    return { success: true };
+    })
+    revalidatePath('/event-details')
+    return { success: true }
   } catch (error) {
-    console.error('Error deleting event images:', error);
-    return { error: 'Error deleting event images' };
+    console.error('Error deleting event images:', error)
+    return { error: 'Error deleting event images' }
   }
 }
 
@@ -78,7 +78,7 @@ export async function deleteEventImage(
   images: EventImage[],
   imagesUrl: string[]
 ) {
-  const imageIds = images.map(image => image.id);
+  const imageIds = images.map(image => image.id)
 
   try {
     await prismaClient.image.deleteMany({
@@ -87,19 +87,19 @@ export async function deleteEventImage(
           in: imageIds,
         },
       },
-    });
+    })
   } catch (error) {
-    console.error('Prisma Error', error);
-    return { error: 'Error deleting event image' };
+    console.error('Prisma Error', error)
+    return { error: 'Error deleting event image' }
   }
 
   try {
     for (const imageUrl of imagesUrl) {
-      await deleteEventCoverImageFromAws(imageUrl);
+      await deleteEventCoverImageFromAws(imageUrl)
     }
   } catch (error) {
-    console.error('AWS Error', error);
-    return { error: 'Error deleting event image' };
+    console.error('AWS Error', error)
+    return { error: 'Error deleting event image' }
   }
 }
 
@@ -107,27 +107,27 @@ export async function createImagesForEvent({
   eventId,
   imageUrls,
 }: {
-  eventId: string;
-  imageUrls: string[];
+  eventId: string
+  imageUrls: string[]
 }) {
   if (!imageUrls || imageUrls.length === 0) {
-    return { error: 'No image URLs provided' };
+    return { error: 'No image URLs provided' }
   }
 
   // Prepare data for createMany
   const imageData = imageUrls.map(url => ({
     eventId,
     url,
-  }));
+  }))
 
   try {
     // Use createMany to insert multiple records
     await prismaClient.image.createMany({
       data: imageData,
-    });
-    return { success: true };
+    })
+    return { success: true }
   } catch (error) {
-    console.error('Error creating images:', error);
-    return { error: 'Error creating images' };
+    console.error('Error creating images:', error)
+    return { error: 'Error creating images' }
   }
 }

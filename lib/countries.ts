@@ -69,4 +69,4 @@ export const countries = [
   { value: '68', label: 'Ecuador' },
   { value: '69', label: 'Syria' },
   { value: '70', label: 'Paises Bajos' },
-];
+]

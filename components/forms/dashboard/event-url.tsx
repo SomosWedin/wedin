@@ -1,43 +1,37 @@
-'use client';
+'use client'
 
-import { Button } from '@/components/ui/button';
+import { Loader2, Pencil } from 'lucide-react'
+import { FaCheck } from 'react-icons/fa6'
+import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { useEventUrl } from '@/hooks/dashboard/forms/use-event-url';
-import { getConfiguredRootDomain } from '@/lib/event-domain';
-import { Loader2, Pencil } from 'lucide-react';
-import { FaCheck } from 'react-icons/fa6';
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { useEventUrl } from '@/hooks/dashboard/forms/use-event-url'
+import { getConfiguredRootDomain } from '@/lib/event-domain'
 
 type EventUrlFormProps = {
-  eventId: string;
-  url: string;
-  onUrlUpdated: (url: string) => void;
-};
+  eventId: string
+  url: string
+  onUrlUpdated: (url: string) => void
+}
 
 export default function EventUrlForm({
   eventId,
   url,
   onUrlUpdated,
 }: EventUrlFormProps) {
-  const {
-    form,
-    onSubmit,
-    isDirty,
-    isValid,
-    loading,
-  } = useEventUrl({
+  const { form, onSubmit, isDirty, isValid, loading } = useEventUrl({
     eventId,
     url,
     onUrlUpdated,
-  });
+  })
 
-  const rootDomain = getConfiguredRootDomain();
+  const rootDomain = getConfiguredRootDomain()
 
   return (
     <Form {...form}>
@@ -88,5 +82,5 @@ export default function EventUrlForm({
         )}
       </form>
     </Form>
-  );
+  )
 }

@@ -1,24 +1,17 @@
-'use client';
+'use client'
 
-import StepFourForm from '@/components/forms/onboarding/step-four';
-import { useOnboarding } from '@/hooks/use-onboarding';
-import wedinIcon from '@/public/assets/w-icon.svg';
-import Image from 'next/image';
-import OnboardingStepper from './stepper';
+import Image from 'next/image'
+import StepFourForm from '@/components/forms/onboarding/step-four'
+import { useOnboarding } from '@/hooks/use-onboarding'
+import wedinIcon from '@/public/assets/w-icon.svg'
+import OnboardingStepper from './stepper'
 
 export default function OnboardingStepFour() {
-  const {
-    loading,
-    handleEventDateUpdate,
-  } = useOnboarding();
+  const { loading, handleEventDateUpdate } = useOnboarding()
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-8">
-      <Image
-        src={wedinIcon}
-        alt="wedin icon"
-        width={78}
-      />
+      <Image src={wedinIcon} alt="wedin icon" width={78} />
 
       <div className="flex flex-col gap-4 text-center">
         <h1 className="text-2xl font-medium text-textSecondary">
@@ -30,12 +23,9 @@ export default function OnboardingStepFour() {
         </p>
       </div>
 
-      <StepFourForm
-        loading={loading}
-        onSubmit={handleEventDateUpdate}
-      />
+      <StepFourForm loading={loading} onSubmit={handleEventDateUpdate} />
 
       <OnboardingStepper step={4} />
     </div>
-  );
+  )
 }

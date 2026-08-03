@@ -1,29 +1,19 @@
-'use client';
+'use client'
 
-import { StepFourSchema } from '@/schemas/onboarding';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
-import {
-  useForm,
-  useWatch,
-} from 'react-hook-form';
-import type { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import type { z } from 'zod'
+import { StepFourSchema } from '@/schemas/onboarding'
 
-export type StepFourValues = z.infer<
-  typeof StepFourSchema
->;
+export type StepFourValues = z.infer<typeof StepFourSchema>
 
 type UseStepFourProps = {
-  onSubmit: (
-    values: StepFourValues,
-  ) => Promise<void> | void;
-};
+  onSubmit: (values: StepFourValues) => Promise<void> | void
+}
 
-export function useStepFour({
-  onSubmit,
-}: UseStepFourProps) {
-  const [isCalendarOpen, setIsCalendarOpen] =
-    useState(false);
+export function useStepFour({ onSubmit }: UseStepFourProps) {
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
   const form = useForm<StepFourValues>({
     resolver: zodResolver(StepFourSchema),
@@ -32,67 +22,55 @@ export function useStepFour({
       eventDate: undefined,
       isDecidingEventDate: false,
     },
-  });
+  })
 
   const eventDate = useWatch({
     control: form.control,
     name: 'eventDate',
-  });
+  })
 
   const isDecidingEventDate =
     useWatch({
       control: form.control,
       name: 'isDecidingEventDate',
-    }) ?? false;
+    }) ?? false
 
-  const isButtonEnabled =
-    Boolean(eventDate) || isDecidingEventDate;
+  const isButtonEnabled = Boolean(eventDate) || isDecidingEventDate
 
-  const handleCalendarOpenChange = (
-    open: boolean,
-  ) => {
+  const handleCalendarOpenChange = (open: boolean) => {
     if (!isDecidingEventDate) {
-      setIsCalendarOpen(open);
+      setIsCalendarOpen(open)
     }
-  };
+  }
 
-  const handleDateChange = (
-    date: Date | undefined,
-  ) => {
+  const handleDateChange = (date: Date | undefined) => {
     form.setValue('eventDate', date, {
       shouldDirty: true,
       shouldValidate: true,
-    });
+    })
 
-    setIsCalendarOpen(false);
-  };
+    setIsCalendarOpen(false)
+  }
 
-  const handleDecidingChange = (
-    checked: boolean | 'indeterminate',
-  ) => {
-    const isChecked = checked === true;
+  const handleDecidingChange = (checked: boolean | 'indeterminate') => {
+    const isChecked = checked === true
 
-    form.setValue(
-      'isDecidingEventDate',
-      isChecked,
-      {
-        shouldDirty: true,
-        shouldValidate: true,
-      },
-    );
+    form.setValue('isDecidingEventDate', isChecked, {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
 
     if (isChecked) {
       form.setValue('eventDate', undefined, {
         shouldDirty: true,
         shouldValidate: true,
-      });
+      })
 
-      setIsCalendarOpen(false);
+      setIsCalendarOpen(false)
     }
-  };
+  }
 
-  const handleSubmit =
-    form.handleSubmit(onSubmit);
+  const handleSubmit = form.handleSubmit(onSubmit)
 
   return {
     form,
@@ -104,5 +82,5 @@ export function useStepFour({
     handleDateChange,
     handleDecidingChange,
     handleSubmit,
-  };
+  }
 }

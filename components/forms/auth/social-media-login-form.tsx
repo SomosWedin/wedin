@@ -1,25 +1,25 @@
-'use client';
+'use client'
 
-import { signIn } from 'next-auth/react';
-import { useState } from 'react';
-import AuthFormButton, { SocialProvider } from './auth-form-button';
+import { signIn } from 'next-auth/react'
+import { useState } from 'react'
+import AuthFormButton, { SocialProvider } from './auth-form-button'
 
 type SocialMediaLoginButtonType = {
-  provider: SocialProvider;
-  callbackUrl?: string;
-};
+  provider: SocialProvider
+  callbackUrl?: string
+}
 function SociaMediaLoginButton({
   provider,
   callbackUrl = '/',
 }: SocialMediaLoginButtonType) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
   const handleSignIn = () => {
-    setIsLoading(true);
+    setIsLoading(true)
 
-    signIn(provider, { callbackUrl: callbackUrl });
+    signIn(provider, { callbackUrl: callbackUrl })
 
-    setIsLoading(false);
-  };
+    setIsLoading(false)
+  }
 
   return (
     <AuthFormButton
@@ -28,7 +28,7 @@ function SociaMediaLoginButton({
       isLoading={isLoading}
       handleSignIn={handleSignIn}
     />
-  );
+  )
 }
 
-export default SociaMediaLoginButton;
+export default SociaMediaLoginButton

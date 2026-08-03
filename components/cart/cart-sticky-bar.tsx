@@ -1,20 +1,20 @@
-'use client';
+'use client'
 
-import { Button } from '@/components/ui/button';
-import { IoCartOutline } from 'react-icons/io5';
+import { IoCartOutline } from 'react-icons/io5'
+import { Button } from '@/components/ui/button'
 
 type CartStickyBarProps = {
-  itemCount: number;
-  total: number;
-  onOpenCart: () => void;
-};
+  itemCount: number
+  total: number
+  onOpenCart: () => void
+}
 
 export default function CartStickyBar({
   itemCount,
   total,
   onOpenCart,
 }: CartStickyBarProps) {
-  if (itemCount === 0) return null;
+  if (itemCount === 0) return null
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 text-white bg-textPrimary">
@@ -58,11 +58,15 @@ export default function CartStickyBar({
             </span>
           </div>
         </div>
-        <Button variant="outline" className="gap-2 text-black" onClick={onOpenCart}>
+        <Button
+          variant="outline"
+          className="gap-2 text-black"
+          onClick={onOpenCart}
+        >
           Ver mi carrito
           <IoCartOutline className="text-lg" />
         </Button>
       </div>
     </div>
-  );
+  )
 }

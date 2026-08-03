@@ -1,193 +1,116 @@
-import authConfig from '@/auth.config';
+import { type NextRequest, NextResponse } from 'next/server'
+import NextAuth from 'next-auth'
+import authConfig from '@/auth.config'
 import {
   EVENT_SLUG_PATTERN,
   getConfiguredRootDomain,
   getEventSlugFromHost,
   getPublicEventUrl,
-} from '@/lib/event-domain';
+} from '@/lib/event-domain'
 import {
   adminRoutes,
   authRoutes,
   onboardingRoute,
   protectedRoutes,
-} from '@/lib/routes';
-import NextAuth from 'next-auth';
-import {
-  type NextRequest,
-  NextResponse,
-} from 'next/server';
+} from '@/lib/routes'
 
-const { auth } = NextAuth(authConfig);
+const { auth } = NextAuth(authConfig)
 
-function matchesRoute(
-  pathname: string,
-  routes: string[],
-) {
+function matchesRoute(pathname: string, routes: string[]) {
   return routes.some(
-    route =>
-      pathname === route ||
-      pathname.startsWith(`${route}/`),
-  );
+    route => pathname === route || pathname.startsWith(`${route}/`)
+  )
 }
 
-export async function middleware(
-  request: NextRequest,
-) {
-  const { nextUrl } = request;
-  const pathname = nextUrl.pathname;
+export async function middleware(request: NextRequest) {
+  const { nextUrl } = request
+  const pathname = nextUrl.pathname
 
   const isApiOrRpcRoute =
     pathname === '/api' ||
     pathname.startsWith('/api/') ||
     pathname === '/trpc' ||
-    pathname.startsWith('/trpc/');
+    pathname.startsWith('/trpc/')
 
   if (isApiOrRpcRoute) {
-    return NextResponse.next();
+    return NextResponse.next()
   }
 
   // /e/amelie-y-john
-  const legacyEventMatch = pathname.match(
-    /^\/e\/([^/]+)(\/.*)?$/
-  );
+  const legacyEventMatch = pathname.match(/^\/e\/([^/]+)(\/.*)?$/)
 
   if (legacyEventMatch) {
-    const [
-      ,
-      legacySlug,
-      remainingPath = '',
-    ] = legacyEventMatch;
+    const [, legacySlug, remainingPath = ''] = legacyEventMatch
 
-    if (
-      EVENT_SLUG_PATTERN.test(legacySlug)
-    ) {
+    if (EVENT_SLUG_PATTERN.test(legacySlug)) {
       const destination = new URL(
-        getPublicEventUrl(
-          legacySlug,
-          remainingPath || '/'
-        )
-      );
+        getPublicEventUrl(legacySlug, remainingPath || '/')
+      )
 
-      destination.search = nextUrl.search;
+      destination.search = nextUrl.search
 
-      return NextResponse.redirect(
-        destination,
-        307
-      );
+      return NextResponse.redirect(destination, 307)
     }
   }
 
-  const rootDomain =
-    getConfiguredRootDomain();
+  const rootDomain = getConfiguredRootDomain()
 
   const eventSlug = getEventSlugFromHost(
     request.headers.get('host'),
     rootDomain
-  );
+  )
 
   if (eventSlug) {
-    const rewriteUrl = nextUrl.clone();
+    const rewriteUrl = nextUrl.clone()
 
-    const eventPath =
-      pathname === '/' ? '' : pathname;
+    const eventPath = pathname === '/' ? '' : pathname
 
-    rewriteUrl.pathname =
-      `/e/${eventSlug}${eventPath}`;
+    rewriteUrl.pathname = `/e/${eventSlug}${eventPath}`
 
-    return NextResponse.rewrite(rewriteUrl);
+    return NextResponse.rewrite(rewriteUrl)
   }
 
-  const isPagoparResultRoute =
-    pathname.startsWith(
-      '/checkout/pagopar/result/'
-    );
+  const isPagoparResultRoute = pathname.startsWith('/checkout/pagopar/result/')
 
   if (isPagoparResultRoute) {
-    return NextResponse.next();
+    return NextResponse.next()
   }
 
-  const session = await auth();
+  const session = await auth()
 
-  const isLoggedIn = Boolean(
-    session?.user
-  );
+  const isLoggedIn = Boolean(session?.user)
 
-  const isOnboarded =
-    session?.user?.isOnboarded ?? false;
+  const isOnboarded = session?.user?.isOnboarded ?? false
 
-  const isAdmin =
-    session?.user?.role === 'ADMIN';
+  const isAdmin = session?.user?.role === 'ADMIN'
 
-  const isAdminRoute = matchesRoute(
-    pathname,
-    adminRoutes
-  );
+  const isAdminRoute = matchesRoute(pathname, adminRoutes)
 
-  const isAuthRoute = matchesRoute(
-    pathname,
-    authRoutes
-  );
+  const isAuthRoute = matchesRoute(pathname, authRoutes)
 
-  const isProtectedRoute = matchesRoute(
-    pathname,
-    protectedRoutes
-  );
+  const isProtectedRoute = matchesRoute(pathname, protectedRoutes)
 
-  const isOnboardingRoute = matchesRoute(
-    pathname,
-    onboardingRoute
-  );
+  const isOnboardingRoute = matchesRoute(pathname, onboardingRoute)
 
-  if (
-    !isLoggedIn &&
-    (
-      isAdminRoute ||
-      isProtectedRoute ||
-      isOnboardingRoute
-    )
-  ) {
-    return NextResponse.redirect(
-      new URL('/login', nextUrl)
-    );
+  if (!isLoggedIn && (isAdminRoute || isProtectedRoute || isOnboardingRoute)) {
+    return NextResponse.redirect(new URL('/login', nextUrl))
   }
 
-  if (
-    isLoggedIn &&
-    !isAdmin &&
-    isAdminRoute
-  ) {
-    return NextResponse.redirect(
-      new URL('/dashboard', nextUrl)
-    );
+  if (isLoggedIn && !isAdmin && isAdminRoute) {
+    return NextResponse.redirect(new URL('/dashboard', nextUrl))
   }
 
-  if (
-    isLoggedIn &&
-    !isOnboarded &&
-    !isOnboardingRoute
-  ) {
-    return NextResponse.redirect(
-      new URL('/onboarding', nextUrl)
-    );
+  if (isLoggedIn && !isOnboarded && !isOnboardingRoute) {
+    return NextResponse.redirect(new URL('/onboarding', nextUrl))
   }
 
-  if (
-    isLoggedIn &&
-    isOnboarded &&
-    (isAuthRoute || isOnboardingRoute)
-  ) {
-    return NextResponse.redirect(
-      new URL('/dashboard', nextUrl)
-    );
+  if (isLoggedIn && isOnboarded && (isAuthRoute || isOnboardingRoute)) {
+    return NextResponse.redirect(new URL('/dashboard', nextUrl))
   }
 
-  return NextResponse.next();
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    '/((?!.+\\.[\\w]+$|_next).*)',
-    '/',
-    '/(api|trpc)(.*)',
-  ],
-};
+  matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)'],
+}

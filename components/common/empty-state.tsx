@@ -1,8 +1,8 @@
 interface EmptyStateProps {
-  icon: React.ReactNode;
-  title: string;
-  description?: string;
-  action?: React.ReactNode;
+  icon: React.ReactNode
+  title: string
+  description?: string
+  action?: React.ReactNode
 }
 
 const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
@@ -24,7 +24,7 @@ const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
 
       {action && action}
     </div>
-  );
-};
+  )
+}
 
-export default EmptyState;
+export default EmptyState

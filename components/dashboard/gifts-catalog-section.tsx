@@ -1,27 +1,27 @@
-'use client';
+'use client'
 
-import type { getCategories } from '@/actions/data/category';
-import type { getGifts } from '@/actions/data/gift';
-import type { getGiftlists } from '@/actions/data/giftlist';
-import GiftRow from '@/components/dashboard/gift-row';
-import GiftsFilterBar from '@/components/dashboard/gifts-filter-bar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useTransition } from 'react';
-import { IoGiftOutline } from 'react-icons/io5';
-import { PiSquaresFour } from 'react-icons/pi';
+import Image from 'next/image'
+import Link from 'next/link'
+import { useTransition } from 'react'
+import { IoGiftOutline } from 'react-icons/io5'
+import { PiSquaresFour } from 'react-icons/pi'
+import type { getCategories } from '@/actions/data/category'
+import type { getGifts } from '@/actions/data/gift'
+import type { getGiftlists } from '@/actions/data/giftlist'
+import GiftRow from '@/components/dashboard/gift-row'
+import GiftsFilterBar from '@/components/dashboard/gifts-filter-bar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 type GiftsCatalogSectionProps = {
-  gifts: Awaited<ReturnType<typeof getGifts>>;
-  giftlists: Awaited<ReturnType<typeof getGiftlists>>;
-  categories: Awaited<ReturnType<typeof getCategories>>;
-  eventId: string;
-  wishlistId: string;
-  wishlistGiftIds: Set<string>;
-};
+  gifts: Awaited<ReturnType<typeof getGifts>>
+  giftlists: Awaited<ReturnType<typeof getGiftlists>>
+  categories: Awaited<ReturnType<typeof getCategories>>
+  eventId: string
+  wishlistId: string
+  wishlistGiftIds: Set<string>
+}
 
 export default function GiftsCatalogSection({
   gifts,
@@ -31,7 +31,7 @@ export default function GiftsCatalogSection({
   wishlistId,
   wishlistGiftIds,
 }: GiftsCatalogSectionProps) {
-  const [isPending, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition()
 
   return (
     <Tabs defaultValue="todos" className="w-full">
@@ -41,19 +41,26 @@ export default function GiftsCatalogSection({
             <IoGiftOutline className="text-lg" />
             Todos los productos
           </TabsTrigger>
-          <TabsTrigger value="predefinidas" className="gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="predefinidas"
+            className="gap-2 text-xs sm:text-sm"
+          >
             <PiSquaresFour className="text-lg" />
             Listas predefinidas
           </TabsTrigger>
         </TabsList>
 
-        <GiftsFilterBar categories={categories} startTransition={startTransition} />
+        <GiftsFilterBar
+          categories={categories}
+          startTransition={startTransition}
+        />
       </div>
 
       <TabsContent value="todos" className="mt-6">
         <div
-          className={`bg-white rounded-lg transition-opacity ${isPending ? 'opacity-50 pointer-events-none' : ''
-            }`}
+          className={`bg-white rounded-lg transition-opacity ${
+            isPending ? 'opacity-50 pointer-events-none' : ''
+          }`}
         >
           <div className="grid grid-cols-1 gap-4">
             <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-3 bg-gray-50 rounded-t-lg text-sm font-medium text-gray-600">
@@ -142,5 +149,5 @@ export default function GiftsCatalogSection({
         </div>
       </TabsContent>
     </Tabs>
-  );
+  )
 }

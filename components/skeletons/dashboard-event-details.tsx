@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DashboardEventCoverSkeleton() {
   return (
@@ -46,5 +46,5 @@ export default function DashboardEventCoverSkeleton() {
         </div>
       </div>
     </section>
-  );
+  )
 }

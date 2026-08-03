@@ -1,10 +1,10 @@
-'use server';
+'use server'
 
-import { getCurrentUser } from '@/actions/get-current-user';
-import { AI_MODEL, anthropic } from '@/lib/anthropic';
-import prismaClient from '@/prisma/client';
-import { CoverMessageSuggestionsSchema } from '@/schemas/ai';
-import { EventType } from '@prisma/client';
+import { EventType } from '@prisma/client'
+import { getCurrentUser } from '@/actions/get-current-user'
+import { AI_MODEL, anthropic } from '@/lib/anthropic'
+import prismaClient from '@/prisma/client'
+import { CoverMessageSuggestionsSchema } from '@/schemas/ai'
 
 // Hand-written instead of the SDK's zodOutputFormat helper, which requires
 // zod/v4 — this project is on Zod v3. minLength/maxLength/array length
@@ -21,28 +21,28 @@ const RESPONSE_JSON_SCHEMA = {
   },
   required: ['suggestions'],
   additionalProperties: false,
-} as const;
+} as const
 
 export async function suggestCoverMessage(eventId: string) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser()
 
   if (!user) {
-    return { error: 'User not authenticated' };
+    return { error: 'User not authenticated' }
   }
 
   const event = await prismaClient.event.findFirst({
     where: { id: eventId, users: { some: { id: user.id } } },
     include: { users: true },
-  });
+  })
 
   if (!event) {
-    return { error: 'Event not found' };
+    return { error: 'Event not found' }
   }
 
   const coupleNames = event.users
     .map(({ name, lastName }) => [name, lastName].filter(Boolean).join(' '))
     .filter(Boolean)
-    .join(' & ');
+    .join(' & ')
 
   const eventDescription = [
     event.eventType === EventType.WEDDING ? 'una boda' : 'un evento',
@@ -52,7 +52,7 @@ export async function suggestCoverMessage(eventId: string) {
       `en ${event.city}${event.country ? `, ${event.country}` : ''}`,
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(' ')
 
   try {
     const response = await anthropic.messages.create({
@@ -69,25 +69,25 @@ export async function suggestCoverMessage(eventId: string) {
       output_config: {
         format: { type: 'json_schema', schema: RESPONSE_JSON_SCHEMA },
       },
-    });
+    })
 
-    const block = response.content.find(b => b.type === 'text');
+    const block = response.content.find(b => b.type === 'text')
 
-    if (!block || block.type !== 'text') {
-      return { error: 'No se pudieron generar sugerencias, intenta de nuevo' };
+    if (block?.type !== 'text') {
+      return { error: 'No se pudieron generar sugerencias, intenta de nuevo' }
     }
 
     const parsed = CoverMessageSuggestionsSchema.safeParse(
       JSON.parse(block.text)
-    );
+    )
 
     if (!parsed.success) {
-      return { error: 'No se pudieron generar sugerencias, intenta de nuevo' };
+      return { error: 'No se pudieron generar sugerencias, intenta de nuevo' }
     }
 
-    return { success: parsed.data.suggestions };
+    return { success: parsed.data.suggestions }
   } catch (error) {
-    console.error('Error suggesting cover message:', error);
-    return { error: 'No se pudieron generar sugerencias, intenta de nuevo' };
+    console.error('Error suggesting cover message:', error)
+    return { error: 'No se pudieron generar sugerencias, intenta de nuevo' }
   }
 }

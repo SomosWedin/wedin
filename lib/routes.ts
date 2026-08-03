@@ -1,10 +1,6 @@
-export const publicRoutes: string[] = [
-  '/e',
-];
+export const publicRoutes: string[] = ['/e']
 
-export const authRoutes: string[] = [
-  '/login',
-];
+export const authRoutes: string[] = ['/login']
 
 export const protectedRoutes: string[] = [
   '/gifts',
@@ -16,12 +12,12 @@ export const protectedRoutes: string[] = [
   '/transactions',
   '/wishlist',
   '/gifts-received',
-];
+]
 
-export const adminRoutes: string[] = ['/admin'];
+export const adminRoutes: string[] = ['/admin']
 
-export const onboardingRoute: string[] = ['/onboarding'];
+export const onboardingRoute: string[] = ['/onboarding']
 
-export const apiAuthPrefix: string = '/api/auth';
+export const apiAuthPrefix: string = '/api/auth'
 
-export const DEFAULT_LOGIN_REDIRECT_ROUTE = '/dashboard';
+export const DEFAULT_LOGIN_REDIRECT_ROUTE = '/dashboard'

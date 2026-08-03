@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 export const GuestCheckoutSchema = z
   .object({
@@ -11,11 +11,7 @@ export const GuestCheckoutSchema = z
       }),
     // Only required for CARD — Pagopar's iniciar-transaccion needs an email
     // for the payer. BANK_TRANSFER collects a phone number instead.
-    payerEmail: z
-      .string()
-      .email('Email inválido')
-      .optional()
-      .or(z.literal('')),
+    payerEmail: z.string().email('Email inválido').optional().or(z.literal('')),
     // Only required for CARD — Pagopar's iniciar-transaccion rejects the
     // order without comprador.documento. BANK_TRANSFER never calls Pagopar.
     payerDocument: z
@@ -42,14 +38,14 @@ export const GuestCheckoutSchema = z
           code: z.ZodIssueCode.custom,
           message: 'Tu email no puede estar vacío',
           path: ['payerEmail'],
-        });
+        })
       }
       if (!data.payerDocument) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'La cédula es obligatoria para pagos con tarjeta',
           path: ['payerDocument'],
-        });
+        })
       }
     }
-  });
+  })

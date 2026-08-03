@@ -1,25 +1,25 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { BankDetailsFormSchema } from '@/schemas/form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useToast } from '@/hooks/use-toast';
-import { z } from 'zod';
-import { BankDetails } from '@prisma/client';
-import { updateBankDetails } from '@/actions/data/bank-details';
+import { zodResolver } from '@hookform/resolvers/zod'
+import { BankDetails } from '@prisma/client'
+import { useState } from 'react'
+import { SubmitHandler, useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { updateBankDetails } from '@/actions/data/bank-details'
+import { useToast } from '@/hooks/use-toast'
+import { BankDetailsFormSchema } from '@/schemas/form'
 
 type useUpdateBankDetailsProps = {
-  eventId: string;
-  bankDetails: BankDetails | null;
-};
+  eventId: string
+  bankDetails: BankDetails | null
+}
 
 export function useUpdateBankDetails({
   eventId,
   bankDetails,
 }: useUpdateBankDetailsProps) {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
 
   const form = useForm<z.infer<typeof BankDetailsFormSchema>>({
     resolver: zodResolver(BankDetailsFormSchema),
@@ -35,51 +35,51 @@ export function useUpdateBankDetails({
       razonSocial: bankDetails?.razonSocial || '',
       ruc: bankDetails?.ruc || '',
     },
-  });
-  const { isDirty, isValid } = form.formState;
+  })
+  const { isDirty, isValid } = form.formState
 
   const onSubmit: SubmitHandler<
     z.infer<typeof BankDetailsFormSchema>
   > = async values => {
-    setLoading(true);
+    setLoading(true)
 
-    const validatedFields = BankDetailsFormSchema.safeParse(values);
+    const validatedFields = BankDetailsFormSchema.safeParse(values)
 
     if (!validatedFields.success) {
-      console.log(validatedFields.error.errors);
+      console.log(validatedFields.error.errors)
       toast({
         title: 'Error en los campos del formulario',
         description: validatedFields.error.errors
           .map(err => err.message)
           .join(', '),
         variant: 'destructive',
-      });
-      setLoading(false);
-      return;
+      })
+      setLoading(false)
+      return
     }
 
     try {
-      const response = await updateBankDetails(values);
+      const response = await updateBankDetails(values)
 
       if (!response.success) {
         toast({
           title: 'Error al actualizar los datos bancarios',
           description: response.error,
           variant: 'destructive',
-        });
-        setLoading(false);
-        return;
+        })
+        setLoading(false)
+        return
       }
 
       toast({
         title: 'Los datos bancarios se actualizaron con éxito. 📅',
-      });
-      setLoading(false);
+      })
+      setLoading(false)
     } catch (error) {
-      console.error('Error updating event and user data:', error);
-      return;
+      console.error('Error updating event and user data:', error)
+      return
     }
-  };
+  }
 
   return {
     loading,
@@ -87,5 +87,5 @@ export function useUpdateBankDetails({
     isDirty,
     isValid,
     onSubmit,
-  };
+  }
 }

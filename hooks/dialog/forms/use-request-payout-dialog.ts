@@ -1,17 +1,12 @@
-'use client';
+'use client'
 
-import { usePayout } from '@/hooks/dashboard/use-payout';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useState } from 'react';
-import {
-  type SubmitHandler,
-  useForm,
-} from 'react-hook-form';
-import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect, useMemo, useState } from 'react'
+import { type SubmitHandler, useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { usePayout } from '@/hooks/dashboard/use-payout'
 
-const createRequestPayoutSchema = (
-  balance: number
-) =>
+const createRequestPayoutSchema = (balance: number) =>
   z.object({
     amount: z
       .string()
@@ -20,13 +15,9 @@ const createRequestPayoutSchema = (
       })
       .refine(
         value => {
-          const amount = Number(value);
+          const amount = Number(value)
 
-          return (
-            Number.isFinite(amount) &&
-            amount > 0 &&
-            amount <= balance
-          );
+          return Number.isFinite(amount) && amount > 0 && amount <= balance
         },
         {
           message:
@@ -34,32 +25,25 @@ const createRequestPayoutSchema = (
             balance.toLocaleString('es-PY'),
         }
       ),
-  });
+  })
 
-export type RequestPayoutFormValues =
-  z.infer<
-    ReturnType<
-      typeof createRequestPayoutSchema
-    >
-  >;
+export type RequestPayoutFormValues = z.infer<
+  ReturnType<typeof createRequestPayoutSchema>
+>
 
 type UseRequestPayoutDialogProps = {
-  eventId: string;
-  balance: number;
-};
+  eventId: string
+  balance: number
+}
 
 export function useRequestPayoutDialog({
   eventId,
   balance,
 }: UseRequestPayoutDialogProps) {
-  const [open, setOpen] = useState(false);
-  const { loading, requestPayout } =
-    usePayout();
+  const [open, setOpen] = useState(false)
+  const { loading, requestPayout } = usePayout()
 
-  const schema = useMemo(
-    () => createRequestPayoutSchema(balance),
-    [balance]
-  );
+  const schema = useMemo(() => createRequestPayoutSchema(balance), [balance])
 
   const form = useForm<RequestPayoutFormValues>({
     resolver: zodResolver(schema),
@@ -67,38 +51,31 @@ export function useRequestPayoutDialog({
     defaultValues: {
       amount: '',
     },
-  });
+  })
 
   useEffect(() => {
     if (open) {
-      void form.trigger('amount');
+      void form.trigger('amount')
     }
-  }, [balance, open, form]);
+  }, [balance, open, form])
 
-  const handleOpenChange = (
-    nextOpen: boolean
-  ) => {
-    setOpen(nextOpen);
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen)
 
     if (!nextOpen) {
       form.reset({
         amount: '',
-      });
+      })
     }
-  };
+  }
 
-  const onSubmit: SubmitHandler<
-    RequestPayoutFormValues
-  > = async values => {
-    const response = await requestPayout(
-      eventId,
-      values
-    );
+  const onSubmit: SubmitHandler<RequestPayoutFormValues> = async values => {
+    const response = await requestPayout(eventId, values)
 
     if (!response.error) {
-      handleOpenChange(false);
+      handleOpenChange(false)
     }
-  };
+  }
 
   return {
     form,
@@ -107,5 +84,5 @@ export function useRequestPayoutDialog({
     isValid: form.formState.isValid,
     handleOpenChange,
     handleSubmit: form.handleSubmit(onSubmit),
-  };
+  }
 }

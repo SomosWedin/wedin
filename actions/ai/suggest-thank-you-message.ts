@@ -1,9 +1,9 @@
-'use server';
+'use server'
 
-import { getCurrentUser } from '@/actions/get-current-user';
-import { AI_MODEL, anthropic } from '@/lib/anthropic';
-import prismaClient from '@/prisma/client';
-import { ThankYouSuggestionsSchema } from '@/schemas/ai';
+import { getCurrentUser } from '@/actions/get-current-user'
+import { AI_MODEL, anthropic } from '@/lib/anthropic'
+import prismaClient from '@/prisma/client'
+import { ThankYouSuggestionsSchema } from '@/schemas/ai'
 
 // See suggest-cover-message.ts for why this is hand-written instead of
 // the SDK's zodOutputFormat helper (zod/v4 requirement vs. this project's
@@ -19,13 +19,13 @@ const RESPONSE_JSON_SCHEMA = {
   },
   required: ['suggestions'],
   additionalProperties: false,
-} as const;
+} as const
 
 export async function suggestThankYouMessage(transactionId: string) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser()
 
   if (!user) {
-    return { error: 'User not authenticated' };
+    return { error: 'User not authenticated' }
   }
 
   const transaction = await prismaClient.transaction.findFirst({
@@ -34,10 +34,10 @@ export async function suggestThankYouMessage(transactionId: string) {
       wishlistGift: { include: { gift: true } },
       event: { include: { users: true } },
     },
-  });
+  })
 
   if (!transaction) {
-    return { error: 'Transaction not found' };
+    return { error: 'Transaction not found' }
   }
 
   // Several gifts bought in one checkout share pagoparHash (CARD) or
@@ -48,36 +48,36 @@ export async function suggestThankYouMessage(transactionId: string) {
     ? { pagoparHash: transaction.pagoparHash }
     : transaction.bankTransferGroupId
       ? { bankTransferGroupId: transaction.bankTransferGroupId }
-      : null;
+      : null
 
-  let giftNames: string[];
+  let giftNames: string[]
 
   if (groupWhere) {
     const siblings = await prismaClient.transaction.findMany({
       where: { ...groupWhere, eventId: transaction.eventId },
       include: { wishlistGift: { include: { gift: true } } },
-    });
+    })
     giftNames = Array.from(
       new Set(siblings.map(sibling => sibling.wishlistGift.gift.name))
-    );
+    )
   } else {
-    giftNames = [transaction.wishlistGift.gift.name];
+    giftNames = [transaction.wishlistGift.gift.name]
   }
 
   const giftDescription =
     giftNames.length > 1
       ? `los regalos "${giftNames.slice(0, -1).join('", "')}" y "${giftNames[giftNames.length - 1]}"`
-      : `el regalo "${giftNames[0]}"`;
+      : `el regalo "${giftNames[0]}"`
 
   const coupleNames = transaction.event.users
     .map(({ name, lastName }) => [name, lastName].filter(Boolean).join(' '))
     .filter(Boolean)
-    .join(' y ');
+    .join(' y ')
 
-  const payerName = transaction.payerName ?? 'un invitado anónimo';
+  const payerName = transaction.payerName ?? 'un invitado anónimo'
   const payerMessageClause = transaction.payerMessage
     ? ` El invitado dejó este mensaje junto con su regalo: "${transaction.payerMessage}". Si el mensaje es coherente y tiene sentido, tenelo en cuenta al redactar las respuestas. Si es texto sin sentido, aleatorio o irrelevante, ignoralo por completo y no lo menciones.`
-    : '';
+    : ''
 
   try {
     const response = await anthropic.messages.create({
@@ -88,30 +88,31 @@ export async function suggestThankYouMessage(transactionId: string) {
       messages: [
         {
           role: 'user',
-          content: `Escribí 3 mensajes de agradecimiento distintos para ${payerName}, que contribuyó con ${giftDescription}${coupleNames ? `, de parte de ${coupleNames}` : ''
-            }.${payerMessageClause}`,
+          content: `Escribí 3 mensajes de agradecimiento distintos para ${payerName}, que contribuyó con ${giftDescription}${
+            coupleNames ? `, de parte de ${coupleNames}` : ''
+          }.${payerMessageClause}`,
         },
       ],
       output_config: {
         format: { type: 'json_schema', schema: RESPONSE_JSON_SCHEMA },
       },
-    });
+    })
 
-    const block = response.content.find(b => b.type === 'text');
+    const block = response.content.find(b => b.type === 'text')
 
     if (!block || block.type !== 'text') {
-      return { error: 'No se pudieron generar sugerencias, intenta de nuevo' };
+      return { error: 'No se pudieron generar sugerencias, intenta de nuevo' }
     }
 
-    const parsed = ThankYouSuggestionsSchema.safeParse(JSON.parse(block.text));
+    const parsed = ThankYouSuggestionsSchema.safeParse(JSON.parse(block.text))
 
     if (!parsed.success) {
-      return { error: 'No se pudieron generar sugerencias, intenta de nuevo' };
+      return { error: 'No se pudieron generar sugerencias, intenta de nuevo' }
     }
 
-    return { success: parsed.data.suggestions };
+    return { success: parsed.data.suggestions }
   } catch (error) {
-    console.error('Error suggesting thank you message:', error);
-    return { error: 'No se pudieron generar sugerencias, intenta de nuevo' };
+    console.error('Error suggesting thank you message:', error)
+    return { error: 'No se pudieron generar sugerencias, intenta de nuevo' }
   }
 }

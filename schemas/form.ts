@@ -1,5 +1,5 @@
-import { EventType } from '@prisma/client';
-import { type ZodType, z } from 'zod';
+import { EventType } from '@prisma/client'
+import { type ZodType, z } from 'zod'
 
 export const UpdateEventSettingsFormSchema = z
   .object({
@@ -32,7 +32,7 @@ export const UpdateEventSettingsFormSchema = z
           message:
             'El nombre de tu pareja es obligatorio para este tipo de evento',
           code: z.ZodIssueCode.custom,
-        });
+        })
       }
       if (!data.partnerLastName) {
         ctx.addIssue({
@@ -40,7 +40,7 @@ export const UpdateEventSettingsFormSchema = z
           message:
             'El apellido de tu pareja es obligatorio para este tipo de evento',
           code: z.ZodIssueCode.custom,
-        });
+        })
       }
       if (!data.partnerEmail) {
         ctx.addIssue({
@@ -48,10 +48,10 @@ export const UpdateEventSettingsFormSchema = z
           message:
             'El email de tu pareja es obligatorio para este tipo de evento',
           code: z.ZodIssueCode.custom,
-        });
+        })
       }
     }
-  });
+  })
 
 export const BankDetailsFormSchema = z.object({
   eventId: z.string(),
@@ -75,8 +75,8 @@ export const BankDetailsFormSchema = z.object({
     .max(12, { message: 'Número de documento muy largo' }),
   razonSocial: z.string().optional(),
   ruc: z.string().optional(),
-});
-export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>;
+})
+export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>
 
 export const EventCoverFormSchema = z.object({
   coverMessage: z
@@ -90,7 +90,7 @@ export const EventCoverFormSchema = z.object({
       message:
         'El mensaje para tus invitados debe contener un máximo de 255 caracteres',
     }),
-});
+})
 
 export const GiftFormSchema = z.object({
   name: z
@@ -115,17 +115,17 @@ export const GiftFormSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }), // wishlistGiftPostSchema
   isFavoriteGift: z.boolean().default(false), // wishlistGiftPostSchema
   isGroupGift: z.boolean().default(false), // wishlistGiftPostSchema
-});
+})
 
 // We want to ignore the imageUrl field when creating/editing a gift
-export const GiftPostSchema = GiftFormSchema.omit({ image: true });
+export const GiftPostSchema = GiftFormSchema.omit({ image: true })
 
 export const GiftEditSchema = GiftPostSchema.pick({
   name: true,
   categoryId: true,
   price: true,
   imageUrl: true,
-});
+})
 
 export const GiftCreateSchema = GiftPostSchema.pick({
   name: true,
@@ -136,7 +136,7 @@ export const GiftCreateSchema = GiftPostSchema.pick({
   sourceGiftId: true,
   eventId: true,
   imageUrl: true,
-});
+})
 
 export const WishlistGiftCreateSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }),
@@ -144,13 +144,13 @@ export const WishlistGiftCreateSchema = z.object({
   giftId: z.string().min(1, { message: 'No se encontro un gift ID' }),
   isFavoriteGift: z.boolean().default(false),
   isGroupGift: z.boolean().default(false),
-});
+})
 
 export const WishlistGiftsCreateSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }),
   giftIds: z.array(z.string().min(1, { message: 'No se encontro un gift ID' })),
   eventId: z.string().min(1, { message: 'No se encontro un event ID' }),
-});
+})
 
 export const WishlistGiftEditSchema = z.object({
   wishlistGiftId: z.string().min(1, { message: 'No se encontro un ID' }),
@@ -158,17 +158,17 @@ export const WishlistGiftEditSchema = z.object({
   giftId: z.string().min(1, { message: 'No se encontro un gift ID' }),
   isFavoriteGift: z.boolean().default(false),
   isGroupGift: z.boolean().default(false),
-});
+})
 
 export const WishlistGiftDeleteSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }),
   giftId: z.string().min(1, { message: 'No se encontro un gift ID' }),
-});
+})
 
 export const WishlistGiftReceivedToggleSchema = z.object({
   wishlistGiftId: z.string().min(1, { message: 'No se encontro un ID' }),
   isManuallyReceived: z.boolean(),
-});
+})
 
 export const TransactionCreateSchema = z.object({
   amount: z
@@ -177,7 +177,7 @@ export const TransactionCreateSchema = z.object({
     .refine(value => Number(value) <= 99999999, {
       message: 'El precio no puede ser mayor de PYG 99,999,999',
     }),
-});
+})
 
 // Define the TransactionStatus enum to match your Prisma schema
 const TransactionStatus = z.enum([
@@ -186,19 +186,24 @@ const TransactionStatus = z.enum([
   'COMPLETED',
   'FAILED',
   'REFUNDED',
-]);
+])
 
 export const TransactionEditSchema = z.object({
   status: TransactionStatus,
   notes: z.string().optional(),
-});
+})
 
 // Define the PayoutStatus enum to match your Prisma schema
-const PayoutStatus = z.enum(['REQUESTED', 'PROCESSING', 'COMPLETED', 'REJECTED']);
+const PayoutStatus = z.enum([
+  'REQUESTED',
+  'PROCESSING',
+  'COMPLETED',
+  'REJECTED',
+])
 
 export const PayoutEditSchema = z.object({
   status: PayoutStatus,
-});
+})
 
 export const TransactionStatusLogUpdateSchema = z.object({
   transaction: z.object({
@@ -210,7 +215,7 @@ export const TransactionStatusLogUpdateSchema = z.object({
     .string()
     .min(1, { message: 'No se encontró un ID de usuario' }),
   changedAt: z.string().transform(str => new Date(str)), // Ensure changedAt is a valid Date
-});
+})
 
 // Reserved so an event slug can never collide with a real subdomain if we
 // move guest sites from /e/{eventUrl} to {eventUrl}.wedin.app later.
@@ -251,8 +256,8 @@ const RESERVED_EVENT_URLS = [
   'wedin',
   'wedin-staging',
   'send',
-  'resend'
-];
+  'resend',
+]
 
 export const EventUrlFormSchema = z.object({
   eventId: z.string(),
@@ -274,13 +279,13 @@ export const EventUrlFormSchema = z.object({
     .refine(value => !RESERVED_EVENT_URLS.includes(value), {
       message: 'Esa dirección está reservada, elegí otra.',
     }),
-});
+})
 
 export const EventCoverImageFormSchema = z.object({
   eventId: z.string(),
   eventCoverImage: z.any().nullable() as ZodType<File>,
   eventCoverImageUrl: z.string(),
-});
+})
 
 export const EventCoverMessageFormSchema = z.object({
   eventId: z.string(),
@@ -295,12 +300,12 @@ export const EventCoverMessageFormSchema = z.object({
       message:
         'El mensaje para tus invitados debe contener un máximo de 255 caracteres',
     }),
-});
+})
 
 export const EventDateFormSchema = z.object({
   eventId: z.string(),
   eventDate: z.date().nullable(),
-});
+})
 
 const giftAmountSchema = z
   .string()
@@ -310,7 +315,7 @@ const giftAmountSchema = z
   })
   .refine(val => parseInt(val.replace(/,/g, ''), 10) <= 9999999, {
     message: 'El monto no puede ser mayor de Gs. 9,999,999',
-  });
+  })
 
 export const GiftAmountsFormSchema = z.object({
   eventId: z.string(),
@@ -318,4 +323,4 @@ export const GiftAmountsFormSchema = z.object({
   giftAmount2: giftAmountSchema,
   giftAmount3: giftAmountSchema,
   giftAmount4: giftAmountSchema,
-});
+})

@@ -1,46 +1,31 @@
-'use client';
+'use client'
 
-import {
-  createGift,
-  editGift,
-} from '@/actions/data/gift';
-import { editWishlistGift } from '@/actions/data/wishlist-gift';
-import { useToast } from '@/hooks/use-toast';
-import { uploadGiftImageToAws } from '@/lib/s3';
-import { GiftFormSchema } from '@/schemas/form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type {
-  Gift,
-  Image as ImageModel,
-} from '@prisma/client';
-import { useRouter } from 'next/navigation';
-import {
-  type ChangeEvent,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-import {
-  type SubmitHandler,
-  useForm,
-} from 'react-hook-form';
-import type { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod'
+import type { Gift, Image as ImageModel } from '@prisma/client'
+import { useRouter } from 'next/navigation'
+import { type ChangeEvent, useEffect, useRef, useState } from 'react'
+import { type SubmitHandler, useForm } from 'react-hook-form'
+import type { z } from 'zod'
+import { createGift, editGift } from '@/actions/data/gift'
+import { editWishlistGift } from '@/actions/data/wishlist-gift'
+import { useToast } from '@/hooks/use-toast'
+import { uploadGiftImageToAws } from '@/lib/s3'
+import { GiftFormSchema } from '@/schemas/form'
 
 export type EditableGift = Gift & {
-  image: ImageModel | null;
-};
+  image: ImageModel | null
+}
 
-export type EditWishlistGiftFormValues =
-  z.infer<typeof GiftFormSchema>;
+export type EditWishlistGiftFormValues = z.infer<typeof GiftFormSchema>
 
 type UseEditWishlistGiftProps = {
-  wishlistGiftId: string;
-  wishlistId: string;
-  eventId: string;
-  gift: EditableGift;
-  isFavoriteGift: boolean;
-  isGroupGift: boolean;
-};
+  wishlistGiftId: string
+  wishlistId: string
+  eventId: string
+  gift: EditableGift
+  isFavoriteGift: boolean
+  isGroupGift: boolean
+}
 
 export function useEditWishlistGift({
   wishlistGiftId,
@@ -50,47 +35,43 @@ export function useEditWishlistGift({
   isFavoriteGift,
   isGroupGift,
 }: UseEditWishlistGiftProps) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [imageFile, setImageFile] =
-    useState<File | null>(null);
-  const [imagePreview, setImagePreview] =
-    useState<string | null>(
-      gift.image?.url ?? null
-    );
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    gift.image?.url ?? null
+  )
 
-  const fileInputRef =
-    useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { toast } = useToast();
-  const router = useRouter();
+  const { toast } = useToast()
+  const router = useRouter()
 
-  const form =
-    useForm<EditWishlistGiftFormValues>({
-      resolver: zodResolver(GiftFormSchema),
-      mode: 'all',
-      defaultValues: {
-        name: gift.name,
-        categoryId: gift.categoryId,
-        price: gift.price,
-        isDefault: false,
-        isEditedVersion: false,
-        sourceGiftId: gift.id,
-        eventId,
-        imageUrl: gift.image?.url ?? '',
-        wishlistId,
-        isFavoriteGift,
-        isGroupGift,
-      },
-    });
+  const form = useForm<EditWishlistGiftFormValues>({
+    resolver: zodResolver(GiftFormSchema),
+    mode: 'all',
+    defaultValues: {
+      name: gift.name,
+      categoryId: gift.categoryId,
+      price: gift.price,
+      isDefault: false,
+      isEditedVersion: false,
+      sourceGiftId: gift.id,
+      eventId,
+      imageUrl: gift.image?.url ?? '',
+      wishlistId,
+      isFavoriteGift,
+      isGroupGift,
+    },
+  })
 
   useEffect(() => {
     return () => {
       if (imagePreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(imagePreview);
+        URL.revokeObjectURL(imagePreview)
       }
-    };
-  }, [imagePreview]);
+    }
+  }, [imagePreview])
 
   const resetForm = () => {
     form.reset({
@@ -105,95 +86,80 @@ export function useEditWishlistGift({
       wishlistId,
       isFavoriteGift,
       isGroupGift,
-    });
-    setImageFile(null);
-    setImagePreview(gift.image?.url ?? null);
-  };
+    })
+    setImageFile(null)
+    setImagePreview(gift.image?.url ?? null)
+  }
 
-  const handleOpenChange = (
-    nextOpen: boolean
-  ) => {
-    setOpen(nextOpen);
-    resetForm();
-  };
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen)
+    resetForm()
+  }
 
-  const handleFileChange = (
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
 
-    if (!file) return;
+    if (!file) return
 
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-    event.target.value = '';
-  };
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    event.target.value = ''
+  }
 
-  const onSubmit: SubmitHandler<
-    EditWishlistGiftFormValues
-  > = async values => {
-    setLoading(true);
+  const onSubmit: SubmitHandler<EditWishlistGiftFormValues> = async values => {
+    setLoading(true)
 
     try {
       const hasGiftChanges =
         values.name !== gift.name ||
         values.categoryId !== gift.categoryId ||
         values.price !== gift.price ||
-        imageFile !== null;
+        imageFile !== null
 
-      let giftId = gift.id;
+      let giftId = gift.id
 
       if (hasGiftChanges) {
-        let imageUrl = gift.image?.url ?? '';
+        let imageUrl = gift.image?.url ?? ''
 
         if (imageFile) {
-          const uploadResponse =
-            await uploadGiftImageToAws({
-              file: imageFile,
-              eventId,
-            });
+          const uploadResponse = await uploadGiftImageToAws({
+            file: imageFile,
+            eventId,
+          })
 
-          if (
-            uploadResponse.error ||
-            !uploadResponse.url
-          ) {
+          if (uploadResponse.error || !uploadResponse.url) {
             toast({
               title: 'Error al subir la imagen',
               description: uploadResponse.error,
               variant: 'destructive',
-            });
+            })
 
-            return;
+            return
           }
 
-          imageUrl = uploadResponse.url;
+          imageUrl = uploadResponse.url
         }
 
         if (gift.isDefault) {
-          const giftResponse =
-            await createGift({
-              ...values,
-              isDefault: false,
-              isEditedVersion: true,
-              sourceGiftId: gift.id,
-              imageUrl,
-            });
+          const giftResponse = await createGift({
+            ...values,
+            isDefault: false,
+            isEditedVersion: true,
+            sourceGiftId: gift.id,
+            imageUrl,
+          })
 
-          if (
-            giftResponse.error ||
-            !giftResponse.giftId
-          ) {
+          if (giftResponse.error || !giftResponse.giftId) {
             toast({
-              title:
-                'Error al guardar los cambios del regalo',
+              title: 'Error al guardar los cambios del regalo',
               description: giftResponse.error,
               variant: 'destructive',
-            });
+            })
 
-            return;
+            return
           }
 
-          giftId = giftResponse.giftId;
+          giftId = giftResponse.giftId
         } else {
           const editResponse = await editGift(
             {
@@ -201,17 +167,16 @@ export function useEditWishlistGift({
               imageUrl,
             },
             gift.id
-          );
+          )
 
           if (editResponse.error) {
             toast({
-              title:
-                'Error al guardar los cambios del regalo',
+              title: 'Error al guardar los cambios del regalo',
               description: editResponse.error,
               variant: 'destructive',
-            });
+            })
 
-            return;
+            return
           }
         }
       }
@@ -220,42 +185,38 @@ export function useEditWishlistGift({
         wishlistGiftId,
         wishlistId,
         giftId,
-        isFavoriteGift:
-          values.isFavoriteGift,
+        isFavoriteGift: values.isFavoriteGift,
         isGroupGift: values.isGroupGift,
-      });
+      })
 
       if (response.error) {
         toast({
           title: 'Error al editar el regalo',
           description: response.error,
           variant: 'destructive',
-        });
+        })
 
-        return;
+        return
       }
 
       toast({
         title: 'Regalo actualizado. ✅',
-      });
+      })
 
-      handleOpenChange(false);
-      router.refresh();
+      handleOpenChange(false)
+      router.refresh()
     } catch (error) {
-      console.error(
-        'Error editing wishlist gift:',
-        error
-      );
+      console.error('Error editing wishlist gift:', error)
 
       toast({
         title: 'No pudimos editar el regalo',
         description: 'Intentá nuevamente.',
         variant: 'destructive',
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return {
     form,
@@ -267,5 +228,5 @@ export function useEditWishlistGift({
     handleFileChange,
     handleOpenChange,
     handleSubmit: form.handleSubmit(onSubmit),
-  };
+  }
 }

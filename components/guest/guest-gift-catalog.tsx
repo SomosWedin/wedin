@@ -1,64 +1,75 @@
-'use client';
+'use client'
 
-import CartDrawer from '@/components/cart/cart-drawer';
-import CartStickyBar from '@/components/cart/cart-sticky-bar';
-import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog';
-import GiftDetailDialog from '@/components/dialog/gift-detail-dialog';
-import { getGiftProgress } from '@/components/guest/gift-progress';
+import type { Category } from '@prisma/client'
+import { useState } from 'react'
+import {
+  IoGiftOutline,
+  IoPeopleOutline,
+  IoPersonOutline,
+  IoSearchOutline,
+} from 'react-icons/io5'
+import CartDrawer from '@/components/cart/cart-drawer'
+import CartStickyBar from '@/components/cart/cart-sticky-bar'
+import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog'
+import GiftDetailDialog from '@/components/dialog/gift-detail-dialog'
+import { getGiftProgress } from '@/components/guest/gift-progress'
 import GuestGiftCard, {
   type WishlistGiftWithGift,
-} from '@/components/guest/guest-gift-card';
-import { Input } from '@/components/ui/input';
-import { useCartStore, type CartItem } from '@/hooks/use-cart-store';
-import { useStore } from '@/hooks/use-store';
-import { useToast } from '@/hooks/use-toast';
-import type { Category } from '@prisma/client';
-import { useState } from 'react';
-import { IoGiftOutline, IoPeopleOutline, IoPersonOutline, IoSearchOutline } from 'react-icons/io5';
+} from '@/components/guest/guest-gift-card'
+import { Input } from '@/components/ui/input'
+import { type CartItem, useCartStore } from '@/hooks/use-cart-store'
+import { useStore } from '@/hooks/use-store'
+import { useToast } from '@/hooks/use-toast'
 
-type TypeFilter = 'todos' | 'individual' | 'grupal';
-type SortOption = 'recent' | 'price-asc' | 'price-desc';
+type TypeFilter = 'todos' | 'individual' | 'grupal'
+type SortOption = 'recent' | 'price-asc' | 'price-desc'
 
 type GuestGiftCatalogProps = {
-  eventId: string;
-  wishlistGifts: WishlistGiftWithGift[];
-  categories: Category[];
-};
+  eventId: string
+  wishlistGifts: WishlistGiftWithGift[]
+  categories: Category[]
+}
 
-const TYPE_FILTERS: { value: TypeFilter; label: string; icon: React.ReactNode }[] = [
+const TYPE_FILTERS: {
+  value: TypeFilter
+  label: string
+  icon: React.ReactNode
+}[] = [
   { value: 'todos', label: 'Todos', icon: <IoGiftOutline /> },
-  { value: 'individual', label: 'Regalo individual', icon: <IoPersonOutline /> },
+  {
+    value: 'individual',
+    label: 'Regalo individual',
+    icon: <IoPersonOutline />,
+  },
   { value: 'grupal', label: 'Regalo grupal', icon: <IoPeopleOutline /> },
-];
+]
 
 export default function GuestGiftCatalog({
   eventId,
   wishlistGifts,
   categories,
 }: GuestGiftCatalogProps) {
-  const { toast } = useToast();
-  const cartStore = useCartStore(eventId);
-  const cartItems = useStore(cartStore, state => state.items) ?? [];
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos');
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [sort, setSort] = useState<SortOption>('recent');
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { toast } = useToast()
+  const cartStore = useCartStore(eventId)
+  const cartItems = useStore(cartStore, state => state.items) ?? []
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos')
+  const [search, setSearch] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [sort, setSort] = useState<SortOption>('recent')
+  const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedWishlistGift, setSelectedWishlistGift] =
-    useState<WishlistGiftWithGift | null>(null);
-  const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(
-    null
-  );
+    useState<WishlistGiftWithGift | null>(null)
+  const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(null)
   const [detailWishlistGift, setDetailWishlistGift] =
-    useState<WishlistGiftWithGift | null>(null);
+    useState<WishlistGiftWithGift | null>(null)
 
   const cartTotal = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
     0
-  );
+  )
   const cartWishlistGiftIds = new Set(
     cartItems.map(item => item.wishlistGiftId)
-  );
+  )
 
   const addToCart = (wishlistGift: WishlistGiftWithGift, amount: string) => {
     cartStore.getState().addItem({
@@ -67,62 +78,62 @@ export default function GuestGiftCatalog({
       giftImageUrl: wishlistGift.gift.image?.url ?? null,
       isGroupGift: wishlistGift.isGroupGift,
       amount,
-    });
+    })
     toast({
       title: 'Agregado al carrito 🎁',
-      description: `${wishlistGift.gift.name} — Gs. ${Number(amount).toLocaleString(
-        'es-PY'
-      )}`,
-    });
-  };
+      description: `${wishlistGift.gift.name} — Gs. ${Number(
+        amount
+      ).toLocaleString('es-PY')}`,
+    })
+  }
 
   const handleAddFullPrice = (wishlistGift: WishlistGiftWithGift) => {
-    addToCart(wishlistGift, wishlistGift.gift.price);
-  };
+    addToCart(wishlistGift, wishlistGift.gift.price)
+  }
 
   const handleOpenContributionDialog = (wishlistGift: WishlistGiftWithGift) => {
-    setSelectedWishlistGift(wishlistGift);
-  };
+    setSelectedWishlistGift(wishlistGift)
+  }
 
   const handleOpenGiftDetails = (wishlistGift: WishlistGiftWithGift) => {
-    setDetailWishlistGift(wishlistGift);
-  };
+    setDetailWishlistGift(wishlistGift)
+  }
 
   const handleEditCartItem = (item: CartItem) => {
     const wishlistGift = wishlistGifts.find(
       candidate => candidate.id === item.wishlistGiftId
-    );
-    if (!wishlistGift) return;
+    )
+    if (!wishlistGift) return
 
-    setEditingCartItem(item);
-    setSelectedWishlistGift(wishlistGift);
-    setIsCartOpen(false);
-  };
+    setEditingCartItem(item)
+    setSelectedWishlistGift(wishlistGift)
+    setIsCartOpen(false)
+  }
 
   const handleContributionSubmit = (amount: string) => {
-    if (!selectedWishlistGift) return;
+    if (!selectedWishlistGift) return
 
     if (editingCartItem) {
-      cartStore.getState().updateItemAmount(editingCartItem.id, amount);
+      cartStore.getState().updateItemAmount(editingCartItem.id, amount)
     } else {
-      addToCart(selectedWishlistGift, amount);
+      addToCart(selectedWishlistGift, amount)
     }
-  };
+  }
 
   const handleContributionDialogOpenChange = (open: boolean) => {
-    if (open) return;
+    if (open) return
 
-    setSelectedWishlistGift(null);
+    setSelectedWishlistGift(null)
     if (editingCartItem) {
-      setEditingCartItem(null);
-      setIsCartOpen(true);
+      setEditingCartItem(null)
+      setIsCartOpen(true)
     }
-  };
+  }
 
   const handleRemoveCartItem = (id: string) => {
-    cartStore.getState().removeItem(id);
-    if (cartItems.length === 1) setIsCartOpen(false);
-  };
+    cartStore.getState().removeItem(id)
+    if (cartItems.length === 1) setIsCartOpen(false)
+  }
 
   const filteredWishlistGifts = wishlistGifts
     .filter(wishlistGift => {
@@ -130,33 +141,36 @@ export default function GuestGiftCatalog({
         typeFilter === 'todos' ||
         (typeFilter === 'grupal'
           ? wishlistGift.isGroupGift
-          : !wishlistGift.isGroupGift);
+          : !wishlistGift.isGroupGift)
       const matchesSearch = wishlistGift.gift.name
         .toLowerCase()
-        .includes(search.trim().toLowerCase());
+        .includes(search.trim().toLowerCase())
       const matchesCategory =
-        !categoryFilter || wishlistGift.gift.categoryId === categoryFilter;
+        !categoryFilter || wishlistGift.gift.categoryId === categoryFilter
 
-      return matchesType && matchesSearch && matchesCategory;
+      return matchesType && matchesSearch && matchesCategory
     })
     .sort((a, b) => {
-      if (sort === 'price-asc') return Number(a.gift.price) - Number(b.gift.price);
-      if (sort === 'price-desc') return Number(b.gift.price) - Number(a.gift.price);
-      return 0;
-    });
+      if (sort === 'price-asc')
+        return Number(a.gift.price) - Number(b.gift.price)
+      if (sort === 'price-desc')
+        return Number(b.gift.price) - Number(a.gift.price)
+      return 0
+    })
 
   const selectedProgress = selectedWishlistGift
     ? getGiftProgress(
-      selectedWishlistGift.gift.price,
-      selectedWishlistGift.transactions
-    )
-    : null;
+        selectedWishlistGift.gift.price,
+        selectedWishlistGift.transactions
+      )
+    : null
 
   return (
     <section
       id="lista-de-regalos"
-      className={`px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 ${cartItems.length > 0 ? 'mb-12 sm:mb-10' : ''
-        }`}
+      className={`px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 ${
+        cartItems.length > 0 ? 'mb-12 sm:mb-10' : ''
+      }`}
     >
       <h2 className="mb-6 text-3xl font-medium">Lista de regalos</h2>
 
@@ -167,10 +181,11 @@ export default function GuestGiftCatalog({
               key={filter.value}
               type="button"
               onClick={() => setTypeFilter(filter.value)}
-              className={`flex gap-2 items-center px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border transition-colors ${typeFilter === filter.value
-                ? 'bg-gray100 text-textPrimary border-gray-200'
-                : 'bg-white text-textPrimary border-gray-200 hover:bg-gray-50'
-                }`}
+              className={`flex gap-2 items-center px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border transition-colors ${
+                typeFilter === filter.value
+                  ? 'bg-gray100 text-textPrimary border-gray-200'
+                  : 'bg-white text-textPrimary border-gray-200 hover:bg-gray-50'
+              }`}
             >
               {filter.icon}
               {filter.label}
@@ -249,7 +264,7 @@ export default function GuestGiftCatalog({
         <GiftDetailDialog
           open={!!detailWishlistGift}
           onOpenChange={open => {
-            if (!open) setDetailWishlistGift(null);
+            if (!open) setDetailWishlistGift(null)
           }}
           gift={detailWishlistGift.gift}
           isFavoriteGift={detailWishlistGift.isFavoriteGift}
@@ -271,5 +286,5 @@ export default function GuestGiftCatalog({
         onEditItem={handleEditCartItem}
       />
     </section>
-  );
+  )
 }

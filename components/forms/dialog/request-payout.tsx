@@ -1,7 +1,10 @@
-'use client';
+'use client'
 
-import PriceInput from '@/components/forms/common/price-input';
-import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react'
+import type { BaseSyntheticEvent } from 'react'
+import type { UseFormReturn } from 'react-hook-form'
+import PriceInput from '@/components/forms/common/price-input'
+import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
@@ -9,22 +12,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { RequestPayoutFormValues } from '@/hooks/dialog/forms/use-request-payout-dialog';
-import { Loader2 } from 'lucide-react';
-import type { BaseSyntheticEvent } from 'react';
-import type { UseFormReturn } from 'react-hook-form';
+} from '@/components/ui/form'
+import { RequestPayoutFormValues } from '@/hooks/dialog/forms/use-request-payout-dialog'
 
 type RequestPayoutFormProps = {
-  form: UseFormReturn<RequestPayoutFormValues>;
-  balance: number;
-  loading: boolean;
-  isValid: boolean;
-  onSubmit: (
-    event?: BaseSyntheticEvent
-  ) => Promise<void>;
-  onCancel: () => void;
-};
+  form: UseFormReturn<RequestPayoutFormValues>
+  balance: number
+  loading: boolean
+  isValid: boolean
+  onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
+  onCancel: () => void
+}
 
 export default function RequestPayoutForm({
   form,
@@ -36,13 +34,9 @@ export default function RequestPayoutForm({
 }: RequestPayoutFormProps) {
   return (
     <Form {...form}>
-      <form
-        onSubmit={onSubmit}
-        className="flex flex-col gap-4"
-      >
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <p className="text-sm text-textTertiary">
-          Disponible para retiro: Gs.{' '}
-          {balance.toLocaleString('es-PY')}
+          Disponible para retiro: Gs. {balance.toLocaleString('es-PY')}
         </p>
 
         <FormField
@@ -50,9 +44,7 @@ export default function RequestPayoutForm({
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                Monto a retirar
-              </FormLabel>
+              <FormLabel>Monto a retirar</FormLabel>
 
               <FormControl>
                 <PriceInput
@@ -95,5 +87,5 @@ export default function RequestPayoutForm({
         </div>
       </form>
     </Form>
-  );
+  )
 }

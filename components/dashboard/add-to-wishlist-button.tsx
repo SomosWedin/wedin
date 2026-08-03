@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button';
-import { IoAdd } from 'react-icons/io5';
+import { IoAdd } from 'react-icons/io5'
+import { Button } from '@/components/ui/button'
 
 export default function AddToWishlistButton() {
   return (
@@ -7,5 +7,5 @@ export default function AddToWishlistButton() {
       <IoAdd />
       Agregar regalo
     </Button>
-  );
+  )
 }

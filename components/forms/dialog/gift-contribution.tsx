@@ -1,10 +1,13 @@
-'use client';
+'use client'
 
-import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
-import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
-import PriceInput from '@/components/forms/common/price-input';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import type { Gift, Image as ImageModel } from '@prisma/client'
+import Image from 'next/image'
+import { IoGiftOutline } from 'react-icons/io5'
+import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge'
+import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
+import PriceInput from '@/components/forms/common/price-input'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -12,30 +15,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Progress } from '@/components/ui/progress';
-import { useGiftContribution } from '@/hooks/dialog/forms/use-gift-contribution';
-import type {
-  Gift,
-  Image as ImageModel,
-} from '@prisma/client';
-import Image from 'next/image';
-import { IoGiftOutline } from 'react-icons/io5';
+} from '@/components/ui/form'
+import { Progress } from '@/components/ui/progress'
+import { useGiftContribution } from '@/hooks/dialog/forms/use-gift-contribution'
 
 type GiftWithImage = Gift & {
-  image: ImageModel | null;
-};
+  image: ImageModel | null
+}
 
 type GiftContributionFormProps = {
-  open: boolean;
-  gift: GiftWithImage;
-  isFavoriteGift: boolean;
-  remaining: number;
-  percentage: number;
-  initialAmount?: string;
-  onAddToCart: (amount: string) => void;
-  onOpenChange: (open: boolean) => void;
-};
+  open: boolean
+  gift: GiftWithImage
+  isFavoriteGift: boolean
+  remaining: number
+  percentage: number
+  initialAmount?: string
+  onAddToCart: (amount: string) => void
+  onOpenChange: (open: boolean) => void
+}
 
 export default function GiftContributionForm({
   open,
@@ -63,14 +60,11 @@ export default function GiftContributionForm({
     initialAmount,
     onAddToCart,
     onOpenChange,
-  });
+  })
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-4"
-      >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <div className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-100">
             {gift.image?.url ? (
@@ -87,35 +81,23 @@ export default function GiftContributionForm({
           </div>
 
           <div className="flex flex-col gap-2">
-            <p className="text-base font-normal">
-              {gift.name}
-            </p>
+            <p className="text-base font-normal">{gift.name}</p>
 
             <p className="text-xl font-medium">
-              Gs.{' '}
-              {Number(
-                gift.price
-              ).toLocaleString('es-PY')}
+              Gs. {Number(gift.price).toLocaleString('es-PY')}
             </p>
 
             <div className="mt-2 flex flex-wrap gap-1.5">
               <GiftTypeBadge isGroupGift />
 
-              {isFavoriteGift && (
-                <GiftFavoriteBadge />
-              )}
+              {isFavoriteGift && <GiftFavoriteBadge />}
             </div>
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
           <div className="flex justify-between text-base">
-            <span>
-              Faltan: Gs.{' '}
-              {remaining.toLocaleString(
-                'es-PY'
-              )}
-            </span>
+            <span>Faltan: Gs. {remaining.toLocaleString('es-PY')}</span>
 
             <span>{percentage}%</span>
           </div>
@@ -125,43 +107,31 @@ export default function GiftContributionForm({
 
         {suggestedAmounts.length > 0 && (
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">
-              Montos sugeridos
-            </span>
+            <span className="text-sm font-medium">Montos sugeridos</span>
 
             <div className="flex flex-wrap gap-2">
-              {suggestedAmounts.map(
-                suggestedAmount => {
-                  const isSelected =
-                    !completeRemaining &&
-                    amount ===
-                    String(suggestedAmount);
+              {suggestedAmounts.map(suggestedAmount => {
+                const isSelected =
+                  !completeRemaining && amount === String(suggestedAmount)
 
-                  return (
-                    <button
-                      key={suggestedAmount}
-                      type="button"
-                      onClick={() =>
-                        handleSuggestedAmount(
-                          suggestedAmount
-                        )
-                      }
-                      className={
-                        `rounded-full border px-3 py-1.5 ` +
-                        `text-sm font-medium transition-colors ${isSelected
+                return (
+                  <button
+                    key={suggestedAmount}
+                    type="button"
+                    onClick={() => handleSuggestedAmount(suggestedAmount)}
+                    className={
+                      `rounded-full border px-3 py-1.5 ` +
+                      `text-sm font-medium transition-colors ${
+                        isSelected
                           ? 'border-success bg-success/10 text-success'
                           : 'border-gray-200 bg-white text-textPrimary hover:bg-gray-50'
-                        }`
-                      }
-                    >
-                      Gs.{' '}
-                      {suggestedAmount.toLocaleString(
-                        'es-PY'
-                      )}
-                    </button>
-                  );
-                }
-              )}
+                      }`
+                    }
+                  >
+                    Gs. {suggestedAmount.toLocaleString('es-PY')}
+                  </button>
+                )
+              })}
             </div>
           </div>
         )}
@@ -171,9 +141,7 @@ export default function GiftContributionForm({
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                Monto a contribuir
-              </FormLabel>
+              <FormLabel>Monto a contribuir</FormLabel>
 
               <FormControl>
                 <PriceInput
@@ -197,9 +165,7 @@ export default function GiftContributionForm({
                 <Checkbox
                   id="complete-remaining"
                   checked={field.value}
-                  onCheckedChange={
-                    handleCompleteRemainingChange
-                  }
+                  onCheckedChange={handleCompleteRemainingChange}
                 />
               </FormControl>
 
@@ -217,9 +183,7 @@ export default function GiftContributionForm({
           <Button
             type="button"
             variant="outline"
-            onClick={() =>
-              onOpenChange(false)
-            }
+            onClick={() => onOpenChange(false)}
             className="flex-[3] border-none bg-gray-100 transition-colors hover:bg-gray-200"
           >
             Cancelar
@@ -236,5 +200,5 @@ export default function GiftContributionForm({
         </div>
       </form>
     </Form>
-  );
+  )
 }

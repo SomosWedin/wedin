@@ -1,8 +1,12 @@
-'use client';
+'use client'
 
-import LogoutConfirmDialog from '@/components/dialog/logout-confirm-dialog';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import type { User as CurrentUser } from '@prisma/client'
+import { LayoutGrid, User } from 'lucide-react'
+import Link from 'next/link'
+import { useState } from 'react'
+import LogoutConfirmDialog from '@/components/dialog/logout-confirm-dialog'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,25 +15,21 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import type { User as CurrentUser } from '@prisma/client';
-import { LayoutGrid, User } from 'lucide-react';
-import Link from 'next/link';
-import { useState } from 'react';
+} from '@/components/ui/tooltip'
 
 type UserNavProps = {
-  currentUser: CurrentUser;
-};
+  currentUser: CurrentUser
+}
 
 export function UserNav({ currentUser }: UserNavProps) {
-  const { name, email } = currentUser;
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const { name, email } = currentUser
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   return (
     <>
@@ -97,5 +97,5 @@ export function UserNav({ currentUser }: UserNavProps) {
         onOpenChange={setShowLogoutConfirm}
       />
     </>
-  );
+  )
 }

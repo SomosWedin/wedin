@@ -1,25 +1,19 @@
-'use client';
+'use client'
 
-import { StepTwoSchema } from '@/schemas/onboarding';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { EventType } from '@prisma/client';
-import { useEffect } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
-import type { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod'
+import { EventType } from '@prisma/client'
+import { useEffect } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import type { z } from 'zod'
+import { StepTwoSchema } from '@/schemas/onboarding'
 
-export type StepTwoValues = z.infer<
-  typeof StepTwoSchema
->;
+export type StepTwoValues = z.infer<typeof StepTwoSchema>
 
 type UseStepTwoProps = {
-  onSubmit: (
-    values: StepTwoValues
-  ) => Promise<void> | void;
-};
+  onSubmit: (values: StepTwoValues) => Promise<void> | void
+}
 
-export function useStepTwo({
-  onSubmit,
-}: UseStepTwoProps) {
+export function useStepTwo({ onSubmit }: UseStepTwoProps) {
   const form = useForm<StepTwoValues>({
     resolver: zodResolver(StepTwoSchema),
     mode: 'onBlur',
@@ -30,43 +24,36 @@ export function useStepTwo({
       partnerLastName: '',
       eventType: EventType.WEDDING,
     },
-  });
+  })
 
   const eventType =
     useWatch({
       control: form.control,
       name: 'eventType',
-    }) ?? EventType.WEDDING;
+    }) ?? EventType.WEDDING
 
-  const { setValue } = form;
+  const { setValue } = form
 
   useEffect(() => {
-    const storedEventType =
-      localStorage.getItem('eventType');
+    const storedEventType = localStorage.getItem('eventType')
 
     if (
       storedEventType &&
-      Object.values(EventType).includes(
-        storedEventType as EventType
-      )
+      Object.values(EventType).includes(storedEventType as EventType)
     ) {
-      setValue(
-        'eventType',
-        storedEventType as EventType,
-        {
-          shouldDirty: false,
-          shouldValidate: true,
-        }
-      );
+      setValue('eventType', storedEventType as EventType, {
+        shouldDirty: false,
+        shouldValidate: true,
+      })
     }
-  }, [setValue]);
+  }, [setValue])
 
-  const handleSubmit = form.handleSubmit(onSubmit);
+  const handleSubmit = form.handleSubmit(onSubmit)
 
   return {
     form,
     eventType,
     isValid: form.formState.isValid,
     handleSubmit,
-  };
+  }
 }

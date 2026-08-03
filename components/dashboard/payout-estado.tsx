@@ -1,5 +1,5 @@
-import type { PayoutStatus } from '@prisma/client';
-import { IoCheckmark, IoClose, IoSync, IoTimeOutline } from 'react-icons/io5';
+import type { PayoutStatus } from '@prisma/client'
+import { IoCheckmark, IoClose, IoSync, IoTimeOutline } from 'react-icons/io5'
 
 export const ESTADO_BY_PAYOUT_STATUS: Record<
   PayoutStatus,
@@ -25,11 +25,8 @@ export const ESTADO_BY_PAYOUT_STATUS: Record<
     className: 'bg-error/10 text-error border-transparent',
     icon: <IoClose className="mr-1 text-error" />,
   },
-};
+}
 
 export const ESTADO_OPTIONS_PAYOUT = (
-  Object.entries(ESTADO_BY_PAYOUT_STATUS) as [
-    PayoutStatus,
-    { label: string },
-  ][]
-).map(([status, { label }]) => ({ value: status, label }));
+  Object.entries(ESTADO_BY_PAYOUT_STATUS) as [PayoutStatus, { label: string }][]
+).map(([status, { label }]) => ({ value: status, label }))

@@ -1,9 +1,9 @@
-'use server';
+'use server'
 
-import prismaClient from '@/prisma/client';
-import type { GetGiftlistsSearchParams } from '@/schemas/params';
-import type { Prisma } from '@prisma/client';
-import type { z } from 'zod';
+import type { Prisma } from '@prisma/client'
+import type { z } from 'zod'
+import prismaClient from '@/prisma/client'
+import type { GetGiftlistsSearchParams } from '@/schemas/params'
 
 export async function getGiftlist(giftlistId: string) {
   try {
@@ -14,36 +14,36 @@ export async function getGiftlist(giftlistId: string) {
       where: {
         id: giftlistId,
       },
-    });
+    })
 
-    if (!giftlist) return null;
+    if (!giftlist) return null
 
-    return giftlist;
+    return giftlist
   } catch (error) {
-    console.error('Error retrieving gifts:', error);
-    return null;
+    console.error('Error retrieving gifts:', error)
+    return null
   }
 }
 
 export async function getGiftlists({
   searchParams,
 }: {
-  searchParams?: z.infer<typeof GetGiftlistsSearchParams>;
+  searchParams?: z.infer<typeof GetGiftlistsSearchParams>
 }) {
-  const query: Prisma.GiftlistWhereInput = {};
+  const query: Prisma.GiftlistWhereInput = {}
 
   if (searchParams) {
-    const { category, name } = searchParams;
+    const { category, name } = searchParams
 
     if (name) {
       query.name = {
         contains: name,
         mode: 'insensitive',
-      };
+      }
     }
 
     if (category) {
-      query.categoryId = category;
+      query.categoryId = category
     }
   }
 
@@ -53,11 +53,11 @@ export async function getGiftlists({
       include: {
         gifts: { include: { image: true } },
       },
-    });
+    })
 
-    return giftlists;
+    return giftlists
   } catch (error) {
-    console.error('Error retrieving gift lists:', error);
-    throw new Error('Failed to retrieve gift lists');
+    console.error('Error retrieving gift lists:', error)
+    throw new Error('Failed to retrieve gift lists')
   }
 }

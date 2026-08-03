@@ -1,12 +1,12 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import wedinIcon from '@/public/assets/w-icon.svg';
-import ShareListButton from '@/components/guest/share-list-button';
+import Image from 'next/image'
+import Link from 'next/link'
+import ShareListButton from '@/components/guest/share-list-button'
+import wedinIcon from '@/public/assets/w-icon.svg'
 
 export default function GuestLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <div className="min-h-screen bg-white">
@@ -21,5 +21,5 @@ export default function GuestLayout({
       </header>
       {children}
     </div>
-  );
+  )
 }

@@ -1,7 +1,12 @@
-'use client';
+'use client'
 
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { type Event, EventType, type User } from '@prisma/client'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react'
+import { FaCheck } from 'react-icons/fa6'
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
 import {
   Form,
   FormControl,
@@ -9,40 +14,33 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { useUpdateEventSettings } from '@/hooks/dashboard/forms/use-update-event-settings';
-import { cn } from '@/lib/utils';
-import { Event, EventType, User } from '@prisma/client';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
-import React from 'react';
-import { FaCheck } from 'react-icons/fa6';
+} from '@/components/ui/popover'
+import { useUpdateEventSettings } from '@/hooks/dashboard/forms/use-update-event-settings'
+import { cn } from '@/lib/utils'
 
 type DashboardEventSettingsFormProps = {
-  event: Event;
-  currentUser: User;
-  secondaryEventUser: User | null;
-};
+  event: Event
+  currentUser: User
+  secondaryEventUser: User | null
+}
 
 export default function DashboardEventSettingsForm({
   event,
   currentUser,
   secondaryEventUser,
 }: DashboardEventSettingsFormProps) {
-  const { loading, form, onSubmit, isDirty, isValid } =
-    useUpdateEventSettings({
-      event,
-      currentUser,
-      secondaryEventUser,
-    });
+  const { loading, form, onSubmit, isDirty, isValid } = useUpdateEventSettings({
+    event,
+    currentUser,
+    secondaryEventUser,
+  })
 
   return (
     <Form {...form}>
@@ -131,11 +129,7 @@ export default function DashboardEventSettingsForm({
               <FormItem className="w-full">
                 <FormLabel>Tu nombre</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="John"
-                    className="!mt-1.5"
-                    {...field}
-                  />
+                  <Input placeholder="John" className="!mt-1.5" {...field} />
                 </FormControl>
                 <FormMessage className="font-normal text-red-600" />
               </FormItem>
@@ -149,11 +143,7 @@ export default function DashboardEventSettingsForm({
               <FormItem className="w-full">
                 <FormLabel>Tu apellido</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Doe"
-                    className="!mt-1.5"
-                    {...field}
-                  />
+                  <Input placeholder="Doe" className="!mt-1.5" {...field} />
                 </FormControl>
                 <FormMessage className="font-normal text-red-600" />
               </FormItem>
@@ -248,5 +238,5 @@ export default function DashboardEventSettingsForm({
         </div>
       </form>
     </Form>
-  );
+  )
 }

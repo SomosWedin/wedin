@@ -1,26 +1,26 @@
-import { Progress } from '@/components/ui/progress';
-import wedinIcon from '@/public/assets/w-icon.svg';
-import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import Image from 'next/image'
+import { useEffect, useState } from 'react'
+import { Progress } from '@/components/ui/progress'
+import wedinIcon from '@/public/assets/w-icon.svg'
 
 export default function OnboardingStepSix() {
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
-          clearInterval(interval);
-          location.reload();
-          location.href = '/dashboard';
-          return 100;
+          clearInterval(interval)
+          location.reload()
+          location.href = '/dashboard'
+          return 100
         }
-        return prev + 1;
-      });
-    }, 40);
+        return prev + 1
+      })
+    }, 40)
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <div className="flex flex-col justify-center items-center gap-8 h-full">
@@ -28,5 +28,5 @@ export default function OnboardingStepSix() {
       <Progress value={progress} />
       <h2>Creando el sitio web de tu evento...</h2>
     </div>
-  );
+  )
 }

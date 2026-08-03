@@ -1,5 +1,6 @@
-'use client';
+'use client'
 
+import { IoTrashOutline } from 'react-icons/io5'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,23 +11,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift';
-import { IoTrashOutline } from 'react-icons/io5';
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift'
 
 type DeleteWishlistGiftDialogProps = {
-  wishlistId: string;
-  giftId: string;
-  giftName: string;
-};
+  wishlistId: string
+  giftId: string
+  giftName: string
+}
 
 export default function DeleteWishlistGiftDialog({
   wishlistId,
   giftId,
   giftName,
 }: DeleteWishlistGiftDialogProps) {
-  const { loading, removeFromWishlist } = useWishlistGift();
+  const { loading, removeFromWishlist } = useWishlistGift()
 
   return (
     <AlertDialog>
@@ -41,8 +41,8 @@ export default function DeleteWishlistGiftDialog({
             ¿Eliminar &quot;{giftName}&quot; de tu lista?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Esta acción no se puede deshacer. El regalo dejará de estar
-            visible para tus invitados.
+            Esta acción no se puede deshacer. El regalo dejará de estar visible
+            para tus invitados.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -57,5 +57,5 @@ export default function DeleteWishlistGiftDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }

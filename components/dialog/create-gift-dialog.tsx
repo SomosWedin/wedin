@@ -1,23 +1,23 @@
-'use client';
+'use client'
 
-import CreateGiftForm from '@/components/forms/dialog/create-gift';
-import { Button } from '@/components/ui/button';
+import type { Category } from '@prisma/client'
+import { IoAdd } from 'react-icons/io5'
+import CreateGiftForm from '@/components/forms/dialog/create-gift'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { useCreateGift } from '@/hooks/dialog/forms/use-create-gift';
-import type { Category } from '@prisma/client';
-import { IoAdd } from 'react-icons/io5';
+} from '@/components/ui/dialog'
+import { useCreateGift } from '@/hooks/dialog/forms/use-create-gift'
 
 type CreateGiftDialogProps = {
-  eventId: string;
-  wishlistId: string;
-  categories: Category[];
-};
+  eventId: string
+  wishlistId: string
+  categories: Category[]
+}
 
 export default function CreateGiftDialog({
   eventId,
@@ -37,18 +37,12 @@ export default function CreateGiftDialog({
   } = useCreateGift({
     eventId,
     wishlistId,
-  });
+  })
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button
-          variant="success"
-          className="gap-2"
-        >
+        <Button variant="success" className="gap-2">
           Crear regalo
           <IoAdd className="text-2xl" />
         </Button>
@@ -56,9 +50,7 @@ export default function CreateGiftDialog({
 
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            Agregar regalo
-          </DialogTitle>
+          <DialogTitle>Agregar regalo</DialogTitle>
         </DialogHeader>
 
         <CreateGiftForm
@@ -70,11 +62,9 @@ export default function CreateGiftDialog({
           fileInputRef={fileInputRef}
           onFileChange={handleFileChange}
           onSubmit={handleSubmit}
-          onCancel={() =>
-            handleOpenChange(false)
-          }
+          onCancel={() => handleOpenChange(false)}
         />
       </DialogContent>
     </Dialog>
-  );
+  )
 }

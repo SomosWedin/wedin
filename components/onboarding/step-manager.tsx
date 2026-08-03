@@ -1,21 +1,21 @@
-'use client';
+'use client'
 
-import type { User } from '@prisma/client';
-import OnboardingStepOne from '@/components/onboarding/step-one';
-import OnboardingStepTwo from '@/components/onboarding/step-two';
-import OnboardingStepThree from '@/components/onboarding/step-three';
-import OnboardingStepFour from '@/components/onboarding/step-four';
-import OnboardingStepFive from '@/components/onboarding/step-five';
-import OnboardingStepSix from '@/components/onboarding/step-six';
+import type { User } from '@prisma/client'
+import OnboardingStepFive from '@/components/onboarding/step-five'
+import OnboardingStepFour from '@/components/onboarding/step-four'
+import OnboardingStepOne from '@/components/onboarding/step-one'
+import OnboardingStepSix from '@/components/onboarding/step-six'
+import OnboardingStepThree from '@/components/onboarding/step-three'
+import OnboardingStepTwo from '@/components/onboarding/step-two'
 
 type OnboardingStepManagerProps = {
-  currentUser: User;
-};
+  currentUser: User
+}
 
 export default function OnboardingStepManager({
   currentUser,
 }: OnboardingStepManagerProps) {
-  const currentPage = currentUser?.onboardingStep || 1;
+  const currentPage = currentUser?.onboardingStep || 1
 
   return (
     <>
@@ -26,5 +26,5 @@ export default function OnboardingStepManager({
       {currentPage === 5 && <OnboardingStepFive />}
       {currentPage === 6 && <OnboardingStepSix />}
     </>
-  );
+  )
 }

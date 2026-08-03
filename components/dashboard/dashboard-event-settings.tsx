@@ -1,27 +1,27 @@
-import { getEvent } from '@/actions/data/event';
-import { getSecondaryUser } from '@/actions/data/user';
-import { getCurrentUser } from '@/actions/get-current-user';
-import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
-import { EventType } from '@prisma/client';
-import { Suspense, lazy } from 'react';
+import { EventType } from '@prisma/client'
+import { lazy, Suspense } from 'react'
+import { getEvent } from '@/actions/data/event'
+import { getSecondaryUser } from '@/actions/data/user'
+import { getCurrentUser } from '@/actions/get-current-user'
+import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings'
 
 const DashboardEventSettingsForm = lazy(
   () => import('@/components/forms/dashboard/event-settings')
-);
+)
 
 export default async function DashboardEventSettings() {
-  const event = await getEvent();
-  const currentUser = await getCurrentUser();
-  let secondaryEventUser = null;
+  const event = await getEvent()
+  const currentUser = await getCurrentUser()
+  let secondaryEventUser = null
 
   if (!event || 'error' in event || !currentUser || 'error' in currentUser) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
   if (event.eventType === EventType.WEDDING) {
-    secondaryEventUser = await getSecondaryUser(currentUser?.id, event?.id);
+    secondaryEventUser = await getSecondaryUser(currentUser?.id, event?.id)
     if (!secondaryEventUser || 'error' in secondaryEventUser) {
-      return <div>Error</div>;
+      return <div>Error</div>
     }
   }
 
@@ -43,5 +43,5 @@ export default async function DashboardEventSettings() {
         />
       </Suspense>
     </section>
-  );
+  )
 }
