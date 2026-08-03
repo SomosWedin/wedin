@@ -106,13 +106,13 @@ export default function DashboardTransactionsList({
 
   const sortedTransactions = sortColumn
     ? [...filteredTransactions].sort((a, b) => {
-        const diff =
-          sortColumn === 'createdAt'
-            ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.amount) - Number(b.amount);
+      const diff =
+        sortColumn === 'createdAt'
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : Number(a.amount) - Number(b.amount);
 
-        return sortDirection === 'asc' ? diff : -diff;
-      })
+      return sortDirection === 'asc' ? diff : -diff;
+    })
     : filteredTransactions;
 
   return (

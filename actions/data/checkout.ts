@@ -15,7 +15,7 @@ export type CheckoutCartItem = {
 };
 
 // Guest-facing claim rejection, distinct from unexpected errors.
-class CartClaimError extends Error {}
+class CartClaimError extends Error { }
 
 // Abandoned CARD checkouts would otherwise hold their claim forever.
 const CARD_HOLD_TIMEOUT_MINUTES = 30;
@@ -148,26 +148,26 @@ export async function createTransactionsForCart(
 
       const transaction = await retryOnTransientWriteConflict(() =>
         prismaClient.$transaction(async tx => {
-        const created = await tx.transaction.create({
-          data: {
-            wishlistGiftId: item.wishlistGiftId,
-            eventId,
-            amount: item.amount,
-            payerName,
-            payerEmail,
-            payerDocument,
-            payerPhone,
-            payerMessage,
-            paymentMethod,
-            bankTransferGroupId,
-            payerRole: 'INVITEE',
-            payeeRole: 'ORGANIZER',
-            status: paymentMethod === 'BANK_TRANSFER' ? 'PENDING' : 'OPEN',
-          },
-        });
+          const created = await tx.transaction.create({
+            data: {
+              wishlistGiftId: item.wishlistGiftId,
+              eventId,
+              amount: item.amount,
+              payerName,
+              payerEmail,
+              payerDocument,
+              payerPhone,
+              payerMessage,
+              paymentMethod,
+              bankTransferGroupId,
+              payerRole: 'INVITEE',
+              payeeRole: 'ORGANIZER',
+              status: paymentMethod === 'BANK_TRANSFER' ? 'PENDING' : 'OPEN',
+            },
+          });
 
-        const claim = wishlistGift.isGroupGift
-          ? await tx.wishlistGift.updateMany({
+          const claim = wishlistGift.isGroupGift
+            ? await tx.wishlistGift.updateMany({
               where: {
                 id: wishlistGift.id,
                 isGroupGift: true,
@@ -175,7 +175,7 @@ export async function createTransactionsForCart(
               },
               data: { reservedAmount: { increment: amount } },
             })
-          : await tx.wishlistGift.updateMany({
+            : await tx.wishlistGift.updateMany({
               where: {
                 id: wishlistGift.id,
                 isGroupGift: false,

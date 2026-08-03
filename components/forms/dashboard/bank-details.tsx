@@ -23,7 +23,6 @@ import { useUpdateBankDetails } from '@/hooks/dashboard/forms/use-update-bank-de
 import { bankEntitiesPY } from '@/lib/bank-entities-py';
 import { BankDetails } from '@prisma/client';
 import { Loader2 } from 'lucide-react';
-import * as React from 'react';
 import { FaCheck } from 'react-icons/fa6';
 
 type BankDetailsFormProps = {

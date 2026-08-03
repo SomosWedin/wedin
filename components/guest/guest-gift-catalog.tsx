@@ -39,7 +39,6 @@ export default function GuestGiftCatalog({
   const { toast } = useToast();
   const cartStore = useCartStore(eventId);
   const cartItems = useStore(cartStore, state => state.items) ?? [];
-
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');

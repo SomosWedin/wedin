@@ -1,5 +1,11 @@
 'use client';
 
+import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
+import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
+import { getGiftProgress } from '@/components/guest/gift-progress';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import type { Prisma } from '@prisma/client';
 import Image from 'next/image';
 import {
   IoCartOutline,
@@ -7,12 +13,6 @@ import {
   IoCheckmarkOutline,
   IoGiftOutline,
 } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
-import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
-import { getGiftProgress } from '@/components/guest/gift-progress';
-import type { Prisma } from '@prisma/client';
 
 export type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
   include: {
