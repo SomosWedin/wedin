@@ -1,20 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import { IoGiftOutline, IoPeopleOutline, IoPersonOutline, IoSearchOutline } from 'react-icons/io5';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { useStore } from '@/hooks/use-store';
-import { useCartStore, type CartItem } from '@/hooks/use-cart-store';
+import CartDrawer from '@/components/cart/cart-drawer';
+import CartStickyBar from '@/components/cart/cart-sticky-bar';
+import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog';
+import GiftDetailDialog from '@/components/dialog/gift-detail-dialog';
+import { getGiftProgress } from '@/components/guest/gift-progress';
 import GuestGiftCard, {
   type WishlistGiftWithGift,
 } from '@/components/guest/guest-gift-card';
-import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog';
-import GiftDetailDialog from '@/components/dialog/gift-detail-dialog';
-import CartStickyBar from '@/components/cart/cart-sticky-bar';
-import CartDrawer from '@/components/cart/cart-drawer';
-import { getGiftProgress } from '@/components/guest/gift-progress';
+import { Input } from '@/components/ui/input';
+import { useCartStore, type CartItem } from '@/hooks/use-cart-store';
+import { useStore } from '@/hooks/use-store';
+import { useToast } from '@/hooks/use-toast';
 import type { Category } from '@prisma/client';
+import { useState } from 'react';
+import { IoGiftOutline, IoPeopleOutline, IoPersonOutline, IoSearchOutline } from 'react-icons/io5';
 
 type TypeFilter = 'todos' | 'individual' | 'grupal';
 type SortOption = 'recent' | 'price-asc' | 'price-desc';
@@ -148,17 +148,16 @@ export default function GuestGiftCatalog({
 
   const selectedProgress = selectedWishlistGift
     ? getGiftProgress(
-        selectedWishlistGift.gift.price,
-        selectedWishlistGift.transactions
-      )
+      selectedWishlistGift.gift.price,
+      selectedWishlistGift.transactions
+    )
     : null;
 
   return (
     <section
       id="lista-de-regalos"
-      className={`px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 ${
-        cartItems.length > 0 ? 'mb-12 sm:mb-10' : ''
-      }`}
+      className={`px-4 py-8 sm:py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 ${cartItems.length > 0 ? 'mb-12 sm:mb-10' : ''
+        }`}
     >
       <h2 className="mb-6 text-3xl font-medium">Lista de regalos</h2>
 
@@ -169,11 +168,10 @@ export default function GuestGiftCatalog({
               key={filter.value}
               type="button"
               onClick={() => setTypeFilter(filter.value)}
-              className={`flex gap-2 items-center px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border transition-colors ${
-                typeFilter === filter.value
-                  ? 'bg-gray100 text-textPrimary border-gray-200'
-                  : 'bg-white text-textPrimary border-gray-200 hover:bg-gray-50'
-              }`}
+              className={`flex gap-2 items-center px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border transition-colors ${typeFilter === filter.value
+                ? 'bg-gray100 text-textPrimary border-gray-200'
+                : 'bg-white text-textPrimary border-gray-200 hover:bg-gray-50'
+                }`}
             >
               {filter.icon}
               {filter.label}
