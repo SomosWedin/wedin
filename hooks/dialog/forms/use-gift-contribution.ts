@@ -5,27 +5,27 @@ import { useEffect, useMemo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
-const createContributionSchema = (remaining: number) =>
-  z
-    .object({
-      amount: z.string().min(1, {
-        message: 'Ingresá un monto',
-      }),
-      completeRemaining: z.boolean().default(false),
-    })
-    .refine(
-      values => {
-        const amount = Number(values.amount)
+const MIN_CONTRIBUTION_AMOUNT = 1000
 
-        return Number.isFinite(amount) && amount > 0 && amount <= remaining
-      },
-      {
+const createContributionSchema = (remaining: number) =>
+  z.object({
+    amount: z
+      .string()
+      .min(1, { message: 'Ingresá un monto' })
+      .refine(value => Number.isFinite(Number(value)), {
+        message: 'Ingresá un monto válido',
+      })
+      .refine(value => Number(value) >= MIN_CONTRIBUTION_AMOUNT, {
         message:
-          `El monto debe ser mayor a 0 y no superar Gs. ` +
-          remaining.toLocaleString('es-PY'),
-        path: ['amount'],
-      }
-    )
+          `El monto debe ser al menos Gs. ` +
+          MIN_CONTRIBUTION_AMOUNT.toLocaleString('es-PY'),
+      })
+      .refine(value => Number(value) <= remaining, {
+        message:
+          `El monto no puede superar Gs. ` + remaining.toLocaleString('es-PY'),
+      }),
+    completeRemaining: z.boolean().default(false),
+  })
 
 export type ContributionFormValues = z.infer<
   ReturnType<typeof createContributionSchema>

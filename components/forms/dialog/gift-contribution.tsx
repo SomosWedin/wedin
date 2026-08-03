@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/form'
 import { Progress } from '@/components/ui/progress'
 import { useGiftContribution } from '@/hooks/dialog/forms/use-gift-contribution'
+import { cn } from '@/lib/utils'
 
 type GiftWithImage = Gift & {
   image: ImageModel | null
@@ -139,9 +140,11 @@ export default function GiftContributionForm({
         <FormField
           control={form.control}
           name="amount"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel>Monto a contribuir</FormLabel>
+              <FormLabel className={cn(!fieldState.isDirty && 'text-textPrimary')}>
+                Monto a contribuir
+              </FormLabel>
 
               <FormControl>
                 <PriceInput
@@ -151,7 +154,9 @@ export default function GiftContributionForm({
                 />
               </FormControl>
 
-              <FormMessage className="font-normal text-red-600" />
+              {fieldState.isDirty && (
+                <FormMessage className="font-normal text-red-600" />
+              )}
             </FormItem>
           )}
         />
