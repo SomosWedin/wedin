@@ -1,7 +1,8 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { format } from 'date-fns';
+import type { Prisma } from '@prisma/client'
+import { format } from 'date-fns'
+import { useState } from 'react'
 import {
   IoCashOutline,
   IoChevronDown,
@@ -9,111 +10,110 @@ import {
   IoGiftOutline,
   IoSearchOutline,
   IoSwapVerticalOutline,
-} from 'react-icons/io5';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import ThankTransactionDialog from '@/components/dialog/thank-transaction-dialog';
+} from 'react-icons/io5'
+import ThankTransactionDialog from '@/components/dialog/thank-transaction-dialog'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   ESTADO_BY_STATUS,
   ESTADO_OPTIONS,
   PAYMENT_METHOD_ICON,
-} from './transaction-estado';
-import type { Prisma } from '@prisma/client';
+} from './transaction-estado'
 
 type TransactionWithGift = Prisma.TransactionGetPayload<{
-  include: { wishlistGift: { include: { gift: true } } };
-}>;
+  include: { wishlistGift: { include: { gift: true } } }
+}>
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
-  include: { gift: { include: { image: true } } };
-}>;
+  include: { gift: { include: { image: true } } }
+}>
 
 type DashboardTransactionsListProps = {
-  transactions: TransactionWithGift[];
-  wishlistGifts: WishlistGiftWithGift[];
-};
+  transactions: TransactionWithGift[]
+  wishlistGifts: WishlistGiftWithGift[]
+}
 
-type SortColumn = 'createdAt' | 'amount';
-type SortDirection = 'asc' | 'desc';
+type SortColumn = 'createdAt' | 'amount'
+type SortDirection = 'asc' | 'desc'
 
 function SortIcon({
   column,
   activeColumn,
   direction,
 }: {
-  column: SortColumn;
-  activeColumn: SortColumn | null;
-  direction: SortDirection;
+  column: SortColumn
+  activeColumn: SortColumn | null
+  direction: SortDirection
 }) {
   if (activeColumn !== column) {
-    return <IoSwapVerticalOutline className="text-gray-400" />;
+    return <IoSwapVerticalOutline className="text-gray-400" />
   }
 
-  return direction === 'asc' ? <IoChevronUp /> : <IoChevronDown />;
+  return direction === 'asc' ? <IoChevronUp /> : <IoChevronDown />
 }
 
 export default function DashboardTransactionsList({
   transactions,
   wishlistGifts,
 }: DashboardTransactionsListProps) {
-  const [search, setSearch] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('');
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [search, setSearch] = useState('')
+  const [estadoFilter, setEstadoFilter] = useState('')
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn !== column) {
-      setSortColumn(column);
-      setSortDirection('desc');
-      return;
+      setSortColumn(column)
+      setSortDirection('desc')
+      return
     }
 
-    setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'));
-  };
+    setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'))
+  }
 
   const completedTransactions = transactions.filter(
     transaction => transaction.status === 'COMPLETED'
-  );
+  )
   const total = completedTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
-  );
+  )
 
   const activeWishlistGifts = wishlistGifts.filter(
     wishlistGift => !wishlistGift.isReceived
-  );
+  )
   const receivedCount = activeWishlistGifts.filter(
     wishlistGift => wishlistGift.isFullyPaid || wishlistGift.isManuallyReceived
-  ).length;
-  const totalWishlistGifts = activeWishlistGifts.length;
+  ).length
+  const totalWishlistGifts = activeWishlistGifts.length
   const totalGiftsPrice = activeWishlistGifts.reduce(
     (sum, wishlistGift) => sum + (Number(wishlistGift.gift.price) || 0),
     0
-  );
+  )
 
   const filteredTransactions = transactions.filter(transaction => {
-    const normalizedSearch = search.trim().toLowerCase();
+    const normalizedSearch = search.trim().toLowerCase()
     const matchesSearch =
       !normalizedSearch ||
       (transaction.payerName ?? '').toLowerCase().includes(normalizedSearch) ||
       transaction.wishlistGift.gift.name
         .toLowerCase()
-        .includes(normalizedSearch);
-    const matchesEstado = !estadoFilter || transaction.status === estadoFilter;
+        .includes(normalizedSearch)
+    const matchesEstado = !estadoFilter || transaction.status === estadoFilter
 
-    return matchesSearch && matchesEstado;
-  });
+    return matchesSearch && matchesEstado
+  })
 
   const sortedTransactions = sortColumn
     ? [...filteredTransactions].sort((a, b) => {
         const diff =
           sortColumn === 'createdAt'
             ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.amount) - Number(b.amount);
+            : Number(a.amount) - Number(b.amount)
 
-        return sortDirection === 'asc' ? diff : -diff;
+        return sortDirection === 'asc' ? diff : -diff
       })
-    : filteredTransactions;
+    : filteredTransactions
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -217,9 +217,9 @@ export default function DashboardTransactionsList({
         )}
 
         {sortedTransactions.map(transaction => {
-          const payerName = transaction.payerName ?? 'Anónimo';
-          const paymentMethod = PAYMENT_METHOD_ICON[transaction.paymentMethod];
-          const estado = ESTADO_BY_STATUS[transaction.status];
+          const payerName = transaction.payerName ?? 'Anónimo'
+          const paymentMethod = PAYMENT_METHOD_ICON[transaction.paymentMethod]
+          const estado = ESTADO_BY_STATUS[transaction.status]
 
           return (
             <div
@@ -267,9 +267,9 @@ export default function DashboardTransactionsList({
                 </div>
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

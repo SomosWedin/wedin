@@ -1,20 +1,21 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { useOnboarding } from '@/hooks/useOnboarding';
-import wedinIcon from '@/public/assets/w-icon.svg';
-import { EventType } from '@prisma/client';
-import Image from 'next/image';
-import { CiHeart } from 'react-icons/ci';
-import { FaChevronRight } from 'react-icons/fa6';
-import { GiWineGlass } from 'react-icons/gi';
-import OnboardingStepper from './stepper';
+import { EventType } from '@prisma/client'
+import Image from 'next/image'
+import { CiHeart } from 'react-icons/ci'
+import { FaChevronRight } from 'react-icons/fa6'
+import { GiWineGlass } from 'react-icons/gi'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { useOnboarding } from '@/hooks/use-onboarding'
+import wedinIcon from '@/public/assets/w-icon.svg'
+import OnboardingStepper from './stepper'
 
 export default function OnboardingStepOne() {
-  const { handleEventTypeUpdate, saveEventTypeToLocalStorage, loading } = useOnboarding();
+  const { handleEventTypeUpdate, saveEventTypeToLocalStorage, loading } =
+    useOnboarding()
 
   const handleCardClick = (eventType: EventType) => {
-    saveEventTypeToLocalStorage(eventType);
-    handleEventTypeUpdate(eventType);
-  };
+    saveEventTypeToLocalStorage(eventType)
+    handleEventTypeUpdate(eventType)
+  }
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -31,10 +32,11 @@ export default function OnboardingStepOne() {
 
       <div className="flex flex-col sm:flex-row gap-8 items-center">
         <Card
-          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${loading ? 'cursor-not-allowed pointer-events-none opacity-65' : ''
-            }`}
+          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${
+            loading ? 'cursor-not-allowed pointer-events-none opacity-65' : ''
+          }`}
           onClick={() => {
-            handleCardClick(EventType.WEDDING);
+            handleCardClick(EventType.WEDDING)
           }}
         >
           <CardHeader>
@@ -51,10 +53,11 @@ export default function OnboardingStepOne() {
         <div className="h-12 border-r border-gray200 sm:block hidden"></div>
 
         <Card
-          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${loading ? 'cursor-not-allowed pointer-events-none opacity-70' : ''
-            }`}
+          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${
+            loading ? 'cursor-not-allowed pointer-events-none opacity-70' : ''
+          }`}
           onClick={() => {
-            handleCardClick(EventType.OTHER);
+            handleCardClick(EventType.OTHER)
           }}
         >
           <CardHeader>
@@ -71,5 +74,5 @@ export default function OnboardingStepOne() {
 
       <OnboardingStepper step={1} />
     </div>
-  );
+  )
 }

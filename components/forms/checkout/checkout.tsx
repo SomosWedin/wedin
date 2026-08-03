@@ -1,15 +1,13 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { IoGiftOutline, IoLockClosedOutline } from 'react-icons/io5';
-import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Textarea } from '@/components/ui/textarea';
+import { Loader2 } from 'lucide-react'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { IoGiftOutline, IoLockClosedOutline } from 'react-icons/io5'
+import type { z } from 'zod'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -17,19 +15,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { useStore } from '@/hooks/use-store';
-import { useCartStore } from '@/hooks/use-cart-store';
-import { useCheckout } from '@/hooks/checkout/use-checkout';
-import type { z } from 'zod';
-import type { GuestCheckoutSchema } from '@/schemas/checkout';
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Textarea } from '@/components/ui/textarea'
+import { useCheckout } from '@/hooks/checkout/forms/use-checkout'
+import { useCartStore } from '@/hooks/use-cart-store'
+import { useStore } from '@/hooks/use-store'
+import type { GuestCheckoutSchema } from '@/schemas/checkout'
 
-type PaymentMethod = z.infer<typeof GuestCheckoutSchema>['paymentMethod'];
+type PaymentMethod = z.infer<typeof GuestCheckoutSchema>['paymentMethod']
 
 const PAYMENT_METHODS: {
-  value: PaymentMethod;
-  label: string;
-  description: string;
+  value: PaymentMethod
+  label: string
+  description: string
 }[] = [
   {
     value: 'CARD',
@@ -41,27 +41,27 @@ const PAYMENT_METHODS: {
     label: 'Transferencia bancaria',
     description: 'Transferí y enviá el comprobante por WhatsApp',
   },
-];
+]
 
 type CheckoutFormProps = {
-  eventId: string;
-  eventSlug: string;
-};
+  eventId: string
+  eventSlug: string
+}
 
 export default function CheckoutForm({
   eventId,
   eventSlug,
 }: CheckoutFormProps) {
-  const router = useRouter();
-  const cartStore = useCartStore(eventId);
-  const cartItems = useStore(cartStore, state => state.items);
+  const router = useRouter()
+  const cartStore = useCartStore(eventId)
+  const cartItems = useStore(cartStore, state => state.items)
 
   const { loading, form, isValid, onSubmit } = useCheckout({
     eventId,
     eventSlug,
     cartItems: cartItems ?? [],
     onCheckoutStarted: () => cartStore.getState().clear(),
-  });
+  })
 
   // `cartStore.persist` is undefined during SSR — zustand's persist
   // middleware silently disables itself server-side since `localStorage`
@@ -69,35 +69,35 @@ export default function CheckoutForm({
   // same as "not yet hydrated": that's the truthful state on the server,
   // and the client-side render (where `.persist` is always present) takes
   // over correctly once it mounts.
-  const [hasHydrated, setHasHydrated] = useState(() =>
-    cartStore.persist?.hasHydrated() ?? false
-  );
+  const [hasHydrated, setHasHydrated] = useState(
+    () => cartStore.persist?.hasHydrated() ?? false
+  )
 
   useEffect(() => {
-    if (!cartStore.persist) return;
+    if (!cartStore.persist) return
     if (cartStore.persist.hasHydrated()) {
-      setHasHydrated(true);
-      return;
+      setHasHydrated(true)
+      return
     }
-    return cartStore.persist.onFinishHydration(() => setHasHydrated(true));
-  }, [cartStore]);
+    return cartStore.persist.onFinishHydration(() => setHasHydrated(true))
+  }, [cartStore])
 
   useEffect(() => {
     if (hasHydrated && cartItems && cartItems.length === 0 && !loading) {
-      router.replace(`/e/${eventSlug}`);
+      router.replace('/')
     }
-  }, [hasHydrated, cartItems, eventSlug, router, loading]);
+  }, [hasHydrated, cartItems, router, loading])
 
-  const paymentMethod = form.watch('paymentMethod');
-  const [wantsMessage, setWantsMessage] = useState(false);
+  const paymentMethod = form.watch('paymentMethod')
+  const [wantsMessage, setWantsMessage] = useState(false)
 
-  if (!hasHydrated || !cartItems) return null;
-  if (cartItems.length === 0 && !loading) return null;
+  if (!hasHydrated || !cartItems) return null
+  if (cartItems.length === 0 && !loading) return null
 
   const total = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
     0
-  );
+  )
 
   return (
     <Form {...form}>
@@ -130,11 +130,7 @@ export default function CheckoutForm({
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="tu@email.com"
-                      {...field}
-                    />
+                    <Input type="email" placeholder="tu@email.com" {...field} />
                   </FormControl>
                   <FormMessage className="font-normal text-red-600" />
                 </FormItem>
@@ -193,12 +189,14 @@ export default function CheckoutForm({
               <Checkbox
                 checked={wantsMessage}
                 onCheckedChange={checked => {
-                  const next = checked === true;
-                  setWantsMessage(next);
-                  if (!next) form.setValue('payerMessage', '');
+                  const next = checked === true
+                  setWantsMessage(next)
+                  if (!next) form.setValue('payerMessage', '')
                 }}
               />
-              <span className="text-sm">Te gustaría dejar un mensaje con tu regalo?</span>
+              <span className="text-sm">
+                Te gustaría dejar un mensaje con tu regalo?
+              </span>
             </label>
 
             {wantsMessage && (
@@ -319,5 +317,5 @@ export default function CheckoutForm({
         </Button>
       </form>
     </Form>
-  );
+  )
 }

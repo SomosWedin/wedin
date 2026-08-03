@@ -1,57 +1,57 @@
-'use server';
+'use server'
 
-import { createHash, timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto'
 
-const publicKey = process.env.PAGOPAR_PUBLIC_KEY;
-const privateKey = process.env.PAGOPAR_PRIVATE_KEY;
-const baseUrl = 'https://api.pagopar.com';
+const publicKey = process.env.PAGOPAR_PUBLIC_KEY
+const privateKey = process.env.PAGOPAR_PRIVATE_KEY
+const baseUrl = 'https://api.pagopar.com'
 
-const hasCredentials = Boolean(publicKey && privateKey);
+const hasCredentials = Boolean(publicKey && privateKey)
 
 if (!hasCredentials) {
   console.warn(
     'lib/pagopar.ts: PAGOPAR_PUBLIC_KEY/PAGOPAR_PRIVATE_KEY are not set — using stub responses.'
-  );
+  )
 }
 
 type CreateOrderParams = {
-  orderId: string;
-  totalAmount: number;
-  description: string;
+  orderId: string
+  totalAmount: number
+  description: string
   payer: {
-    name: string;
-    email: string;
-    documento: string;
-  };
+    name: string
+    email: string
+    documento: string
+  }
   items: {
-    name: string;
-    amount: number;
-  }[];
-};
+    name: string
+    amount: number
+  }[]
+}
 
 type PagoparOrder = {
-  hash: string;
-  pedido: string;
-};
+  hash: string
+  pedido: string
+}
 
 type PagoparOrderStatus = {
-  pagado: boolean;
-  cancelado: boolean;
-  hash_pedido: string;
-  monto: string;
-};
+  pagado: boolean
+  cancelado: boolean
+  hash_pedido: string
+  monto: string
+}
 
 function sha1(value: string): string {
-  return createHash('sha1').update(value).digest('hex');
+  return createHash('sha1').update(value).digest('hex')
 }
 
 // Pagopar wants "YYYY-MM-DD HH:MM:SS", no timezone offset.
 function formatPagoparDate(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
+  const pad = (n: number) => String(n).padStart(2, '0')
   return (
     `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
     `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-  );
+  )
 }
 
 export async function createOrder(
@@ -60,12 +60,10 @@ export async function createOrder(
   if (!hasCredentials) {
     return {
       success: { hash: `STUB-${params.orderId}`, pedido: params.orderId },
-    };
+    }
   }
 
-  const token = sha1(
-    privateKey + params.orderId + String(params.totalAmount)
-  );
+  const token = sha1(privateKey + params.orderId + String(params.totalAmount))
 
   try {
     const response = await fetch(
@@ -117,20 +115,25 @@ export async function createOrder(
           })),
         }),
       }
-    );
+    )
 
-    const json = await response.json();
+    const json = await response.json()
 
     if (!response.ok || !json.respuesta) {
-      return { error: `Pagopar error: ${JSON.stringify(json.resultado ?? json)}` };
+      return {
+        error: `Pagopar error: ${JSON.stringify(json.resultado ?? json)}`,
+      }
     }
 
     return {
-      success: { hash: json.resultado[0].data, pedido: json.resultado[0].pedido },
-    };
+      success: {
+        hash: json.resultado[0].data,
+        pedido: json.resultado[0].pedido,
+      },
+    }
   } catch (error) {
-    console.error('Error creating Pagopar order:', error);
-    return { error: 'No se pudo iniciar el pago' };
+    console.error('Error creating Pagopar order:', error)
+    return { error: 'No se pudo iniciar el pago' }
   }
 }
 
@@ -139,15 +142,20 @@ export async function getOrderStatus(
 ): Promise<{ error: string } | { success: PagoparOrderStatus }> {
   if (hash.startsWith('STUB-')) {
     return {
-      success: { pagado: true, cancelado: false, hash_pedido: hash, monto: '0' },
-    };
+      success: {
+        pagado: true,
+        cancelado: false,
+        hash_pedido: hash,
+        monto: '0',
+      },
+    }
   }
 
   if (!hasCredentials) {
-    return { error: 'Pagopar no está configurado' };
+    return { error: 'Pagopar no está configurado' }
   }
 
-  const token = sha1(privateKey + 'CONSULTA');
+  const token = sha1(privateKey + 'CONSULTA')
 
   try {
     const response = await fetch(`${baseUrl}/api/pedidos/1.1/traer`, {
@@ -158,18 +166,18 @@ export async function getOrderStatus(
         token,
         token_publico: publicKey,
       }),
-    });
+    })
 
-    const json = await response.json();
+    const json = await response.json()
 
     if (!response.ok || !json.respuesta) {
-      return { error: `Pagopar error: ${JSON.stringify(json)}` };
+      return { error: `Pagopar error: ${JSON.stringify(json)}` }
     }
 
-    return { success: json.resultado[0] };
+    return { success: json.resultado[0] }
   } catch (error) {
-    console.error('Error retrieving Pagopar order status:', error);
-    return { error: 'No se pudo consultar el pago' };
+    console.error('Error retrieving Pagopar order status:', error)
+    return { error: 'No se pudo consultar el pago' }
   }
 }
 
@@ -177,15 +185,15 @@ export async function verifyWebhookToken(
   hashPedido: string,
   token: string | null | undefined
 ): Promise<boolean> {
-  if (!hasCredentials) return true;
+  if (!hasCredentials) return true
 
-  if (!token || !privateKey) return false;
+  if (!token || !privateKey) return false
 
-  const expected = sha1(privateKey + hashPedido);
-  const expectedBuffer = Buffer.from(expected);
-  const actualBuffer = Buffer.from(token);
+  const expected = sha1(privateKey + hashPedido)
+  const expectedBuffer = Buffer.from(expected)
+  const actualBuffer = Buffer.from(token)
 
-  if (expectedBuffer.length !== actualBuffer.length) return false;
+  if (expectedBuffer.length !== actualBuffer.length) return false
 
-  return timingSafeEqual(expectedBuffer, actualBuffer);
+  return timingSafeEqual(expectedBuffer, actualBuffer)
 }

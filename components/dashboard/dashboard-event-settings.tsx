@@ -1,32 +1,32 @@
-import { Suspense, lazy } from 'react';
-import { getEvent } from '@/actions/data/event';
-import { getCurrentUser } from '@/actions/get-current-user';
-import { getSecondaryUser } from '@/actions/data/user';
-import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
-import { EventType } from '@prisma/client';
+import { EventType } from '@prisma/client'
+import { lazy, Suspense } from 'react'
+import { getEvent } from '@/actions/data/event'
+import { getSecondaryUser } from '@/actions/data/user'
+import { getCurrentUser } from '@/actions/get-current-user'
+import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings'
 
 const DashboardEventSettingsForm = lazy(
   () => import('@/components/forms/dashboard/event-settings')
-);
+)
 
 export default async function DashboardEventSettings() {
-  const event = await getEvent();
-  const currentUser = await getCurrentUser();
-  let secondaryEventUser;
+  const event = await getEvent()
+  const currentUser = await getCurrentUser()
+  let secondaryEventUser = null
 
   if (!event || 'error' in event || !currentUser || 'error' in currentUser) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
   if (event.eventType === EventType.WEDDING) {
-    secondaryEventUser = await getSecondaryUser(currentUser?.id, event?.id);
+    secondaryEventUser = await getSecondaryUser(currentUser?.id, event?.id)
     if (!secondaryEventUser || 'error' in secondaryEventUser) {
-      return <div>Error</div>;
+      return <div>Error</div>
     }
   }
 
   return (
-    <section className="w-full h-full flex flex-col gap-12 sm:gap-8 justify-start items-center">
+    <section className="w-full h-full flex flex-col gap-8 justify-start items-center">
       <div className="w-full flex flex-col gap-2 border-b border-gray-200 pb-6">
         <h1 className="text-2xl font-black">Detalles de tu evento</h1>
         <p className="text-textTertiary">
@@ -43,5 +43,5 @@ export default async function DashboardEventSettings() {
         />
       </Suspense>
     </section>
-  );
+  )
 }

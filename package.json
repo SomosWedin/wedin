@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "yarn test:run && prisma generate && next build",
     "start": "next start",
-    "lint": "next lint",
+    "format": "biome check --write --linter-enabled=false .",
+    "format:check": "biome check --linter-enabled=false .",
     "test": "vitest",
-    "test:run": "vitest:run"
+    "test:run": "vitest run"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,scss,md}": [

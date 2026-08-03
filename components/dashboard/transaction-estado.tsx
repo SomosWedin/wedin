@@ -1,3 +1,4 @@
+import type { PaymentMethod, TransactionStatus } from '@prisma/client'
 import {
   IoArrowUndoOutline,
   IoBusinessOutline,
@@ -6,8 +7,7 @@ import {
   IoClose,
   IoSync,
   IoTimeOutline,
-} from 'react-icons/io5';
-import type { PaymentMethod, TransactionStatus } from '@prisma/client';
+} from 'react-icons/io5'
 
 export const ESTADO_BY_STATUS: Record<
   TransactionStatus,
@@ -38,11 +38,11 @@ export const ESTADO_BY_STATUS: Record<
     className: 'bg-gray100 text-textTertiary border-transparent',
     icon: <IoArrowUndoOutline className="mr-1 text-textTertiary" />,
   },
-};
+}
 
 export const ESTADO_OPTIONS = (
   Object.entries(ESTADO_BY_STATUS) as [TransactionStatus, { label: string }][]
-).map(([status, { label }]) => ({ value: status, label }));
+).map(([status, { label }]) => ({ value: status, label }))
 
 export const PAYMENT_METHOD_ICON: Record<
   PaymentMethod,
@@ -53,4 +53,4 @@ export const PAYMENT_METHOD_ICON: Record<
     icon: <IoBusinessOutline />,
     title: 'Transferencia',
   },
-};
+}

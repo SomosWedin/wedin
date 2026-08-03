@@ -1,83 +1,83 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { format } from 'date-fns';
+import type { Payout } from '@prisma/client'
+import { format } from 'date-fns'
+import { useState } from 'react'
 import {
   IoCashOutline,
-  IoGiftOutline,
-  IoSwapVerticalOutline,
   IoChevronDown,
   IoChevronUp,
-} from 'react-icons/io5';
-import { Badge } from '@/components/ui/badge';
+  IoGiftOutline,
+  IoSwapVerticalOutline,
+} from 'react-icons/io5'
 import {
   ESTADO_BY_PAYOUT_STATUS,
   ESTADO_OPTIONS_PAYOUT,
-} from '@/components/dashboard/payout-estado';
-import type { Payout } from '@prisma/client';
+} from '@/components/dashboard/payout-estado'
+import { Badge } from '@/components/ui/badge'
 
 type WalletSummary = {
-  totalReceived: number;
-  giftsCount: number;
-  balance: number;
-};
+  totalReceived: number
+  giftsCount: number
+  balance: number
+}
 
 type WalletPayoutsListProps = {
-  summary: WalletSummary;
-  payouts: Payout[];
-};
+  summary: WalletSummary
+  payouts: Payout[]
+}
 
-type SortColumn = 'createdAt' | 'amount';
-type SortDirection = 'asc' | 'desc';
+type SortColumn = 'createdAt' | 'amount'
+type SortDirection = 'asc' | 'desc'
 
 function SortIcon({
   column,
   activeColumn,
   direction,
 }: {
-  column: SortColumn;
-  activeColumn: SortColumn | null;
-  direction: SortDirection;
+  column: SortColumn
+  activeColumn: SortColumn | null
+  direction: SortDirection
 }) {
   if (activeColumn !== column) {
-    return <IoSwapVerticalOutline className="text-gray-400" />;
+    return <IoSwapVerticalOutline className="text-gray-400" />
   }
 
-  return direction === 'asc' ? <IoChevronUp /> : <IoChevronDown />;
+  return direction === 'asc' ? <IoChevronUp /> : <IoChevronDown />
 }
 
 export default function WalletPayoutsList({
   summary,
   payouts,
 }: WalletPayoutsListProps) {
-  const [estadoFilter, setEstadoFilter] = useState('');
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [estadoFilter, setEstadoFilter] = useState('')
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn !== column) {
-      setSortColumn(column);
-      setSortDirection('desc');
-      return;
+      setSortColumn(column)
+      setSortDirection('desc')
+      return
     }
 
-    setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'));
-  };
+    setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'))
+  }
 
   const filteredPayouts = payouts.filter(
     payout => !estadoFilter || payout.status === estadoFilter
-  );
+  )
 
   const sortedPayouts = sortColumn
     ? [...filteredPayouts].sort((a, b) => {
         const diff =
           sortColumn === 'createdAt'
             ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.amount) - Number(b.amount);
+            : Number(a.amount) - Number(b.amount)
 
-        return sortDirection === 'asc' ? diff : -diff;
+        return sortDirection === 'asc' ? diff : -diff
       })
-    : filteredPayouts;
+    : filteredPayouts
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -166,7 +166,7 @@ export default function WalletPayoutsList({
         )}
 
         {sortedPayouts.map(payout => {
-          const estado = ESTADO_BY_PAYOUT_STATUS[payout.status];
+          const estado = ESTADO_BY_PAYOUT_STATUS[payout.status]
 
           return (
             <div
@@ -187,9 +187,9 @@ export default function WalletPayoutsList({
                 </Badge>
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

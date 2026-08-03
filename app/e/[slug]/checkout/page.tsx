@@ -1,15 +1,15 @@
-import { notFound } from 'next/navigation';
-import { getEventByUrl } from '@/actions/data/public-event';
-import CheckoutForm from '@/components/checkout/checkout-form';
+import { notFound } from 'next/navigation'
+import { getEventByUrl } from '@/actions/data/public-event'
+import CheckoutForm from '@/components/forms/checkout/checkout'
 
 type CheckoutPageProps = {
-  params: { slug: string };
-};
+  params: { slug: string }
+}
 
 export default async function CheckoutPage({ params }: CheckoutPageProps) {
-  const event = await getEventByUrl(params.slug);
+  const event = await getEventByUrl(params.slug)
 
-  if (!event) notFound();
+  if (!event) notFound()
 
   return (
     <div className="px-4 py-6 sm:py-10 mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -18,5 +18,5 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
       </h1>
       <CheckoutForm eventId={event.id} eventSlug={params.slug} />
     </div>
-  );
+  )
 }

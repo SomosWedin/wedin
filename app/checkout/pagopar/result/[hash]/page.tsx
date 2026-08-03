@@ -1,17 +1,18 @@
-import Link from 'next/link';
+import Link from 'next/link'
 import {
   IoCloseCircleOutline,
   IoHeartOutline,
   IoTimeOutline,
-} from 'react-icons/io5';
-import EmptyState from '@/components/common/empty-state';
-import { Button } from '@/components/ui/button';
-import { getOrderStatus } from '@/lib/pagopar';
-import prismaClient from '@/prisma/client';
+} from 'react-icons/io5'
+import EmptyState from '@/components/common/empty-state'
+import { Button } from '@/components/ui/button'
+import { getPublicEventUrl } from '@/lib/event-domain'
+import { getOrderStatus } from '@/lib/pagopar'
+import prismaClient from '@/prisma/client'
 
 type PagoparResultPageProps = {
-  params: { hash: string };
-};
+  params: { hash: string }
+}
 
 // Needed because Pagopar's redirect URL is one fixed dashboard setting for
 // the whole merchant account (templated only by $hash) — it can't be
@@ -23,7 +24,7 @@ export default async function PagoparResultPage({
   const transaction = await prismaClient.transaction.findFirst({
     where: { pagoparHash: params.hash },
     include: { event: true },
-  });
+  })
 
   if (!transaction) {
     return (
@@ -39,17 +40,22 @@ export default async function PagoparResultPage({
           }
         />
       </div>
-    );
+    )
   }
 
-  const backHref = transaction.event.url ? `/e/${transaction.event.url}` : '/';
+  const backHref = transaction.event.url
+    ? getPublicEventUrl(transaction.event.url)
+    : '/'
 
   // Webhook delivery can lag a couple of minutes behind the redirect per
   // Pagopar's own docs, so this can't just trust Transaction.status at
   // landing time — query the authoritative status directly.
-  const status = await getOrderStatus(params.hash);
+  const status = await getOrderStatus(params.hash)
 
-  if ('error' in status || (!status.success.pagado && !status.success.cancelado)) {
+  if (
+    'error' in status ||
+    (!status.success.pagado && !status.success.cancelado)
+  ) {
     return (
       <div className="px-4 py-10 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <EmptyState
@@ -63,7 +69,7 @@ export default async function PagoparResultPage({
           }
         />
       </div>
-    );
+    )
   }
 
   if (status.success.cancelado) {
@@ -80,7 +86,7 @@ export default async function PagoparResultPage({
           }
         />
       </div>
-    );
+    )
   }
 
   return (
@@ -96,5 +102,5 @@ export default async function PagoparResultPage({
         }
       />
     </div>
-  );
+  )
 }

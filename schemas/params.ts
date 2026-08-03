@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 export const GetwishlistGiftsParams = z
   .object({
@@ -11,15 +11,15 @@ export const GetwishlistGiftsParams = z
   .refine(
     data => {
       // Both page and itemsPerPage must be present or absent together
-      const pageDefined = data.page !== undefined;
-      const itemsPerPageDefined = data.itemsPerPage !== undefined;
-      return pageDefined === itemsPerPageDefined;
+      const pageDefined = data.page !== undefined
+      const itemsPerPageDefined = data.itemsPerPage !== undefined
+      return pageDefined === itemsPerPageDefined
     },
     {
       message: 'Page and itemsPerPage must be provided together',
       path: ['page'], // You can adjust the path to point to the right place
     }
-  );
+  )
 
 export const GetGiftsParams = z
   .object({
@@ -34,32 +34,32 @@ export const GetGiftsParams = z
   .refine(
     data => {
       // Both page and itemsPerPage must be present or absent together
-      const pageDefined = data.page !== undefined;
-      const itemsPerPageDefined = data.itemsPerPage !== undefined;
-      return pageDefined === itemsPerPageDefined;
+      const pageDefined = data.page !== undefined
+      const itemsPerPageDefined = data.itemsPerPage !== undefined
+      return pageDefined === itemsPerPageDefined
     },
     {
       message: 'Page and itemsPerPage must be provided together',
       path: ['page'], // You can adjust the path to point to the right place
     }
-  );
+  )
 
 export const GetGiftsSearchParams = z.object({
   category: z.string().optional(),
   name: z.string().optional(),
   page: z.string().optional(),
-});
+})
 
 export const GetGiftlistsSearchParams = z.object({
   category: z.string().optional(),
   name: z.string().optional(),
-});
+})
 
 export const WishlistGiftSearchParams = z.object({
   id: z.string().optional(),
   giftId: z.string().optional(),
   wishlistId: z.string().optional(),
-});
+})
 
 export const CreateTransactionParams = z.object({
   amount: z
@@ -68,7 +68,7 @@ export const CreateTransactionParams = z.object({
     .refine(value => Number(value) <= 99999999, {
       message: 'El precio no puede ser mayor de PYG 99,999,999',
     }),
-});
+})
 
 export const GetTransactionsParams = z.object({
   name: z.string().optional(),
@@ -77,11 +77,11 @@ export const GetTransactionsParams = z.object({
   wishlistId: z.string().optional(),
   page: z.string().optional(),
   itemsPerPage: z.number().optional(),
-});
+})
 
 export const RequestPayoutParams = z.object({
   amount: z
     .string()
     .min(1, { message: 'Ingresá un monto' })
     .regex(/^\d+$/, { message: 'El monto debe ser un número válido' }),
-});
+})

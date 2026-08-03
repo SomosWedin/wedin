@@ -1,55 +1,60 @@
-'use client';
+'use client'
 
-import { useEffect, useRef, useState, type TransitionStartFunction } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import debounce from 'lodash.debounce';
-import { Input } from '@/components/ui/input';
-import { IoSearchOutline } from 'react-icons/io5';
-import type { Category } from '@prisma/client';
+import type { Category } from '@prisma/client'
+import debounce from 'lodash.debounce'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import {
+  type TransitionStartFunction,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+import { IoSearchOutline } from 'react-icons/io5'
+import { Input } from '@/components/ui/input'
 
 type GiftsFilterBarProps = {
-  categories: Category[];
-  startTransition?: TransitionStartFunction;
-};
+  categories: Category[]
+  startTransition?: TransitionStartFunction
+}
 
 export default function GiftsFilterBar({
   categories,
   startTransition,
 }: GiftsFilterBarProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamsRef = useRef(searchParams);
-  searchParamsRef.current = searchParams;
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const searchParamsRef = useRef(searchParams)
+  searchParamsRef.current = searchParams
 
-  const [search, setSearch] = useState(searchParams.get('name') ?? '');
+  const [search, setSearch] = useState(searchParams.get('name') ?? '')
 
   const updateParam = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParamsRef.current.toString());
+    const params = new URLSearchParams(searchParamsRef.current.toString())
 
     if (value) {
-      params.set(key, value);
+      params.set(key, value)
     } else {
-      params.delete(key);
+      params.delete(key)
     }
 
-    const url = `${pathname}?${params.toString()}`;
+    const url = `${pathname}?${params.toString()}`
     if (startTransition) {
-      startTransition(() => router.replace(url));
+      startTransition(() => router.replace(url))
     } else {
-      router.replace(url);
+      router.replace(url)
     }
-  };
+  }
 
   const debouncedUpdateSearch = useRef(
     debounce((value: string) => updateParam('name', value), 400)
-  ).current;
+  ).current
 
   useEffect(() => {
     return () => {
-      debouncedUpdateSearch.cancel();
-    };
-  }, [debouncedUpdateSearch]);
+      debouncedUpdateSearch.cancel()
+    }
+  }, [debouncedUpdateSearch])
 
   return (
     <div className="flex flex-col justify-start lg:justify-end gap-3 w-full sm:flex-row sm:items-center">
@@ -61,8 +66,8 @@ export default function GiftsFilterBar({
           className="pl-10"
           value={search}
           onChange={event => {
-            setSearch(event.target.value);
-            debouncedUpdateSearch(event.target.value);
+            setSearch(event.target.value)
+            debouncedUpdateSearch(event.target.value)
           }}
         />
       </div>
@@ -90,5 +95,5 @@ export default function GiftsFilterBar({
         <option value="price-desc">Precio: mayor a menor</option>
       </select>
     </div>
-  );
+  )
 }

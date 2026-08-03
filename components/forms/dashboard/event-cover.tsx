@@ -1,34 +1,34 @@
-'use client';
+'use client'
 
-import ResetEventCoverFormDialog from '@/components/dialog/reset-event-cover-form-dialog';
-import EventCoverPreviewDialog from '@/components/dashboard/event-cover-preview-dialog';
-import { Button } from '@/components/ui/button';
+import type { Event, Image as ImageModel, User } from '@prisma/client'
+import { Loader2, Sparkles } from 'lucide-react'
+import Image from 'next/image'
+import { CiImageOn } from 'react-icons/ci'
+import { FaCheck } from 'react-icons/fa6'
+import { MdOutlineFileUpload } from 'react-icons/md'
+import { RxCross2 } from 'react-icons/rx'
+import EventCoverPreviewDialog from '@/components/dashboard/event-cover-preview-dialog'
+import ResetEventCoverFormDialog from '@/components/dialog/reset-event-cover-form-dialog'
+import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
-import { useEventCover } from '@/hooks/dashboard/use-event-cover';
-import { Event, Image as ImageModel, User } from '@prisma/client';
-import { Loader2, Sparkles } from 'lucide-react';
-import Image from 'next/image';
-import { CiImageOn } from 'react-icons/ci';
-import { FaCheck } from 'react-icons/fa6';
-import { MdOutlineFileUpload } from 'react-icons/md';
-import { RxCross2 } from 'react-icons/rx';
+} from '@/components/ui/form'
+import { Textarea } from '@/components/ui/textarea'
+import { useEventCover } from '@/hooks/dashboard/forms/use-event-cover'
 
-type EventDetailsUpdateFormProps = {
+type EventCoverUpdateFormProps = {
   event: Event & {
-    images: ImageModel[];
-    users: User[];
-  };
-};
+    images: ImageModel[]
+    users: User[]
+  }
+}
 
-const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
-  const { images, coverMessage, id } = event;
+const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
+  const { images, coverMessage, id } = event
   const {
     applySuggestion,
     currentImages,
@@ -46,8 +46,8 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
     slots,
     suggesting,
     suggestions,
-  } = useEventCover({ eventId: id, coverMessage: coverMessage, images });
-  const previewCoverMessage = form.watch('coverMessage');
+  } = useEventCover({ eventId: id, coverMessage: coverMessage, images })
+  const previewCoverMessage = form.watch('coverMessage')
 
   return (
     <Form {...form}>
@@ -67,13 +67,13 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
           <div className="flex flex-col gap-6 justify-end items-end w-full sm:w-1/2">
             <div className="flex flex-wrap gap-2 justify-end">
               {slots.map((_, index) => {
-                const eventImage = currentImages[index];
+                const eventImage = currentImages[index]
                 return (
                   <div
                     key={index}
                     className="flex relative justify-center items-center w-16 h-24 bg-gray-50 rounded-md border-2 border-dashed border-borderSecondary"
                   >
-                    {eventImage && eventImage.url ? (
+                    {eventImage?.url ? (
                       <>
                         <Image
                           src={eventImage.url}
@@ -96,7 +96,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
                       <CiImageOn className="text-3xl text-gray-400" />
                     )}
                   </div>
-                );
+                )
               })}
             </div>
 
@@ -106,28 +106,26 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
               </div>
             )}
 
-            <>
-              <input
-                id="imageUpload"
-                type="file"
-                className="hidden"
-                accept="image/jpeg, image/png, image/heic, image/webp, image/svg+xml"
-                ref={fileInputRef}
-                onChange={event => {
-                  handleAddImage(event);
-                }}
-                multiple
-              />
-              <Button
-                type="button"
-                variant="success"
-                onClick={handleButtonClick}
-                disabled={currentImages.length >= 6}
-              >
-                Subir imagen
-                <MdOutlineFileUpload className="text-xl ml-2" />
-              </Button>
-            </>
+            <input
+              id="imageUpload"
+              type="file"
+              className="hidden"
+              accept="image/jpeg, image/png, image/heic, image/webp, image/svg+xml"
+              ref={fileInputRef}
+              onChange={event => {
+                handleAddImage(event)
+              }}
+              multiple
+            />
+            <Button
+              type="button"
+              variant="success"
+              onClick={handleButtonClick}
+              disabled={currentImages.length >= 6}
+            >
+              Subir imagen
+              <MdOutlineFileUpload className="text-xl ml-2" />
+            </Button>
           </div>
         </div>
 
@@ -215,7 +213,7 @@ const EventDetailsUpdateForm = ({ event }: EventDetailsUpdateFormProps) => {
         </div>
       </form>
     </Form>
-  );
-};
+  )
+}
 
-export default EventDetailsUpdateForm;
+export default EventCoverUpdateForm

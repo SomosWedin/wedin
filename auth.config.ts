@@ -1,6 +1,6 @@
-import type { NextAuthConfig } from 'next-auth';
-import Facebook from 'next-auth/providers/facebook';
-import Google from 'next-auth/providers/google';
+import type { NextAuthConfig } from 'next-auth'
+import Facebook from 'next-auth/providers/facebook'
+import Google from 'next-auth/providers/google'
 
 // Edge-safe config: no Prisma/adapter/DB calls here.
 // This is used directly by middleware.ts (Edge runtime) and merged
@@ -27,15 +27,15 @@ const authConfig: NextAuthConfig = {
   callbacks: {
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role;
-        session.user.isOnboarded = token.isOnboarded;
-        session.user.id = token.id;
-        session.user.eventId = token.eventId;
+        session.user.role = token.role
+        session.user.isOnboarded = token.isOnboarded
+        session.user.id = token.id
+        session.user.eventId = token.eventId
       }
 
-      return session;
+      return session
     },
   },
-};
+}
 
-export default authConfig;
+export default authConfig

@@ -1,25 +1,25 @@
-'use client';
+'use client'
 
-import Image from 'next/image';
-import { IoGiftOutline } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
+import type { Gift, Image as ImageModel } from '@prisma/client'
+import Image from 'next/image'
+import { IoGiftOutline } from 'react-icons/io5'
+import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge'
+import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
-import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
-import type { Gift, Image as ImageModel } from '@prisma/client';
+} from '@/components/ui/dialog'
 
 type GiftDetailDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  gift: Gift & { image: ImageModel | null };
-  isFavoriteGift: boolean;
-  onAddToCart: () => void;
-};
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  gift: Gift & { image: ImageModel | null }
+  isFavoriteGift: boolean
+  onAddToCart: () => void
+}
 
 export default function GiftDetailDialog({
   open,
@@ -29,9 +29,9 @@ export default function GiftDetailDialog({
   onAddToCart,
 }: GiftDetailDialogProps) {
   const handleAddToCart = () => {
-    onAddToCart();
-    onOpenChange(false);
-  };
+    onAddToCart()
+    onOpenChange(false)
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,5 +91,5 @@ export default function GiftDetailDialog({
         </div>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

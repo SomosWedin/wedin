@@ -1,9 +1,9 @@
-import { Badge } from '@/components/ui/badge';
-import { IoBanOutline, IoCheckmark } from 'react-icons/io5';
+import { IoBanOutline, IoCheckmark } from 'react-icons/io5'
+import { Badge } from '@/components/ui/badge'
 
 type GiftAddedBadgeProps = {
-  isInWishlist: boolean;
-};
+  isInWishlist: boolean
+}
 
 export default function GiftAddedBadge({ isInWishlist }: GiftAddedBadgeProps) {
   if (isInWishlist) {
@@ -12,7 +12,7 @@ export default function GiftAddedBadge({ isInWishlist }: GiftAddedBadgeProps) {
         <IoCheckmark />
         Regalo agregado
       </Badge>
-    );
+    )
   }
 
   return (
@@ -20,5 +20,5 @@ export default function GiftAddedBadge({ isInWishlist }: GiftAddedBadgeProps) {
       <IoBanOutline />
       No agregado
     </Badge>
-  );
+  )
 }

@@ -1,9 +1,9 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { IoGiftOutline } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
-import EmptyState from '@/components/common/empty-state';
-import wedinIcon from '@/public/assets/w-icon.svg';
+import Image from 'next/image'
+import Link from 'next/link'
+import { IoGiftOutline } from 'react-icons/io5'
+import EmptyState from '@/components/common/empty-state'
+import { Button } from '@/components/ui/button'
+import wedinIcon from '@/public/assets/w-icon.svg'
 
 export default function NotFound() {
   return (
@@ -24,5 +24,5 @@ export default function NotFound() {
         }
       />
     </div>
-  );
+  )
 }

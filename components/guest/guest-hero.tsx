@@ -1,28 +1,32 @@
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { EventType, type Event, type Image as ImageModel, type User } from '@prisma/client';
-import GuestImageCarousel from '@/components/guest/guest-image-carousel';
-import ViewGiftsButton from '@/components/guest/view-gifts-button';
+import {
+  type Event,
+  EventType,
+  type Image as ImageModel,
+  type User,
+} from '@prisma/client'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import GuestImageCarousel from '@/components/guest/guest-image-carousel'
+import ViewGiftsButton from '@/components/guest/view-gifts-button'
 
 type GuestHeroProps = {
-  event: Event & { images: Pick<ImageModel, 'id' | 'url'>[]; users: User[] };
-};
+  event: Event & { images: Pick<ImageModel, 'id' | 'url'>[]; users: User[] }
+}
 
 export default function GuestHero({ event }: GuestHeroProps) {
-  const primaryUser =
-    event.users.find(user => user.isPrimary) ?? event.users[0];
-  const secondaryUser = event.users.find(user => !user.isPrimary);
+  const primaryUser = event.users.find(user => user.isPrimary) ?? event.users[0]
+  const secondaryUser = event.users.find(user => !user.isPrimary)
 
   const coupleName =
     event.eventType === EventType.WEDDING && secondaryUser?.name
       ? `${primaryUser?.name ?? ''} & ${secondaryUser.name}`.trim()
-      : (primaryUser?.name ?? event.name ?? 'Nuestro evento');
+      : (primaryUser?.name ?? event.name ?? 'Nuestro evento')
 
   const dateLabel = event.date
     ? event.eventType === EventType.WEDDING
       ? `Nos casamos el ${format(event.date, "d 'de' MMMM 'de' yyyy", { locale: es })}`
       : `El evento es el ${format(event.date, "d 'de' MMMM 'de' yyyy", { locale: es })}`
-    : null;
+    : null
 
   return (
     <div className="bg-gray-50">
@@ -45,5 +49,5 @@ export default function GuestHero({ event }: GuestHeroProps) {
         </div>
       </section>
     </div>
-  );
+  )
 }

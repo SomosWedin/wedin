@@ -1,5 +1,7 @@
-'use client';
+'use client'
 
+import { Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
@@ -7,14 +9,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useLoginForm } from '@/hooks/use-login';
-import { Loader2 } from 'lucide-react';
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { useLoginForm } from '@/hooks/use-login'
 
 export default function LoginForm() {
-  const { form, handleLogin, isLoading } = useLoginForm();
+  const { form, handleLogin, isLoading } = useLoginForm()
 
   return (
     <Form {...form}>
@@ -45,11 +45,7 @@ export default function LoginForm() {
           )}
         />
 
-        <Button
-          type="submit"
-          variant="success"
-          disabled={isLoading}
-        >
+        <Button type="submit" variant="success" disabled={isLoading}>
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -61,5 +57,5 @@ export default function LoginForm() {
         </Button>
       </form>
     </Form>
-  );
+  )
 }

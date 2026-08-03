@@ -1,17 +1,17 @@
 // import { Suspense } from 'react';
-import { UserNav } from '@/components/admin-panel/user-nav';
-import { SheetMenu } from '@/components/admin-panel/sheet-menu';
-import { getCurrentUser } from '@/actions/get-current-user';
-import { UserNavSkeleton } from '../skeletons/user-nav-skeleton';
+import { getCurrentUser } from '@/actions/get-current-user'
+import { SheetMenu } from '@/components/admin-panel/sheet-menu'
+import { UserNav } from '@/components/admin-panel/user-nav'
+import { UserNavSkeleton } from '../skeletons/user-nav-skeleton'
 
 interface NavbarProps {
-  title: string;
+  title: string
 }
 
 export async function Navbar({ title }: NavbarProps) {
-  const currentUser = await getCurrentUser();
+  const currentUser = await getCurrentUser()
   if (!currentUser) {
-    return <UserNavSkeleton />;
+    return <UserNavSkeleton />
   }
   return (
     <header className="sticky top-0 z-10 w-full">
@@ -27,5 +27,5 @@ export async function Navbar({ title }: NavbarProps) {
         </div>
       </div>
     </header>
-  );
+  )
 }

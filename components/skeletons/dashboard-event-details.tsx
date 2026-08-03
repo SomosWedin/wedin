@@ -1,6 +1,6 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton'
 
-export default function DashboardEventDetailsSkeleton() {
+export default function DashboardEventCoverSkeleton() {
   return (
     <section className="w-full h-full flex justify-start items-center flex-col sm:gap-8 gap-12">
       <div className="w-full flex flex-col gap-2 border-b border-gray-200 pb-6">
@@ -46,5 +46,5 @@ export default function DashboardEventDetailsSkeleton() {
         </div>
       </div>
     </section>
-  );
+  )
 }

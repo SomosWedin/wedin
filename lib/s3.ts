@@ -1,23 +1,23 @@
-import { getSignedURL } from '@/actions/upload-to-s3';
-import { computeSHA256 } from './utils';
+import { getSignedURL } from '@/actions/upload-to-s3'
+import { computeSHA256 } from './utils'
 
 type UploadImagesToAwsParams = {
-  files: File[];
-  eventId: string;
-};
+  files: File[]
+  eventId: string
+}
 
 export const uploadEventCoverImagesToAws = async ({
   files,
   eventId,
 }: UploadImagesToAwsParams) => {
   if (files.length === 0) {
-    return { uploadedImages: [] };
+    return { uploadedImages: [] }
   }
 
-  const uploadedImages: string[] = [];
+  const uploadedImages: string[] = []
 
   for (const file of files) {
-    const checksum = await computeSHA256(file);
+    const checksum = await computeSHA256(file)
 
     const presignResponse = await getSignedURL({
       fileName: file.name,
@@ -26,16 +26,16 @@ export const uploadEventCoverImagesToAws = async ({
       id: eventId,
       type: 'eventId',
       checksum,
-    });
+    })
 
     if (presignResponse.error || !presignResponse?.success) {
-      return { error: presignResponse.error };
+      return { error: presignResponse.error }
     }
 
-    const imageUrl = presignResponse.success.split('?')[0];
+    const imageUrl = presignResponse.success.split('?')[0]
 
     if (!imageUrl) {
-      return { error: 'Failed to upload image' };
+      return { error: 'Failed to upload image' }
     }
 
     const awsImagePosting = await fetch(presignResponse.success, {
@@ -45,26 +45,26 @@ export const uploadEventCoverImagesToAws = async ({
         'Content-Type': file.type,
         metadata: JSON.stringify({ eventId }),
       },
-    });
+    })
 
     if (!awsImagePosting.ok) {
-      return { error: awsImagePosting.statusText };
+      return { error: awsImagePosting.statusText }
     }
 
-    uploadedImages.push(imageUrl);
+    uploadedImages.push(imageUrl)
   }
 
-  return { uploadedImages };
-};
+  return { uploadedImages }
+}
 
 export const uploadGiftImageToAws = async ({
   file,
   eventId,
 }: {
-  file: File;
-  eventId: string;
+  file: File
+  eventId: string
 }) => {
-  const checksum = await computeSHA256(file);
+  const checksum = await computeSHA256(file)
 
   const presignResponse = await getSignedURL({
     fileName: file.name,
@@ -73,16 +73,16 @@ export const uploadGiftImageToAws = async ({
     id: eventId,
     type: 'eventId',
     checksum,
-  });
+  })
 
   if (presignResponse.error || !presignResponse?.success) {
-    return { error: presignResponse.error };
+    return { error: presignResponse.error }
   }
 
-  const imageUrl = presignResponse.success.split('?')[0];
+  const imageUrl = presignResponse.success.split('?')[0]
 
   if (!imageUrl) {
-    return { error: 'Failed to upload image' };
+    return { error: 'Failed to upload image' }
   }
 
   const awsImagePosting = await fetch(presignResponse.success, {
@@ -92,23 +92,23 @@ export const uploadGiftImageToAws = async ({
       'Content-Type': file.type,
       metadata: JSON.stringify({ eventId }),
     },
-  });
+  })
 
   if (!awsImagePosting.ok) {
-    return { error: awsImagePosting.statusText };
+    return { error: awsImagePosting.statusText }
   }
 
-  return { url: imageUrl };
-};
+  return { url: imageUrl }
+}
 
 export const deleteEventCoverImageFromAws = async (imageUrl: string) => {
   const deleteResponse = await fetch(imageUrl, {
     method: 'DELETE',
-  });
+  })
 
   if (!deleteResponse.ok) {
-    return { error: deleteResponse.statusText };
+    return { error: deleteResponse.statusText }
   }
 
-  return { success: true };
-};
+  return { success: true }
+}

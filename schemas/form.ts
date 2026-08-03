@@ -1,6 +1,111 @@
-import { fail } from 'assert';
-import { Zeyada } from 'next/font/google';
-import { type ZodType, z } from 'zod';
+import { EventType } from '@prisma/client'
+import { type ZodType, z } from 'zod'
+
+export const UpdateEventSettingsFormSchema = z
+  .object({
+    eventDate: z.date({
+      required_error: 'Debes seleccionar una fecha',
+      invalid_type_error: '¡Eso no es una fecha!',
+    }),
+    eventType: z.string(),
+    eventUrl: z.string(),
+    name: z
+      .string()
+      .min(1, { message: 'Tu nombre no puede estar vacío' })
+      .min(3, { message: 'Tu nombre debe contener al menos 3 caracteres' })
+      .max(255, { message: 'Nombre muy largo' }),
+    lastName: z
+      .string()
+      .min(1, { message: 'Tu apellido no puede estar vacío' })
+      .min(3, { message: 'Tu apellido debe contener al menos 3 caracteres' })
+      .max(255, { message: 'Apellido muy largo' }),
+    partnerName: z.string().nullable(),
+    partnerLastName: z.string().nullable(),
+    partnerEmail: z
+      .string()
+      .email({ message: 'Email de tu pareja no válido' })
+      .nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.eventType === EventType.WEDDING) {
+      if (!data.partnerName) {
+        ctx.addIssue({
+          path: ['partnerName'],
+          message:
+            'El nombre de tu pareja es obligatorio para este tipo de evento',
+          code: z.ZodIssueCode.custom,
+        })
+      } else if (data.partnerName.length < 3) {
+        ctx.addIssue({
+          path: ['partnerName'],
+          message: 'El nombre de tu pareja debe contener al menos 3 caracteres',
+          code: z.ZodIssueCode.custom,
+        })
+      }
+      if (!data.partnerLastName) {
+        ctx.addIssue({
+          path: ['partnerLastName'],
+          message:
+            'El apellido de tu pareja es obligatorio para este tipo de evento',
+          code: z.ZodIssueCode.custom,
+        })
+      } else if (data.partnerLastName.length < 3) {
+        ctx.addIssue({
+          path: ['partnerLastName'],
+          message:
+            'El apellido de tu pareja debe contener al menos 3 caracteres',
+          code: z.ZodIssueCode.custom,
+        })
+      }
+      if (!data.partnerEmail) {
+        ctx.addIssue({
+          path: ['partnerEmail'],
+          message:
+            'El email de tu pareja es obligatorio para este tipo de evento',
+          code: z.ZodIssueCode.custom,
+        })
+      }
+    }
+  })
+
+export const BankDetailsFormSchema = z.object({
+  eventId: z.string(),
+  bankName: z.string().min(1, { message: 'Debe seleccionar una entidad' }),
+  accountHolder: z
+    .string()
+    .min(1, { message: 'Nombre y apellido no puede estar vacío' })
+    .min(2, { message: 'Nombre y Apellido muy corto' })
+    .max(255, { message: 'Nombre y Apellido muy largo' }),
+  accountNumber: z
+    .string()
+    .min(1, { message: 'Número de cuenta no puede estar vacío' })
+    .max(24, { message: 'Número de cuenta muy largo' }),
+  accountType: z.string().min(1, { message: 'Debe seleccionar una moneda' }),
+  identificationType: z
+    .string()
+    .min(1, { message: 'Debe seleccionar un documento' }),
+  identificationNumber: z
+    .string()
+    .min(1, { message: 'Número de documento no puede estar vacío' })
+    .max(12, { message: 'Número de documento muy largo' }),
+  razonSocial: z.string().optional(),
+  ruc: z.string().optional(),
+})
+export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>
+
+export const EventCoverFormSchema = z.object({
+  coverMessage: z
+    .string()
+    .min(1, { message: 'El mensaje para tus invitados no puede estar vacío' })
+    .min(3, {
+      message:
+        'El mensaje para tus invitados debe contener al menos 3 caracteres',
+    })
+    .max(255, {
+      message:
+        'El mensaje para tus invitados debe contener un máximo de 255 caracteres',
+    }),
+})
 
 export const GiftFormSchema = z.object({
   name: z
@@ -25,17 +130,17 @@ export const GiftFormSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }), // wishlistGiftPostSchema
   isFavoriteGift: z.boolean().default(false), // wishlistGiftPostSchema
   isGroupGift: z.boolean().default(false), // wishlistGiftPostSchema
-});
+})
 
 // We want to ignore the imageUrl field when creating/editing a gift
-export const GiftPostSchema = GiftFormSchema.omit({ image: true });
+export const GiftPostSchema = GiftFormSchema.omit({ image: true })
 
 export const GiftEditSchema = GiftPostSchema.pick({
   name: true,
   categoryId: true,
   price: true,
   imageUrl: true,
-});
+})
 
 export const GiftCreateSchema = GiftPostSchema.pick({
   name: true,
@@ -46,7 +151,7 @@ export const GiftCreateSchema = GiftPostSchema.pick({
   sourceGiftId: true,
   eventId: true,
   imageUrl: true,
-});
+})
 
 export const WishlistGiftCreateSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }),
@@ -54,13 +159,13 @@ export const WishlistGiftCreateSchema = z.object({
   giftId: z.string().min(1, { message: 'No se encontro un gift ID' }),
   isFavoriteGift: z.boolean().default(false),
   isGroupGift: z.boolean().default(false),
-});
+})
 
 export const WishlistGiftsCreateSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }),
   giftIds: z.array(z.string().min(1, { message: 'No se encontro un gift ID' })),
   eventId: z.string().min(1, { message: 'No se encontro un event ID' }),
-});
+})
 
 export const WishlistGiftEditSchema = z.object({
   wishlistGiftId: z.string().min(1, { message: 'No se encontro un ID' }),
@@ -68,17 +173,17 @@ export const WishlistGiftEditSchema = z.object({
   giftId: z.string().min(1, { message: 'No se encontro un gift ID' }),
   isFavoriteGift: z.boolean().default(false),
   isGroupGift: z.boolean().default(false),
-});
+})
 
 export const WishlistGiftDeleteSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }),
   giftId: z.string().min(1, { message: 'No se encontro un gift ID' }),
-});
+})
 
 export const WishlistGiftReceivedToggleSchema = z.object({
   wishlistGiftId: z.string().min(1, { message: 'No se encontro un ID' }),
   isManuallyReceived: z.boolean(),
-});
+})
 
 export const TransactionCreateSchema = z.object({
   amount: z
@@ -87,7 +192,7 @@ export const TransactionCreateSchema = z.object({
     .refine(value => Number(value) <= 99999999, {
       message: 'El precio no puede ser mayor de PYG 99,999,999',
     }),
-});
+})
 
 // Define the TransactionStatus enum to match your Prisma schema
 const TransactionStatus = z.enum([
@@ -96,19 +201,24 @@ const TransactionStatus = z.enum([
   'COMPLETED',
   'FAILED',
   'REFUNDED',
-]);
+])
 
 export const TransactionEditSchema = z.object({
   status: TransactionStatus,
   notes: z.string().optional(),
-});
+})
 
 // Define the PayoutStatus enum to match your Prisma schema
-const PayoutStatus = z.enum(['REQUESTED', 'PROCESSING', 'COMPLETED', 'REJECTED']);
+const PayoutStatus = z.enum([
+  'REQUESTED',
+  'PROCESSING',
+  'COMPLETED',
+  'REJECTED',
+])
 
 export const PayoutEditSchema = z.object({
   status: PayoutStatus,
-});
+})
 
 export const TransactionStatusLogUpdateSchema = z.object({
   transaction: z.object({
@@ -120,38 +230,7 @@ export const TransactionStatusLogUpdateSchema = z.object({
     .string()
     .min(1, { message: 'No se encontró un ID de usuario' }),
   changedAt: z.string().transform(str => new Date(str)), // Ensure changedAt is a valid Date
-});
-
-export const EventDetailsFormSchema = z.object({
-  eventId: z.string(),
-  eventType: z
-    .string()
-    .min(1, { message: 'Debes seleccionar un tipo de evento' }),
-  name: z
-    .string()
-    .min(1, { message: 'El nombre no puede estar vacío' })
-    .min(2, { message: 'Nombre muy corto' })
-    .max(255, { message: 'Nombre muy largo' }),
-  lastName: z
-    .string()
-    .min(1, { message: 'El apellido no puede estar vacío' })
-    .min(2, { message: 'Apellido muy corto' })
-    .max(255, { message: 'Apellido muy largo' }),
-  partnerName: z
-    .string()
-    .min(1, { message: 'El nombre de tu pareja no puede estar vacío' })
-    .min(2, { message: 'Nombre muy corto' })
-    .max(255, { message: 'Nombre muy largo' }),
-  partnerLastName: z
-    .string()
-    .min(1, { message: 'El apellido de tu pareja no puede estar vacío' })
-    .min(2, { message: 'Apellido muy corto' })
-    .max(255, { message: 'Apellido muy largo' }),
-  partnerEmail: z.string(),
-  eventCity: z.string().optional(),
-  eventCountry: z.string().optional(),
-  eventGuests: z.string().optional(),
-});
+})
 
 // Reserved so an event slug can never collide with a real subdomain if we
 // move guest sites from /e/{eventUrl} to {eventUrl}.wedin.app later.
@@ -190,7 +269,10 @@ const RESERVED_EVENT_URLS = [
   'null',
   'undefined',
   'wedin',
-];
+  'wedin-staging',
+  'send',
+  'resend',
+]
 
 export const EventUrlFormSchema = z.object({
   eventId: z.string(),
@@ -212,13 +294,13 @@ export const EventUrlFormSchema = z.object({
     .refine(value => !RESERVED_EVENT_URLS.includes(value), {
       message: 'Esa dirección está reservada, elegí otra.',
     }),
-});
+})
 
 export const EventCoverImageFormSchema = z.object({
   eventId: z.string(),
   eventCoverImage: z.any().nullable() as ZodType<File>,
   eventCoverImageUrl: z.string(),
-});
+})
 
 export const EventCoverMessageFormSchema = z.object({
   eventId: z.string(),
@@ -233,12 +315,12 @@ export const EventCoverMessageFormSchema = z.object({
       message:
         'El mensaje para tus invitados debe contener un máximo de 255 caracteres',
     }),
-});
+})
 
 export const EventDateFormSchema = z.object({
   eventId: z.string(),
   eventDate: z.date().nullable(),
-});
+})
 
 const giftAmountSchema = z
   .string()
@@ -248,7 +330,7 @@ const giftAmountSchema = z
   })
   .refine(val => parseInt(val.replace(/,/g, ''), 10) <= 9999999, {
     message: 'El monto no puede ser mayor de Gs. 9,999,999',
-  });
+  })
 
 export const GiftAmountsFormSchema = z.object({
   eventId: z.string(),
@@ -256,4 +338,4 @@ export const GiftAmountsFormSchema = z.object({
   giftAmount2: giftAmountSchema,
   giftAmount3: giftAmountSchema,
   giftAmount4: giftAmountSchema,
-});
+})

@@ -1,22 +1,22 @@
-import { getGifts } from '@/actions/data/gift';
-import { getGiftlists } from '@/actions/data/giftlist';
-import { getEvent } from '@/actions/data/event';
-import { getWishlistGifts } from '@/actions/data/wishlist-gift';
-import { getCategories } from '@/actions/data/category';
-import GiftsCatalogSection from '@/components/dashboard/gifts-catalog-section';
-import CreateGiftDialog from '@/components/dialog/create-gift-dialog';
-import { ChevronLeft } from 'lucide-react';
-import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
+import { getCategories } from '@/actions/data/category'
+import { getEvent } from '@/actions/data/event'
+import { getGifts } from '@/actions/data/gift'
+import { getGiftlists } from '@/actions/data/giftlist'
+import { getWishlistGifts } from '@/actions/data/wishlist-gift'
+import GiftsCatalogSection from '@/components/dashboard/gifts-catalog-section'
+import CreateGiftDialog from '@/components/dialog/create-gift-dialog'
 
 export default async function GiftsPage({
   searchParams,
 }: {
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams?: { [key: string]: string | string[] | undefined }
 }) {
-  const event = await getEvent();
+  const event = await getEvent()
 
   if (!event || 'error' in event) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
   const [gifts, giftlists, wishlistGifts, categories] = await Promise.all([
@@ -24,13 +24,13 @@ export default async function GiftsPage({
     getGiftlists({ searchParams }),
     getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
     getCategories(),
-  ]);
+  ])
 
   const wishlistGiftIds = new Set(
     wishlistGifts
       .filter(wishlistGift => !wishlistGift.isReceived)
       .map(wishlistGift => wishlistGift.giftId)
-  );
+  )
 
   return (
     <div className="min-h-screen bg-white">
@@ -67,5 +67,5 @@ export default async function GiftsPage({
         />
       </div>
     </div>
-  );
+  )
 }

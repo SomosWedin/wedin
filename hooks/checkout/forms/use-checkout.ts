@@ -1,23 +1,24 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { SubmitHandler, useForm } from 'react-hook-form'
+import { z } from 'zod'
 import {
   createPagoparCheckoutSession,
   createTransactionsForCart,
-} from '@/actions/data/checkout';
-import { useToast } from '@/hooks/use-toast';
-import { GuestCheckoutSchema } from '@/schemas/checkout';
-import type { CartItem } from '@/hooks/use-cart-store';
+} from '@/actions/data/checkout'
+import type { CartItem } from '@/hooks/use-cart-store'
+import { useToast } from '@/hooks/use-toast'
+import { publicEventPaths } from '@/lib/event-domain'
+import { GuestCheckoutSchema } from '@/schemas/checkout'
 
 type UseCheckoutProps = {
-  eventId: string;
-  eventSlug: string;
-  cartItems: CartItem[];
-  onCheckoutStarted: () => void;
-};
+  eventId: string
+  eventSlug: string
+  cartItems: CartItem[]
+  onCheckoutStarted: () => void
+}
 
 export function useCheckout({
   eventId,
@@ -25,8 +26,8 @@ export function useCheckout({
   cartItems,
   onCheckoutStarted,
 }: UseCheckoutProps) {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
 
   const form = useForm<z.infer<typeof GuestCheckoutSchema>>({
     resolver: zodResolver(GuestCheckoutSchema),
@@ -39,13 +40,13 @@ export function useCheckout({
       payerMessage: '',
       paymentMethod: 'CARD',
     },
-  });
-  const { isValid } = form.formState;
+  })
+  const { isValid } = form.formState
 
   const onSubmit: SubmitHandler<
     z.infer<typeof GuestCheckoutSchema>
   > = async values => {
-    setLoading(true);
+    setLoading(true)
 
     const transactionsResponse = await createTransactionsForCart(
       eventId,
@@ -54,46 +55,46 @@ export function useCheckout({
         wishlistGiftId: item.wishlistGiftId,
         amount: item.amount,
       }))
-    );
+    )
 
     if ('error' in transactionsResponse) {
       toast({
         title: 'Error al procesar el pago',
         description: transactionsResponse.error,
         variant: 'destructive',
-      });
-      setLoading(false);
-      return;
+      })
+      setLoading(false)
+      return
     }
 
     const transactionIds = transactionsResponse.success.map(
       transaction => transaction.id
-    );
+    )
 
     if (values.paymentMethod === 'BANK_TRANSFER') {
-      onCheckoutStarted();
-      window.location.href = `/e/${eventSlug}/checkout/transfer?ref=${transactionIds.join(',')}`;
-      return;
+      onCheckoutStarted()
+      window.location.href = publicEventPaths.bankTransfer(transactionIds)
+      return
     }
 
     const sessionResponse = await createPagoparCheckoutSession(
       eventSlug,
       transactionIds
-    );
+    )
 
     if ('error' in sessionResponse) {
       toast({
         title: 'Error al procesar el pago',
         description: sessionResponse.error,
         variant: 'destructive',
-      });
-      setLoading(false);
-      return;
+      })
+      setLoading(false)
+      return
     }
 
-    onCheckoutStarted();
-    window.location.href = sessionResponse.redirectUrl;
-  };
+    onCheckoutStarted()
+    window.location.href = sessionResponse.redirectUrl
+  }
 
-  return { loading, form, isValid, onSubmit };
+  return { loading, form, isValid, onSubmit }
 }

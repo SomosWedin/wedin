@@ -1,22 +1,22 @@
-'use client';
+'use client'
 
-import { IoEyeOutline } from 'react-icons/io5';
-import type { Event, Image as ImageModel, User } from '@prisma/client';
-import GuestHero from '@/components/guest/guest-hero';
-import { Button } from '@/components/ui/button';
+import type { Event, Image as ImageModel, User } from '@prisma/client'
+import { IoEyeOutline } from 'react-icons/io5'
+import GuestHero from '@/components/guest/guest-hero'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'
 
 type EventCoverPreviewDialogProps = {
-  event: Event & { users: User[] };
-  images: Pick<ImageModel, 'id' | 'url'>[];
-  coverMessage: string;
-};
+  event: Event & { users: User[] }
+  images: Pick<ImageModel, 'id' | 'url'>[]
+  coverMessage: string
+}
 
 const EventCoverPreviewDialog = ({
   event,
@@ -40,7 +40,7 @@ const EventCoverPreviewDialog = ({
         </div>
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}
 
-export default EventCoverPreviewDialog;
+export default EventCoverPreviewDialog

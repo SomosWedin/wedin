@@ -1,48 +1,50 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import type { Image as ImageModel } from '@prisma/client';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { IoGiftOutline } from 'react-icons/io5';
-import Autoplay from 'embla-carousel-autoplay';
+import type { Image as ImageModel } from '@prisma/client'
+import Autoplay from 'embla-carousel-autoplay'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import Image from 'next/image'
+import { useEffect, useState } from 'react'
+import { IoGiftOutline } from 'react-icons/io5'
 import {
   Carousel,
+  type CarouselApi,
   CarouselContent,
   CarouselItem,
-  type CarouselApi,
-} from '@/components/ui/carousel';
+} from '@/components/ui/carousel'
 
-const AUTO_SLIDE_INTERVAL_MS = 3000;
+const AUTO_SLIDE_INTERVAL_MS = 3000
 
 type GuestImageCarouselProps = {
-  images: Pick<ImageModel, 'id' | 'url'>[];
-};
+  images: Pick<ImageModel, 'id' | 'url'>[]
+}
 
-export default function GuestImageCarousel({ images }: GuestImageCarouselProps) {
-  const [api, setApi] = useState<CarouselApi>();
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const visibleImages = images.filter(image => !!image.url);
-  const showControls = visibleImages.length > 1;
+export default function GuestImageCarousel({
+  images,
+}: GuestImageCarouselProps) {
+  const [api, setApi] = useState<CarouselApi>()
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const visibleImages = images.filter(image => !!image.url)
+  const showControls = visibleImages.length > 1
 
   useEffect(() => {
-    if (!api) return;
+    if (!api) return
 
-    setSelectedIndex(api.selectedScrollSnap());
-    const onSelect = () => setSelectedIndex(api.selectedScrollSnap());
+    setSelectedIndex(api.selectedScrollSnap())
+    const onSelect = () => setSelectedIndex(api.selectedScrollSnap())
 
-    api.on('select', onSelect);
+    api.on('select', onSelect)
     return () => {
-      api.off('select', onSelect);
-    };
-  }, [api]);
+      api.off('select', onSelect)
+    }
+  }, [api])
 
   if (visibleImages.length === 0) {
     return (
       <div className="flex justify-center items-center w-full h-full bg-gray-100 shadow-inner rounded-none sm:rounded-2xl">
         <IoGiftOutline className="text-6xl text-gray-300" />
       </div>
-    );
+    )
   }
 
   return (
@@ -51,7 +53,12 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
       opts={{ loop: true }}
       plugins={
         showControls
-          ? [Autoplay({ delay: AUTO_SLIDE_INTERVAL_MS, stopOnInteraction: false })]
+          ? [
+              Autoplay({
+                delay: AUTO_SLIDE_INTERVAL_MS,
+                stopOnInteraction: false,
+              }),
+            ]
           : []
       }
       className="overflow-hidden relative w-full h-full shadow-inner rounded-none sm:rounded-2xl"
@@ -104,13 +111,14 @@ export default function GuestImageCarousel({ images }: GuestImageCarouselProps) 
                 type="button"
                 aria-label={`Ver foto ${index + 1}`}
                 onClick={() => api?.scrollTo(index)}
-                className={`h-2 rounded-full transition-all ${index === selectedIndex ? 'w-6 bg-white' : 'w-2 bg-white/50'
-                  }`}
+                className={`h-2 rounded-full transition-all ${
+                  index === selectedIndex ? 'w-6 bg-white' : 'w-2 bg-white/50'
+                }`}
               />
             ))}
           </div>
         </>
       )}
     </Carousel>
-  );
+  )
 }

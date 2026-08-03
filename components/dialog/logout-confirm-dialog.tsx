@@ -1,26 +1,26 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import logout from '@/actions/auth/logout';
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { useState } from 'react'
+import logout from '@/actions/auth/logout'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 type LogoutConfirmDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
 
 export default function LogoutConfirmDialog({
   open,
   onOpenChange,
 }: LogoutConfirmDialogProps) {
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const handleConfirm = async () => {
-    setIsLoggingOut(true);
-    await logout();
-  };
+    setIsLoggingOut(true)
+    await logout()
+  }
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -63,5 +63,5 @@ export default function LogoutConfirmDialog({
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
-  );
+  )
 }

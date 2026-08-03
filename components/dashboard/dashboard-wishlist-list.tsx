@@ -1,46 +1,46 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import DeleteWishlistGiftDialog from '@/components/dialog/delete-wishlist-gift-dialog';
-import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialog';
-import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
-import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
-import { computePercentage } from '@/components/guest/gift-progress';
-import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift';
+import type { Category, Prisma } from '@prisma/client'
+import Image from 'next/image'
+import { useState } from 'react'
 import {
   IoCashOutline,
   IoGiftOutline,
   IoSearchOutline,
   IoSparkles,
-} from 'react-icons/io5';
-import type { Category, Prisma } from '@prisma/client';
+} from 'react-icons/io5'
+import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge'
+import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
+import DeleteWishlistGiftDialog from '@/components/dialog/delete-wishlist-gift-dialog'
+import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialog'
+import { computePercentage } from '@/components/guest/gift-progress'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift'
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
-  include: { gift: { include: { image: true } } };
-}>;
+  include: { gift: { include: { image: true } } }
+}>
 
 type DashboardWishlistListProps = {
-  eventId: string;
-  wishlistId: string;
-  wishlistGifts: WishlistGiftWithGift[];
-  categories: Category[];
-};
+  eventId: string
+  wishlistId: string
+  wishlistGifts: WishlistGiftWithGift[]
+  categories: Category[]
+}
 
 const ESTADO_OPTIONS = [
   { value: 'received', label: 'Regalo recibido' },
   { value: 'open_contribution', label: 'Contribución abierta' },
   { value: 'in_list', label: 'En lista' },
   { value: 'archived', label: 'Archivado' },
-] as const;
+] as const
 
 function getEstado(wishlistGift: WishlistGiftWithGift) {
-  const price = Number(wishlistGift.gift.price) || 0;
-  const contributed = Number(wishlistGift.groupGiftParts) || 0;
-  const groupPercentage = computePercentage(price, contributed);
+  const price = Number(wishlistGift.gift.price) || 0
+  const contributed = Number(wishlistGift.groupGiftParts) || 0
+  const groupPercentage = computePercentage(price, contributed)
 
   if (wishlistGift.isReceived) {
     return {
@@ -48,7 +48,7 @@ function getEstado(wishlistGift: WishlistGiftWithGift) {
       label: 'Archivado',
       percentage: wishlistGift.isFullyPaid ? 100 : groupPercentage,
       className: 'bg-gray100 text-textTertiary border-transparent',
-    };
+    }
   }
 
   if (wishlistGift.isFullyPaid || wishlistGift.isManuallyReceived) {
@@ -57,7 +57,7 @@ function getEstado(wishlistGift: WishlistGiftWithGift) {
       label: 'Regalo recibido',
       percentage: 100,
       className: 'bg-success/10 text-success border-transparent',
-    };
+    }
   }
 
   if (wishlistGift.isGroupGift) {
@@ -66,7 +66,7 @@ function getEstado(wishlistGift: WishlistGiftWithGift) {
       label: 'Contribución abierta',
       percentage: groupPercentage,
       className: 'bg-warning/10 text-warning border-transparent',
-    };
+    }
   }
 
   return {
@@ -74,7 +74,7 @@ function getEstado(wishlistGift: WishlistGiftWithGift) {
     label: 'En lista',
     percentage: 0,
     className: 'bg-gray100 text-textTertiary border-transparent',
-  };
+  }
 }
 
 export default function DashboardWishlistList({
@@ -83,51 +83,51 @@ export default function DashboardWishlistList({
   wishlistGifts,
   categories,
 }: DashboardWishlistListProps) {
-  const [search, setSearch] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
-  const { setManuallyReceived } = useWishlistGift();
+  const [search, setSearch] = useState('')
+  const [estadoFilter, setEstadoFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
+  const { setManuallyReceived } = useWishlistGift()
 
   const handleToggleManuallyReceived = async (
     wishlistGiftId: string,
     isManuallyReceived: boolean
   ) => {
-    setTogglingIds(previous => new Set(previous).add(wishlistGiftId));
-    await setManuallyReceived({ wishlistGiftId, isManuallyReceived });
+    setTogglingIds(previous => new Set(previous).add(wishlistGiftId))
+    await setManuallyReceived({ wishlistGiftId, isManuallyReceived })
     setTogglingIds(previous => {
-      const next = new Set(previous);
-      next.delete(wishlistGiftId);
-      return next;
-    });
-  };
+      const next = new Set(previous)
+      next.delete(wishlistGiftId)
+      return next
+    })
+  }
 
   const categoryNameById = new Map(
     categories.map(category => [category.id, category.name])
-  );
+  )
   const activeWishlistGifts = wishlistGifts.filter(
     wishlistGift => !wishlistGift.isReceived
-  );
-  const addedGiftCount = activeWishlistGifts.length;
+  )
+  const addedGiftCount = activeWishlistGifts.length
   const totalGiftsValue = activeWishlistGifts.reduce(
     (sum, wishlistGift) => sum + (Number(wishlistGift.gift.price) || 0),
     0
-  );
+  )
 
   const filteredWishlistGifts = wishlistGifts.filter(wishlistGift => {
-    const estado = getEstado(wishlistGift);
+    const estado = getEstado(wishlistGift)
 
-    if (!estadoFilter && estado.status === 'archived') return false;
+    if (!estadoFilter && estado.status === 'archived') return false
 
     const matchesSearch = wishlistGift.gift.name
       .toLowerCase()
-      .includes(search.trim().toLowerCase());
-    const matchesEstado = !estadoFilter || estado.status === estadoFilter;
+      .includes(search.trim().toLowerCase())
+    const matchesEstado = !estadoFilter || estado.status === estadoFilter
     const matchesCategory =
-      !categoryFilter || wishlistGift.gift.categoryId === categoryFilter;
+      !categoryFilter || wishlistGift.gift.categoryId === categoryFilter
 
-    return matchesSearch && matchesEstado && matchesCategory;
-  });
+    return matchesSearch && matchesEstado && matchesCategory
+  })
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -215,7 +215,7 @@ export default function DashboardWishlistList({
         )}
 
         {filteredWishlistGifts.map(wishlistGift => {
-          const estado = getEstado(wishlistGift);
+          const estado = getEstado(wishlistGift)
 
           return (
             <div
@@ -259,9 +259,10 @@ export default function DashboardWishlistList({
                   <IoSparkles className="mr-1" />
                   {estado.label}
                 </Badge>
-                {wishlistGift.isGroupGift && estado.status === 'open_contribution' && (
-                  <span className="text-gray-500">{estado.percentage}%</span>
-                )}
+                {wishlistGift.isGroupGift &&
+                  estado.status === 'open_contribution' && (
+                    <span className="text-gray-500">{estado.percentage}%</span>
+                  )}
               </div>
 
               <div className="flex col-span-1 gap-2 items-center">
@@ -310,9 +311,9 @@ export default function DashboardWishlistList({
                 </div>
               )}
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

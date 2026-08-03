@@ -1,15 +1,15 @@
-'use client';
+'use client'
 
-import Image from 'next/image';
-import { IoGiftOutline, IoPencilOutline, IoTrashOutline } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
-import type { CartItem } from '@/hooks/use-cart-store';
+import Image from 'next/image'
+import { IoGiftOutline, IoPencilOutline, IoTrashOutline } from 'react-icons/io5'
+import { Button } from '@/components/ui/button'
+import type { CartItem } from '@/hooks/use-cart-store'
 
 type CartItemRowProps = {
-  item: CartItem;
-  onRemove: (id: string) => void;
-  onEdit: (item: CartItem) => void;
-};
+  item: CartItem
+  onRemove: (id: string) => void
+  onEdit: (item: CartItem) => void
+}
 
 export default function CartItemRow({
   item,
@@ -62,5 +62,5 @@ export default function CartItemRow({
         </Button>
       </div>
     </div>
-  );
+  )
 }

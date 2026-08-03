@@ -1,15 +1,15 @@
-import Image from 'next/image';
-import OnboardingStepper from './stepper';
-import wedinIcon from '@/public/assets/w-icon.svg';
-import { Button } from '@/components/ui/button';
-import { CiSettings } from 'react-icons/ci';
-import { IoGiftOutline } from 'react-icons/io5';
-import { PiBank } from 'react-icons/pi';
-import { Loader2 } from 'lucide-react';
-import { useOnboarding } from '@/hooks/useOnboarding';
+import { Loader2 } from 'lucide-react'
+import Image from 'next/image'
+import { CiSettings } from 'react-icons/ci'
+import { IoGiftOutline } from 'react-icons/io5'
+import { PiBank } from 'react-icons/pi'
+import { Button } from '@/components/ui/button'
+import { useOnboarding } from '@/hooks/use-onboarding'
+import wedinIcon from '@/public/assets/w-icon.svg'
+import OnboardingStepper from './stepper'
 
 export default function OnboardingStepFive() {
-  const { loading, handleCompleteOnboarding } = useOnboarding();
+  const { loading, handleCompleteOnboarding } = useOnboarding()
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -56,5 +56,5 @@ export default function OnboardingStepFive() {
 
       <OnboardingStepper step={5} />
     </div>
-  );
+  )
 }

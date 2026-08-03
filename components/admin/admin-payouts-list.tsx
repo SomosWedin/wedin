@@ -1,120 +1,116 @@
-'use client';
+'use client'
 
-import { useMemo, useState } from 'react';
-import { endOfDay, format } from 'date-fns';
+import type { PayoutStatus, Prisma } from '@prisma/client'
+import { endOfDay, format } from 'date-fns'
+import { useMemo, useState } from 'react'
 import {
   IoChevronDown,
   IoChevronUp,
   IoSearchOutline,
   IoSwapVerticalOutline,
-} from 'react-icons/io5';
+} from 'react-icons/io5'
 import {
   ESTADO_BY_PAYOUT_STATUS,
   ESTADO_OPTIONS_PAYOUT,
-} from '@/components/dashboard/payout-estado';
-import { Combobox } from '@/components/ui/combobox';
-import { Input } from '@/components/ui/input';
-import { useAdminPayoutStatus } from '@/hooks/admin/use-admin-payout-status';
-import { coupleName } from '@/lib/utils';
-import type { Prisma, PayoutStatus } from '@prisma/client';
+} from '@/components/dashboard/payout-estado'
+import { Combobox } from '@/components/ui/combobox'
+import { Input } from '@/components/ui/input'
+import { useAdminPayoutStatus } from '@/hooks/admin/use-admin-payout-status'
+import { coupleName } from '@/lib/utils'
 
 type PayoutWithBankDetailsAndEvent = Prisma.PayoutGetPayload<{
   include: {
-    bankDetails: true;
-    event: { include: { users: true } };
-  };
-}>;
+    bankDetails: true
+    event: { include: { users: true } }
+  }
+}>
 
 type AdminPayoutsListProps = {
-  payouts: PayoutWithBankDetailsAndEvent[];
-};
+  payouts: PayoutWithBankDetailsAndEvent[]
+}
 
-type SortColumn = 'createdAt' | 'amount';
-type SortDirection = 'asc' | 'desc';
+type SortColumn = 'createdAt' | 'amount'
+type SortDirection = 'asc' | 'desc'
 
 function SortIcon({
   column,
   activeColumn,
   direction,
 }: {
-  column: SortColumn;
-  activeColumn: SortColumn | null;
-  direction: SortDirection;
+  column: SortColumn
+  activeColumn: SortColumn | null
+  direction: SortDirection
 }) {
   if (activeColumn !== column) {
-    return <IoSwapVerticalOutline className="text-gray-400" />;
+    return <IoSwapVerticalOutline className="text-gray-400" />
   }
 
-  return direction === 'asc' ? <IoChevronUp /> : <IoChevronDown />;
+  return direction === 'asc' ? <IoChevronUp /> : <IoChevronDown />
 }
 
 export default function AdminPayoutsList({ payouts }: AdminPayoutsListProps) {
-  const [search, setSearch] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('');
-  const [eventFilter, setEventFilter] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(
-    'createdAt'
-  );
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const { loading, updateStatus } = useAdminPayoutStatus();
+  const [search, setSearch] = useState('')
+  const [estadoFilter, setEstadoFilter] = useState('')
+  const [eventFilter, setEventFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>('createdAt')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const { loading, updateStatus } = useAdminPayoutStatus()
 
   const eventOptions = useMemo(() => {
-    const byLabel = new Map<string, string>();
+    const byLabel = new Map<string, string>()
 
     for (const payout of payouts) {
-      const label = coupleName(payout.event.users);
-      byLabel.set(label, payout.event.id);
+      const label = coupleName(payout.event.users)
+      byLabel.set(label, payout.event.id)
     }
 
     return Array.from(byLabel, ([label, value]) => ({ value, label })).sort(
       (a, b) => a.label.localeCompare(b.label)
-    );
-  }, [payouts]);
+    )
+  }, [payouts])
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn !== column) {
-      setSortColumn(column);
-      setSortDirection('desc');
-      return;
+      setSortColumn(column)
+      setSortDirection('desc')
+      return
     }
 
-    setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'));
-  };
+    setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'))
+  }
 
-  const fromDate = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null;
-  const toDate = dateTo ? endOfDay(new Date(`${dateTo}T00:00:00`)) : null;
+  const fromDate = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null
+  const toDate = dateTo ? endOfDay(new Date(`${dateTo}T00:00:00`)) : null
 
   const filteredPayouts = payouts.filter(payout => {
-    const normalizedSearch = search.trim().toLowerCase();
+    const normalizedSearch = search.trim().toLowerCase()
     const matchesSearch =
       !normalizedSearch ||
       coupleName(payout.event.users).toLowerCase().includes(normalizedSearch) ||
       payout.bankDetails.bankName.toLowerCase().includes(normalizedSearch) ||
-      payout.bankDetails.accountHolder
-        .toLowerCase()
-        .includes(normalizedSearch);
-    const matchesEstado = !estadoFilter || payout.status === estadoFilter;
+      payout.bankDetails.accountHolder.toLowerCase().includes(normalizedSearch)
+    const matchesEstado = !estadoFilter || payout.status === estadoFilter
     const matchesEvent =
-      !eventFilter || coupleName(payout.event.users) === eventFilter;
+      !eventFilter || coupleName(payout.event.users) === eventFilter
     const matchesDateRange =
       (!fromDate || payout.createdAt >= fromDate) &&
-      (!toDate || payout.createdAt <= toDate);
+      (!toDate || payout.createdAt <= toDate)
 
-    return matchesSearch && matchesEstado && matchesEvent && matchesDateRange;
-  });
+    return matchesSearch && matchesEstado && matchesEvent && matchesDateRange
+  })
 
   const sortedPayouts = sortColumn
     ? [...filteredPayouts].sort((a, b) => {
         const diff =
           sortColumn === 'createdAt'
             ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.amount) - Number(b.amount);
+            : Number(a.amount) - Number(b.amount)
 
-        return sortDirection === 'asc' ? diff : -diff;
+        return sortDirection === 'asc' ? diff : -diff
       })
-    : filteredPayouts;
+    : filteredPayouts
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -211,16 +207,14 @@ export default function AdminPayoutsList({ payouts }: AdminPayoutsListProps) {
         )}
 
         {sortedPayouts.map(payout => {
-          const estado = ESTADO_BY_PAYOUT_STATUS[payout.status];
+          const estado = ESTADO_BY_PAYOUT_STATUS[payout.status]
 
           return (
             <div
               key={payout.id}
               className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 hover:bg-gray-50"
             >
-              <div className="col-span-2">
-                {coupleName(payout.event.users)}
-              </div>
+              <div className="col-span-2">{coupleName(payout.event.users)}</div>
               <div className="col-span-1 text-textTertiary text-sm">
                 {format(payout.createdAt, 'dd/MM/yyyy')}
               </div>
@@ -228,8 +222,11 @@ export default function AdminPayoutsList({ payouts }: AdminPayoutsListProps) {
                 Gs. {Number(payout.amount).toLocaleString('es-PY')}
               </div>
               <div className="col-span-4 text-textTertiary text-sm">
-                {payout.bankDetails.bankName} · {payout.bankDetails.accountNumber}
-                <span className="block">{payout.bankDetails.accountHolder}</span>
+                {payout.bankDetails.bankName} ·{' '}
+                {payout.bankDetails.accountNumber}
+                <span className="block">
+                  {payout.bankDetails.accountHolder}
+                </span>
               </div>
               <div className="flex col-span-3 gap-2 items-center">
                 {estado.icon}
@@ -249,9 +246,9 @@ export default function AdminPayoutsList({ payouts }: AdminPayoutsListProps) {
                 </select>
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }
