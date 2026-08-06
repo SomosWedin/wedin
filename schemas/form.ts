@@ -236,6 +236,8 @@ export const TransactionStatusLogUpdateSchema = z.object({
 // move guest sites from /e/{eventUrl} to {eventUrl}.wedin.app later.
 const RESERVED_EVENT_URLS = [
   'www',
+  'home',
+  'landing',
   'app',
   'api',
   'admin',
