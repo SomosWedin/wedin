@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Image as ImageModel } from '@prisma/client'
+import { useRouter } from 'next/navigation'
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { type SubmitHandler, useForm } from 'react-hook-form'
 import { v4 as uuidv4 } from 'uuid'
@@ -71,6 +72,7 @@ export function useEventCover({
   const slots = Array.from({ length: MAX_IMAGES })
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+  const router = useRouter()
 
   const form = useForm({
     resolver: zodResolver(EventCoverFormSchema),
@@ -469,6 +471,8 @@ export function useEventCover({
     setFormError(null)
 
     setLoading(false)
+
+    router.refresh()
   }
 
   const handleReset = () => {
