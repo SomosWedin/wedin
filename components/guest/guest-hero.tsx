@@ -6,6 +6,7 @@ import {
 } from '@prisma/client'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import ConfirmAttendanceButton from '@/components/guest/confirm-attendance-button'
 import GuestImageCarousel from '@/components/guest/guest-image-carousel'
 import ViewGiftsButton from '@/components/guest/view-gifts-button'
 
@@ -45,9 +46,9 @@ export default function GuestHero({ event }: GuestHeroProps) {
           {event.coverMessage && (
             <p className="text-textTertiary font-light">{event.coverMessage}</p>
           )}
-          <div className="flex flex-wrap">
+          <div className="flex flex-wrap gap-3">
             <ViewGiftsButton />
-            {/* <ConfirmAttendanceButton /> */}
+            <ConfirmAttendanceButton />
           </div>
         </div>
       </section>

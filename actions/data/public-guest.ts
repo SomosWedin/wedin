@@ -4,9 +4,7 @@ import prismaClient from '@/prisma/client'
 
 const SEARCH_RESULTS_LIMIT = 5
 
-// Masks all but the last 4 digits, e.g. "0981234567" -> "*******4567" — only
-// used to disambiguate same-name guests on the public search, never the
-// full number.
+// e.g. "0981234567" -> "*******4567"
 function maskPhone(phone: string) {
   const visibleDigits = 4
 
@@ -15,9 +13,7 @@ function maskPhone(phone: string) {
   return `${'*'.repeat(phone.length - visibleDigits)}${phone.slice(-visibleDigits)}`
 }
 
-// Public, unauthenticated guest self-service lookups — no session check
-// anywhere in this file, same discipline as actions/data/public-event.ts.
-// Deliberately never returns the full phone number.
+// No session check — public, unauthenticated lookup.
 export async function searchGuestsByName(eventId: string, name: string) {
   const normalizedName = name.trim()
 
@@ -45,9 +41,7 @@ export async function searchGuestsByName(eventId: string, name: string) {
   }
 }
 
-// Individual-link lookup (?g=<guestId>) — scoped to the guest's own id, and
-// cross-checked against the event so a guest id from a different event's
-// link can never resolve here.
+// Scoped by eventId so a guest id from another event can't resolve here.
 export async function getGuestForEvent(eventId: string, guestId: string) {
   try {
     const guest = await prismaClient.guest.findFirst({

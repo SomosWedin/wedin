@@ -69,7 +69,7 @@ export function getMenuList(): Group[] {
             {
               href: '/invitados',
               label: 'Invitados',
-            }
+            },
           ],
         },
       ],

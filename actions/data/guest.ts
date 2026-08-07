@@ -11,9 +11,6 @@ import {
 import { GetGuestsParams } from '@/schemas/params'
 import { getErrorMessage } from '../helper'
 
-// Dashboard read — the caller is expected to have already resolved the
-// eventId via the session-gated getEvent(), same convention as getGifts()/
-// getWishlistGifts() (no session check inside this file).
 export async function getGuests({
   searchParams,
 }: {
@@ -56,11 +53,7 @@ export async function createGuest(formData: z.infer<typeof GuestCreateSchema>) {
   }
 }
 
-// Called from both the dashboard (organizer marks a guest by hand) and the
-// public guest-facing RSVP page (guest self-confirms) — deliberately no
-// session check, mirrors actions/data/public-event.ts's convention. Not
-// sensitive data: only flips a status on a doc the caller already knows
-// the id of.
+// Deliberately no session check — called from the public RSVP page too.
 export async function updateGuestStatus(
   formData: z.infer<typeof GuestStatusUpdateSchema>
 ) {
