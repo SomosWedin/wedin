@@ -76,6 +76,7 @@ export function getPublicEventUrl(eventSlug: string, pathname = '/') {
 export const publicEventPaths = {
   home: '/',
   checkout: '/checkout',
+  invitados: '/invitados',
 
   bankTransfer(transactionIds: string[]) {
     const searchParams = new URLSearchParams({

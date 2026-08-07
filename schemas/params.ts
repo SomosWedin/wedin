@@ -85,3 +85,7 @@ export const RequestPayoutParams = z.object({
     .min(1, { message: 'Ingresá un monto' })
     .regex(/^\d+$/, { message: 'El monto debe ser un número válido' }),
 })
+
+export const GetGuestsParams = z.object({
+  eventId: z.string().min(1, { message: 'No se encontró un event ID' }),
+})

@@ -45,7 +45,10 @@ export default function GuestHero({ event }: GuestHeroProps) {
           {event.coverMessage && (
             <p className="text-textTertiary font-light">{event.coverMessage}</p>
           )}
-          <ViewGiftsButton />
+          <div className="flex flex-wrap">
+            <ViewGiftsButton />
+            {/* <ConfirmAttendanceButton /> */}
+          </div>
         </div>
       </section>
     </div>

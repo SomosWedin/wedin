@@ -66,6 +66,10 @@ export function getMenuList(): Group[] {
               href: '/bank-details',
               label: 'Datos de tu cuenta',
             },
+            {
+              href: '/invitados',
+              label: 'Invitados',
+            }
           ],
         },
       ],

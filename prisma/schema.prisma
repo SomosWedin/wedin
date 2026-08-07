@@ -34,6 +34,12 @@ enum PayoutStatus {
   REJECTED
 }
 
+enum GuestStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
+
 enum PaymentMethod {
   CARD
   BANK_TRANSFER
@@ -113,7 +119,6 @@ model Event {
   city             String?
   partnerName      String?
   eventType        EventType @default(WEDDING)
-  guests           String?
   hasPYbankAccount Boolean   @default(false)
   isPublished      Boolean   @default(true)
 
@@ -128,6 +133,7 @@ model Event {
   giftAmounts   String[]
   images        Image[]
   payouts       Payout[]
+  guests        Guest[]
 
   @@unique([wishlistId])
 }
@@ -328,4 +334,19 @@ model Image {
   Transaction   Transaction? @relation(fields: [transactionId], references: [id])
   Event         Event?       @relation(fields: [eventId], references: [id])
   Gift          Gift?        @relation(fields: [giftId], references: [id])
+}
+
+model Guest {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  phone       String
+  status      GuestStatus @default(PENDING)
+  eventId     String      @db.ObjectId
+  respondedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@index([eventId])
 }

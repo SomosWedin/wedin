@@ -341,3 +341,26 @@ export const GiftAmountsFormSchema = z.object({
   giftAmount3: giftAmountSchema,
   giftAmount4: giftAmountSchema,
 })
+
+const GuestStatusEnum = z.enum(['PENDING', 'CONFIRMED', 'DECLINED'])
+
+export const GuestCreateSchema = z.object({
+  eventId: z.string().min(1, { message: 'No se encontró un event ID' }),
+  name: z
+    .string()
+    .min(1, { message: 'El nombre no puede estar vacío' })
+    .min(3, { message: 'El nombre debe contener al menos 3 caracteres' })
+    .max(100, { message: 'Nombre muy largo' }),
+  phone: z
+    .string()
+    .regex(/^\d{6,15}$/, { message: 'Ingresá un número de teléfono válido' }),
+})
+
+export const GuestStatusUpdateSchema = z.object({
+  guestId: z.string().min(1, { message: 'No se encontró un ID de invitado' }),
+  status: GuestStatusEnum,
+})
+
+export const GuestDeleteSchema = z.object({
+  guestId: z.string().min(1, { message: 'No se encontró un ID de invitado' }),
+})
