@@ -106,6 +106,8 @@ export const updateEvent = async (
     })
 
     revalidatePath('/event-details')
+    revalidatePath('/event-settings')
+    revalidatePath('/dashboard')
     return { success: updatedEvent }
   } catch (error) {
     console.error('Error updating event:', error)

@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Event, EventType, User } from '@prisma/client'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -31,6 +32,7 @@ export function useUpdateEventSettings({
     email: partnerEmail,
   } = secondaryEventUser || {}
   const { toast } = useToast()
+  const router = useRouter()
 
   const form = useForm<z.infer<typeof UpdateEventSettingsFormSchema>>({
     resolver: zodResolver(UpdateEventSettingsFormSchema),
@@ -94,6 +96,8 @@ export function useUpdateEventSettings({
       title: 'El evento y usuario se actualizó con éxito. 📅',
     })
     setLoading(false)
+
+    router.refresh()
   }
 
   return {
