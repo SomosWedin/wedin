@@ -99,10 +99,11 @@ async function releaseWishlistGiftClaim(transaction: {
   id: string
   wishlistGiftId: string
   amount: string
+  quantity: number
 }) {
   const wishlistGift = await prismaClient.wishlistGift.findUnique({
     where: { id: transaction.wishlistGiftId },
-    select: { isGroupGift: true, claimedTransactionId: true },
+    select: { isGroupGift: true },
   })
 
   if (!wishlistGift) return
@@ -117,15 +118,13 @@ async function releaseWishlistGiftClaim(transaction: {
     return
   }
 
-  if (wishlistGift.claimedTransactionId === transaction.id) {
-    await prismaClient.wishlistGift.update({
-      where: { id: transaction.wishlistGiftId },
-      data: { claimedTransactionId: null, claimedAt: null },
-    })
-  }
+  await prismaClient.wishlistGift.update({
+    where: { id: transaction.wishlistGiftId },
+    data: { reservedQuantity: { decrement: transaction.quantity } },
+  })
 }
 
-async function recomputeWishlistGiftProgress(wishlistGiftId: string) {
+export async function recomputeWishlistGiftProgress(wishlistGiftId: string) {
   const wishlistGift = await prismaClient.wishlistGift.findUnique({
     where: { id: wishlistGiftId },
     include: {
@@ -136,20 +135,31 @@ async function recomputeWishlistGiftProgress(wishlistGiftId: string) {
 
   if (!wishlistGift) return
 
-  const price = Number(wishlistGift.gift.price) || 0
-  const contributed = wishlistGift.transactions.reduce(
-    (sum, transaction) => sum + (Number(transaction.amount) || 0),
+  if (wishlistGift.isGroupGift) {
+    const price = Number(wishlistGift.gift.price) || 0
+    const contributed = wishlistGift.transactions.reduce(
+      (sum, transaction) => sum + (Number(transaction.amount) || 0),
+      0
+    )
+
+    await prismaClient.wishlistGift.update({
+      where: { id: wishlistGiftId },
+      data: {
+        groupGiftParts: String(contributed),
+        isFullyPaid: price > 0 && contributed >= price,
+      },
+    })
+    return
+  }
+
+  const completedQty = wishlistGift.transactions.reduce(
+    (sum, transaction) => sum + transaction.quantity,
     0
   )
 
   await prismaClient.wishlistGift.update({
     where: { id: wishlistGiftId },
-    data: {
-      ...(wishlistGift.isGroupGift
-        ? { groupGiftParts: String(contributed) }
-        : {}),
-      isFullyPaid: price > 0 && contributed >= price,
-    },
+    data: { isFullyPaid: completedQty >= wishlistGift.quantity },
   })
 }
 

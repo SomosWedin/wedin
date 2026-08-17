@@ -193,11 +193,12 @@ model WishlistGift {
   // transactions are kept. Not literally "physically received" despite the
   // name — no dedicated concept for that exists yet.
   isReceived           Boolean   @default(false)
-  // Atomic claim guards (actions/data/checkout.ts). Not @unique — atomicity
-  // comes from Mongo's single-document write, not an index.
-  claimedTransactionId String?   @db.ObjectId // individual gifts: holder's transaction id
-  claimedAt            DateTime?
+  // Atomic claim guard for group gifts (actions/data/checkout.ts). Not
+  // @unique — atomicity comes from Mongo's single-document write, not an index.
   reservedAmount       Float     @default(0) // group gifts: OPEN/PENDING/COMPLETED sum
+  // NOTE: required-with-default — `prisma db push` won't backfill existing docs.
+  quantity             Int       @default(1) // individual gifts; unused for group gifts
+  reservedQuantity     Int       @default(0) // OPEN/PENDING/COMPLETED units held
   wishlistId           String    @db.ObjectId
   giftId               String    @db.ObjectId
   eventId              String    @db.ObjectId
@@ -219,6 +220,7 @@ model Transaction {
   wishlistId          String?           @db.ObjectId
   eventId             String            @db.ObjectId
   amount              String
+  quantity            Int               @default(1) // always 1 for group-gift contributions
   status              TransactionStatus @default(OPEN)
   notes               String?
   payerRole           UserType          @default(INVITEE)

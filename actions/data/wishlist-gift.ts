@@ -13,6 +13,7 @@ import {
 } from '@/schemas/form'
 import { GetwishlistGiftsParams } from '@/schemas/params'
 import { getErrorMessage } from '../helper'
+import { recomputeWishlistGiftProgress } from './transaction'
 
 export async function getWishlistGifts({
   searchParams,
@@ -72,7 +73,7 @@ export async function createWishlistGift(
     return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
-  const { wishlistId, giftId, eventId, isFavoriteGift, isGroupGift } =
+  const { wishlistId, giftId, eventId, isFavoriteGift, isGroupGift, quantity } =
     validatedFields.data
 
   const existing = await getWishlistGift(wishlistId, giftId)
@@ -83,7 +84,14 @@ export async function createWishlistGift(
 
   try {
     const wishlistGift = await prismaClient.wishlistGift.create({
-      data: { wishlistId, giftId, eventId, isFavoriteGift, isGroupGift },
+      data: {
+        wishlistId,
+        giftId,
+        eventId,
+        isFavoriteGift,
+        isGroupGift,
+        quantity: isGroupGift ? 1 : quantity,
+      },
     })
 
     revalidatePath('/wishlist')
@@ -140,23 +148,44 @@ export async function editWishlistGift(
     return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
-  const { wishlistGiftId, giftId, isFavoriteGift, isGroupGift } =
+  const { wishlistGiftId, giftId, isFavoriteGift, isGroupGift, quantity } =
     validatedFields.data
 
   try {
+    const current = await prismaClient.wishlistGift.findUnique({
+      where: { id: wishlistGiftId },
+      select: { isGroupGift: true },
+    })
+
+    if (!current) {
+      return { error: 'Regalo no encontrado.' }
+    }
+
+    const isChangingType = isGroupGift !== current.isGroupGift
+
     const result = await prismaClient.wishlistGift.updateMany({
       where: {
         id: wishlistGiftId,
-        transactions: { none: { status: 'COMPLETED' } },
+        reservedQuantity: { lte: isGroupGift ? 0 : quantity },
+        ...(isChangingType ? { reservedAmount: 0 } : {}),
       },
-      data: { giftId, isFavoriteGift, isGroupGift },
+      data: {
+        giftId,
+        isFavoriteGift,
+        isGroupGift,
+        quantity: isGroupGift ? 1 : quantity,
+      },
     })
 
     if (result.count === 0) {
       return {
-        error: 'No se puede editar un regalo que ya tiene contribuciones.',
+        error: isChangingType
+          ? 'No se puede cambiar el tipo de un regalo con contribuciones.'
+          : 'La cantidad no puede ser menor a las unidades ya reservadas o vendidas.',
       }
     }
+
+    await recomputeWishlistGiftProgress(wishlistGiftId)
 
     revalidatePath('/wishlist')
     return { success: true }
