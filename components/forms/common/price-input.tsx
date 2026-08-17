@@ -7,14 +7,12 @@ type PriceInputProps = {
   value: string
   onChange: (value: string) => void
   onBlur?: () => void
-  disabled?: boolean
 }
 
 export default function PriceInput({
   value,
   onChange,
   onBlur,
-  disabled,
 }: PriceInputProps) {
   const displayValue = value ? Number(value).toLocaleString('es-PY') : ''
 
@@ -30,7 +28,6 @@ export default function PriceInput({
       value={displayValue}
       onChange={handleChange}
       onBlur={onBlur}
-      disabled={disabled}
     />
   )
 }

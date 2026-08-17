@@ -12,8 +12,6 @@ import { applyTransactionStatusChange } from './transaction'
 export type CheckoutCartItem = {
   wishlistGiftId: string
   amount: string
-  // Always 1 for group-gift contributions.
-  quantity: number
 }
 
 // Guest-facing claim rejection, distinct from unexpected errors.
@@ -127,17 +125,7 @@ export async function createTransactionsForCart(
       }
       seenIndividualGiftIds.add(item.wishlistGiftId)
 
-      const requestedQty = Math.trunc(item.quantity) || 0
-      const completedQty = wishlistGift.transactions
-        .filter(transaction => transaction.status === 'COMPLETED')
-        .reduce((sum, transaction) => sum + transaction.quantity, 0)
-      const remainingStock = wishlistGift.quantity - completedQty
-
-      if (
-        requestedQty < 1 ||
-        amount !== price * requestedQty ||
-        requestedQty > remainingStock
-      ) {
+      if (amount !== price || wishlistGift.transactions.length > 0) {
         return {
           error: `"${wishlistGift.gift.name}" ya no está disponible.`,
         }
@@ -162,9 +150,6 @@ export async function createTransactionsForCart(
 
       const price = Number(wishlistGift.gift.price) || 0
       const amount = Number(item.amount) || 0
-      const requestedQty = wishlistGift.isGroupGift
-        ? 1
-        : Math.trunc(item.quantity) || 1
 
       const transaction = await retryOnTransientWriteConflict(() =>
         prismaClient.$transaction(async tx => {
@@ -173,7 +158,6 @@ export async function createTransactionsForCart(
               wishlistGiftId: item.wishlistGiftId,
               eventId,
               amount: item.amount,
-              quantity: requestedQty,
               payerName,
               payerEmail,
               payerDocument,
@@ -200,9 +184,17 @@ export async function createTransactionsForCart(
                 where: {
                   id: wishlistGift.id,
                   isGroupGift: false,
-                  reservedQuantity: { lte: wishlistGift.quantity - requestedQty },
+                  // null only matches an explicit null in Mongo — isSet: false
+                  // is also needed to catch fields that were never written.
+                  OR: [
+                    { claimedTransactionId: null },
+                    { claimedTransactionId: { isSet: false } },
+                  ],
                 },
-                data: { reservedQuantity: { increment: requestedQty } },
+                data: {
+                  claimedTransactionId: created.id,
+                  claimedAt: new Date(),
+                },
               })
 
           if (claim.count !== 1) {
@@ -259,9 +251,7 @@ export async function createPagoparCheckoutSession(
 
   const fullTransactions = await prismaClient.transaction.findMany({
     where: { id: { in: transactionIds }, eventId: event.id, status: 'OPEN' },
-    include: {
-      wishlistGift: { include: { gift: { include: { image: true } } } },
-    },
+    include: { wishlistGift: { include: { gift: true } } },
   })
 
   if (fullTransactions.length !== transactionIds.length) {
@@ -288,8 +278,6 @@ export async function createPagoparCheckoutSession(
     items: fullTransactions.map(transaction => ({
       name: transaction.wishlistGift.gift.name,
       amount: Number(transaction.amount),
-      quantity: transaction.quantity,
-      imageUrl: transaction.wishlistGift.gift.image?.url ?? null,
     })),
   })
 

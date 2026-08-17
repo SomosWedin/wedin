@@ -4,13 +4,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { type SubmitHandler, useForm } from 'react-hook-form'
+import type { z } from 'zod'
 import { createGift } from '@/actions/data/gift'
 import { createWishlistGift } from '@/actions/data/wishlist-gift'
-import type { GiftFormValues } from '@/components/forms/dialog/gift'
 import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/hooks/use-toast'
 import { uploadGiftImageToAws } from '@/lib/s3'
 import { GiftFormSchema } from '@/schemas/form'
+
+export type CreateGiftFormValues = z.infer<typeof GiftFormSchema>
 
 type UseCreateGiftProps = {
   eventId: string
@@ -28,7 +30,7 @@ export function useCreateGift({ eventId, wishlistId }: UseCreateGiftProps) {
   const { toast } = useToast()
   const router = useRouter()
 
-  const form = useForm<GiftFormValues>({
+  const form = useForm<CreateGiftFormValues>({
     resolver: zodResolver(GiftFormSchema),
     mode: 'all',
     defaultValues: {
@@ -43,7 +45,6 @@ export function useCreateGift({ eventId, wishlistId }: UseCreateGiftProps) {
       wishlistId,
       isFavoriteGift: false,
       isGroupGift: false,
-      quantity: 1,
     },
   })
 
@@ -79,7 +80,7 @@ export function useCreateGift({ eventId, wishlistId }: UseCreateGiftProps) {
     }
   }
 
-  const onSubmit: SubmitHandler<GiftFormValues> = async values => {
+  const onSubmit: SubmitHandler<CreateGiftFormValues> = async values => {
     setLoading(true)
 
     try {
@@ -127,7 +128,6 @@ export function useCreateGift({ eventId, wishlistId }: UseCreateGiftProps) {
         giftId: giftResponse.giftId,
         isFavoriteGift: values.isFavoriteGift,
         isGroupGift: values.isGroupGift,
-        quantity: values.quantity,
       })
 
       if (linkResponse.error) {

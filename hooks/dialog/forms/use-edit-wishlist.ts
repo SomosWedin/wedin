@@ -5,9 +5,9 @@ import type { Gift, Image as ImageModel } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { type SubmitHandler, useForm } from 'react-hook-form'
+import type { z } from 'zod'
 import { createGift, editGift } from '@/actions/data/gift'
 import { editWishlistGift } from '@/actions/data/wishlist-gift'
-import type { GiftFormValues } from '@/components/forms/dialog/gift'
 import { useToast } from '@/hooks/use-toast'
 import { uploadGiftImageToAws } from '@/lib/s3'
 import { GiftFormSchema } from '@/schemas/form'
@@ -16,6 +16,8 @@ export type EditableGift = Gift & {
   image: ImageModel | null
 }
 
+export type EditWishlistGiftFormValues = z.infer<typeof GiftFormSchema>
+
 type UseEditWishlistGiftProps = {
   wishlistGiftId: string
   wishlistId: string
@@ -23,7 +25,6 @@ type UseEditWishlistGiftProps = {
   gift: EditableGift
   isFavoriteGift: boolean
   isGroupGift: boolean
-  quantity: number
 }
 
 export function useEditWishlistGift({
@@ -33,7 +34,6 @@ export function useEditWishlistGift({
   gift,
   isFavoriteGift,
   isGroupGift,
-  quantity,
 }: UseEditWishlistGiftProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -47,7 +47,7 @@ export function useEditWishlistGift({
   const { toast } = useToast()
   const router = useRouter()
 
-  const form = useForm<GiftFormValues>({
+  const form = useForm<EditWishlistGiftFormValues>({
     resolver: zodResolver(GiftFormSchema),
     mode: 'all',
     defaultValues: {
@@ -62,7 +62,6 @@ export function useEditWishlistGift({
       wishlistId,
       isFavoriteGift,
       isGroupGift,
-      quantity,
     },
   })
 
@@ -87,7 +86,6 @@ export function useEditWishlistGift({
       wishlistId,
       isFavoriteGift,
       isGroupGift,
-      quantity,
     })
     setImageFile(null)
     setImagePreview(gift.image?.url ?? null)
@@ -108,7 +106,7 @@ export function useEditWishlistGift({
     event.target.value = ''
   }
 
-  const onSubmit: SubmitHandler<GiftFormValues> = async values => {
+  const onSubmit: SubmitHandler<EditWishlistGiftFormValues> = async values => {
     setLoading(true)
 
     try {
@@ -143,16 +141,13 @@ export function useEditWishlistGift({
         }
 
         if (gift.isDefault) {
-          const giftResponse = await createGift(
-            {
-              ...values,
-              isDefault: false,
-              isEditedVersion: true,
-              sourceGiftId: gift.id,
-              imageUrl,
-            },
-            wishlistGiftId
-          )
+          const giftResponse = await createGift({
+            ...values,
+            isDefault: false,
+            isEditedVersion: true,
+            sourceGiftId: gift.id,
+            imageUrl,
+          })
 
           if (giftResponse.error || !giftResponse.giftId) {
             toast({
@@ -171,8 +166,7 @@ export function useEditWishlistGift({
               ...values,
               imageUrl,
             },
-            gift.id,
-            wishlistGiftId
+            gift.id
           )
 
           if (editResponse.error) {
@@ -193,7 +187,6 @@ export function useEditWishlistGift({
         giftId,
         isFavoriteGift: values.isFavoriteGift,
         isGroupGift: values.isGroupGift,
-        quantity: values.quantity,
       })
 
       if (response.error) {

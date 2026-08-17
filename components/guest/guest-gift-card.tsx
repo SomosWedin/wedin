@@ -10,17 +10,14 @@ import {
 } from 'react-icons/io5'
 import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge'
 import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
-import {
-  getGiftProgress,
-  getQuantityProgress,
-} from '@/components/guest/gift-progress'
+import { getGiftProgress } from '@/components/guest/gift-progress'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 
 export type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
   include: {
     gift: { include: { image: true } }
-    transactions: { select: { amount: true; quantity: true } }
+    transactions: { select: { amount: true } }
   }
 }>
 
@@ -44,28 +41,13 @@ export default function GuestGiftCard({
     gift.price,
     wishlistGift.transactions
   )
-  const { remainingStock } = getQuantityProgress(
-    wishlistGift.quantity,
-    wishlistGift.transactions
-  )
-  const hasMultipleUnits = wishlistGift.quantity > 1
-  // The `remaining` fallback below is a client-side "already funded" shortcut
-  // that doesn't require an isFullyPaid refetch — but it compares money
-  // collected against a single unit's price, which only means "complete"
-  // for group gifts (price = funding target). Individual gifts are
-  // complete when no units are left, regardless of how much money that
-  // took — use remainingStock for those instead.
   const isComplete =
     wishlistGift.isFullyPaid ||
     wishlistGift.isManuallyReceived ||
-    (wishlistGift.isGroupGift
-      ? priceValue > 0 && remaining <= 0
-      : remainingStock <= 0)
-  const isAddedToCart =
-    !wishlistGift.isGroupGift &&
-    !hasMultipleUnits &&
-    isInCart &&
-    !isComplete
+    (priceValue > 0 && remaining <= 0)
+  // Individual gifts are single-unit: once added, block re-adding instead of
+  // letting the guest reopen the detail dialog and add a duplicate cart item.
+  const isAddedToCart = !wishlistGift.isGroupGift && isInCart && !isComplete
   const isDisabled = isComplete || isAddedToCart
 
   const handleCardClick = () => {
@@ -74,15 +56,6 @@ export default function GuestGiftCard({
       onOpenContributionDialog(wishlistGift)
     } else {
       onOpenGiftDetails(wishlistGift)
-    }
-  }
-
-  const handleAddClick = (event: React.MouseEvent) => {
-    event.stopPropagation()
-    if (hasMultipleUnits) {
-      onOpenGiftDetails(wishlistGift)
-    } else {
-      onAddFullPrice(wishlistGift)
     }
   }
 
@@ -143,16 +116,9 @@ export default function GuestGiftCard({
             <Progress value={percentage} />
           </div>
         ) : (
-          <div className="flex flex-col gap-0.5">
-            <p className="font-semibold text-lg">
-              Gs. {Number(gift.price).toLocaleString('es-PY')}
-            </p>
-            {hasMultipleUnits && (
-              <p className="text-xs text-gray-500 sm:text-sm">
-                Quedan {remainingStock} de {wishlistGift.quantity}
-              </p>
-            )}
-          </div>
+          <p className="font-semibold text-lg">
+            Gs. {Number(gift.price).toLocaleString('es-PY')}
+          </p>
         )}
       </div>
 
@@ -173,7 +139,10 @@ export default function GuestGiftCard({
         <Button
           variant="success"
           className="gap-1 justify-between text-xs sm:gap-2 sm:text-sm"
-          onClick={handleAddClick}
+          onClick={event => {
+            event.stopPropagation()
+            onAddFullPrice(wishlistGift)
+          }}
           disabled={isDisabled}
         >
           {isComplete

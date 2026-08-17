@@ -35,7 +35,7 @@ export async function getPublicWishlistGifts(eventId: string) {
         gift: { include: { image: true } },
         transactions: {
           where: { status: 'COMPLETED' },
-          select: { amount: true, quantity: true },
+          select: { amount: true },
         },
       },
       orderBy: { createdAt: 'desc' },

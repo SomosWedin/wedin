@@ -18,17 +18,3 @@ export function getGiftProgress(
 
   return { priceValue, contributed, remaining, percentage }
 }
-
-// `transactions` must already be filtered to COMPLETED, like getGiftProgress.
-export function getQuantityProgress(
-  quantity: number,
-  transactions: { quantity: number }[]
-) {
-  const completedQuantity = transactions.reduce(
-    (sum, transaction) => sum + transaction.quantity,
-    0
-  )
-  const remainingStock = Math.max(0, quantity - completedQuantity)
-
-  return { completedQuantity, remainingStock }
-}

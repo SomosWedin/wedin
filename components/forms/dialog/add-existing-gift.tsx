@@ -7,7 +7,6 @@ import type { BaseSyntheticEvent, ChangeEventHandler, RefObject } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { CiImageOn } from 'react-icons/ci'
 import { MdOutlineFileUpload } from 'react-icons/md'
-import type { z } from 'zod'
 import PriceInput from '@/components/forms/common/price-input'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,37 +26,31 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { GiftFormSchema } from '@/schemas/form'
+import { ExistingGiftFormValues } from '@/hooks/dialog/forms/use-add-existing-gift'
 
-type GiftFormValues = z.infer<typeof GiftFormSchema>
-
-type GiftFormProps = {
-  form: UseFormReturn<GiftFormValues>
+type AddExistingGiftFormProps = {
+  form: UseFormReturn<ExistingGiftFormValues>
   categories: Category[]
   loading: boolean
   isValid: boolean
   imagePreview: string | null
   fileInputRef: RefObject<HTMLInputElement>
-  uploadInputId: string
-  submitLabel: string
   onFileChange: ChangeEventHandler<HTMLInputElement>
   onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
   onCancel: () => void
 }
 
-export default function GiftForm({
+export default function AddExistingGiftForm({
   form,
   categories,
   loading,
   isValid,
   imagePreview,
   fileInputRef,
-  uploadInputId,
-  submitLabel,
   onFileChange,
   onSubmit,
   onCancel,
-}: GiftFormProps) {
+}: AddExistingGiftFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -81,7 +74,7 @@ export default function GiftForm({
 
             <div className="flex flex-col gap-1">
               <input
-                id={uploadInputId}
+                id="existing-gift-image-upload"
                 type="file"
                 className="hidden"
                 accept="image/jpeg,image/png,image/heic,image/webp"
@@ -233,8 +226,7 @@ export default function GiftForm({
             className="gap-2"
             disabled={loading || !isValid}
           >
-            {submitLabel}
-
+            Agregar a la lista
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           </Button>
         </div>

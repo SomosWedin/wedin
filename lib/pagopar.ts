@@ -26,8 +26,6 @@ type CreateOrderParams = {
   items: {
     name: string
     amount: number
-    quantity: number
-    imageUrl: string | null
   }[]
 }
 
@@ -102,14 +100,14 @@ export async function createOrder(
           // courier-taxonomy categories don't apply here.
           compras_items: params.items.map((item, index) => ({
             nombre: item.name,
-            cantidad: item.quantity,
+            cantidad: 1,
             categoria: 4,
             ciudad: '1',
             descripcion: item.name,
             id_producto: index + 1,
             precio_total: item.amount,
             public_key: publicKey,
-            url_imagen: item.imageUrl ?? '',
+            url_imagen: '',
             vendedor_telefono: '',
             vendedor_direccion: '',
             vendedor_direccion_referencia: '',

@@ -9,8 +9,7 @@
     "format": "biome check --write --linter-enabled=false .",
     "format:check": "biome check --linter-enabled=false .",
     "test": "vitest",
-    "test:run": "vitest run",
-    "backfill:wishlist-gift-quantity": "ts-node scripts/backfill-wishlist-gift-quantity.ts"
+    "test:run": "vitest run"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,scss,md}": [

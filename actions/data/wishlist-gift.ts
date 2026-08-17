@@ -13,7 +13,6 @@ import {
 } from '@/schemas/form'
 import { GetwishlistGiftsParams } from '@/schemas/params'
 import { getErrorMessage } from '../helper'
-import { recomputeWishlistGiftProgress } from './transaction'
 
 export async function getWishlistGifts({
   searchParams,
@@ -73,7 +72,7 @@ export async function createWishlistGift(
     return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
-  const { wishlistId, giftId, eventId, isFavoriteGift, isGroupGift, quantity } =
+  const { wishlistId, giftId, eventId, isFavoriteGift, isGroupGift } =
     validatedFields.data
 
   const existing = await getWishlistGift(wishlistId, giftId)
@@ -84,14 +83,7 @@ export async function createWishlistGift(
 
   try {
     const wishlistGift = await prismaClient.wishlistGift.create({
-      data: {
-        wishlistId,
-        giftId,
-        eventId,
-        isFavoriteGift,
-        isGroupGift,
-        quantity: isGroupGift ? 1 : quantity,
-      },
+      data: { wishlistId, giftId, eventId, isFavoriteGift, isGroupGift },
     })
 
     revalidatePath('/wishlist')
@@ -148,47 +140,23 @@ export async function editWishlistGift(
     return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
-  const { wishlistGiftId, giftId, isFavoriteGift, isGroupGift, quantity } =
+  const { wishlistGiftId, giftId, isFavoriteGift, isGroupGift } =
     validatedFields.data
 
   try {
-    const current = await prismaClient.wishlistGift.findUnique({
-      where: { id: wishlistGiftId },
-      select: { isGroupGift: true },
-    })
-
-    if (!current) {
-      return { error: 'Regalo no encontrado.' }
-    }
-
-    // Switching type would desync the claim guard (reservedQuantity vs
-    // reservedAmount) from reality, so it's blocked while either is active.
-    const isChangingType = isGroupGift !== current.isGroupGift
-
     const result = await prismaClient.wishlistGift.updateMany({
       where: {
         id: wishlistGiftId,
-        reservedQuantity: { lte: isGroupGift ? 0 : quantity },
-        ...(isChangingType ? { reservedAmount: 0 } : {}),
+        transactions: { none: { status: 'COMPLETED' } },
       },
-      data: {
-        giftId,
-        isFavoriteGift,
-        isGroupGift,
-        quantity: isGroupGift ? 1 : quantity,
-      },
+      data: { giftId, isFavoriteGift, isGroupGift },
     })
 
     if (result.count === 0) {
       return {
-        error: isChangingType
-          ? 'No se puede cambiar el tipo de un regalo con contribuciones.'
-          : 'La cantidad no puede ser menor a las unidades ya reservadas o vendidas.',
+        error: 'No se puede editar un regalo que ya tiene contribuciones.',
       }
     }
-
-    // Group-gift completion depends on price, which may have just changed.
-    await recomputeWishlistGiftProgress(wishlistGiftId)
 
     revalidatePath('/wishlist')
     return { success: true }

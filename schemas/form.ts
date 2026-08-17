@@ -130,12 +130,6 @@ export const GiftFormSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }), // wishlistGiftPostSchema
   isFavoriteGift: z.boolean().default(false), // wishlistGiftPostSchema
   isGroupGift: z.boolean().default(false), // wishlistGiftPostSchema
-  quantity: z.coerce // wishlistGiftPostSchema
-    .number()
-    .int({ message: 'Debe ser entero' })
-    .min(1, { message: 'Mínimo 1' })
-    .max(20, { message: 'Máximo 20' })
-    .default(1),
 })
 
 // We want to ignore the imageUrl field when creating/editing a gift
@@ -165,7 +159,6 @@ export const WishlistGiftCreateSchema = z.object({
   giftId: z.string().min(1, { message: 'No se encontro un gift ID' }),
   isFavoriteGift: z.boolean().default(false),
   isGroupGift: z.boolean().default(false),
-  quantity: z.coerce.number().int().min(1).max(20).default(1),
 })
 
 export const WishlistGiftsCreateSchema = z.object({
@@ -180,7 +173,6 @@ export const WishlistGiftEditSchema = z.object({
   giftId: z.string().min(1, { message: 'No se encontro un gift ID' }),
   isFavoriteGift: z.boolean().default(false),
   isGroupGift: z.boolean().default(false),
-  quantity: z.coerce.number().int().min(1).max(20).default(1),
 })
 
 export const WishlistGiftDeleteSchema = z.object({

@@ -251,15 +251,7 @@ export default function DashboardWishlistList({
               </div>
 
               <div className="col-span-2 text-sm">
-                <p>
-                  Gs.{Number(wishlistGift.gift.price).toLocaleString('es-PY')}
-                </p>
-                {!wishlistGift.isGroupGift && wishlistGift.quantity > 1 && (
-                  <p className="text-gray-500">
-                    {wishlistGift.reservedQuantity} de {wishlistGift.quantity}{' '}
-                    recibido{wishlistGift.reservedQuantity === 1 ? '' : 's'}
-                  </p>
-                )}
+                Gs.{Number(wishlistGift.gift.price).toLocaleString('es-PY')}
               </div>
 
               <div className="flex col-span-2 gap-2 items-center text-sm">
@@ -306,11 +298,9 @@ export default function DashboardWishlistList({
                     categories={categories}
                     isFavoriteGift={wishlistGift.isFavoriteGift}
                     isGroupGift={wishlistGift.isGroupGift}
-                    quantity={wishlistGift.quantity}
-                    minQuantity={wishlistGift.reservedQuantity}
-                    lockPrice={
-                      !wishlistGift.isGroupGift &&
-                      wishlistGift.reservedQuantity > 0
+                    disabled={
+                      wishlistGift.isFullyPaid ||
+                      Number(wishlistGift.groupGiftParts) > 0
                     }
                   />
                   <DeleteWishlistGiftDialog

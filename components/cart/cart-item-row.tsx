@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import { IoGiftOutline, IoPencilOutline, IoTrashOutline } from 'react-icons/io5'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { CartItem } from '@/hooks/use-cart-store'
 
@@ -33,26 +32,13 @@ export default function CartItemRow({
         )}
       </div>
       <div className="flex flex-col flex-1 gap-1 min-w-0">
-        <div className="flex gap-2 items-center">
-          <p className="truncate font-normal text-base">{item.giftName}</p>
-          {!item.isGroupGift && item.quantity > 1 && (
-            <Badge className="w-fit gap-1 font-medium bg-gray100 text-textPrimary border-transparent shrink-0">
-              ×{item.quantity}
-            </Badge>
-          )}
-        </div>
+        <p className="truncate font-normal text-base">{item.giftName}</p>
         <p className="font-medium text-lg">
           Gs. {Number(item.amount).toLocaleString('es-PY')}
         </p>
-        {!item.isGroupGift && item.quantity > 1 && (
-          <p className="text-sm text-textTertiary">
-            {item.quantity} × Gs.{' '}
-            {Number(item.unitPrice).toLocaleString('es-PY')} c/u
-          </p>
-        )}
       </div>
       <div className="flex gap-1 items-center shrink-0">
-        {(item.isGroupGift || item.quantity > 1) && (
+        {item.isGroupGift && (
           <Button
             type="button"
             variant="ghost"
