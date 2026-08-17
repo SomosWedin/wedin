@@ -108,9 +108,31 @@ export async function getGifts({
 //   }
 // }
 
+// Price is a real monetary commitment the moment an individual gift sells a
+// unit — like an e-commerce order, its price is locked from then on, even
+// though the rest of the listing (name/category/image/quantity) stays
+// editable. Group gifts are exempt: their price is a funding goal, not a
+// per-unit price, and adjusting it after contributions is normal there.
+class PriceLockedError extends Error {}
+
+async function assertPriceEditAllowed(
+  wishlistGiftId: string,
+  tx: Prisma.TransactionClient | typeof prismaClient
+) {
+  const wishlistGift = await tx.wishlistGift.findUnique({
+    where: { id: wishlistGiftId },
+    select: { isGroupGift: true, reservedQuantity: true },
+  })
+
+  if (wishlistGift && !wishlistGift.isGroupGift && wishlistGift.reservedQuantity > 0) {
+    throw new PriceLockedError()
+  }
+}
+
 export async function editGift(
   formData: z.infer<typeof GiftPostSchema>,
-  giftId: string
+  giftId: string,
+  wishlistGiftId: string
 ) {
   const validatedFields = GiftEditSchema.safeParse(formData)
 
@@ -121,21 +143,32 @@ export async function editGift(
   const { imageUrl, ...giftData } = validatedFields.data
 
   try {
-    const gift = await prismaClient.gift.update({
-      where: { id: giftId },
-      data: {
-        ...giftData,
-        ...(imageUrl
-          ? {
-              image: {
-                upsert: {
-                  create: { url: imageUrl },
-                  update: { url: imageUrl },
+    const gift = await prismaClient.$transaction(async tx => {
+      const currentGift = await tx.gift.findUnique({
+        where: { id: giftId },
+        select: { price: true },
+      })
+
+      if (currentGift && giftData.price !== currentGift.price) {
+        await assertPriceEditAllowed(wishlistGiftId, tx)
+      }
+
+      return tx.gift.update({
+        where: { id: giftId },
+        data: {
+          ...giftData,
+          ...(imageUrl
+            ? {
+                image: {
+                  upsert: {
+                    create: { url: imageUrl },
+                    update: { url: imageUrl },
+                  },
                 },
-              },
-            }
-          : {}),
-      },
+              }
+            : {}),
+        },
+      })
     })
 
     if (!gift) {
@@ -146,12 +179,26 @@ export async function editGift(
     revalidatePath('/wishlist')
     return { giftId: gift.id }
   } catch (error) {
+    if (error instanceof PriceLockedError) {
+      return {
+        error:
+          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+      }
+    }
+
     console.error('Error editing gift:', error)
     return { error: getErrorMessage(error) }
   }
 }
 
-export async function createGift(formData: z.infer<typeof GiftPostSchema>) {
+export async function createGift(
+  formData: z.infer<typeof GiftPostSchema>,
+  // Only set when this create is really an edit of an existing WishlistGift
+  // (isDefault gifts get an edited-version copy instead of an in-place
+  // update — see hooks/dialog/forms/use-edit-wishlist.ts). A genuinely new
+  // registry entry has no WishlistGift yet, so the price lock can't apply.
+  wishlistGiftId?: string
+) {
   const validatedFields = GiftCreateSchema.safeParse(formData)
 
   if (!validatedFields.success) {
@@ -161,6 +208,17 @@ export async function createGift(formData: z.infer<typeof GiftPostSchema>) {
   const { imageUrl, sourceGiftId, ...giftData } = validatedFields.data
 
   try {
+    if (sourceGiftId && wishlistGiftId) {
+      const sourceGift = await prismaClient.gift.findUnique({
+        where: { id: sourceGiftId },
+        select: { price: true },
+      })
+
+      if (sourceGift && giftData.price !== sourceGift.price) {
+        await assertPriceEditAllowed(wishlistGiftId, prismaClient)
+      }
+    }
+
     const newGift = await prismaClient.gift.create({
       data: {
         ...giftData,
@@ -176,6 +234,13 @@ export async function createGift(formData: z.infer<typeof GiftPostSchema>) {
     revalidatePath('/dashboard')
     return { giftId: newGift.id }
   } catch (error) {
+    if (error instanceof PriceLockedError) {
+      return {
+        error:
+          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+      }
+    }
+
     console.error('Error creating gift:', error)
     return { error: getErrorMessage(error) }
   }

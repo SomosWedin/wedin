@@ -2,7 +2,7 @@
 
 import type { Category } from '@prisma/client'
 import { IoAdd } from 'react-icons/io5'
-import CreateGiftForm from '@/components/forms/dialog/create-gift'
+import GiftForm from '@/components/forms/dialog/gift'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -53,13 +53,16 @@ export default function CreateGiftDialog({
           <DialogTitle>Agregar regalo</DialogTitle>
         </DialogHeader>
 
-        <CreateGiftForm
+        <GiftForm
           form={form}
           categories={categories}
           loading={loading}
           isValid={isValid}
           imagePreview={imagePreview}
           fileInputRef={fileInputRef}
+          uploadInputId="create-gift-image-upload"
+          submitLabel="Agregar a la lista"
+          allowTypeChange
           onFileChange={handleFileChange}
           onSubmit={handleSubmit}
           onCancel={() => handleOpenChange(false)}
