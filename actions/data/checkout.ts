@@ -15,19 +15,12 @@ export type CheckoutCartItem = {
   quantity: number
 }
 
-// Guest-facing claim rejection, distinct from unexpected errors.
 class CartClaimError extends Error {}
 
-// OPEN means abandoned before ever reaching Pagopar — safe to release fast.
 const CARD_OPEN_TIMEOUT_MINUTES = 3
 
-// PENDING means the guest may be mid-payment; Pagopar retries its own
-// webhook delivery for ~10 min, so this needs to outlast that.
 const CARD_PENDING_TIMEOUT_MINUTES = 30
 
-// No cron infra exists, so expiry is lazy: release stale CARD holds right
-// before a new claim attempt, via the same FAILED path a real failure uses.
-// BANK_TRANSFER excluded — its PENDING is staff-confirmed, not abandoned.
 async function expireStaleHolds(wishlistGiftIds: string[]) {
   const openCutoff = new Date(
     Date.now() - CARD_OPEN_TIMEOUT_MINUTES * 60 * 1000
@@ -77,10 +70,6 @@ export async function createTransactionsForCart(
     paymentMethod,
   } = validatedPayer.data
 
-  // CARD transactions get grouped later by Pagopar's own hash
-  // (createPagoparCheckoutSession), which never runs for BANK_TRANSFER —
-  // so it needs its own group id, generated once per cart checkout, to
-  // let "Agradecer" thank every gift from the same transfer at once.
   const bankTransferGroupId =
     paymentMethod === 'BANK_TRANSFER' ? randomUUID() : undefined
 
@@ -101,8 +90,6 @@ export async function createTransactionsForCart(
     },
   })
 
-  // Fast, friendly pre-validation — racy by nature, not the real guarantee
-  // (that's the atomic claim below), just catches the obvious cases early.
   const seenIndividualGiftIds = new Set<string>()
 
   for (const item of cartItems) {
@@ -155,9 +142,6 @@ export async function createTransactionsForCart(
     }
   }
 
-  // Claim + Transaction.create happen in one Mongo transaction, so a
-  // concurrent claim on the same gift can't both win. Items are claimed
-  // sequentially so an earlier claim gets released if a later one fails.
   const createdTransactionIds: string[] = []
 
   try {
@@ -262,9 +246,6 @@ export async function createPagoparCheckoutSession(
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  // Pagopar's id_pedido_comercio is varchar(64); joining every transaction id
-  // overflows it at 3+ cart items. Nothing decodes orderId back into a list
-  // (lookups use the Pagopar-issued hash), so the first id alone is enough.
   const orderId = transactionIds[0]
 
   const fullTransactions = await prismaClient.transaction.findMany({
@@ -320,10 +301,6 @@ export async function createPagoparCheckoutSession(
       )
     )
 
-    // TODO: append ?forma_pago=<id> once Pagopar support confirms the
-    // value(s) for Tarjeta de crédito/QR and approves this account for the
-    // redirect-time payment-method restriction (docs say it's gated,
-    // separate from having the payment methods themselves enabled).
     const redirectUrl = order.success.hash.startsWith('STUB-')
       ? `${appUrl}/checkout/pagopar/result/${order.success.hash}?stub=1`
       : `https://www.pagopar.com/pagos/${order.success.hash}`
