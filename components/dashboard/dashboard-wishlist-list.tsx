@@ -114,7 +114,10 @@ export default function DashboardWishlistList({
   const activeWishlistGifts = wishlistGifts.filter(
     wishlistGift => !wishlistGift.isReceived
   )
-  const addedGiftCount = activeWishlistGifts.length
+  const addedGiftCount = activeWishlistGifts.reduce(
+    (sum, wishlistGift) => sum + wishlistGift.quantity,
+    0
+  )
   const totalGiftsValue = activeWishlistGifts.reduce(
     (sum, wishlistGift) => sum + (Number(wishlistGift.gift.price) || 0),
     0

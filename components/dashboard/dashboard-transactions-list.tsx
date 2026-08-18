@@ -12,6 +12,7 @@ import {
   IoSwapVerticalOutline,
 } from 'react-icons/io5'
 import ThankTransactionDialog from '@/components/dialog/thank-transaction-dialog'
+import { getQuantityProgress } from '@/components/guest/gift-progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
@@ -25,7 +26,10 @@ type TransactionWithGift = Prisma.TransactionGetPayload<{
 }>
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
-  include: { gift: { include: { image: true } } }
+  include: {
+    gift: { include: { image: true } }
+    transactions: { select: { quantity: true } }
+  }
 }>
 
 type DashboardTransactionsListProps = {
@@ -82,10 +86,20 @@ export default function DashboardTransactionsList({
   const activeWishlistGifts = wishlistGifts.filter(
     wishlistGift => !wishlistGift.isReceived
   )
-  const receivedCount = activeWishlistGifts.filter(
-    wishlistGift => wishlistGift.isFullyPaid || wishlistGift.isManuallyReceived
-  ).length
-  const totalWishlistGifts = activeWishlistGifts.length
+  const receivedCount = activeWishlistGifts.reduce((sum, wishlistGift) => {
+    if (wishlistGift.isManuallyReceived) return sum + wishlistGift.quantity
+    if (wishlistGift.isGroupGift) return sum + (wishlistGift.isFullyPaid ? 1 : 0)
+
+    return (
+      sum +
+      getQuantityProgress(wishlistGift.quantity, wishlistGift.transactions)
+        .completedQuantity
+    )
+  }, 0)
+  const totalWishlistGifts = activeWishlistGifts.reduce(
+    (sum, wishlistGift) => sum + wishlistGift.quantity,
+    0
+  )
   const totalGiftsPrice = activeWishlistGifts.reduce(
     (sum, wishlistGift) => sum + (Number(wishlistGift.gift.price) || 0),
     0
