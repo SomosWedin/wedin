@@ -154,7 +154,6 @@ export async function createTransactionsForCart(
         throw new CartClaimError('Uno de los regalos ya no está disponible.')
       }
 
-      const price = Number(wishlistGift.gift.price) || 0
       const amount = Number(item.amount) || 0
       const requestedQty = wishlistGift.isGroupGift
         ? 1
@@ -162,6 +161,21 @@ export async function createTransactionsForCart(
 
       const transaction = await retryOnTransientWriteConflict(() =>
         prismaClient.$transaction(async tx => {
+          // Live read, not the outer snapshot — a concurrent edit lands as
+          // a write conflict on commit, which retryOnTransientWriteConflict retries.
+          const liveWishlistGift = await tx.wishlistGift.findUnique({
+            where: { id: wishlistGift.id },
+            select: { quantity: true, gift: { select: { price: true } } },
+          })
+
+          if (!liveWishlistGift) {
+            throw new CartClaimError(
+              `"${wishlistGift.gift.name}" ya no está disponible.`
+            )
+          }
+
+          const livePrice = Number(liveWishlistGift.gift.price) || 0
+
           const created = await tx.transaction.create({
             data: {
               wishlistGiftId: item.wishlistGiftId,
@@ -186,7 +200,7 @@ export async function createTransactionsForCart(
                 where: {
                   id: wishlistGift.id,
                   isGroupGift: true,
-                  reservedAmount: { lte: price - amount },
+                  reservedAmount: { lte: livePrice - amount },
                 },
                 data: { reservedAmount: { increment: amount } },
               })
@@ -194,7 +208,9 @@ export async function createTransactionsForCart(
                 where: {
                   id: wishlistGift.id,
                   isGroupGift: false,
-                  reservedQuantity: { lte: wishlistGift.quantity - requestedQty },
+                  reservedQuantity: {
+                    lte: liveWishlistGift.quantity - requestedQty,
+                  },
                 },
                 data: { reservedQuantity: { increment: requestedQty } },
               })

@@ -29,8 +29,10 @@ whenever you touch something documented below.
     pattern.
   - Adding a new required field with a `@default(...)` does not backfill
     that default onto existing documents — only new writes get it. See
-    `WishlistGift.quantity`/`reservedQuantity` below, backfilled via
-    `scripts/backfill-wishlist-gift-quantity.ts`.
+    `WishlistGift.quantity`/`reservedQuantity` below: before deploying a
+    change like that to an environment, run a one-time raw Mongo backfill
+    against that environment's database (not checked into this repo — kept
+    as a local, one-off script per environment, run by hand).
 
 ## Field notes
 

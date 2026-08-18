@@ -94,13 +94,15 @@ export async function updateTransactionNotes(
   }
 }
 
-// Undoes the atomic claim from createTransactionsForCart (actions/data/checkout.ts).
-async function releaseWishlistGiftClaim(transaction: {
-  id: string
-  wishlistGiftId: string
-  amount: string
-  quantity: number
-}) {
+// Adjusts the atomic claim from createTransactionsForCart
+// (actions/data/checkout.ts) by a signed delta — shared by release
+// (negative, on FAILED/REFUNDED) and reclaim (positive, when an admin
+// override resurrects a transaction back out of FAILED/REFUNDED) below.
+async function adjustWishlistGiftClaim(
+  transaction: { wishlistGiftId: string; amount: string; quantity: number },
+  amountDelta: number,
+  quantityDelta: number
+) {
   const wishlistGift = await prismaClient.wishlistGift.findUnique({
     where: { id: transaction.wishlistGiftId },
     select: { isGroupGift: true },
@@ -111,17 +113,39 @@ async function releaseWishlistGiftClaim(transaction: {
   if (wishlistGift.isGroupGift) {
     await prismaClient.wishlistGift.update({
       where: { id: transaction.wishlistGiftId },
-      data: {
-        reservedAmount: { decrement: Number(transaction.amount) || 0 },
-      },
+      data: { reservedAmount: { increment: amountDelta } },
     })
     return
   }
 
   await prismaClient.wishlistGift.update({
     where: { id: transaction.wishlistGiftId },
-    data: { reservedQuantity: { decrement: transaction.quantity } },
+    data: { reservedQuantity: { increment: quantityDelta } },
   })
+}
+
+function releaseWishlistGiftClaim(transaction: {
+  wishlistGiftId: string
+  amount: string
+  quantity: number
+}) {
+  return adjustWishlistGiftClaim(
+    transaction,
+    -(Number(transaction.amount) || 0),
+    -transaction.quantity
+  )
+}
+
+function reclaimWishlistGiftClaim(transaction: {
+  wishlistGiftId: string
+  amount: string
+  quantity: number
+}) {
+  return adjustWishlistGiftClaim(
+    transaction,
+    Number(transaction.amount) || 0,
+    transaction.quantity
+  )
 }
 
 // Transaction + retry so concurrent completions on the same gift can't
@@ -222,6 +246,8 @@ export async function applyTransactionStatusChange(
 
   if (status === 'FAILED' || status === 'REFUNDED') {
     await releaseWishlistGiftClaim(transaction)
+  } else if (transaction.status === 'FAILED' || transaction.status === 'REFUNDED') {
+    await reclaimWishlistGiftClaim(transaction)
   }
 
   await recomputeWishlistGiftProgress(transaction.wishlistGiftId)
