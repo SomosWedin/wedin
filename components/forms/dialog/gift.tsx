@@ -241,7 +241,10 @@ export default function GiftForm({
                       max={20}
                       step={1}
                       value={field.value}
-                      onChange={event => field.onChange(event.target.value)}
+                      onChange={event => {
+                        if (event.target.value.length > 2) return
+                        field.onChange(event.target.value)
+                      }}
                       onBlur={field.onBlur}
                     />
                   </FormControl>

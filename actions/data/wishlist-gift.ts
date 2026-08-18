@@ -42,7 +42,13 @@ export async function getWishlistGifts({
   try {
     return await prismaClient.wishlistGift.findMany({
       where: query,
-      include: { gift: { include: { image: true } } },
+      include: {
+        gift: { include: { image: true } },
+        transactions: {
+          where: { status: 'COMPLETED' },
+          select: { quantity: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       skip,
       take,

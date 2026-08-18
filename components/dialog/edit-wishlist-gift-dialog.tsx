@@ -27,6 +27,7 @@ type EditWishlistGiftDialogProps = {
   quantity: number
   minQuantity: number
   lockPrice: boolean
+  allowTypeChange: boolean
 }
 
 export default function EditWishlistGiftDialog({
@@ -40,6 +41,7 @@ export default function EditWishlistGiftDialog({
   quantity,
   minQuantity,
   lockPrice,
+  allowTypeChange,
 }: EditWishlistGiftDialogProps) {
   const {
     form,
@@ -85,6 +87,7 @@ export default function EditWishlistGiftDialog({
           submitLabel="Guardar"
           minQuantity={minQuantity}
           lockPrice={lockPrice}
+          allowTypeChange={allowTypeChange}
           onFileChange={handleFileChange}
           onSubmit={handleSubmit}
           onCancel={() => handleOpenChange(false)}

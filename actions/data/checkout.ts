@@ -18,21 +18,32 @@ export type CheckoutCartItem = {
 // Guest-facing claim rejection, distinct from unexpected errors.
 class CartClaimError extends Error {}
 
-// Abandoned CARD checkouts would otherwise hold their claim forever.
-const CARD_HOLD_TIMEOUT_MINUTES = 30
+// OPEN means abandoned before ever reaching Pagopar — safe to release fast.
+const CARD_OPEN_TIMEOUT_MINUTES = 3
+
+// PENDING means the guest may be mid-payment; Pagopar retries its own
+// webhook delivery for ~10 min, so this needs to outlast that.
+const CARD_PENDING_TIMEOUT_MINUTES = 30
 
 // No cron infra exists, so expiry is lazy: release stale CARD holds right
 // before a new claim attempt, via the same FAILED path a real failure uses.
 // BANK_TRANSFER excluded — its PENDING is staff-confirmed, not abandoned.
 async function expireStaleHolds(wishlistGiftIds: string[]) {
-  const cutoff = new Date(Date.now() - CARD_HOLD_TIMEOUT_MINUTES * 60 * 1000)
+  const openCutoff = new Date(
+    Date.now() - CARD_OPEN_TIMEOUT_MINUTES * 60 * 1000
+  )
+  const pendingCutoff = new Date(
+    Date.now() - CARD_PENDING_TIMEOUT_MINUTES * 60 * 1000
+  )
 
   const staleTransactions = await prismaClient.transaction.findMany({
     where: {
       wishlistGiftId: { in: wishlistGiftIds },
       paymentMethod: 'CARD',
-      status: { in: ['OPEN', 'PENDING'] },
-      createdAt: { lt: cutoff },
+      OR: [
+        { status: 'OPEN', createdAt: { lt: openCutoff } },
+        { status: 'PENDING', createdAt: { lt: pendingCutoff } },
+      ],
     },
     select: { id: true },
   })

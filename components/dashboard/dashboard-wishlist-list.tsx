@@ -13,14 +13,20 @@ import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge'
 import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
 import DeleteWishlistGiftDialog from '@/components/dialog/delete-wishlist-gift-dialog'
 import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialog'
-import { computePercentage } from '@/components/guest/gift-progress'
+import {
+  computePercentage,
+  getQuantityProgress,
+} from '@/components/guest/gift-progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift'
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
-  include: { gift: { include: { image: true } } }
+  include: {
+    gift: { include: { image: true } }
+    transactions: { select: { quantity: true } }
+  }
 }>
 
 type DashboardWishlistListProps = {
@@ -254,12 +260,20 @@ export default function DashboardWishlistList({
                 <p>
                   Gs.{Number(wishlistGift.gift.price).toLocaleString('es-PY')}
                 </p>
-                {!wishlistGift.isGroupGift && wishlistGift.quantity > 1 && (
-                  <p className="text-gray-500">
-                    {wishlistGift.reservedQuantity} de {wishlistGift.quantity}{' '}
-                    recibido{wishlistGift.reservedQuantity === 1 ? '' : 's'}
-                  </p>
-                )}
+                {!wishlistGift.isGroupGift &&
+                  wishlistGift.quantity > 1 &&
+                  (() => {
+                    const { completedQuantity } = getQuantityProgress(
+                      wishlistGift.quantity,
+                      wishlistGift.transactions
+                    )
+                    return (
+                      <p className="text-gray-500">
+                        {completedQuantity} de {wishlistGift.quantity}{' '}
+                        recibido{completedQuantity === 1 ? '' : 's'}
+                      </p>
+                    )
+                  })()}
               </div>
 
               <div className="flex col-span-2 gap-2 items-center text-sm">
@@ -311,6 +325,10 @@ export default function DashboardWishlistList({
                     lockPrice={
                       !wishlistGift.isGroupGift &&
                       wishlistGift.reservedQuantity > 0
+                    }
+                    allowTypeChange={
+                      wishlistGift.reservedQuantity === 0 &&
+                      wishlistGift.reservedAmount === 0
                     }
                   />
                   <DeleteWishlistGiftDialog
