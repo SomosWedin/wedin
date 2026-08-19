@@ -194,9 +194,9 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
             />
             {suggestions.length > 0 && (
               <div className="flex flex-col gap-2 w-full">
-                {suggestions.map((suggestion, index) => (
+                {suggestions.map((suggestion, _index) => (
                   <button
-                    key={index}
+                    key={suggestion}
                     type="button"
                     onClick={() => applySuggestion(suggestion)}
                     className="p-3 text-xs sm:text-sm text-left rounded-md border transition-colors border-borderSecondary hover:border-primary hover:bg-gray-50"

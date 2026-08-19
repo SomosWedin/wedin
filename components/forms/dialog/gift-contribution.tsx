@@ -142,7 +142,9 @@ export default function GiftContributionForm({
           name="amount"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel className={cn(!fieldState.isDirty && 'text-textPrimary')}>
+              <FormLabel
+                className={cn(!fieldState.isDirty && 'text-textPrimary')}
+              >
                 Monto a contribuir
               </FormLabel>
 

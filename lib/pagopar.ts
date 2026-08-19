@@ -59,9 +59,11 @@ function formatPagoparDate(date: Date): string {
 export async function createOrder(
   params: CreateOrderParams
 ): Promise<{ error: string } | { success: PagoparOrder }> {
+  const { orderId, totalAmount, payer, description, items } = params
+  const { email, name, documento } = payer
   if (!hasCredentials) {
     return {
-      success: { hash: `STUB-${params.orderId}`, pedido: params.orderId },
+      success: { hash: `STUB-${orderId}`, pedido: orderId },
     }
   }
 
@@ -76,19 +78,19 @@ export async function createOrder(
         body: JSON.stringify({
           token,
           public_key: publicKey,
-          monto_total: params.totalAmount,
+          monto_total: totalAmount,
           tipo_pedido: 'VENTA-COMERCIO',
-          id_pedido_comercio: params.orderId,
+          id_pedido_comercio: orderId,
           fecha_maxima_pago: formatPagoparDate(
             new Date(Date.now() + 24 * 60 * 60 * 1000)
           ),
-          descripcion_resumen: params.description,
+          descripcion_resumen: description,
           comprador: {
             ruc: '',
-            email: params.payer.email,
-            nombre: params.payer.name,
+            email: email,
+            nombre: name,
             telefono: '',
-            documento: params.payer.documento,
+            documento: documento,
             tipo_documento: 'CI',
             ciudad: null,
             direccion: '',
@@ -100,7 +102,7 @@ export async function createOrder(
           // Pagopar had to explicitly enable on this merchant account —
           // a cash-gift contribution has no physical shipment, so the
           // courier-taxonomy categories don't apply here.
-          compras_items: params.items.map((item, index) => ({
+          compras_items: items.map((item, index) => ({
             nombre: item.name,
             cantidad: item.quantity,
             categoria: 4,
@@ -157,7 +159,7 @@ export async function getOrderStatus(
     return { error: 'Pagopar no está configurado' }
   }
 
-  const token = sha1(privateKey + 'CONSULTA')
+  const token = sha1(`${privateKey}CONSULTA`)
 
   try {
     const response = await fetch(`${baseUrl}/api/pedidos/1.1/traer`, {

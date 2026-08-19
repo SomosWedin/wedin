@@ -15,7 +15,8 @@ export type CheckoutCartItem = {
   quantity: number
 }
 
-class CartClaimError extends Error {}
+// Guest-facing claim rejection, distinct from unexpected errors.
+class CartClaimError extends Error { }
 
 const CARD_OPEN_TIMEOUT_MINUTES = 3
 
@@ -197,23 +198,29 @@ export async function createTransactionsForCart(
 
           const claim = wishlistGift.isGroupGift
             ? await tx.wishlistGift.updateMany({
-                where: {
-                  id: wishlistGift.id,
-                  isGroupGift: true,
-                  reservedAmount: { lte: livePrice - amount },
-                },
-                data: { reservedAmount: { increment: amount } },
-              })
+              where: {
+                id: wishlistGift.id,
+                isGroupGift: true,
+                reservedAmount: { lte: price - amount },
+              },
+              data: { reservedAmount: { increment: amount } },
+            })
             : await tx.wishlistGift.updateMany({
-                where: {
-                  id: wishlistGift.id,
-                  isGroupGift: false,
-                  reservedQuantity: {
-                    lte: liveWishlistGift.quantity - requestedQty,
-                  },
-                },
-                data: { reservedQuantity: { increment: requestedQty } },
-              })
+              where: {
+                id: wishlistGift.id,
+                isGroupGift: false,
+                // null only matches an explicit null in Mongo — isSet: false
+                // is also needed to catch fields that were never written.
+                OR: [
+                  { claimedTransactionId: null },
+                  { claimedTransactionId: { isSet: false } },
+                ],
+              },
+              data: {
+                claimedTransactionId: created.id,
+                claimedAt: new Date(),
+              },
+            })
 
           if (claim.count !== 1) {
             throw new CartClaimError(
@@ -276,6 +283,7 @@ export async function createPagoparCheckoutSession(
     return { error: 'Una de las transacciones ya no está disponible.' }
   }
 
+  // Here
   const total = fullTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0

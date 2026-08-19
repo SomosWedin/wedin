@@ -31,17 +31,17 @@ const PAYMENT_METHODS: {
   label: string
   description: string
 }[] = [
-  {
-    value: 'CARD',
-    label: 'Online con tarjeta',
-    description: 'Pago inmediato con tarjeta de crédito o débito',
-  },
-  {
-    value: 'BANK_TRANSFER',
-    label: 'Transferencia bancaria',
-    description: 'Transferí y enviá el comprobante por WhatsApp',
-  },
-]
+    {
+      value: 'CARD',
+      label: 'Online con tarjeta',
+      description: 'Pago inmediato con tarjeta de crédito o débito',
+    },
+    {
+      value: 'BANK_TRANSFER',
+      label: 'Transferencia bancaria',
+      description: 'Transferí y enviá el comprobante por WhatsApp',
+    },
+  ]
 
 type CheckoutFormProps = {
   eventId: string
@@ -94,6 +94,7 @@ export default function CheckoutForm({
   if (!hasHydrated || !cartItems) return null
   if (cartItems.length === 0 && !loading) return null
 
+  // Here
   const total = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
     0
