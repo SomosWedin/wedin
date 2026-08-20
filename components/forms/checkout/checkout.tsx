@@ -103,7 +103,7 @@ export default function CheckoutForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="grid gap-8 mx-auto max-w-3xl md:grid-cols-2"
+        className="grid grid-cols-1 gap-8 mx-auto max-w-3xl md:grid-cols-2"
       >
         <div className="order-2 flex flex-col gap-4 md:order-1">
           <h2 className="text-lg font-semibold">Tus datos</h2>
