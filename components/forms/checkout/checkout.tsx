@@ -205,6 +205,7 @@ export default function CheckoutForm({
                 name="payerMessage"
                 render={({ field }) => (
                   <FormItem>
+                    <FormLabel>Escribí tu mensaje:</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Deja un mensaje con tu regalo"

@@ -11,6 +11,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Wedin',
   description: 'Organize your wedding with Wedin',
+  icons: {
+    icon: '/assets/w-icon.svg',
+  },
 }
 
 export default async function RootLayout({

@@ -44,7 +44,7 @@ export const getSignedURL = async ({
   }
 
   if (fileSize > maxFileSize) {
-    return { error: 'Archvo muy grande' }
+    return { error: 'Archivo muy grande' }
   }
 
   const metadata: { [key: string]: string } = { checksum }

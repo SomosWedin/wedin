@@ -83,7 +83,7 @@ export default function WalletPayoutsList({
     <div className="flex flex-col gap-6 w-full">
       <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-[unset] sm:max-h-24">
         <div className="flex flex-col gap-1 p-6 w-full justify-center">
-          <h2 className="text-lg font-bold">Resúmen de tu billetera</h2>
+          <h2 className="text-lg font-bold">Resumen de tu billetera</h2>
         </div>
         <div className="flex gap-3 items-center p-6 w-1/2">
           <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
