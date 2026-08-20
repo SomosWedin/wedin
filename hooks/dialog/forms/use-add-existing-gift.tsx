@@ -10,6 +10,7 @@ import { createWishlistGift } from '@/actions/data/wishlist-gift'
 import type { GiftFormValues } from '@/components/forms/dialog/gift'
 import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/hooks/use-toast'
+import { prepareImageForUpload } from '@/lib/image-upload'
 import { uploadGiftImageToAws } from '@/lib/s3'
 import { GiftFormSchema } from '@/schemas/form'
 
@@ -35,6 +36,7 @@ export function useAddExistingGift({
   const [imagePreview, setImagePreview] = useState<string | null>(
     gift.image?.url ?? null
   )
+  const [preparingImage, setPreparingImage] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -68,15 +70,27 @@ export function useAddExistingGift({
     }
   }, [imagePreview])
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
+    event.target.value = ''
 
     if (!file) return
 
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+    setPreparingImage(true)
+    const prepared = await prepareImageForUpload(file)
+    setPreparingImage(false)
 
-    event.target.value = ''
+    if (!prepared.ok) {
+      toast({
+        title: 'No pudimos usar esa imagen',
+        description: `${file.name}: ${prepared.message}`,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setImageFile(prepared.file)
+    setImagePreview(URL.createObjectURL(prepared.file))
   }
 
   const resetDialog = () => {
@@ -198,6 +212,7 @@ export function useAddExistingGift({
     form,
     loading,
     imagePreview,
+    preparingImage,
     fileInputRef,
     isValid: form.formState.isValid,
     handleFileChange,

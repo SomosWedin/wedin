@@ -34,6 +34,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import {
+  ALLOWED_IMAGE_FORMATS_LABEL,
+  IMAGE_UPLOAD_ACCEPT,
+  MAX_IMAGE_SIZE_MB,
+} from '@/lib/image-upload'
 import { GiftFormSchema } from '@/schemas/form'
 
 export type GiftFormValues = z.infer<typeof GiftFormSchema>
@@ -44,6 +49,7 @@ type GiftFormProps = {
   loading: boolean
   isValid: boolean
   imagePreview: string | null
+  preparingImage?: boolean
   fileInputRef: RefObject<HTMLInputElement>
   uploadInputId: string
   submitLabel: string
@@ -61,6 +67,7 @@ export default function GiftForm({
   loading,
   isValid,
   imagePreview,
+  preparingImage = false,
   fileInputRef,
   uploadInputId,
   submitLabel,
@@ -99,7 +106,7 @@ export default function GiftForm({
                 id={uploadInputId}
                 type="file"
                 className="hidden"
-                accept="image/jpeg,image/png,image/heic,image/webp"
+                accept={IMAGE_UPLOAD_ACCEPT}
                 ref={fileInputRef}
                 onChange={onFileChange}
               />
@@ -110,13 +117,19 @@ export default function GiftForm({
                 size="sm"
                 className="w-fit gap-2"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={preparingImage}
               >
-                Subir imagen
-                <MdOutlineFileUpload className="text-lg" />
+                {preparingImage ? 'Procesando…' : 'Subir imagen'}
+                {preparingImage ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <MdOutlineFileUpload className="text-lg" />
+                )}
               </Button>
 
               <p className="text-xs text-textTertiary">
-                Se recomienda 1080 x 1080 (1:1), hasta 10 MB
+                Se recomienda 1080 x 1080 (1:1), hasta {MAX_IMAGE_SIZE_MB} MB,
+                en {ALLOWED_IMAGE_FORMATS_LABEL}
               </p>
             </div>
           </div>

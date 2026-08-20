@@ -48,6 +48,7 @@ export default function EditWishlistGiftDialog({
     open,
     loading,
     imagePreview,
+    preparingImage,
     fileInputRef,
     isValid,
     handleFileChange,
@@ -82,6 +83,7 @@ export default function EditWishlistGiftDialog({
           loading={loading}
           isValid={isValid}
           imagePreview={imagePreview}
+          preparingImage={preparingImage}
           fileInputRef={fileInputRef}
           uploadInputId={`edit-gift-image-${wishlistGiftId}`}
           submitLabel="Guardar"
