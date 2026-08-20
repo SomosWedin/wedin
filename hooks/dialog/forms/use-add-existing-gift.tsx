@@ -5,9 +5,9 @@ import type { Gift, Image as ImageModel } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { type SubmitHandler, useForm } from 'react-hook-form'
-import type { z } from 'zod'
 import { createGift } from '@/actions/data/gift'
 import { createWishlistGift } from '@/actions/data/wishlist-gift'
+import type { GiftFormValues } from '@/components/forms/dialog/gift'
 import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/hooks/use-toast'
 import { uploadGiftImageToAws } from '@/lib/s3'
@@ -16,8 +16,6 @@ import { GiftFormSchema } from '@/schemas/form'
 export type ExistingGift = Gift & {
   image: ImageModel | null
 }
-
-export type ExistingGiftFormValues = z.infer<typeof GiftFormSchema>
 
 type UseAddExistingGiftProps = {
   gift: ExistingGift
@@ -43,7 +41,7 @@ export function useAddExistingGift({
   const { toast } = useToast()
   const router = useRouter()
 
-  const form = useForm<ExistingGiftFormValues>({
+  const form = useForm<GiftFormValues>({
     resolver: zodResolver(GiftFormSchema),
     mode: 'all',
     defaultValues: {
@@ -58,6 +56,7 @@ export function useAddExistingGift({
       wishlistId,
       isFavoriteGift: false,
       isGroupGift: false,
+      quantity: 1,
     },
   })
 
@@ -94,7 +93,7 @@ export function useAddExistingGift({
     }
   }
 
-  const onSubmit: SubmitHandler<ExistingGiftFormValues> = async values => {
+  const onSubmit: SubmitHandler<GiftFormValues> = async values => {
     setLoading(true)
 
     try {
@@ -155,6 +154,7 @@ export function useAddExistingGift({
         giftId,
         isFavoriteGift: values.isFavoriteGift,
         isGroupGift: values.isGroupGift,
+        quantity: values.quantity,
       })
 
       if (linkResponse.error) {

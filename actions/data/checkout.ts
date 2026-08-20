@@ -12,26 +12,31 @@ import { applyTransactionStatusChange } from './transaction'
 export type CheckoutCartItem = {
   wishlistGiftId: string
   amount: string
+  quantity: number
 }
 
-// Guest-facing claim rejection, distinct from unexpected errors.
 class CartClaimError extends Error {}
 
-// Abandoned CARD checkouts would otherwise hold their claim forever.
-const CARD_HOLD_TIMEOUT_MINUTES = 30
+const CARD_OPEN_TIMEOUT_MINUTES = 3
 
-// No cron infra exists, so expiry is lazy: release stale CARD holds right
-// before a new claim attempt, via the same FAILED path a real failure uses.
-// BANK_TRANSFER excluded — its PENDING is staff-confirmed, not abandoned.
+const CARD_PENDING_TIMEOUT_MINUTES = 30
+
 async function expireStaleHolds(wishlistGiftIds: string[]) {
-  const cutoff = new Date(Date.now() - CARD_HOLD_TIMEOUT_MINUTES * 60 * 1000)
+  const openCutoff = new Date(
+    Date.now() - CARD_OPEN_TIMEOUT_MINUTES * 60 * 1000
+  )
+  const pendingCutoff = new Date(
+    Date.now() - CARD_PENDING_TIMEOUT_MINUTES * 60 * 1000
+  )
 
   const staleTransactions = await prismaClient.transaction.findMany({
     where: {
       wishlistGiftId: { in: wishlistGiftIds },
       paymentMethod: 'CARD',
-      status: { in: ['OPEN', 'PENDING'] },
-      createdAt: { lt: cutoff },
+      OR: [
+        { status: 'OPEN', createdAt: { lt: openCutoff } },
+        { status: 'PENDING', createdAt: { lt: pendingCutoff } },
+      ],
     },
     select: { id: true },
   })
@@ -65,10 +70,6 @@ export async function createTransactionsForCart(
     paymentMethod,
   } = validatedPayer.data
 
-  // CARD transactions get grouped later by Pagopar's own hash
-  // (createPagoparCheckoutSession), which never runs for BANK_TRANSFER —
-  // so it needs its own group id, generated once per cart checkout, to
-  // let "Agradecer" thank every gift from the same transfer at once.
   const bankTransferGroupId =
     paymentMethod === 'BANK_TRANSFER' ? randomUUID() : undefined
 
@@ -89,8 +90,6 @@ export async function createTransactionsForCart(
     },
   })
 
-  // Fast, friendly pre-validation — racy by nature, not the real guarantee
-  // (that's the atomic claim below), just catches the obvious cases early.
   const seenIndividualGiftIds = new Set<string>()
 
   for (const item of cartItems) {
@@ -125,7 +124,17 @@ export async function createTransactionsForCart(
       }
       seenIndividualGiftIds.add(item.wishlistGiftId)
 
-      if (amount !== price || wishlistGift.transactions.length > 0) {
+      const requestedQty = Math.trunc(item.quantity) || 0
+      const completedQty = wishlistGift.transactions
+        .filter(transaction => transaction.status === 'COMPLETED')
+        .reduce((sum, transaction) => sum + transaction.quantity, 0)
+      const remainingStock = wishlistGift.quantity - completedQty
+
+      if (
+        requestedQty < 1 ||
+        amount !== price * requestedQty ||
+        requestedQty > remainingStock
+      ) {
         return {
           error: `"${wishlistGift.gift.name}" ya no está disponible.`,
         }
@@ -133,9 +142,6 @@ export async function createTransactionsForCart(
     }
   }
 
-  // Claim + Transaction.create happen in one Mongo transaction, so a
-  // concurrent claim on the same gift can't both win. Items are claimed
-  // sequentially so an earlier claim gets released if a later one fails.
   const createdTransactionIds: string[] = []
 
   try {
@@ -148,16 +154,34 @@ export async function createTransactionsForCart(
         throw new CartClaimError('Uno de los regalos ya no está disponible.')
       }
 
-      const price = Number(wishlistGift.gift.price) || 0
       const amount = Number(item.amount) || 0
+      const requestedQty = wishlistGift.isGroupGift
+        ? 1
+        : Math.trunc(item.quantity) || 1
 
       const transaction = await retryOnTransientWriteConflict(() =>
         prismaClient.$transaction(async tx => {
+          // Live read, not the outer snapshot — a concurrent edit lands as
+          // a write conflict on commit, which retryOnTransientWriteConflict retries.
+          const liveWishlistGift = await tx.wishlistGift.findUnique({
+            where: { id: wishlistGift.id },
+            select: { quantity: true, gift: { select: { price: true } } },
+          })
+
+          if (!liveWishlistGift) {
+            throw new CartClaimError(
+              `"${wishlistGift.gift.name}" ya no está disponible.`
+            )
+          }
+
+          const livePrice = Number(liveWishlistGift.gift.price) || 0
+
           const created = await tx.transaction.create({
             data: {
               wishlistGiftId: item.wishlistGiftId,
               eventId,
               amount: item.amount,
+              quantity: requestedQty,
               payerName,
               payerEmail,
               payerDocument,
@@ -176,7 +200,7 @@ export async function createTransactionsForCart(
                 where: {
                   id: wishlistGift.id,
                   isGroupGift: true,
-                  reservedAmount: { lte: price - amount },
+                  reservedAmount: { lte: livePrice - amount },
                 },
                 data: { reservedAmount: { increment: amount } },
               })
@@ -184,17 +208,11 @@ export async function createTransactionsForCart(
                 where: {
                   id: wishlistGift.id,
                   isGroupGift: false,
-                  // null only matches an explicit null in Mongo — isSet: false
-                  // is also needed to catch fields that were never written.
-                  OR: [
-                    { claimedTransactionId: null },
-                    { claimedTransactionId: { isSet: false } },
-                  ],
+                  reservedQuantity: {
+                    lte: liveWishlistGift.quantity - requestedQty,
+                  },
                 },
-                data: {
-                  claimedTransactionId: created.id,
-                  claimedAt: new Date(),
-                },
+                data: { reservedQuantity: { increment: requestedQty } },
               })
 
           if (claim.count !== 1) {
@@ -244,14 +262,13 @@ export async function createPagoparCheckoutSession(
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  // Pagopar's id_pedido_comercio is varchar(64); joining every transaction id
-  // overflows it at 3+ cart items. Nothing decodes orderId back into a list
-  // (lookups use the Pagopar-issued hash), so the first id alone is enough.
   const orderId = transactionIds[0]
 
   const fullTransactions = await prismaClient.transaction.findMany({
     where: { id: { in: transactionIds }, eventId: event.id, status: 'OPEN' },
-    include: { wishlistGift: { include: { gift: true } } },
+    include: {
+      wishlistGift: { include: { gift: { include: { image: true } } } },
+    },
   })
 
   if (fullTransactions.length !== transactionIds.length) {
@@ -278,6 +295,8 @@ export async function createPagoparCheckoutSession(
     items: fullTransactions.map(transaction => ({
       name: transaction.wishlistGift.gift.name,
       amount: Number(transaction.amount),
+      quantity: transaction.quantity,
+      imageUrl: transaction.wishlistGift.gift.image?.url ?? null,
     })),
   })
 
@@ -298,10 +317,6 @@ export async function createPagoparCheckoutSession(
       )
     )
 
-    // TODO: append ?forma_pago=<id> once Pagopar support confirms the
-    // value(s) for Tarjeta de crédito/QR and approves this account for the
-    // redirect-time payment-method restriction (docs say it's gated,
-    // separate from having the payment methods themselves enabled).
     const redirectUrl = order.success.hash.startsWith('STUB-')
       ? `${appUrl}/checkout/pagopar/result/${order.success.hash}?stub=1`
       : `https://www.pagopar.com/pagos/${order.success.hash}`

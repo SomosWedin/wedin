@@ -54,6 +54,7 @@ export function useCheckout({
       cartItems.map(item => ({
         wishlistGiftId: item.wishlistGiftId,
         amount: item.amount,
+        quantity: item.quantity,
       }))
     )
 

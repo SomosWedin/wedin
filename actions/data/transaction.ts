@@ -94,15 +94,18 @@ export async function updateTransactionNotes(
   }
 }
 
-// Undoes the atomic claim from createTransactionsForCart (actions/data/checkout.ts).
-async function releaseWishlistGiftClaim(transaction: {
-  id: string
-  wishlistGiftId: string
-  amount: string
-}) {
+// Adjusts the atomic claim from createTransactionsForCart
+// (actions/data/checkout.ts) by a signed delta — shared by release
+// (negative, on FAILED/REFUNDED) and reclaim (positive, when an admin
+// override resurrects a transaction back out of FAILED/REFUNDED) below.
+async function adjustWishlistGiftClaim(
+  transaction: { wishlistGiftId: string; amount: string; quantity: number },
+  amountDelta: number,
+  quantityDelta: number
+) {
   const wishlistGift = await prismaClient.wishlistGift.findUnique({
     where: { id: transaction.wishlistGiftId },
-    select: { isGroupGift: true, claimedTransactionId: true },
+    select: { isGroupGift: true },
   })
 
   if (!wishlistGift) return
@@ -110,47 +113,84 @@ async function releaseWishlistGiftClaim(transaction: {
   if (wishlistGift.isGroupGift) {
     await prismaClient.wishlistGift.update({
       where: { id: transaction.wishlistGiftId },
-      data: {
-        reservedAmount: { decrement: Number(transaction.amount) || 0 },
-      },
+      data: { reservedAmount: { increment: amountDelta } },
     })
     return
   }
 
-  if (wishlistGift.claimedTransactionId === transaction.id) {
-    await prismaClient.wishlistGift.update({
-      where: { id: transaction.wishlistGiftId },
-      data: { claimedTransactionId: null, claimedAt: null },
-    })
-  }
+  await prismaClient.wishlistGift.update({
+    where: { id: transaction.wishlistGiftId },
+    data: { reservedQuantity: { increment: quantityDelta } },
+  })
 }
 
-async function recomputeWishlistGiftProgress(wishlistGiftId: string) {
-  const wishlistGift = await prismaClient.wishlistGift.findUnique({
-    where: { id: wishlistGiftId },
-    include: {
-      gift: true,
-      transactions: { where: { status: 'COMPLETED' } },
-    },
-  })
-
-  if (!wishlistGift) return
-
-  const price = Number(wishlistGift.gift.price) || 0
-  const contributed = wishlistGift.transactions.reduce(
-    (sum, transaction) => sum + (Number(transaction.amount) || 0),
-    0
+function releaseWishlistGiftClaim(transaction: {
+  wishlistGiftId: string
+  amount: string
+  quantity: number
+}) {
+  return adjustWishlistGiftClaim(
+    transaction,
+    -(Number(transaction.amount) || 0),
+    -transaction.quantity
   )
+}
 
-  await prismaClient.wishlistGift.update({
-    where: { id: wishlistGiftId },
-    data: {
-      ...(wishlistGift.isGroupGift
-        ? { groupGiftParts: String(contributed) }
-        : {}),
-      isFullyPaid: price > 0 && contributed >= price,
-    },
-  })
+function reclaimWishlistGiftClaim(transaction: {
+  wishlistGiftId: string
+  amount: string
+  quantity: number
+}) {
+  return adjustWishlistGiftClaim(
+    transaction,
+    Number(transaction.amount) || 0,
+    transaction.quantity
+  )
+}
+
+// Transaction + retry so concurrent completions on the same gift can't
+// lose an update via a stale read-then-write race.
+export async function recomputeWishlistGiftProgress(wishlistGiftId: string) {
+  await retryOnTransientWriteConflict(() =>
+    prismaClient.$transaction(async tx => {
+      const wishlistGift = await tx.wishlistGift.findUnique({
+        where: { id: wishlistGiftId },
+        include: {
+          gift: true,
+          transactions: { where: { status: 'COMPLETED' } },
+        },
+      })
+
+      if (!wishlistGift) return
+
+      if (wishlistGift.isGroupGift) {
+        const price = Number(wishlistGift.gift.price) || 0
+        const contributed = wishlistGift.transactions.reduce(
+          (sum, transaction) => sum + (Number(transaction.amount) || 0),
+          0
+        )
+
+        await tx.wishlistGift.update({
+          where: { id: wishlistGiftId },
+          data: {
+            groupGiftParts: String(contributed),
+            isFullyPaid: price > 0 && contributed >= price,
+          },
+        })
+        return
+      }
+
+      const completedQty = wishlistGift.transactions.reduce(
+        (sum, transaction) => sum + transaction.quantity,
+        0
+      )
+
+      await tx.wishlistGift.update({
+        where: { id: wishlistGiftId },
+        data: { isFullyPaid: completedQty >= wishlistGift.quantity },
+      })
+    })
+  )
 }
 
 export async function applyTransactionStatusChange(
@@ -172,6 +212,10 @@ export async function applyTransactionStatusChange(
     status === 'COMPLETED' &&
     (transaction.status === 'FAILED' || transaction.status === 'REFUNDED')
   ) {
+    console.error(
+      `Pagopar webhook reported COMPLETED for transaction ${transactionId}, but it's already ${transaction.status} — needs manual reconciliation via /admin.`,
+      { transactionId, wishlistGiftId: transaction.wishlistGiftId }
+    )
     return
   }
 
@@ -202,6 +246,8 @@ export async function applyTransactionStatusChange(
 
   if (status === 'FAILED' || status === 'REFUNDED') {
     await releaseWishlistGiftClaim(transaction)
+  } else if (transaction.status === 'FAILED' || transaction.status === 'REFUNDED') {
+    await reclaimWishlistGiftClaim(transaction)
   }
 
   await recomputeWishlistGiftProgress(transaction.wishlistGiftId)

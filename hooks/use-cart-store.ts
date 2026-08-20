@@ -8,6 +8,8 @@ export type CartItem = {
   giftImageUrl: string | null
   amount: string
   isGroupGift: boolean
+  quantity: number
+  unitPrice: string
 }
 
 type CartState = {
@@ -15,6 +17,7 @@ type CartState = {
   addItem: (item: Omit<CartItem, 'id'>) => void
   removeItem: (id: string) => void
   updateItemAmount: (id: string, amount: string) => void
+  updateItemQuantity: (id: string, quantity: number) => void
   clear: () => void
 }
 
@@ -43,6 +46,18 @@ function createCartStore(eventId: string) {
           set(state => ({
             items: state.items.map(item =>
               item.id === id ? { ...item, amount } : item
+            ),
+          })),
+        updateItemQuantity: (id, quantity) =>
+          set(state => ({
+            items: state.items.map(item =>
+              item.id === id
+                ? {
+                    ...item,
+                    quantity,
+                    amount: String((Number(item.unitPrice) || 0) * quantity),
+                  }
+                : item
             ),
           })),
         clear: () => set({ items: [] }),
