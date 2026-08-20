@@ -28,7 +28,7 @@ export default function ThankTransactionDialog({
   payerName,
 }: ThankTransactionDialogProps) {
   const [open, setOpen] = useState(false)
-  const [notes, setNotes] = useState(`¡Muchas gracias, ${payerName}! 💚`)
+  const [notes, setNotes] = useState(`Muchas gracias ${payerName}!`)
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [suggesting, setSuggesting] = useState(false)
   const { loading, thankTransaction } = useTransaction()
@@ -125,14 +125,14 @@ export default function ThankTransactionDialog({
         )}
 
         <div>
-          <p className="mb-1 text-xs font-medium text-textTertiary">
+          <p className="mb-1.5 text-sm font-medium">
             Escribí tu mensaje:
           </p>
           <div className="relative">
             <Textarea
               value={notes}
               onChange={event => setNotes(event.target.value)}
-              placeholder="Escribí tu mensaje de agradecimiento"
+              placeholder="Tu mensaje de agradecimiento"
               className="min-h-32 resize-none"
             />
             <Button
