@@ -28,7 +28,7 @@ export default function ThankTransactionDialog({
   payerName,
 }: ThankTransactionDialogProps) {
   const [open, setOpen] = useState(false)
-  const [notes, setNotes] = useState(`¡Muchas gracias, ${payerName}! 💚`)
+  const [notes, setNotes] = useState(`Muchas gracias ${payerName}!`)
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [suggesting, setSuggesting] = useState(false)
   const { loading, thankTransaction } = useTransaction()
@@ -124,28 +124,33 @@ export default function ThankTransactionDialog({
           </div>
         )}
 
-        <div className="relative">
-          <Textarea
-            value={notes}
-            onChange={event => setNotes(event.target.value)}
-            placeholder="Escribí tu mensaje de agradecimiento"
-            className="min-h-32 resize-none"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="absolute right-2 bottom-2 gap-2"
-            onClick={handleSuggest}
-            disabled={suggesting}
-          >
-            {suggesting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            <span className="hidden sm:inline">Sugerir con IA</span>
-          </Button>
+        <div>
+          <p className="mb-1.5 text-sm font-medium">
+            Escribí tu mensaje:
+          </p>
+          <div className="relative">
+            <Textarea
+              value={notes}
+              onChange={event => setNotes(event.target.value)}
+              placeholder="Tu mensaje de agradecimiento"
+              className="min-h-32 resize-none"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="absolute right-2 bottom-2 gap-2"
+              onClick={handleSuggest}
+              disabled={suggesting}
+            >
+              {suggesting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">Sugerir con IA</span>
+            </Button>
+          </div>
         </div>
 
         {suggestions.length > 0 && (
