@@ -169,7 +169,7 @@ const EventCoverPreviewDialog = ({
             className="flex overflow-hidden flex-1 justify-center"
           >
             <div
-              className="overflow-hidden relative bg-white rounded-xl border border-gray-200 shadow-sm"
+              className="overflow-hidden relative bg-white rounded-xl border border-gray-200 shadow-sm shrink-0"
               style={{
                 width: frameWidth,
                 height: frameHeight,
