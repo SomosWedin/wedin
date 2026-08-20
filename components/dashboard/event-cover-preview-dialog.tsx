@@ -1,6 +1,6 @@
 'use client'
 
-import { Monitor, Smartphone } from 'lucide-react'
+import { Loader2, Monitor, Smartphone } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { IoEyeOutline } from 'react-icons/io5'
 import { Button } from '@/components/ui/button'
@@ -43,6 +43,7 @@ const EventCoverPreviewDialog = ({
 }: EventCoverPreviewDialogProps) => {
   const [open, setOpen] = useState(false)
   const [device, setDevice] = useState<DeviceMode>('desktop')
+  const [frameLoaded, setFrameLoaded] = useState(false)
   const [stage, setStage] = useState({ width: 0, height: 0 })
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const observerRef = useRef<ResizeObserver | null>(null)
@@ -105,12 +106,26 @@ const EventCoverPreviewDialog = ({
     observerRef.current = observer
   }, [])
 
+  // Both the dialog reopening and the device toggle remount the frame, so the
+  // placeholder has to come back with it.
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) setFrameLoaded(false)
+    setOpen(nextOpen)
+  }
+
+  const handleDeviceChange = (nextDevice: DeviceMode) => {
+    if (nextDevice === device) return
+
+    setFrameLoaded(false)
+    setDevice(nextDevice)
+  }
+
   const frameWidth = FRAME_WIDTHS[device]
   const scale = stage.width ? Math.min(1, stage.width / frameWidth) : 1
   const frameHeight = scale ? stage.height / scale : stage.height
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button type="button" variant="outline" className="gap-2">
           Vista previa
@@ -133,7 +148,7 @@ const EventCoverPreviewDialog = ({
               type="button"
               aria-label="Ver en celular"
               aria-pressed={device === 'mobile'}
-              onClick={() => setDevice('mobile')}
+              onClick={() => handleDeviceChange('mobile')}
               className={`flex gap-2 items-center px-3 py-1.5 text-sm rounded transition-colors ${
                 device === 'mobile'
                   ? 'bg-white shadow-sm text-textPrimary'
@@ -147,7 +162,7 @@ const EventCoverPreviewDialog = ({
               type="button"
               aria-label="Ver en computadora"
               aria-pressed={device === 'desktop'}
-              onClick={() => setDevice('desktop')}
+              onClick={() => handleDeviceChange('desktop')}
               className={`flex gap-2 items-center px-3 py-1.5 text-sm rounded transition-colors ${
                 device === 'desktop'
                   ? 'bg-white shadow-sm text-textPrimary'
@@ -166,7 +181,7 @@ const EventCoverPreviewDialog = ({
             className="flex overflow-hidden flex-1 justify-center"
           >
             <div
-              className="overflow-hidden bg-white rounded-xl border border-gray-200 shadow-sm"
+              className="overflow-hidden relative bg-white rounded-xl border border-gray-200 shadow-sm"
               style={{
                 width: frameWidth,
                 height: frameHeight,
@@ -182,7 +197,19 @@ const EventCoverPreviewDialog = ({
                 src={SITE_PREVIEW_PATH}
                 title="Vista previa del sitio"
                 className="w-full h-full border-0"
+                onLoad={() => setFrameLoaded(true)}
               />
+
+              {/* Only a neutral loader: this markup belongs to the dashboard
+                  document, so its media queries would resolve against the
+                  dashboard's viewport and misrepresent the phone layout. The
+                  structural skeleton lives in the frame's own loading.tsx. */}
+              {!frameLoaded && (
+                <div className="flex absolute inset-0 gap-3 justify-center items-center bg-white pointer-events-none text-textTertiary">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">Cargando tu sitio…</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
