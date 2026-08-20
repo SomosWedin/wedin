@@ -34,6 +34,7 @@ export default function AddExistingGiftDialog({
     form,
     loading,
     imagePreview,
+    preparingImage,
     fileInputRef,
     isValid,
     handleFileChange,
@@ -59,6 +60,7 @@ export default function AddExistingGiftDialog({
           loading={loading}
           isValid={isValid}
           imagePreview={imagePreview}
+          preparingImage={preparingImage}
           fileInputRef={fileInputRef}
           uploadInputId={`existing-gift-image-${gift.id}`}
           submitLabel="Agregar a la lista"

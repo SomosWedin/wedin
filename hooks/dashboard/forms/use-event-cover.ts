@@ -11,6 +11,7 @@ import { suggestCoverMessage } from '@/actions/ai/suggest-cover-message'
 import { updateEvent } from '@/actions/data/event'
 import { addImages, deleteImages, updateImage } from '@/actions/data/images'
 import { useToast } from '@/hooks/use-toast'
+import { prepareImageForUpload } from '@/lib/image-upload'
 import {
   deleteEventCoverImageFromAws,
   uploadEventCoverImagesToAws,
@@ -52,7 +53,7 @@ export type EventImage = {
   fileName: string | null
 }
 
-const MAX_IMAGES = 6
+export const MAX_IMAGES = 6
 
 export function useEventCover({
   eventId,
@@ -67,7 +68,8 @@ export function useEventCover({
   const [newImages, setNewImages] = useState<NewImage[]>([]) // New images added by the user
   const [updatedImages, setUpdatedImages] = useState<UpdatedImage[]>([]) // New images that replace existing ones
   const [replacedImages, setReplacedImages] = useState<{ id: string }[]>([]) // IDs of images marked for replacement
-  const [formError, setFormError] = useState<string | null>(null) // Form-level error state
+  const [imageErrors, setImageErrors] = useState<string[]>([]) // Per-file reasons why a selected image was rejected
+  const [preparingImages, setPreparingImages] = useState(false)
   const [currentImages, setCurrentImages] = useState<BaseImage[]>([])
   const slots = Array.from({ length: MAX_IMAGES })
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -102,35 +104,51 @@ export function useEventCover({
     setCurrentImages([...existingImages, ...newImages, ...updatedImages])
   }, [existingImages, newImages, updatedImages])
 
-  const handleAddImage = (event: ChangeEvent<HTMLInputElement>) => {
-    setFormError(null)
+  const prepareFiles = async (files: File[]) => {
+    const readyFiles: File[] = []
+    const errors: string[] = []
 
-    const files = Array.from(event.target.files || [])
+    for (const file of files) {
+      const prepared = await prepareImageForUpload(file)
 
-    // Validate files start
-    const validFiles = files.filter(file => {
-      const isValidType = ['image/jpeg', 'image/png', 'image/gif'].includes(
-        file.type
-      )
-      const isValidSize = file.size <= 5 * 1024 * 1024 // 5MB
-      return isValidType && isValidSize
-    })
-
-    const invalidFiles = files.filter(file => !validFiles.includes(file))
-
-    let errorMessage = ''
-
-    if (invalidFiles.length > 0) {
-      errorMessage = 'Algunos archivos no son válidos y han sido ignorados.'
+      if (prepared.ok) {
+        readyFiles.push(prepared.file)
+      } else {
+        errors.push(`${file.name}: ${prepared.message}`)
+      }
     }
+
+    return { readyFiles, errors }
+  }
+
+  const handleAddImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    setImageErrors([])
+
+    const input = event.target
+    const files = Array.from(input.files || [])
+
+    // Cleared up front because the rest of this handler awaits, and the input
+    // must accept the same file again if the user retries.
+    input.value = ''
+
+    if (files.length === 0) return
+
+    setPreparingImages(true)
+    const { readyFiles: validFiles, errors } = await prepareFiles(files)
+    setPreparingImages(false)
+
+    const errorMessages = [...errors]
 
     const totalImagesCount =
       existingImages.length + newImages.length + updatedImages.length
     const availableSlots = MAX_IMAGES - totalImagesCount
 
     if (availableSlots <= 0) {
-      // No slots available; cannot add any more images
-      errorMessage += `Has llegado al límite permitido de imágenes (${MAX_IMAGES}).`
+      if (validFiles.length > 0) {
+        errorMessages.push(
+          `Ya tienes ${MAX_IMAGES} fotos. Elimina alguna para poder subir otra.`
+        )
+      }
     } else {
       let filesToAdd: File[] = []
       let filesNotAdded: File[] = []
@@ -182,23 +200,19 @@ export function useEventCover({
 
       if (filesNotAdded.length > 0) {
         const fileNamesNotAdded = filesNotAdded.map(file => file.name)
-        errorMessage += `Puedes subir hasta ${MAX_IMAGES} imágenes. Los siguientes archivos no fueron añadidos: ${fileNamesNotAdded.join(',')}`
+        errorMessages.push(
+          `Solo puedes tener ${MAX_IMAGES} fotos, así que no agregamos: ${fileNamesNotAdded.join(', ')}.`
+        )
       }
     }
 
-    // Set the form error if any
-    if (errorMessage) {
-      setFormError(errorMessage.trim())
-    }
-
-    // Clear the input value to allow selecting the same file again if needed
-    if (event.target.value) {
-      event.target.value = ''
+    if (errorMessages.length > 0) {
+      setImageErrors(Array.from(new Set(errorMessages)))
     }
   }
 
   const handleRemoveImage = (id: string) => {
-    setFormError(null) // Reset any form errors
+    setImageErrors([]) // Reset any image errors
 
     // Find the image to remove in any of the arrays
     const imageToRemove =
@@ -468,7 +482,7 @@ export function useEventCover({
     setNewImages([])
     setUpdatedImages([])
     setReplacedImages([])
-    setFormError(null)
+    setImageErrors([])
 
     setLoading(false)
 
@@ -513,7 +527,8 @@ export function useEventCover({
     dirtyFields,
     fileInputRef,
     form,
-    formError,
+    imageErrors,
+    preparingImages,
     handleButtonClick,
     handleAddImage,
     handleRemoveImage,

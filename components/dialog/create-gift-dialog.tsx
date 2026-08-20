@@ -29,6 +29,7 @@ export default function CreateGiftDialog({
     open,
     loading,
     imagePreview,
+    preparingImage,
     fileInputRef,
     isValid,
     handleFileChange,
@@ -59,6 +60,7 @@ export default function CreateGiftDialog({
           loading={loading}
           isValid={isValid}
           imagePreview={imagePreview}
+          preparingImage={preparingImage}
           fileInputRef={fileInputRef}
           uploadInputId="create-gift-image-upload"
           submitLabel="Agregar a la lista"
