@@ -108,9 +108,26 @@ export async function getGifts({
 //   }
 // }
 
+class PriceLockedError extends Error {}
+
+async function assertPriceEditAllowed(
+  wishlistGiftId: string,
+  tx: Prisma.TransactionClient | typeof prismaClient
+) {
+  const wishlistGift = await tx.wishlistGift.findUnique({
+    where: { id: wishlistGiftId },
+    select: { isGroupGift: true, reservedQuantity: true },
+  })
+
+  if (wishlistGift && !wishlistGift.isGroupGift && wishlistGift.reservedQuantity > 0) {
+    throw new PriceLockedError()
+  }
+}
+
 export async function editGift(
   formData: z.infer<typeof GiftPostSchema>,
-  giftId: string
+  giftId: string,
+  wishlistGiftId: string
 ) {
   const validatedFields = GiftEditSchema.safeParse(formData)
 
@@ -121,21 +138,32 @@ export async function editGift(
   const { imageUrl, ...giftData } = validatedFields.data
 
   try {
-    const gift = await prismaClient.gift.update({
-      where: { id: giftId },
-      data: {
-        ...giftData,
-        ...(imageUrl
-          ? {
-              image: {
-                upsert: {
-                  create: { url: imageUrl },
-                  update: { url: imageUrl },
+    const gift = await prismaClient.$transaction(async tx => {
+      const currentGift = await tx.gift.findUnique({
+        where: { id: giftId },
+        select: { price: true },
+      })
+
+      if (currentGift && giftData.price !== currentGift.price) {
+        await assertPriceEditAllowed(wishlistGiftId, tx)
+      }
+
+      return tx.gift.update({
+        where: { id: giftId },
+        data: {
+          ...giftData,
+          ...(imageUrl
+            ? {
+                image: {
+                  upsert: {
+                    create: { url: imageUrl },
+                    update: { url: imageUrl },
+                  },
                 },
-              },
-            }
-          : {}),
-      },
+              }
+            : {}),
+        },
+      })
     })
 
     if (!gift) {
@@ -146,12 +174,22 @@ export async function editGift(
     revalidatePath('/wishlist')
     return { giftId: gift.id }
   } catch (error) {
+    if (error instanceof PriceLockedError) {
+      return {
+        error:
+          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+      }
+    }
+
     console.error('Error editing gift:', error)
     return { error: getErrorMessage(error) }
   }
 }
 
-export async function createGift(formData: z.infer<typeof GiftPostSchema>) {
+export async function createGift(
+  formData: z.infer<typeof GiftPostSchema>,
+  wishlistGiftId?: string
+) {
   const validatedFields = GiftCreateSchema.safeParse(formData)
 
   if (!validatedFields.success) {
@@ -161,6 +199,17 @@ export async function createGift(formData: z.infer<typeof GiftPostSchema>) {
   const { imageUrl, sourceGiftId, ...giftData } = validatedFields.data
 
   try {
+    if (sourceGiftId && wishlistGiftId) {
+      const sourceGift = await prismaClient.gift.findUnique({
+        where: { id: sourceGiftId },
+        select: { price: true },
+      })
+
+      if (sourceGift && giftData.price !== sourceGift.price) {
+        await assertPriceEditAllowed(wishlistGiftId, prismaClient)
+      }
+    }
+
     const newGift = await prismaClient.gift.create({
       data: {
         ...giftData,
@@ -176,6 +225,13 @@ export async function createGift(formData: z.infer<typeof GiftPostSchema>) {
     revalidatePath('/dashboard')
     return { giftId: newGift.id }
   } catch (error) {
+    if (error instanceof PriceLockedError) {
+      return {
+        error:
+          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+      }
+    }
+
     console.error('Error creating gift:', error)
     return { error: getErrorMessage(error) }
   }

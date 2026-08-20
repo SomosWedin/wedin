@@ -1,7 +1,7 @@
 'use client'
 
 import type { Category } from '@prisma/client'
-import AddExistingGiftForm from '@/components/forms/dialog/add-existing-gift'
+import GiftForm from '@/components/forms/dialog/gift'
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,7 @@ export default function AddExistingGiftDialog({
     form,
     loading,
     imagePreview,
+    preparingImage,
     fileInputRef,
     isValid,
     handleFileChange,
@@ -53,13 +54,17 @@ export default function AddExistingGiftDialog({
           <DialogTitle>Agregar regalo</DialogTitle>
         </DialogHeader>
 
-        <AddExistingGiftForm
+        <GiftForm
           form={form}
           categories={categories}
           loading={loading}
           isValid={isValid}
           imagePreview={imagePreview}
+          preparingImage={preparingImage}
           fileInputRef={fileInputRef}
+          uploadInputId={`existing-gift-image-${gift.id}`}
+          submitLabel="Agregar a la lista"
+          allowTypeChange
           onFileChange={handleFileChange}
           onSubmit={handleSubmit}
           onCancel={() => handleOpenChange(false)}

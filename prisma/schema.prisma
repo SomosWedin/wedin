@@ -73,17 +73,7 @@ model User {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
   name             String?
   lastName         String?
-  // NOTE: the underlying Mongo index (User_email_key) must stay `sparse: true`.
-  // Partner users created during onboarding step 2 (see
-  // updateProfileStepTwo in actions/common/onboarding.ts) never get an
-  // email — same class of bug as Image.giftId and Event.url above: `@unique`
-  // gives no sparse option, so `db push` won't create/repair this — a
-  // non-sparse unique index only allows ONE user with a missing email ever.
-  // If this index is ever recreated (e.g. on a new environment), run manually:
-  //   db.User.dropIndex("User_email_key")
-  //   db.User.createIndex({ email: 1 }, { unique: true, sparse: true, name: "User_email_key" })
   email            String?   @unique
-  // password         String?
   emailVerified    DateTime?
   image            String?
   isPrimary        Boolean   @default(true)
@@ -180,29 +170,21 @@ model Gift {
 }
 
 model WishlistGift {
-  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
-  isFavoriteGift       Boolean   @default(false)
-  isGroupGift          Boolean   @default(false)
-  groupGiftParts       String    @default("0")
-  isFullyPaid          Boolean   @default(false)
-  isManuallyReceived   Boolean   @default(false)
-  // NOTE: repurposed as an "archived" flag — true means deleteWishlistGift
-  // hid this gift instead of hard-deleting it, because it had a Transaction
-  // (of any status) still pointing at it. Excluded from the guest site and
-  // the organizer's default /wishlist view, but the row and its
-  // transactions are kept. Not literally "physically received" despite the
-  // name — no dedicated concept for that exists yet.
-  isReceived           Boolean   @default(false)
-  // Atomic claim guards (actions/data/checkout.ts). Not @unique — atomicity
-  // comes from Mongo's single-document write, not an index.
-  claimedTransactionId String?   @db.ObjectId // individual gifts: holder's transaction id
-  claimedAt            DateTime?
-  reservedAmount       Float     @default(0) // group gifts: OPEN/PENDING/COMPLETED sum
-  wishlistId           String    @db.ObjectId
-  giftId               String    @db.ObjectId
-  eventId              String    @db.ObjectId
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  isFavoriteGift     Boolean  @default(false)
+  isGroupGift        Boolean  @default(false)
+  groupGiftParts     String   @default("0")
+  isFullyPaid        Boolean  @default(false)
+  isManuallyReceived Boolean  @default(false)
+  isReceived         Boolean  @default(false)
+  reservedAmount     Float    @default(0)
+  quantity           Int      @default(1)
+  reservedQuantity   Int      @default(0)
+  wishlistId         String   @db.ObjectId
+  giftId             String   @db.ObjectId
+  eventId            String   @db.ObjectId
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   wishlist     Wishlist      @relation(fields: [wishlistId], references: [id])
   gift         Gift          @relation(fields: [giftId], references: [id])
@@ -219,6 +201,7 @@ model Transaction {
   wishlistId          String?           @db.ObjectId
   eventId             String            @db.ObjectId
   amount              String
+  quantity            Int               @default(1)
   status              TransactionStatus @default(OPEN)
   notes               String?
   payerRole           UserType          @default(INVITEE)
@@ -230,9 +213,6 @@ model Transaction {
   payerMessage        String?
   paymentMethod       PaymentMethod     @default(CARD)
   pagoparHash         String?
-  // Shared by every transaction created from the same BANK_TRANSFER cart
-  // checkout — the equivalent of pagoparHash for CARD, since bank transfer
-  // never gets a Pagopar-issued hash to group by.
   bankTransferGroupId String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
@@ -315,14 +295,6 @@ model Image {
   updatedAt     DateTime     @updatedAt
   transactionId String?      @db.ObjectId
   eventId       String?      @db.ObjectId
-  // NOTE: the underlying Mongo index (Image_giftId_key) must stay `sparse: true`.
-  // This field is unique but optional, and most Image rows (event cover photos,
-  // giftlist images) never set it. Prisma's `@unique` doesn't expose a sparse
-  // option, so `db push` won't create/repair this — a non-sparse unique index
-  // rejects the 2nd+ document with a missing giftId (P2002 on Image_giftId_key).
-  // If this index is ever recreated (e.g. on a new environment), run manually:
-  //   db.Image.dropIndex("Image_giftId_key")
-  //   db.Image.createIndex({ giftId: 1 }, { unique: true, sparse: true, name: "Image_giftId_key" })
   giftId        String?      @unique @db.ObjectId
   giftlistId    String?      @db.ObjectId
   Transaction   Transaction? @relation(fields: [transactionId], references: [id])

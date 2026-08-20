@@ -103,7 +103,7 @@ export default function CheckoutForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="grid gap-8 mx-auto max-w-3xl md:grid-cols-2"
+        className="grid grid-cols-1 gap-8 mx-auto max-w-3xl md:grid-cols-2"
       >
         <div className="order-2 flex flex-col gap-4 md:order-1">
           <h2 className="text-lg font-semibold">Tus datos</h2>
@@ -248,7 +248,15 @@ export default function CheckoutForm({
                       <IoGiftOutline className="text-xl text-gray-400" />
                     )}
                   </div>
-                  <p className="flex-1 truncate">{item.giftName}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate">{item.giftName}</p>
+                    {!item.isGroupGift && item.quantity > 1 && (
+                      <p className="text-sm text-textTertiary">
+                        {item.quantity} × Gs.{' '}
+                        {Number(item.unitPrice).toLocaleString('es-PY')} c/u
+                      </p>
+                    )}
+                  </div>
                   <p className="font-medium">
                     Gs. {Number(item.amount).toLocaleString('es-PY')}
                   </p>

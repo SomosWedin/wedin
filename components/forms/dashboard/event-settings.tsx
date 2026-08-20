@@ -37,7 +37,7 @@ export default function DashboardEventSettingsForm({
   currentUser,
   secondaryEventUser,
 }: DashboardEventSettingsFormProps) {
-  const { loading, form, onSubmit, isDirty, isValid } = useUpdateEventSettings({
+  const { loading, form, onSubmit, isDirty } = useUpdateEventSettings({
     event,
     currentUser,
     secondaryEventUser,
@@ -235,7 +235,7 @@ export default function DashboardEventSettingsForm({
             type="submit"
             variant="success"
             className="gap-2 w-60"
-            disabled={loading || !isDirty || !isValid}
+            disabled={loading || !isDirty}
           >
             Guardar
             {loading ? (

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { IoCartOutline } from 'react-icons/io5'
 import CartItemRow from '@/components/cart/cart-item-row'
+import { useIsPreviewMode } from '@/components/guest/preview-mode'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -29,6 +30,8 @@ export default function CartDrawer({
   onRemoveItem,
   onEditItem,
 }: CartDrawerProps) {
+  const isPreviewMode = useIsPreviewMode()
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -76,9 +79,15 @@ export default function CartDrawer({
               >
                 Cancelar
               </Button>
-              <Button variant="success" className="flex-[7]" asChild>
-                <Link href={'/checkout'}>Ir a pagar</Link>
-              </Button>
+              {isPreviewMode ? (
+                <Button variant="success" className="flex-[7]" disabled>
+                  Ir a pagar
+                </Button>
+              ) : (
+                <Button variant="success" className="flex-[7]" asChild>
+                  <Link href={'/checkout'}>Ir a pagar</Link>
+                </Button>
+              )}
             </div>
           </div>
         )}

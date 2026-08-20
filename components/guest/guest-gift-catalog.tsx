@@ -12,14 +12,19 @@ import CartDrawer from '@/components/cart/cart-drawer'
 import CartStickyBar from '@/components/cart/cart-sticky-bar'
 import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog'
 import GiftDetailDialog from '@/components/dialog/gift-detail-dialog'
-import { getGiftProgress } from '@/components/guest/gift-progress'
+import {
+  getGiftProgress,
+  getQuantityProgress,
+} from '@/components/guest/gift-progress'
 import GuestGiftCard, {
   type WishlistGiftWithGift,
 } from '@/components/guest/guest-gift-card'
+import { useIsPreviewMode } from '@/components/guest/preview-mode'
 import { Input } from '@/components/ui/input'
 import { type CartItem, useCartStore } from '@/hooks/use-cart-store'
 import { useStore } from '@/hooks/use-store'
 import { useToast } from '@/hooks/use-toast'
+import { getPreviewCartKey } from '@/lib/site-preview'
 
 type TypeFilter = 'todos' | 'individual' | 'grupal'
 type SortOption = 'recent' | 'price-asc' | 'price-desc'
@@ -50,7 +55,10 @@ export default function GuestGiftCatalog({
   categories,
 }: GuestGiftCatalogProps) {
   const { toast } = useToast()
-  const cartStore = useCartStore(eventId)
+  const isPreviewMode = useIsPreviewMode()
+  const cartStore = useCartStore(
+    isPreviewMode ? getPreviewCartKey(eventId) : eventId
+  )
   const cartItems = useStore(cartStore, state => state.items) ?? []
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos')
   const [search, setSearch] = useState('')
@@ -71,13 +79,19 @@ export default function GuestGiftCatalog({
     cartItems.map(item => item.wishlistGiftId)
   )
 
-  const addToCart = (wishlistGift: WishlistGiftWithGift, amount: string) => {
+  const addToCart = (
+    wishlistGift: WishlistGiftWithGift,
+    amount: string,
+    quantity: number = 1
+  ) => {
     cartStore.getState().addItem({
       wishlistGiftId: wishlistGift.id,
       giftName: wishlistGift.gift.name,
       giftImageUrl: wishlistGift.gift.image?.url ?? null,
       isGroupGift: wishlistGift.isGroupGift,
       amount,
+      quantity,
+      unitPrice: wishlistGift.gift.price,
     })
     toast({
       title: 'Agregado al carrito 🎁',
@@ -87,8 +101,12 @@ export default function GuestGiftCatalog({
     })
   }
 
-  const handleAddFullPrice = (wishlistGift: WishlistGiftWithGift) => {
-    addToCart(wishlistGift, wishlistGift.gift.price)
+  const handleAddToCart = (
+    wishlistGift: WishlistGiftWithGift,
+    quantity: number
+  ) => {
+    const amount = String(Number(wishlistGift.gift.price) * quantity)
+    addToCart(wishlistGift, amount, quantity)
   }
 
   const handleOpenContributionDialog = (wishlistGift: WishlistGiftWithGift) => {
@@ -96,6 +114,10 @@ export default function GuestGiftCatalog({
   }
 
   const handleOpenGiftDetails = (wishlistGift: WishlistGiftWithGift) => {
+    const existingCartItem = cartItems.find(
+      item => item.wishlistGiftId === wishlistGift.id
+    )
+    setEditingCartItem(existingCartItem ?? null)
     setDetailWishlistGift(wishlistGift)
   }
 
@@ -106,7 +128,11 @@ export default function GuestGiftCatalog({
     if (!wishlistGift) return
 
     setEditingCartItem(item)
-    setSelectedWishlistGift(wishlistGift)
+    if (item.isGroupGift) {
+      setSelectedWishlistGift(wishlistGift)
+    } else {
+      setDetailWishlistGift(wishlistGift)
+    }
     setIsCartOpen(false)
   }
 
@@ -124,6 +150,26 @@ export default function GuestGiftCatalog({
     if (open) return
 
     setSelectedWishlistGift(null)
+    if (editingCartItem) {
+      setEditingCartItem(null)
+      setIsCartOpen(true)
+    }
+  }
+
+  const handleDetailConfirm = (quantity: number) => {
+    if (!detailWishlistGift) return
+
+    if (editingCartItem) {
+      cartStore.getState().updateItemQuantity(editingCartItem.id, quantity)
+    } else {
+      handleAddToCart(detailWishlistGift, quantity)
+    }
+  }
+
+  const handleDetailDialogOpenChange = (open: boolean) => {
+    if (open) return
+
+    setDetailWishlistGift(null)
     if (editingCartItem) {
       setEditingCartItem(null)
       setIsCartOpen(true)
@@ -162,6 +208,13 @@ export default function GuestGiftCatalog({
     ? getGiftProgress(
         selectedWishlistGift.gift.price,
         selectedWishlistGift.transactions
+      )
+    : null
+
+  const detailProgress = detailWishlistGift
+    ? getQuantityProgress(
+        detailWishlistGift.quantity,
+        detailWishlistGift.transactions
       )
     : null
 
@@ -239,7 +292,7 @@ export default function GuestGiftCatalog({
               key={wishlistGift.id}
               wishlistGift={wishlistGift}
               isInCart={cartWishlistGiftIds.has(wishlistGift.id)}
-              onAddFullPrice={handleAddFullPrice}
+              onAddFullPrice={gift => handleAddToCart(gift, 1)}
               onOpenContributionDialog={handleOpenContributionDialog}
               onOpenGiftDetails={handleOpenGiftDetails}
             />
@@ -260,15 +313,16 @@ export default function GuestGiftCatalog({
         />
       )}
 
-      {detailWishlistGift && (
+      {detailWishlistGift && detailProgress && (
         <GiftDetailDialog
           open={!!detailWishlistGift}
-          onOpenChange={open => {
-            if (!open) setDetailWishlistGift(null)
-          }}
+          onOpenChange={handleDetailDialogOpenChange}
           gift={detailWishlistGift.gift}
           isFavoriteGift={detailWishlistGift.isFavoriteGift}
-          onAddToCart={() => handleAddFullPrice(detailWishlistGift)}
+          totalQuantity={detailWishlistGift.quantity}
+          remainingStock={detailProgress.remainingStock}
+          initialQuantity={editingCartItem?.quantity}
+          onConfirm={handleDetailConfirm}
         />
       )}
 

@@ -77,6 +77,7 @@ export default function GuestImageCarousel({
                 fill
                 className="object-cover"
                 priority={index === 0}
+                unoptimized={image.url?.startsWith('blob:')}
               />
             </div>
           </CarouselItem>

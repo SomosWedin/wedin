@@ -13,14 +13,20 @@ import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge'
 import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
 import DeleteWishlistGiftDialog from '@/components/dialog/delete-wishlist-gift-dialog'
 import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialog'
-import { computePercentage } from '@/components/guest/gift-progress'
+import {
+  computePercentage,
+  getQuantityProgress,
+} from '@/components/guest/gift-progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift'
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
-  include: { gift: { include: { image: true } } }
+  include: {
+    gift: { include: { image: true } }
+    transactions: { select: { quantity: true } }
+  }
 }>
 
 type DashboardWishlistListProps = {
@@ -108,9 +114,13 @@ export default function DashboardWishlistList({
   const activeWishlistGifts = wishlistGifts.filter(
     wishlistGift => !wishlistGift.isReceived
   )
-  const addedGiftCount = activeWishlistGifts.length
+  const addedGiftCount = activeWishlistGifts.reduce(
+    (sum, wishlistGift) => sum + wishlistGift.quantity,
+    0
+  )
   const totalGiftsValue = activeWishlistGifts.reduce(
-    (sum, wishlistGift) => sum + (Number(wishlistGift.gift.price) || 0),
+    (sum, wishlistGift) =>
+      sum + (Number(wishlistGift.gift.price) || 0) * wishlistGift.quantity,
     0
   )
 
@@ -251,7 +261,23 @@ export default function DashboardWishlistList({
               </div>
 
               <div className="col-span-2 text-sm">
-                Gs.{Number(wishlistGift.gift.price).toLocaleString('es-PY')}
+                <p>
+                  Gs.{Number(wishlistGift.gift.price).toLocaleString('es-PY')}
+                </p>
+                {!wishlistGift.isGroupGift &&
+                  wishlistGift.quantity > 1 &&
+                  (() => {
+                    const { completedQuantity } = getQuantityProgress(
+                      wishlistGift.quantity,
+                      wishlistGift.transactions
+                    )
+                    return (
+                      <p className="text-gray-500">
+                        {completedQuantity} de {wishlistGift.quantity}{' '}
+                        recibido{completedQuantity === 1 ? '' : 's'}
+                      </p>
+                    )
+                  })()}
               </div>
 
               <div className="flex col-span-2 gap-2 items-center text-sm">
@@ -298,9 +324,15 @@ export default function DashboardWishlistList({
                     categories={categories}
                     isFavoriteGift={wishlistGift.isFavoriteGift}
                     isGroupGift={wishlistGift.isGroupGift}
-                    disabled={
-                      wishlistGift.isFullyPaid ||
-                      Number(wishlistGift.groupGiftParts) > 0
+                    quantity={wishlistGift.quantity}
+                    minQuantity={wishlistGift.reservedQuantity}
+                    lockPrice={
+                      !wishlistGift.isGroupGift &&
+                      wishlistGift.reservedQuantity > 0
+                    }
+                    allowTypeChange={
+                      wishlistGift.reservedQuantity === 0 &&
+                      wishlistGift.reservedAmount === 0
                     }
                   />
                   <DeleteWishlistGiftDialog

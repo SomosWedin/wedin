@@ -5,19 +5,18 @@ import type { Gift, Image as ImageModel } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { type SubmitHandler, useForm } from 'react-hook-form'
-import type { z } from 'zod'
 import { createGift } from '@/actions/data/gift'
 import { createWishlistGift } from '@/actions/data/wishlist-gift'
+import type { GiftFormValues } from '@/components/forms/dialog/gift'
 import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/hooks/use-toast'
+import { prepareImageForUpload } from '@/lib/image-upload'
 import { uploadGiftImageToAws } from '@/lib/s3'
 import { GiftFormSchema } from '@/schemas/form'
 
 export type ExistingGift = Gift & {
   image: ImageModel | null
 }
-
-export type ExistingGiftFormValues = z.infer<typeof GiftFormSchema>
 
 type UseAddExistingGiftProps = {
   gift: ExistingGift
@@ -37,13 +36,14 @@ export function useAddExistingGift({
   const [imagePreview, setImagePreview] = useState<string | null>(
     gift.image?.url ?? null
   )
+  const [preparingImage, setPreparingImage] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { toast } = useToast()
   const router = useRouter()
 
-  const form = useForm<ExistingGiftFormValues>({
+  const form = useForm<GiftFormValues>({
     resolver: zodResolver(GiftFormSchema),
     mode: 'all',
     defaultValues: {
@@ -58,6 +58,7 @@ export function useAddExistingGift({
       wishlistId,
       isFavoriteGift: false,
       isGroupGift: false,
+      quantity: 1,
     },
   })
 
@@ -69,15 +70,27 @@ export function useAddExistingGift({
     }
   }, [imagePreview])
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
+    event.target.value = ''
 
     if (!file) return
 
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+    setPreparingImage(true)
+    const prepared = await prepareImageForUpload(file)
+    setPreparingImage(false)
 
-    event.target.value = ''
+    if (!prepared.ok) {
+      toast({
+        title: 'No pudimos usar esa imagen',
+        description: `${file.name}: ${prepared.message}`,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setImageFile(prepared.file)
+    setImagePreview(URL.createObjectURL(prepared.file))
   }
 
   const resetDialog = () => {
@@ -94,7 +107,7 @@ export function useAddExistingGift({
     }
   }
 
-  const onSubmit: SubmitHandler<ExistingGiftFormValues> = async values => {
+  const onSubmit: SubmitHandler<GiftFormValues> = async values => {
     setLoading(true)
 
     try {
@@ -155,6 +168,7 @@ export function useAddExistingGift({
         giftId,
         isFavoriteGift: values.isFavoriteGift,
         isGroupGift: values.isGroupGift,
+        quantity: values.quantity,
       })
 
       if (linkResponse.error) {
@@ -198,6 +212,7 @@ export function useAddExistingGift({
     form,
     loading,
     imagePreview,
+    preparingImage,
     fileInputRef,
     isValid: form.formState.isValid,
     handleFileChange,

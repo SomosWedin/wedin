@@ -6,6 +6,7 @@ import Image from 'next/image'
 import type { BaseSyntheticEvent, ChangeEventHandler, RefObject } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { CiImageOn } from 'react-icons/ci'
+import { IoInformationCircleOutline } from 'react-icons/io5'
 import { MdOutlineFileUpload } from 'react-icons/md'
 import type { z } from 'zod'
 import PriceInput from '@/components/forms/common/price-input'
@@ -27,9 +28,20 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
+  ALLOWED_IMAGE_FORMATS_LABEL,
+  IMAGE_UPLOAD_ACCEPT,
+  MAX_IMAGE_SIZE_MB,
+} from '@/lib/image-upload'
 import { GiftFormSchema } from '@/schemas/form'
 
-type GiftFormValues = z.infer<typeof GiftFormSchema>
+export type GiftFormValues = z.infer<typeof GiftFormSchema>
 
 type GiftFormProps = {
   form: UseFormReturn<GiftFormValues>
@@ -37,9 +49,13 @@ type GiftFormProps = {
   loading: boolean
   isValid: boolean
   imagePreview: string | null
+  preparingImage?: boolean
   fileInputRef: RefObject<HTMLInputElement>
   uploadInputId: string
   submitLabel: string
+  minQuantity?: number
+  lockPrice?: boolean
+  allowTypeChange?: boolean
   onFileChange: ChangeEventHandler<HTMLInputElement>
   onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
   onCancel: () => void
@@ -51,13 +67,19 @@ export default function GiftForm({
   loading,
   isValid,
   imagePreview,
+  preparingImage = false,
   fileInputRef,
   uploadInputId,
   submitLabel,
+  minQuantity = 1,
+  lockPrice = false,
+  allowTypeChange = false,
   onFileChange,
   onSubmit,
   onCancel,
 }: GiftFormProps) {
+  const isGroupGift = form.watch('isGroupGift')
+
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -84,7 +106,7 @@ export default function GiftForm({
                 id={uploadInputId}
                 type="file"
                 className="hidden"
-                accept="image/jpeg,image/png,image/heic,image/webp"
+                accept={IMAGE_UPLOAD_ACCEPT}
                 ref={fileInputRef}
                 onChange={onFileChange}
               />
@@ -95,13 +117,19 @@ export default function GiftForm({
                 size="sm"
                 className="w-fit gap-2"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={preparingImage}
               >
-                Subir imagen
-                <MdOutlineFileUpload className="text-lg" />
+                {preparingImage ? 'Procesando…' : 'Subir imagen'}
+                {preparingImage ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <MdOutlineFileUpload className="text-lg" />
+                )}
               </Button>
 
               <p className="text-xs text-textTertiary">
-                Se recomienda 1080 x 1080 (1:1), hasta 10 MB
+                Se recomienda 1080 x 1080 (1:1), hasta {MAX_IMAGE_SIZE_MB} MB,
+                en {ALLOWED_IMAGE_FORMATS_LABEL}
               </p>
             </div>
           </div>
@@ -151,25 +179,95 @@ export default function GiftForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="price"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Precio</FormLabel>
+        <div className="flex gap-3">
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem className="flex-[8]">
+                <FormLabel className="flex items-center h-5">Precio</FormLabel>
 
-              <FormControl>
-                <PriceInput
-                  value={field.value}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                />
-              </FormControl>
+                {lockPrice ? (
+                  <TooltipProvider disableHoverableContent>
+                    <Tooltip delayDuration={100}>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <FormControl>
+                            <PriceInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              onBlur={field.onBlur}
+                              disabled
+                            />
+                          </FormControl>
+                        </div>
+                      </TooltipTrigger>
 
-              <FormMessage className="font-normal text-red-600" />
-            </FormItem>
+                      <TooltipContent side="top">
+                        No podés cambiar el precio de un regalo recibido
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <FormControl>
+                    <PriceInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  </FormControl>
+                )}
+
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+
+          {!isGroupGift && (
+            <FormField
+              control={form.control}
+              name="quantity"
+              render={({ field }) => (
+                <FormItem className="flex-[2]">
+                  <FormLabel className="flex gap-1 items-center h-5">
+                    Cantidad
+                    <TooltipProvider disableHoverableContent>
+                      <Tooltip delayDuration={100}>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0}>
+                            <IoInformationCircleOutline className="text-textTertiary" />
+                          </span>
+                        </TooltipTrigger>
+
+                        <TooltipContent side="top">
+                          Cuántas unidades de este regalo pueden comprar tus
+                          invitados
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </FormLabel>
+
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={minQuantity}
+                      max={20}
+                      step={1}
+                      value={field.value}
+                      onChange={event => {
+                        if (event.target.value.length > 2) return
+                        field.onChange(event.target.value)
+                      }}
+                      onBlur={field.onBlur}
+                    />
+                  </FormControl>
+
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
           )}
-        />
+        </div>
 
         <FormField
           control={form.control}
@@ -194,28 +292,30 @@ export default function GiftForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="isGroupGift"
-          render={({ field }) => (
-            <FormItem className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <FormLabel>Regalo grupal</FormLabel>
+        {allowTypeChange && (
+          <FormField
+            control={form.control}
+            name="isGroupGift"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between">
+                <div className="flex flex-col gap-1">
+                  <FormLabel>Regalo grupal</FormLabel>
 
-                <p className="text-sm text-textTertiary">
-                  Permite que varios invitados contribuyan a este regalo
-                </p>
-              </div>
+                  <p className="text-sm text-textTertiary">
+                    Permite que varios invitados contribuyan a este regalo
+                  </p>
+                </div>
 
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
 
         <div className="-mx-6 -mb-6 flex justify-end gap-2 rounded-b-lg bg-gray-50 px-6 pb-6 pt-4">
           <Button

@@ -2,7 +2,8 @@
 
 import type { Gift, Image as ImageModel } from '@prisma/client'
 import Image from 'next/image'
-import { IoGiftOutline } from 'react-icons/io5'
+import { useEffect, useState } from 'react'
+import { IoAddOutline, IoGiftOutline, IoRemoveOutline } from 'react-icons/io5'
 import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge'
 import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
 import { Button } from '@/components/ui/button'
@@ -18,7 +19,10 @@ type GiftDetailDialogProps = {
   onOpenChange: (open: boolean) => void
   gift: Gift & { image: ImageModel | null }
   isFavoriteGift: boolean
-  onAddToCart: () => void
+  totalQuantity: number
+  remainingStock: number
+  initialQuantity?: number
+  onConfirm: (quantity: number) => void
 }
 
 export default function GiftDetailDialog({
@@ -26,10 +30,21 @@ export default function GiftDetailDialog({
   onOpenChange,
   gift,
   isFavoriteGift,
-  onAddToCart,
+  totalQuantity,
+  remainingStock,
+  initialQuantity,
+  onConfirm,
 }: GiftDetailDialogProps) {
-  const handleAddToCart = () => {
-    onAddToCart()
+  const hasMultipleUnits = totalQuantity > 1
+  const maxSelectable = Math.max(1, remainingStock)
+  const [quantity, setQuantity] = useState(initialQuantity ?? 1)
+
+  useEffect(() => {
+    if (open) setQuantity(initialQuantity ?? 1)
+  }, [open, initialQuantity])
+
+  const handleConfirm = () => {
+    onConfirm(quantity)
     onOpenChange(false)
   }
 
@@ -61,7 +76,7 @@ export default function GiftDetailDialog({
             <div className="flex flex-col gap-2">
               <p className="font-normal text-base">{gift.name}</p>
               <p className="font-medium text-xl">
-                Gs. {Number(gift.price).toLocaleString('es-PY')}
+                Gs. {(Number(gift.price) * quantity).toLocaleString('es-PY')}
               </p>
               <div className="flex flex-wrap gap-1.5 mt-2">
                 <GiftTypeBadge isGroupGift={false} />
@@ -69,6 +84,40 @@ export default function GiftDetailDialog({
               </div>
             </div>
           </div>
+
+          {hasMultipleUnits && (
+            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">Cantidad</span>
+                <span className="text-xs text-textTertiary">
+                  Quedan {remainingStock} de {totalQuantity}
+                </span>
+              </div>
+              <div className="flex gap-2 items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setQuantity(value => Math.max(1, value - 1))}
+                  disabled={quantity <= 1}
+                >
+                  <IoRemoveOutline />
+                </Button>
+                <span className="w-8 font-medium text-center">{quantity}</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    setQuantity(value => Math.min(maxSelectable, value + 1))
+                  }
+                  disabled={quantity >= maxSelectable}
+                >
+                  <IoAddOutline />
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-2 justify-end pt-4 -mx-6 -mb-6 px-6 pb-6 bg-gray-50 rounded-b-lg">
             <Button
@@ -82,7 +131,7 @@ export default function GiftDetailDialog({
             <Button
               type="button"
               variant="success"
-              onClick={handleAddToCart}
+              onClick={handleConfirm}
               className="flex-[7]"
             >
               Agregar al carrito

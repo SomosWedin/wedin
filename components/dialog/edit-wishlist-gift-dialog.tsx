@@ -12,12 +12,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import {
   type EditableGift,
   useEditWishlistGift,
 } from '@/hooks/dialog/forms/use-edit-wishlist'
@@ -30,7 +24,10 @@ type EditWishlistGiftDialogProps = {
   categories: Category[]
   isFavoriteGift: boolean
   isGroupGift: boolean
-  disabled?: boolean
+  quantity: number
+  minQuantity: number
+  lockPrice: boolean
+  allowTypeChange: boolean
 }
 
 export default function EditWishlistGiftDialog({
@@ -41,13 +38,17 @@ export default function EditWishlistGiftDialog({
   categories,
   isFavoriteGift,
   isGroupGift,
-  disabled = false,
+  quantity,
+  minQuantity,
+  lockPrice,
+  allowTypeChange,
 }: EditWishlistGiftDialogProps) {
   const {
     form,
     open,
     loading,
     imagePreview,
+    preparingImage,
     fileInputRef,
     isValid,
     handleFileChange,
@@ -60,27 +61,8 @@ export default function EditWishlistGiftDialog({
     gift,
     isFavoriteGift,
     isGroupGift,
+    quantity,
   })
-
-  if (disabled) {
-    return (
-      <TooltipProvider disableHoverableContent>
-        <Tooltip delayDuration={100}>
-          <TooltipTrigger asChild>
-            <span tabIndex={0}>
-              <Button type="button" variant="outline" size="icon" disabled>
-                <IoPencilOutline />
-              </Button>
-            </span>
-          </TooltipTrigger>
-
-          <TooltipContent side="top">
-            Un regalo con contribuciones no se puede editar
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    )
-  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -101,9 +83,13 @@ export default function EditWishlistGiftDialog({
           loading={loading}
           isValid={isValid}
           imagePreview={imagePreview}
+          preparingImage={preparingImage}
           fileInputRef={fileInputRef}
           uploadInputId={`edit-gift-image-${wishlistGiftId}`}
           submitLabel="Guardar"
+          minQuantity={minQuantity}
+          lockPrice={lockPrice}
+          allowTypeChange={allowTypeChange}
           onFileChange={handleFileChange}
           onSubmit={handleSubmit}
           onCancel={() => handleOpenChange(false)}

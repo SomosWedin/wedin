@@ -12,6 +12,7 @@ import {
   IoSwapVerticalOutline,
 } from 'react-icons/io5'
 import ThankTransactionDialog from '@/components/dialog/thank-transaction-dialog'
+import { getQuantityProgress } from '@/components/guest/gift-progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
@@ -25,7 +26,10 @@ type TransactionWithGift = Prisma.TransactionGetPayload<{
 }>
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
-  include: { gift: { include: { image: true } } }
+  include: {
+    gift: { include: { image: true } }
+    transactions: { select: { quantity: true } }
+  }
 }>
 
 type DashboardTransactionsListProps = {
@@ -58,6 +62,7 @@ export default function DashboardTransactionsList({
 }: DashboardTransactionsListProps) {
   const [search, setSearch] = useState('')
   const [estadoFilter, setEstadoFilter] = useState('')
+  const [agradecidoFilter, setAgradecidoFilter] = useState('')
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
@@ -82,12 +87,23 @@ export default function DashboardTransactionsList({
   const activeWishlistGifts = wishlistGifts.filter(
     wishlistGift => !wishlistGift.isReceived
   )
-  const receivedCount = activeWishlistGifts.filter(
-    wishlistGift => wishlistGift.isFullyPaid || wishlistGift.isManuallyReceived
-  ).length
-  const totalWishlistGifts = activeWishlistGifts.length
-  const totalGiftsPrice = activeWishlistGifts.reduce(
-    (sum, wishlistGift) => sum + (Number(wishlistGift.gift.price) || 0),
+  const receivedCount = activeWishlistGifts.reduce((sum, wishlistGift) => {
+    if (wishlistGift.isManuallyReceived) return sum + wishlistGift.quantity
+    if (wishlistGift.isGroupGift) return sum + (wishlistGift.isFullyPaid ? 1 : 0)
+
+    return (
+      sum +
+      getQuantityProgress(wishlistGift.quantity, wishlistGift.transactions)
+        .completedQuantity
+    )
+  }, 0)
+  const totalWishlistGifts = activeWishlistGifts.reduce(
+    (sum, wishlistGift) => sum + wishlistGift.quantity,
+    0
+  )
+  const totalGiftsPrice = wishlistGifts.reduce(
+    (sum, wishlistGift) =>
+      sum + (Number(wishlistGift.gift.price) || 0) * wishlistGift.quantity,
     0
   )
 
@@ -100,8 +116,13 @@ export default function DashboardTransactionsList({
         .toLowerCase()
         .includes(normalizedSearch)
     const matchesEstado = !estadoFilter || transaction.status === estadoFilter
+    const matchesAgradecido =
+      !agradecidoFilter ||
+      (agradecidoFilter === 'yes'
+        ? Boolean(transaction.notes)
+        : !transaction.notes)
 
-    return matchesSearch && matchesEstado
+    return matchesSearch && matchesEstado && matchesAgradecido
   })
 
   const sortedTransactions = sortColumn
@@ -120,7 +141,7 @@ export default function DashboardTransactionsList({
       <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-[unset] sm:max-h-24">
         <div className="flex flex-col gap-1 p-4 sm:p-6 w-full justify-center">
           <h2 className="text-lg font-bold">
-            Resúmen de los regalos recibidos
+            Resumen de los regalos recibidos
           </h2>
         </div>
         {receivedCount >= 1 && (
@@ -175,6 +196,15 @@ export default function DashboardTransactionsList({
               {option.label}
             </option>
           ))}
+        </select>
+        <select
+          className="px-3 py-2 h-10 text-sm bg-white rounded-md border border-input"
+          value={agradecidoFilter}
+          onChange={event => setAgradecidoFilter(event.target.value)}
+        >
+          <option value="">Agradecimiento: Todos</option>
+          <option value="yes">Agradecidos</option>
+          <option value="no">Pendientes</option>
         </select>
       </div>
 
