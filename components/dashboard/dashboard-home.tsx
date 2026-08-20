@@ -35,7 +35,7 @@ export default async function DashboardHome() {
   })
 
   const hasGift = wishlistGifts.length > 0
-  const hasPresentation = !!event.coverMessage && event.images.length > 0
+  const hasPresentation = !!event.coverMessage
   const hasEventDetails = !!event.date && !!event.url
 
   const items: ChecklistItem[] = [
