@@ -15,8 +15,6 @@ export default function SitePreviewLayout({
 }>) {
   return (
     <PreviewModeProvider>
-      {/* Mirrors app/e/layout.tsx so the preview carries the same chrome
-          guests get. Keep both in sync. */}
       <div className="min-h-screen bg-white">
         <header className="border-b border-gray-100">
           <div className="flex justify-between items-center px-4 py-3 mx-auto max-w-7xl sm:px-6 lg:px-8">

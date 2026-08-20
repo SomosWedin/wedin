@@ -29,8 +29,6 @@ export default function SitePreview({
   const [draft, setDraft] = useState<SitePreviewDraft | null>(null)
   const previewCartStore = useCartStore(getPreviewCartKey(event.id))
 
-  // Every preview opens as a first-time visit, not with leftovers from the
-  // last time the organizer clicked around.
   useEffect(() => {
     previewCartStore.getState().clear()
   }, [previewCartStore])
@@ -45,8 +43,6 @@ export default function SitePreview({
 
     window.addEventListener('message', handleMessage)
 
-    // The dashboard only holds the unsaved draft in memory, so it can't be
-    // read here — ask for it once this frame is mounted and listening.
     window.parent.postMessage(
       { type: SITE_PREVIEW_READY },
       window.location.origin

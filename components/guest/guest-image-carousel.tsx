@@ -77,9 +77,6 @@ export default function GuestImageCarousel({
                 fill
                 className="object-cover"
                 priority={index === 0}
-                // Photos the organizer just picked are still local `blob:`
-                // URLs in the preview; the image optimizer only accepts the
-                // configured remote hosts and would reject them.
                 unoptimized={image.url?.startsWith('blob:')}
               />
             </div>

@@ -5,8 +5,6 @@ const GIFT_CARD_SLOTS = Array.from(
   (_, index) => `gift-card-${index}`
 )
 
-// Mirrors guest-hero.tsx and guest-gift-catalog.tsx so the page doesn't jump
-// when the real content replaces it. Keep the wrappers in sync with them.
 export default function GuestSiteSkeleton() {
   return (
     <>

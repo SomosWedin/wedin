@@ -27,10 +27,6 @@ type EventCoverPreviewDialogProps = {
 
 type DeviceMode = 'mobile' | 'desktop'
 
-// The frame renders at a real device width and is scaled down to fit the
-// dialog, so Tailwind's viewport breakpoints resolve exactly as they do on a
-// phone or a desktop browser instead of at whatever width the dialog happens
-// to have.
 const FRAME_WIDTHS: Record<DeviceMode, number> = {
   mobile: 390,
   desktop: 1440,
@@ -48,9 +44,6 @@ const EventCoverPreviewDialog = ({
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const observerRef = useRef<ResizeObserver | null>(null)
 
-  // `images` is a fresh array on every render of the form, so the draft is
-  // tracked by its contents: re-posting an identical draft would restart the
-  // carousel inside the frame on each keystroke.
   const draft: SitePreviewDraft = { coverMessage, images }
   const draftSignature = JSON.stringify(draft)
   const draftRef = useRef(draft)
@@ -78,15 +71,12 @@ const EventCoverPreviewDialog = ({
     return () => window.removeEventListener('message', handleMessage)
   }, [open, postDraft])
 
-  // Keeps the frame in sync while the organizer keeps editing behind it.
   useEffect(() => {
     if (!open) return
 
     postDraft(JSON.parse(draftSignature) as SitePreviewDraft)
   }, [open, postDraft, draftSignature])
 
-  // A callback ref instead of `useEffect`: the stage only exists while the
-  // dialog is open, and it has to be measured as soon as it mounts.
   const stageRef = useCallback((stageElement: HTMLDivElement | null) => {
     observerRef.current?.disconnect()
     observerRef.current = null
@@ -106,8 +96,6 @@ const EventCoverPreviewDialog = ({
     observerRef.current = observer
   }, [])
 
-  // Both the dialog reopening and the device toggle remount the frame, so the
-  // placeholder has to come back with it.
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) setFrameLoaded(false)
     setOpen(nextOpen)
@@ -191,8 +179,6 @@ const EventCoverPreviewDialog = ({
             >
               <iframe
                 ref={iframeRef}
-                // Remounting on device change restarts the page at the new
-                // width, so no stale desktop-sized render leaks into the phone.
                 key={device}
                 src={SITE_PREVIEW_PATH}
                 title="Vista previa del sitio"
@@ -200,10 +186,6 @@ const EventCoverPreviewDialog = ({
                 onLoad={() => setFrameLoaded(true)}
               />
 
-              {/* Only a neutral loader: this markup belongs to the dashboard
-                  document, so its media queries would resolve against the
-                  dashboard's viewport and misrepresent the phone layout. The
-                  structural skeleton lives in the frame's own loading.tsx. */}
               {!frameLoaded && (
                 <div className="flex absolute inset-0 gap-3 justify-center items-center bg-white pointer-events-none text-textTertiary">
                   <Loader2 className="w-5 h-5 animate-spin" />

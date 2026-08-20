@@ -3,8 +3,6 @@ export const SITE_PREVIEW_PATH = '/preview'
 export const SITE_PREVIEW_READY = 'wedin:site-preview-ready'
 export const SITE_PREVIEW_DRAFT = 'wedin:site-preview-draft'
 
-// Anything a guest would add to the cart while the organizer clicks around
-// the preview is throwaway, so it never shares a store with a real visit.
 export function getPreviewCartKey(eventId: string) {
   return `${eventId}-preview`
 }
