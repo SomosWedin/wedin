@@ -20,11 +20,19 @@ export default function RequestPayoutDialog({
   eventId,
   balance,
 }: RequestPayoutDialogProps) {
-  const { form, open, loading, isValid, handleOpenChange, handleSubmit } =
-    useRequestPayoutDialog({
-      eventId,
-      balance,
-    })
+  const {
+    form,
+    open,
+    loading,
+    isValid,
+    handleOpenChange,
+    handleAmountChange,
+    handleCompleteTotalChange,
+    handleSubmit,
+  } = useRequestPayoutDialog({
+    eventId,
+    balance,
+  })
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -52,6 +60,8 @@ export default function RequestPayoutDialog({
           balance={balance}
           loading={loading}
           isValid={isValid}
+          onAmountChange={handleAmountChange}
+          onCompleteTotalChange={handleCompleteTotalChange}
           onSubmit={handleSubmit}
           onCancel={() => handleOpenChange(false)}
         />

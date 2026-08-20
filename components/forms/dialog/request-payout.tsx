@@ -5,6 +5,7 @@ import type { BaseSyntheticEvent } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import PriceInput from '@/components/forms/common/price-input'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -20,6 +21,8 @@ type RequestPayoutFormProps = {
   balance: number
   loading: boolean
   isValid: boolean
+  onAmountChange: (nextAmount: string) => void
+  onCompleteTotalChange: (checked: boolean | 'indeterminate') => void
   onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
   onCancel: () => void
 }
@@ -29,6 +32,8 @@ export default function RequestPayoutForm({
   balance,
   loading,
   isValid,
+  onAmountChange,
+  onCompleteTotalChange,
   onSubmit,
   onCancel,
 }: RequestPayoutFormProps) {
@@ -49,12 +54,35 @@ export default function RequestPayoutForm({
               <FormControl>
                 <PriceInput
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={onAmountChange}
                   onBlur={field.onBlur}
                 />
               </FormControl>
 
               <FormMessage className="font-normal text-red-600" />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="completeTotal"
+          render={({ field }) => (
+            <FormItem className="flex items-center gap-2 space-y-0">
+              <FormControl>
+                <Checkbox
+                  id="complete-total"
+                  checked={field.value}
+                  onCheckedChange={onCompleteTotalChange}
+                />
+              </FormControl>
+
+              <FormLabel
+                htmlFor="complete-total"
+                className="!mt-0 cursor-pointer font-normal"
+              >
+                Retirar el monto total disponible
+              </FormLabel>
             </FormItem>
           )}
         />
