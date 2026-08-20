@@ -1,42 +1,42 @@
-'use client';
+'use client'
 
-import type { Event, Image as ImageModel, User } from '@prisma/client';
-import { Loader2, Sparkles } from 'lucide-react';
-import Image from 'next/image';
-import { CiImageOn } from 'react-icons/ci';
-import { FaCheck } from 'react-icons/fa6';
-import { MdOutlineFileUpload } from 'react-icons/md';
-import { RxCross2 } from 'react-icons/rx';
-import EventCoverPreviewDialog from '@/components/dashboard/event-cover-preview-dialog';
-import ResetEventCoverFormDialog from '@/components/dialog/reset-event-cover-form-dialog';
-import { Button } from '@/components/ui/button';
+import type { Event, Image as ImageModel, User } from '@prisma/client'
+import { Loader2, Sparkles } from 'lucide-react'
+import Image from 'next/image'
+import { CiImageOn } from 'react-icons/ci'
+import { FaCheck } from 'react-icons/fa6'
+import { MdOutlineFileUpload } from 'react-icons/md'
+import { RxCross2 } from 'react-icons/rx'
+import EventCoverPreviewDialog from '@/components/dashboard/event-cover-preview-dialog'
+import ResetEventCoverFormDialog from '@/components/dialog/reset-event-cover-form-dialog'
+import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
+} from '@/components/ui/form'
+import { Textarea } from '@/components/ui/textarea'
 import {
   MAX_IMAGES,
   useEventCover,
-} from '@/hooks/dashboard/forms/use-event-cover';
+} from '@/hooks/dashboard/forms/use-event-cover'
 import {
   ALLOWED_IMAGE_FORMATS_LABEL,
   IMAGE_UPLOAD_ACCEPT,
   MAX_IMAGE_SIZE_MB,
-} from '@/lib/image-upload';
+} from '@/lib/image-upload'
 
 type EventCoverUpdateFormProps = {
   event: Event & {
-    images: ImageModel[];
-    users: User[];
-  };
-};
+    images: ImageModel[]
+    users: User[]
+  }
+}
 
 const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
-  const { images, coverMessage, id } = event;
+  const { images, coverMessage, id } = event
   const {
     applySuggestion,
     currentImages,
@@ -55,8 +55,8 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
     slots,
     suggesting,
     suggestions,
-  } = useEventCover({ eventId: id, coverMessage: coverMessage, images });
-  const previewCoverMessage = form.watch('coverMessage');
+  } = useEventCover({ eventId: id, coverMessage: coverMessage, images })
+  const previewCoverMessage = form.watch('coverMessage')
 
   return (
     <Form {...form}>
@@ -82,7 +82,7 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
           <div className="flex flex-col gap-6 justify-end items-end w-full sm:w-1/2">
             <div className="flex flex-wrap gap-2 justify-end">
               {slots.map((_, index) => {
-                const eventImage = currentImages[index];
+                const eventImage = currentImages[index]
                 return (
                   <div
                     key={index}
@@ -111,7 +111,7 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
                       <CiImageOn className="text-3xl text-gray-400" />
                     )}
                   </div>
-                );
+                )
               })}
             </div>
 
@@ -130,7 +130,7 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
               accept={IMAGE_UPLOAD_ACCEPT}
               ref={fileInputRef}
               onChange={event => {
-                handleAddImage(event);
+                handleAddImage(event)
               }}
               multiple
             />
@@ -234,7 +234,7 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
         </div>
       </form>
     </Form>
-  );
-};
+  )
+}
 
-export default EventCoverUpdateForm;
+export default EventCoverUpdateForm
