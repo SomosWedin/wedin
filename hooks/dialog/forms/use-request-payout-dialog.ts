@@ -47,14 +47,14 @@ export function useRequestPayoutDialog({
 
   const form = useForm<RequestPayoutFormValues>({
     resolver: zodResolver(schema),
-    mode: 'all',
+    mode: 'onChange',
     defaultValues: {
       amount: '',
     },
   })
 
   useEffect(() => {
-    if (open) {
+    if (open && form.getValues('amount')) {
       void form.trigger('amount')
     }
   }, [balance, open, form])
