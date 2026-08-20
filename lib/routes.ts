@@ -9,6 +9,7 @@ export const protectedRoutes: string[] = [
   '/dashboard',
   '/event-details',
   '/event-settings',
+  '/preview',
   '/transactions',
   '/wishlist',
   '/gifts-received',

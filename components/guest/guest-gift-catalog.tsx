@@ -19,10 +19,12 @@ import {
 import GuestGiftCard, {
   type WishlistGiftWithGift,
 } from '@/components/guest/guest-gift-card'
+import { useIsPreviewMode } from '@/components/guest/preview-mode'
 import { Input } from '@/components/ui/input'
 import { type CartItem, useCartStore } from '@/hooks/use-cart-store'
 import { useStore } from '@/hooks/use-store'
 import { useToast } from '@/hooks/use-toast'
+import { getPreviewCartKey } from '@/lib/site-preview'
 
 type TypeFilter = 'todos' | 'individual' | 'grupal'
 type SortOption = 'recent' | 'price-asc' | 'price-desc'
@@ -53,7 +55,10 @@ export default function GuestGiftCatalog({
   categories,
 }: GuestGiftCatalogProps) {
   const { toast } = useToast()
-  const cartStore = useCartStore(eventId)
+  const isPreviewMode = useIsPreviewMode()
+  const cartStore = useCartStore(
+    isPreviewMode ? getPreviewCartKey(eventId) : eventId
+  )
   const cartItems = useStore(cartStore, state => state.items) ?? []
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos')
   const [search, setSearch] = useState('')

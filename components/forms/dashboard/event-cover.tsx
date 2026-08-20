@@ -210,9 +210,9 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
         </div>
         <div className="flex flex-wrap gap-2 justify-end w-full">
           <EventCoverPreviewDialog
-            event={event}
             images={currentImages}
             coverMessage={previewCoverMessage}
+            hasUnsavedChanges={hasChanges}
           />
           <ResetEventCoverFormDialog
             handleReset={handleReset}
