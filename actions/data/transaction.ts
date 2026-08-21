@@ -3,7 +3,7 @@
 import type { Prisma, TransactionStatus } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
-import { getCurrentUser } from '@/actions/get-current-user'
+import { getAdminSessionUser } from '@/actions/auth/admin-session'
 import prismaClient from '@/prisma/client'
 import { TransactionEditSchema } from '@/schemas/form'
 import { GetTransactionsParams } from '@/schemas/params'
@@ -253,13 +253,13 @@ export async function applyTransactionStatusChange(
   await recomputeWishlistGiftProgress(transaction.wishlistGiftId)
 }
 
-// Staff-only (User.role === 'ADMIN', set manually in the DB): reads across
-// every event, not scoped to the logged-in user's own event like
-// getTransactions above.
+// Staff-only (User.role === 'ADMIN', set manually in the DB, plus a verified
+// admin step-up session): reads across every event, not scoped to the
+// logged-in user's own event like getTransactions above.
 export async function getAllTransactionsForAdmin() {
-  const currentUser = await getCurrentUser()
+  const currentUser = await getAdminSessionUser()
 
-  if (currentUser?.role !== 'ADMIN') return []
+  if (!currentUser) return []
 
   try {
     return await prismaClient.transaction.findMany({
@@ -279,9 +279,9 @@ export async function updateTransactionStatusAsAdmin(
   transactionId: string,
   status: TransactionStatus
 ) {
-  const currentUser = await getCurrentUser()
+  const currentUser = await getAdminSessionUser()
 
-  if (currentUser?.role !== 'ADMIN') {
+  if (!currentUser) {
     return { error: 'No autorizado.' }
   }
 

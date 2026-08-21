@@ -52,6 +52,17 @@ whenever you touch something documented below.
   behavior for existing gifts.
 - `Transaction.quantity` — always `1` for group-gift contributions; can be
   >1 for an individual-gift purchase.
+- `AdminOtp.codeHash` — keyed HMAC-SHA256 of the `/admin` access code, not
+  the code itself and not a bcrypt hash. The key (`ADMIN_SESSION_SECRET`,
+  falling back to `NEXTAUTH_SECRET`) lives in the environment, so a database
+  dump alone can't precompute the 10^6 possible six-digit codes. Rotating
+  that secret invalidates every outstanding code and step-up session, which
+  is the intended panic button.
+- `AdminOtp.attempts` / `consumedAt` — the attempt cap is what actually
+  makes a six-digit code safe; `consumedAt` is set both on success and on
+  burning the code at the cap, and `expires` is 10 minutes out. Verification
+  only ever looks at rows with `consumedAt: null` and `expires` in the
+  future, so there's no replay of a used code.
 - `Transaction.bankTransferGroupId` — shared by every transaction created
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a

@@ -6,6 +6,7 @@ import type { z } from 'zod'
 import prismaClient from '@/prisma/client'
 import { PayoutEditSchema } from '@/schemas/form'
 import { RequestPayoutParams } from '@/schemas/params'
+import { getAdminSessionUser } from '../auth/admin-session'
 import { getCurrentUser } from '../get-current-user'
 import { getErrorMessage } from '../helper'
 import { getBankDetails } from './bank-details'
@@ -139,9 +140,9 @@ export async function requestPayout(
 }
 
 export async function getAllPayoutsForAdmin() {
-  const currentUser = await getCurrentUser()
+  const currentUser = await getAdminSessionUser()
 
-  if (currentUser?.role !== 'ADMIN') return []
+  if (!currentUser) return []
 
   try {
     return await prismaClient.payout.findMany({
@@ -161,9 +162,9 @@ export async function updatePayoutStatusAsAdmin(
   payoutId: string,
   status: PayoutStatus
 ) {
-  const currentUser = await getCurrentUser()
+  const currentUser = await getAdminSessionUser()
 
-  if (currentUser?.role !== 'ADMIN') {
+  if (!currentUser) {
     return { error: 'No autorizado.' }
   }
 

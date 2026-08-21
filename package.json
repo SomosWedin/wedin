@@ -62,6 +62,7 @@
     "faker": "^6.6.6",
     "heic-to": "^1.5.2",
     "immer": "^10.1.1",
+    "jose": "^5.8.0",
     "latest": "^0.2.0",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.438.0",
