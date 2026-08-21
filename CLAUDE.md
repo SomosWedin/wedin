@@ -81,4 +81,5 @@ Staff-only access (`/admin`) is documented in `app/admin/CLAUDE.md`.
   user; that's a forged credential and gets (correctly) blocked. To log in
   as a real test account, either use an email address you can actually
   receive mail at and click the real magic link, or ask the user to log in
-  and hand off.
+  and hand off. `/admin` additionally needs an emailed OTP on top of the
+  session — same constraint, hand off unless you can read the staff mailbox.

@@ -88,6 +88,7 @@ model User {
   Event                Event?                 @relation(fields: [eventId], references: [id])
   eventId              String?                @db.ObjectId
   payouts              Payout[]
+  adminOtps            AdminOtp[]
 }
 
 model Event {
@@ -286,6 +287,20 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model AdminOtp {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String    @db.ObjectId
+  codeHash   String
+  expires    DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model Image {

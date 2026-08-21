@@ -30,3 +30,41 @@ export const magicLinkIpLimit = new Ratelimit({
   limiter: Ratelimit.slidingWindow(20, '1 h'),
   prefix: 'wedin:magic-link:ip',
 })
+
+/**
+ * Allow one admin access code per minute for the same staff account.
+ */
+export const adminOtpCooldown = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(1, '1 m'),
+  prefix: 'wedin:admin-otp:cooldown',
+})
+
+/**
+ * Allow five admin access codes per hour for the same staff account.
+ */
+export const adminOtpUserLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, '1 h'),
+  prefix: 'wedin:admin-otp:user',
+})
+
+/**
+ * Allow ten admin access codes per hour from the same IP address,
+ * including requests targeting different staff accounts.
+ */
+export const adminOtpIpLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, '1 h'),
+  prefix: 'wedin:admin-otp:ip',
+})
+
+/**
+ * Allow ten verification attempts per hour for the same staff account,
+ * on top of the per-code attempt counter.
+ */
+export const adminOtpVerifyLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, '1 h'),
+  prefix: 'wedin:admin-otp:verify',
+})

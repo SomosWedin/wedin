@@ -15,22 +15,29 @@ vi.mock('@/auth.config', () => ({
   default: {},
 }))
 
+import { hashSessionBinding, signAdminSession } from '@/lib/admin-session'
 import { middleware } from '@/middleware'
 
 type RequestOptions = {
   origin?: string
   host?: string
   method?: string
+  cookies?: Record<string, string>
 }
 
 function createRequest(path: string, options: RequestOptions = {}) {
   const origin = options.origin ?? 'https://www.somoswedin.com'
   const url = new URL(path, origin)
 
+  const cookie = Object.entries(options.cookies ?? {})
+    .map(([name, value]) => `${name}=${value}`)
+    .join('; ')
+
   return new NextRequest(url, {
     method: options.method ?? 'GET',
     headers: {
       host: options.host ?? url.host,
+      ...(cookie ? { cookie } : {}),
     },
   })
 }
@@ -76,6 +83,28 @@ const adminUser = {
     role: 'ADMIN',
     isOnboarded: true,
   },
+}
+
+const onboardingAdminUser = {
+  user: {
+    id: 'admin-id',
+    role: 'ADMIN',
+    isOnboarded: false,
+  },
+}
+
+const AUTH_SESSION_TOKEN = 'auth-session-token'
+
+async function adminCookies(userId = 'admin-id') {
+  const token = await signAdminSession({
+    userId,
+    sessionBinding: await hashSessionBinding(AUTH_SESSION_TOKEN),
+  })
+
+  return {
+    'authjs.session-token': AUTH_SESSION_TOKEN,
+    wedin_admin: token,
+  }
 }
 
 describe('middleware canonical event URLs', () => {
@@ -390,6 +419,7 @@ describe('middleware authentication redirects', () => {
   beforeEach(() => {
     process.env.NEXT_PUBLIC_ROOT_DOMAIN = 'somoswedin.com'
     process.env.NEXT_PUBLIC_APP_URL = 'https://www.somoswedin.com'
+    process.env.ADMIN_SESSION_SECRET = 'test-admin-session-secret'
     authMock.mockResolvedValue(null)
   })
 
@@ -464,11 +494,89 @@ describe('middleware authentication redirects', () => {
     expect(getRedirectUrl(response).pathname).toBe('/dashboard')
   })
 
-  // https://www.somoswedin.com/admin -> unchanged (the session has the ADMIN role)
-  it('allows an admin user to access admin routes', async () => {
+  // https://www.somoswedin.com/admin -> unchanged (ADMIN role + admin step-up cookie)
+  it('allows an admin user with a step-up session to access admin routes', async () => {
     authMock.mockResolvedValue(adminUser)
 
-    expectNext(await middleware(createRequest('/admin')))
+    const response = await middleware(
+      createRequest('/admin', { cookies: await adminCookies() })
+    )
+
+    expectNext(response)
+  })
+
+  // https://www.somoswedin.com/admin -> https://www.somoswedin.com/admin/login
+  it('sends an admin without a step-up session to the admin login', async () => {
+    authMock.mockResolvedValue(adminUser)
+
+    const response = await middleware(createRequest('/admin'))
+
+    expect(getRedirectUrl(response).pathname).toBe('/admin/login')
+  })
+
+  // https://www.somoswedin.com/admin/login -> unchanged (needs to enter the code)
+  it('allows an admin without a step-up session to reach the admin login', async () => {
+    authMock.mockResolvedValue(adminUser)
+
+    expectNext(await middleware(createRequest('/admin/login')))
+  })
+
+  // https://www.somoswedin.com/admin/login -> https://www.somoswedin.com/admin
+  it('sends an already verified admin from the admin login to the panel', async () => {
+    authMock.mockResolvedValue(adminUser)
+
+    const response = await middleware(
+      createRequest('/admin/login', { cookies: await adminCookies() })
+    )
+
+    expect(getRedirectUrl(response).pathname).toBe('/admin')
+  })
+
+  // A step-up cookie is worthless without the Auth.js session it was bound to.
+  it('rejects a step-up cookie without its bound auth session', async () => {
+    authMock.mockResolvedValue(adminUser)
+
+    const { wedin_admin } = await adminCookies()
+
+    const response = await middleware(
+      createRequest('/admin', { cookies: { wedin_admin } })
+    )
+
+    expect(getRedirectUrl(response).pathname).toBe('/admin/login')
+  })
+
+  it('rejects a step-up cookie bound to a different auth session', async () => {
+    authMock.mockResolvedValue(adminUser)
+
+    const cookies = await adminCookies()
+
+    const response = await middleware(
+      createRequest('/admin', {
+        cookies: { ...cookies, 'authjs.session-token': 'other-session' },
+      })
+    )
+
+    expect(getRedirectUrl(response).pathname).toBe('/admin/login')
+  })
+
+  // https://www.somoswedin.com/admin -> not the onboarding wizard: staff accounts
+  // are flagged by hand and default to isOnboarded: false.
+  it('does not send an admin who has not onboarded into onboarding', async () => {
+    authMock.mockResolvedValue(onboardingAdminUser)
+
+    const response = await middleware(
+      createRequest('/admin', { cookies: await adminCookies() })
+    )
+
+    expectNext(response)
+  })
+
+  it('still sends an admin who has not onboarded to the admin login first', async () => {
+    authMock.mockResolvedValue(onboardingAdminUser)
+
+    const response = await middleware(createRequest('/admin'))
+
+    expect(getRedirectUrl(response).pathname).toBe('/admin/login')
   })
 
   // https://www.somoswedin.com/login -> unchanged (prevents a /login redirect loop)

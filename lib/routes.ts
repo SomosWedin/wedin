@@ -17,6 +17,8 @@ export const protectedRoutes: string[] = [
 
 export const adminRoutes: string[] = ['/admin']
 
+export const adminLoginRoute: string = '/admin/login'
+
 export const onboardingRoute: string[] = ['/onboarding']
 
 export const apiAuthPrefix: string = '/api/auth'

@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation'
 import { lazy, Suspense } from 'react'
 import { IoCashOutline, IoGiftOutline } from 'react-icons/io5'
+import { getAdminSessionUser } from '@/actions/auth/admin-session'
 import { getAllPayoutsForAdmin } from '@/actions/data/payout'
 import { getAllTransactionsForAdmin } from '@/actions/data/transaction'
-import { getCurrentUser } from '@/actions/get-current-user'
 import EmptyState from '@/components/common/empty-state'
 import DashboardTransactionsSkeleton from '@/components/skeletons/dashboard-transactions'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { adminLoginRoute } from '@/lib/routes'
 
 const AdminTransactionsList = lazy(
   () => import('@/components/admin/admin-transactions-list')
@@ -16,10 +17,10 @@ const AdminPayoutsList = lazy(
 )
 
 export default async function AdminPage() {
-  const currentUser = await getCurrentUser()
+  const currentUser = await getAdminSessionUser()
 
-  if (currentUser?.role !== 'ADMIN') {
-    redirect('/dashboard')
+  if (!currentUser) {
+    redirect(adminLoginRoute)
   }
 
   const [transactions, payouts] = await Promise.all([
