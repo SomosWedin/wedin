@@ -80,13 +80,13 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
           </div>
 
           <div className="flex flex-col gap-6 justify-end items-end w-full sm:w-1/2">
-            <div className="flex flex-wrap gap-2 justify-end">
+            <div className="flex flex-nowrap gap-1.5 justify-end sm:gap-2">
               {slots.map((_, index) => {
                 const eventImage = currentImages[index]
                 return (
                   <div
                     key={index}
-                    className="flex relative justify-center items-center w-20 h-20 bg-gray-50 rounded-md border-2 border-dashed border-borderSecondary"
+                    className="flex relative flex-shrink-0 justify-center items-center w-12 h-12 bg-gray-50 rounded-md border-2 border-dashed sm:w-20 sm:h-20 border-borderSecondary"
                   >
                     {eventImage?.url ? (
                       <>
@@ -154,8 +154,9 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
           <div className="flex flex-col gap-2 w-full sm:w-1/2">
             <h2 className="text-xl font-medium">Mensaje de bienvenida</h2>
             <p className="text-textTertiary">
-              Escribe un mensaje de bienvenida para tus invitados, puedes usar
-              hasta 255 caracteres
+              Escribe un mensaje de bienvenida para tus invitados. Este mensaje
+              se va a visualizar en la página principal de tu lista de regalos
+              (hasta 255 caracteres).
             </p>
           </div>
           <div className="flex flex-col gap-4 items-end w-full sm:w-1/2">
@@ -214,10 +215,12 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
             coverMessage={previewCoverMessage}
             hasUnsavedChanges={hasChanges}
           />
-          <ResetEventCoverFormDialog
-            handleReset={handleReset}
-            isDirty={hasChanges}
-          />
+          {hasChanges && (
+            <ResetEventCoverFormDialog
+              handleReset={handleReset}
+              isDirty={hasChanges}
+            />
+          )}
           <Button
             type="submit"
             variant="success"
