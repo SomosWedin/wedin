@@ -1,7 +1,10 @@
 // import { Suspense } from 'react';
+import Image from 'next/image'
+import Link from 'next/link'
 import { getCurrentUser } from '@/actions/get-current-user'
 import { SheetMenu } from '@/components/admin-panel/sheet-menu'
 import { UserNav } from '@/components/admin-panel/user-nav'
+import wedinLogo from '@/public/assets/w-logo.svg'
 import { UserNavSkeleton } from '../skeletons/user-nav-skeleton'
 
 interface NavbarProps {
@@ -18,6 +21,9 @@ export async function Navbar({ title }: NavbarProps) {
       <div className="mx-4 sm:mx-8 flex h-14 items-center">
         <div className="flex items-center space-x-4 lg:space-x-0">
           <SheetMenu />
+          <Link href="/dashboard" className="lg:hidden">
+            <Image src={wedinLogo} alt="wedin" width={96} priority />
+          </Link>
           <h1 className="hidden">{title}</h1>
         </div>
         <div className="flex flex-1 items-center justify-end">
