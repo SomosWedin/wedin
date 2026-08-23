@@ -64,7 +64,7 @@ const IdentificationNumberField = ({
         <Input
           type="text"
           placeholder={
-            identificationType === 'ruc' ? 'Ej. 800.223-5' : 'Ej. 4.705.899'
+            identificationType === 'ruc' ? 'Ej. 800.223-5' : 'Ej. 1.234.567'
           }
           value={displayValue}
           onChange={handleInputChange}

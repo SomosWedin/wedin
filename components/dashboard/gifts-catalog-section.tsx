@@ -46,7 +46,7 @@ export default function GiftsCatalogSection({
             className="gap-2 text-xs sm:text-sm"
           >
             <PiSquaresFour className="text-lg" />
-            Listas predefinidas
+            Colecciones
           </TabsTrigger>
         </TabsList>
 
@@ -95,7 +95,7 @@ export default function GiftsCatalogSection({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {giftlists.length === 0 ? (
             <div className="col-span-2 text-center py-12 text-gray-500">
-              No se encontraron listas predefinidas
+              No se encontraron colecciones
             </div>
           ) : (
             giftlists.map(giftlist => (

@@ -48,7 +48,7 @@ export default function EventUrlForm({
                 <div className="flex w-full items-center rounded-md border border-input bg-white focus-within:ring-1 focus-within:ring-ring">
                   <Input
                     {...field}
-                    placeholder="amelie-y-john"
+                    placeholder="bodamariayjuan"
                     aria-label="Subdominio del evento"
                     className="min-w-0 flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 max-w-36"
                   />

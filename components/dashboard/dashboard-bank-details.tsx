@@ -21,7 +21,8 @@ export default async function DashboardBankDetails() {
       <div className="w-full flex flex-col gap-2 border-b border-gray-200 pb-6">
         <h1 className="text-2xl font-black">Configuración Bancaria</h1>
         <p className="text-textTertiary">
-          Define los detalles importantes de tu evento: Configuración Bancaria.
+          Define tus datos de cuenta bancaria para retirar los fondos de los
+          regalos.
         </p>
       </div>
 

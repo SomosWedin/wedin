@@ -55,7 +55,7 @@ export default function DashboardBankDetailsUpdateForm({
                 <FormLabel>Nombre y apellido</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="John Doe"
+                    placeholder="Maria Pérez"
                     className="!mt-1.5"
                     {...field}
                   />
