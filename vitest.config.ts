@@ -1,11 +1,9 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
-// Mirrors next/image's static import shape so components that render an
-// imported .svg can be asserted on by filename and intrinsic size.
+// Vite resuelve un .svg a un string; next/image necesita el objeto con
+// dimensiones que genera el import estático de Next.
 function staticSvgImports() {
   return {
     name: 'static-svg-imports',
@@ -13,17 +11,8 @@ function staticSvgImports() {
     load(id: string) {
       const file = id.split('?')[0]
       if (!file.endsWith('.svg')) return null
-      const source = fs.readFileSync(file, 'utf8')
-      const width = Number(source.match(/width="(\d+(?:\.\d+)?)"/)?.[1] ?? 0)
-      const height = Number(source.match(/height="(\d+(?:\.\d+)?)"/)?.[1] ?? 0)
-      const asset = {
-        src: `/_next/static/media/${path.basename(file)}`,
-        width,
-        height,
-        blurWidth: 0,
-        blurHeight: 0,
-      }
-      return `export default ${JSON.stringify(asset)}`
+      const src = `/${file.split('/').pop()}`
+      return `export default ${JSON.stringify({ src, width: 100, height: 100 })}`
     },
   }
 }
