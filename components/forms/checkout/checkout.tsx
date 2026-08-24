@@ -31,17 +31,17 @@ const PAYMENT_METHODS: {
   label: string
   description: string
 }[] = [
-  {
-    value: 'CARD',
-    label: 'Online con tarjeta',
-    description: 'Pago inmediato con tarjeta de crédito o débito',
-  },
-  {
-    value: 'BANK_TRANSFER',
-    label: 'Transferencia bancaria',
-    description: 'Transferí y enviá el comprobante por WhatsApp',
-  },
-]
+    {
+      value: 'CARD',
+      label: 'Online con tarjeta',
+      description: 'Pago inmediato con tarjeta de crédito o débito',
+    },
+    {
+      value: 'BANK_TRANSFER',
+      label: 'Transferencia bancaria',
+      description: 'Transferí y enviá el comprobante por WhatsApp',
+    },
+  ]
 
 type CheckoutFormProps = {
   eventId: string
@@ -185,7 +185,7 @@ export default function CheckoutForm({
           />
 
           <div className="flex flex-col gap-3">
-            <label className="flex gap-2 items-center cursor-pointer">
+            <div className="flex gap-2 items-center cursor-pointer">
               <Checkbox
                 checked={wantsMessage}
                 onCheckedChange={checked => {
@@ -197,7 +197,7 @@ export default function CheckoutForm({
               <span className="text-sm">
                 Te gustaría dejar un mensaje con tu regalo?
               </span>
-            </label>
+            </div>
 
             {wantsMessage && (
               <FormField
@@ -263,10 +263,17 @@ export default function CheckoutForm({
                 </div>
               ))}
             </div>
+            <div className="flex justify-between items-center pt-4 mt-2  border-gray-200">
+              <span className="text-textTertiary">Cargo por servicio</span>
+              <span className="text-xl font-semibold">
+                Gs. {serviceFee.toLocaleString('es-PY')}
+              </span>
+            </div>
+
             <div className="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
               <span className="text-textTertiary">Total</span>
               <span className="text-xl font-semibold">
-                Gs. {total.toLocaleString('es-PY')}
+                Gs. {totalWithFee.toLocaleString('es-PY')}
               </span>
             </div>
           </div>

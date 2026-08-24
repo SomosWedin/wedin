@@ -15,7 +15,7 @@ export type CheckoutCartItem = {
   quantity: number
 }
 
-class CartClaimError extends Error {}
+class CartClaimError extends Error { }
 
 const CARD_OPEN_TIMEOUT_MINUTES = 3
 
@@ -197,23 +197,23 @@ export async function createTransactionsForCart(
 
           const claim = wishlistGift.isGroupGift
             ? await tx.wishlistGift.updateMany({
-                where: {
-                  id: wishlistGift.id,
-                  isGroupGift: true,
-                  reservedAmount: { lte: livePrice - amount },
-                },
-                data: { reservedAmount: { increment: amount } },
-              })
+              where: {
+                id: wishlistGift.id,
+                isGroupGift: true,
+                reservedAmount: { lte: livePrice - amount },
+              },
+              data: { reservedAmount: { increment: amount } },
+            })
             : await tx.wishlistGift.updateMany({
-                where: {
-                  id: wishlistGift.id,
-                  isGroupGift: false,
-                  reservedQuantity: {
-                    lte: liveWishlistGift.quantity - requestedQty,
-                  },
+              where: {
+                id: wishlistGift.id,
+                isGroupGift: false,
+                reservedQuantity: {
+                  lte: liveWishlistGift.quantity - requestedQty,
                 },
-                data: { reservedQuantity: { increment: requestedQty } },
-              })
+              },
+              data: { reservedQuantity: { increment: requestedQty } },
+            })
 
           if (claim.count !== 1) {
             throw new CartClaimError(
