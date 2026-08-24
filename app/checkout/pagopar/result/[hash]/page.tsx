@@ -30,7 +30,9 @@ export default async function PagoparResultPage({
     return (
       <div className="px-4 py-10 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <EmptyState
-          icon={<IoCloseCircleOutline className="text-6xl text-gray-400" />}
+          icon={
+            <IoCloseCircleOutline className="text-4xl sm:text-6xl text-gray-400" />
+          }
           title="No encontramos este pedido"
           description="El enlace no es válido o ya expiró."
           action={
@@ -59,7 +61,9 @@ export default async function PagoparResultPage({
     return (
       <div className="px-4 py-10 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <EmptyState
-          icon={<IoTimeOutline className="text-6xl text-gray-400" />}
+          icon={
+            <IoTimeOutline className="text-4xl sm:text-6xl text-gray-400" />
+          }
           title="Estamos confirmando tu pago"
           description="Puede demorar unos minutos. Te avisaremos apenas se confirme — no hace falta que vuelvas a intentarlo."
           action={
@@ -76,7 +80,9 @@ export default async function PagoparResultPage({
     return (
       <div className="px-4 py-10 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <EmptyState
-          icon={<IoCloseCircleOutline className="text-6xl text-gray-400" />}
+          icon={
+            <IoCloseCircleOutline className="text-4xl sm:text-6xl text-gray-400" />
+          }
           title="El pago no se completó"
           description="Tu pago fue cancelado o rechazado. Podés intentar de nuevo cuando quieras."
           action={
@@ -92,7 +98,9 @@ export default async function PagoparResultPage({
   return (
     <div className="px-4 py-10 mx-auto max-w-7xl sm:px-6 lg:px-8">
       <EmptyState
-        icon={<IoHeartOutline className="text-6xl text-wedinMain" />}
+        icon={
+          <IoHeartOutline className="text-4xl sm:text-6xl text-wedinMain" />
+        }
         title="¡Gracias por tu regalo!"
         description="Tu contribución fue registrada y los novios recibirán una notificación. Cuando el pago se confirme, se sumará automáticamente a la lista."
         action={

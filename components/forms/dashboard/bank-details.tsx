@@ -1,6 +1,6 @@
 'use client'
 
-import { BankDetails } from '@prisma/client'
+import type { BankDetails } from '@prisma/client'
 import { Loader2 } from 'lucide-react'
 import { FaCheck } from 'react-icons/fa6'
 import IdentificationNumberField from '@/components/forms/common/identification-number-field-input'
@@ -46,7 +46,7 @@ export default function DashboardBankDetailsUpdateForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="w-full flex flex-col gap-8"
       >
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-3">
           <FormField
             control={form.control}
             name="accountHolder"
@@ -55,7 +55,7 @@ export default function DashboardBankDetailsUpdateForm({
                 <FormLabel>Nombre y apellido</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="John Doe"
+                    placeholder="Maria Pérez"
                     className="!mt-1.5"
                     {...field}
                   />
@@ -105,12 +105,12 @@ export default function DashboardBankDetailsUpdateForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-3">
           <FormField
             control={form.control}
             name="bankName"
             render={({ field }) => (
-              <FormItem className="col-span-2 sm:col-span-1">
+              <FormItem>
                 <FormLabel>Entidad</FormLabel>
                 <FormControl className="!mt-1.5">
                   <Combobox
@@ -148,7 +148,7 @@ export default function DashboardBankDetailsUpdateForm({
             control={form.control}
             name="accountType"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="col-span-2 sm:col-span-1">
                 <FormLabel>Moneda de la cuenta</FormLabel>
                 <Select
                   onValueChange={field.onChange}
@@ -170,23 +170,47 @@ export default function DashboardBankDetailsUpdateForm({
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="razonSocial"
-          render={({ field }) => (
-            <FormItem className="max-w-sm">
-              <FormLabel>Razón social</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Nombre y apellido"
-                  className="!mt-1.5"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage className="font-normal text-red-600" />
-            </FormItem>
-          )}
-        />
+        <div className="flex flex-col gap-4 w-full">
+          <h2 className="text-xl font-medium">Datos de facturación</h2>
+
+          <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="razonSocial"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Razón social</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Nombre y apellido"
+                      className="!mt-1.5"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="ruc"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>RUC</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Ej. 800.223-5"
+                      className="!mt-1.5"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
         <div className="justify-start w-full mt-6">
           <Button

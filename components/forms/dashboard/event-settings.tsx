@@ -63,7 +63,7 @@ export default function DashboardEventSettingsForm({
                     <div className="mt-1.5 flex min-w-0 flex-1 items-center rounded-md border border-input bg-white focus-within:ring-1 focus-within:ring-ring !max-h-[40px]">
                       <Input
                         {...field}
-                        placeholder="amelie-y-john"
+                        placeholder="bodamariayjuan"
                         aria-label="Subdominio del evento"
                         className="min-w-0 flex-1 border-0 bg-transparent !mt-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />

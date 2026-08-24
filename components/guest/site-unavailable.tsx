@@ -4,7 +4,7 @@ import EmptyState from '@/components/common/empty-state'
 export default function SiteUnavailable() {
   return (
     <EmptyState
-      icon={<IoLockClosedOutline className="text-6xl" />}
+      icon={<IoLockClosedOutline className="text-4xl sm:text-6xl" />}
       title="Este sitio no está disponible"
       description="Los organizadores desactivaron temporalmente esta página."
     />

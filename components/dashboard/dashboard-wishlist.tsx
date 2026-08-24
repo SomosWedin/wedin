@@ -44,7 +44,7 @@ export default async function DashboardWishlist() {
 
       {wishlistGifts.length === 0 ? (
         <EmptyState
-          icon={<IoGiftOutline className="text-6xl" />}
+          icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
           title="Sin regalos en tu lista"
           description="Todavía no tienes ningún regalo agregado, explorá la sección de regalos."
           action={

@@ -45,7 +45,7 @@ export default async function DashboardTransactions() {
 
       {transactions.length === 0 ? (
         <EmptyState
-          icon={<IoGiftOutline className="text-6xl" />}
+          icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
           title="Sin transacciones"
           description="Todavía no tienes regalos recibidos"
         />

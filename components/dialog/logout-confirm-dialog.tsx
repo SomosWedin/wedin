@@ -38,13 +38,10 @@ export default function LogoutConfirmDialog({
               Asegúrate de que has guardado todo antes de cerrar sesión.
             </DialogPrimitive.Description>
           </div>
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+          <div className="flex flex-row justify-end gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
             <DialogPrimitive.Close
               disabled={isLoggingOut}
-              className={cn(
-                buttonVariants({ variant: 'outline' }),
-                'mt-2 sm:mt-0'
-              )}
+              className={cn(buttonVariants({ variant: 'outline' }))}
             >
               Cancelar
             </DialogPrimitive.Close>

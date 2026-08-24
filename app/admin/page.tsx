@@ -57,7 +57,7 @@ export default async function AdminPage() {
         <TabsContent value="transacciones" className="mt-6">
           {transactions.length === 0 ? (
             <EmptyState
-              icon={<IoGiftOutline className="text-6xl" />}
+              icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
               title="Sin transacciones"
               description="Todavía no hay transacciones en ningún evento"
             />
@@ -71,7 +71,7 @@ export default async function AdminPage() {
         <TabsContent value="retiros" className="mt-6">
           {payouts.length === 0 ? (
             <EmptyState
-              icon={<IoCashOutline className="text-6xl" />}
+              icon={<IoCashOutline className="text-4xl sm:text-6xl" />}
               title="Sin solicitudes de retiro"
               description="Todavía no hay solicitudes de retiro en ningún evento"
             />

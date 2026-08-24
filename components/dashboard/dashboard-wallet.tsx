@@ -28,7 +28,8 @@ export default async function DashboardWallet() {
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-black">Mi billetera</h1>
           <p className="text-textTertiary">
-            El monto que envíes a tu cuenta te llegará en hasta 48 horas hábiles.
+            El monto que envíes a tu cuenta te llegará dentro de las 48 horas
+            hábiles.
           </p>
         </div>
         <RequestPayoutDialog eventId={event.id} balance={summary.balance} />
@@ -36,7 +37,7 @@ export default async function DashboardWallet() {
 
       {payouts.length === 0 ? (
         <EmptyState
-          icon={<IoWalletOutline className="text-6xl" />}
+          icon={<IoWalletOutline className="text-4xl sm:text-6xl" />}
           title="Sin movimientos"
           description="Todavía no has solicitado ningún retiro"
         />
