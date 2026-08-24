@@ -123,7 +123,9 @@ const EventCoverPreviewDialog = ({
       <DialogContent className="flex flex-col gap-0 p-0 w-[96vw] max-w-[96vw] h-[92vh] overflow-hidden">
         <DialogHeader className="flex flex-row gap-4 justify-between items-center py-3 pr-14 pl-6 space-y-0 border-b border-gray-200">
           <div className="flex flex-col gap-1 items-start sm:flex-row sm:gap-3 sm:items-center">
-            <DialogTitle>Así lo verán tus invitados</DialogTitle>
+            <DialogTitle className="text-base">
+              Así lo verán tus invitados
+            </DialogTitle>
             {hasUnsavedChanges && (
               <span className="py-0.5 px-2 text-xs font-medium text-amber-700 whitespace-nowrap bg-amber-50 rounded-full border border-amber-200">
                 Borrador · sin guardar

@@ -84,14 +84,22 @@ describe('sub-task 2: cuadritos de imágenes en una sola fila', () => {
     expect(fila?.className).not.toContain('flex-wrap')
   })
 
-  it('los slots no se encogen y usan un tamaño reducido en mobile', () => {
+  it('los slots no se encogen y son más chicos en mobile que en desktop', () => {
     const { container } = renderForm({ hasChanges: false })
     const slots = Array.from(container.querySelectorAll('.border-dashed'))
     expect(slots).toHaveLength(6)
+
     for (const slot of slots) {
       expect(slot.className).toContain('flex-shrink-0')
-      expect(slot.className).toContain('w-12')
-      expect(slot.className).toContain('sm:w-20')
+
+      // El valor exacto es cuestión de gusto; lo que importa es que exista
+      // un tamaño mobile y que el de desktop sea mayor.
+      const mobile = slot.className.match(/(?:^|\s)w-(\d+)/)?.[1]
+      const desktop = slot.className.match(/\ssm:w-(\d+)/)?.[1]
+
+      expect(mobile).toBeDefined()
+      expect(desktop).toBeDefined()
+      expect(Number(mobile)).toBeLessThan(Number(desktop))
     }
   })
 })

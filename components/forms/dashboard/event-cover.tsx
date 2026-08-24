@@ -86,7 +86,7 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
                 return (
                   <div
                     key={index}
-                    className="flex relative flex-shrink-0 justify-center items-center w-12 h-12 bg-gray-50 rounded-md border-2 border-dashed sm:w-20 sm:h-20 border-borderSecondary"
+                    className="flex relative flex-shrink-0 justify-center items-center w-14 h-14 bg-gray-50 rounded-md border-2 border-dashed sm:w-20 sm:h-20 border-borderSecondary"
                   >
                     {eventImage?.url ? (
                       <>
@@ -153,7 +153,7 @@ const EventCoverUpdateForm = ({ event }: EventCoverUpdateFormProps) => {
         <div className="flex flex-col gap-6 items-center w-full sm:flex-row">
           <div className="flex flex-col gap-2 w-full sm:w-1/2">
             <h2 className="text-xl font-medium">Mensaje de bienvenida</h2>
-            <p className="text-textTertiary">
+            <p className="text-textTertiary text-sm">
               Escribe un mensaje de bienvenida para tus invitados. Este mensaje
               se va a visualizar en la página principal de tu lista de regalos
               (hasta 255 caracteres).
