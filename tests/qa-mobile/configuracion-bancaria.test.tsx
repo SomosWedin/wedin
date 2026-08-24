@@ -35,6 +35,7 @@ vi.mock('@/hooks/dashboard/forms/use-update-bank-details', async () => {
           accountNumber: '',
           accountType: 'pyg',
           razonSocial: '',
+          ruc: '',
         },
       }),
     }),
@@ -146,11 +147,19 @@ describe('sub-task 7: bloque "Datos de facturación"', () => {
     ).toBeTruthy()
   })
 
-  // BLOQUEADO: el RUC de facturación necesita un campo nuevo en el modelo
-  // BankDetails (prisma/schema.prisma) + schema de validación. Se solapa con
-  // la tarjeta "Modificar pantalla de Configuración Bancaria" de Crisley, así
-  // que queda pendiente de esa decisión. Quitar el .skip al implementarlo.
-  it.skip('incluye un campo RUC en el bloque de facturación', () => {
+  it('Razón social y RUC quedan lado a lado en desktop', () => {
+    renderForm()
+    const grid = formItemFor('Razón social').parentElement
+    expect(grid?.className).toContain('sm:grid-cols-3')
+
+    // "RUC" también es una opción del select, así que tomamos el label.
+    const rucLabel = screen
+      .getAllByText('RUC')
+      .find(el => el.tagName === 'LABEL')
+    expect(rucLabel?.parentElement?.parentElement).toBe(grid)
+  })
+
+  it('incluye un campo RUC en el bloque de facturación', () => {
     renderForm()
     // "RUC" también existe como opción del select "Tipo de documento",
     // así que exigimos que sea el label de un campo propio.

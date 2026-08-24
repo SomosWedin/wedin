@@ -173,23 +173,43 @@ export default function DashboardBankDetailsUpdateForm({
         <div className="flex flex-col gap-4 w-full">
           <h2 className="text-xl font-medium">Datos de facturación</h2>
 
-          <FormField
-            control={form.control}
-            name="razonSocial"
-            render={({ field }) => (
-              <FormItem className="max-w-sm">
-                <FormLabel>Razón social</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Nombre y apellido"
-                    className="!mt-1.5"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage className="font-normal text-red-600" />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="razonSocial"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Razón social</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Nombre y apellido"
+                      className="!mt-1.5"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="ruc"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>RUC</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Ej. 800.223-5"
+                      className="!mt-1.5"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
         <div className="justify-start w-full mt-6">
