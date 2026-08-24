@@ -45,7 +45,7 @@ export default function StepTwoForm({
                 <FormLabel>Tu nombre</FormLabel>
 
                 <FormControl>
-                  <Input {...field} placeholder="John" className="!mt-1.5" />
+                  <Input {...field} placeholder="Maria" className="!mt-1.5" />
                 </FormControl>
 
                 <FormMessage className="font-normal text-red-600" />
@@ -61,7 +61,7 @@ export default function StepTwoForm({
                 <FormLabel>Tu apellido</FormLabel>
 
                 <FormControl>
-                  <Input {...field} placeholder="Doe" className="!mt-1.5" />
+                  <Input {...field} placeholder="Pérez" className="!mt-1.5" />
                 </FormControl>
 
                 <FormMessage className="font-normal text-red-600" />
@@ -105,7 +105,7 @@ export default function StepTwoForm({
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Jane"
+                        placeholder="Juan"
                         className="!mt-1.5"
                       />
                     </FormControl>
@@ -123,7 +123,11 @@ export default function StepTwoForm({
                     <FormLabel>El apellido de tu pareja</FormLabel>
 
                     <FormControl>
-                      <Input {...field} placeholder="Doe" className="!mt-1.5" />
+                      <Input
+                        {...field}
+                        placeholder="González"
+                        className="!mt-1.5"
+                      />
                     </FormControl>
 
                     <FormMessage className="font-normal text-red-600" />
