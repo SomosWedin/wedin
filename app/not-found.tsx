@@ -14,7 +14,7 @@ export default function NotFound() {
       </Link>
 
       <EmptyState
-        icon={<IoGiftOutline className="text-6xl" />}
+        icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
         title="Página no encontrada"
         description="La página que buscás no existe o fue movida."
         action={

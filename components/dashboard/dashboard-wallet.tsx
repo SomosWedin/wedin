@@ -37,7 +37,7 @@ export default async function DashboardWallet() {
 
       {payouts.length === 0 ? (
         <EmptyState
-          icon={<IoWalletOutline className="text-6xl" />}
+          icon={<IoWalletOutline className="text-4xl sm:text-6xl" />}
           title="Sin movimientos"
           description="Todavía no has solicitado ningún retiro"
         />

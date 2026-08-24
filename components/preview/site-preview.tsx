@@ -62,7 +62,7 @@ export default function SitePreview({
       <GuestHero event={previewEvent} />
       {wishlistGifts.length === 0 ? (
         <EmptyState
-          icon={<IoGiftOutline className="text-6xl" />}
+          icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
           title="Tu lista todavía no tiene regalos"
           description="Cuando agregues regalos en “Mi lista”, tus invitados los verán acá."
         />

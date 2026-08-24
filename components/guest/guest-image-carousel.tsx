@@ -42,7 +42,7 @@ export default function GuestImageCarousel({
   if (visibleImages.length === 0) {
     return (
       <div className="flex justify-center items-center w-full h-full bg-gray-100 shadow-inner rounded-none sm:rounded-2xl">
-        <IoGiftOutline className="text-6xl text-gray-300" />
+        <IoGiftOutline className="text-4xl sm:text-6xl text-gray-300" />
       </div>
     )
   }

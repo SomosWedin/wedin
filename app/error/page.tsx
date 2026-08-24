@@ -38,7 +38,7 @@ export default function ErrorPage({ searchParams }: ErrorPageProps) {
       </Link>
 
       <EmptyState
-        icon={<IoAlertCircleOutline className="text-6xl" />}
+        icon={<IoAlertCircleOutline className="text-4xl sm:text-6xl" />}
         title="No pudimos iniciar tu sesión"
         description={description}
         action={
