@@ -276,17 +276,20 @@ export async function createPagoparCheckoutSession(
     return { error: 'Una de las transacciones ya no está disponible.' }
   }
 
-  const total = fullTransactions.reduce(
+  const subTotal = fullTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
   )
+  const serviceFee = Math.round(subTotal * 0.03)
+  const total = serviceFee + subTotal
 
   const [payer] = fullTransactions
 
   const order = await createOrder({
-    orderId,
-    totalAmount: total,
     description: 'Regalo de boda',
+    orderId,
+    serviceFee,
+    totalAmount: total,
     payer: {
       name: payer.payerName || '',
       email: payer.payerEmail || '',

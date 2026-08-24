@@ -94,10 +94,13 @@ export default function CheckoutForm({
   if (!hasHydrated || !cartItems) return null
   if (cartItems.length === 0 && !loading) return null
 
-  const total = cartItems.reduce(
+  // Here
+  const subtotal = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
     0
   )
+  const serviceFee = paymentMethod === 'CARD' ? Math.round(subtotal * 0.03) : 0
+  const total = subtotal + serviceFee
 
   return (
     <Form {...form}>
@@ -263,17 +266,19 @@ export default function CheckoutForm({
                 </div>
               ))}
             </div>
-            <div className="flex justify-between items-center pt-4 mt-2  border-gray-200">
-              <span className="text-textTertiary">Cargo por servicio</span>
-              <span className="text-xl font-semibold">
+            <div className="flex justify-between items-center pt-4">
+              <span className="text-textTertiary">Cargo por servicio (3%)</span>
+
+              <span className="font-semibold">
                 Gs. {serviceFee.toLocaleString('es-PY')}
               </span>
             </div>
 
-            <div className="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
+            <div className="flex justify-between items-center pt-4 mt-2 border-t">
               <span className="text-textTertiary">Total</span>
+
               <span className="text-xl font-semibold">
-                Gs. {totalWithFee.toLocaleString('es-PY')}
+                Gs. {total.toLocaleString('es-PY')}
               </span>
             </div>
           </div>
