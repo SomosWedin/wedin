@@ -246,7 +246,10 @@ export async function applyTransactionStatusChange(
 
   if (status === 'FAILED' || status === 'REFUNDED') {
     await releaseWishlistGiftClaim(transaction)
-  } else if (transaction.status === 'FAILED' || transaction.status === 'REFUNDED') {
+  } else if (
+    transaction.status === 'FAILED' ||
+    transaction.status === 'REFUNDED'
+  ) {
     await reclaimWishlistGiftClaim(transaction)
   }
 
