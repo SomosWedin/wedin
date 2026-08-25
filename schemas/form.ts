@@ -26,48 +26,44 @@ export const UpdateEventSettingsFormSchema = z
   .superRefine((data, ctx) => {
     if (data.eventType !== EventType.WEDDING) return
 
-    const hasPartnerData = Boolean(
-      data.partnerName || data.partnerLastName || data.partnerEmail
-    )
+    const hasPartnerNameData = Boolean(data.partnerName || data.partnerLastName)
 
-    if (!hasPartnerData) return
+    if (hasPartnerNameData) {
+      if (!data.partnerName) {
+        ctx.addIssue({
+          path: ['partnerName'],
+          message:
+            'El nombre de tu pareja es obligatorio para este tipo de evento',
+          code: z.ZodIssueCode.custom,
+        })
+      } else if (data.partnerName.length < 3) {
+        ctx.addIssue({
+          path: ['partnerName'],
+          message: 'El nombre de tu pareja debe contener al menos 3 caracteres',
+          code: z.ZodIssueCode.custom,
+        })
+      }
+      if (!data.partnerLastName) {
+        ctx.addIssue({
+          path: ['partnerLastName'],
+          message:
+            'El apellido de tu pareja es obligatorio para este tipo de evento',
+          code: z.ZodIssueCode.custom,
+        })
+      } else if (data.partnerLastName.length < 3) {
+        ctx.addIssue({
+          path: ['partnerLastName'],
+          message:
+            'El apellido de tu pareja debe contener al menos 3 caracteres',
+          code: z.ZodIssueCode.custom,
+        })
+      }
+    }
 
-    if (!data.partnerName) {
-      ctx.addIssue({
-        path: ['partnerName'],
-        message:
-          'El nombre de tu pareja es obligatorio para este tipo de evento',
-        code: z.ZodIssueCode.custom,
-      })
-    } else if (data.partnerName.length < 3) {
-      ctx.addIssue({
-        path: ['partnerName'],
-        message: 'El nombre de tu pareja debe contener al menos 3 caracteres',
-        code: z.ZodIssueCode.custom,
-      })
-    }
-    if (!data.partnerLastName) {
-      ctx.addIssue({
-        path: ['partnerLastName'],
-        message:
-          'El apellido de tu pareja es obligatorio para este tipo de evento',
-        code: z.ZodIssueCode.custom,
-      })
-    } else if (data.partnerLastName.length < 3) {
-      ctx.addIssue({
-        path: ['partnerLastName'],
-        message: 'El apellido de tu pareja debe contener al menos 3 caracteres',
-        code: z.ZodIssueCode.custom,
-      })
-    }
-    if (!data.partnerEmail) {
-      ctx.addIssue({
-        path: ['partnerEmail'],
-        message:
-          'El email de tu pareja es obligatorio para este tipo de evento',
-        code: z.ZodIssueCode.custom,
-      })
-    } else if (!z.string().email().safeParse(data.partnerEmail).success) {
+    if (
+      data.partnerEmail &&
+      !z.string().email().safeParse(data.partnerEmail).success
+    ) {
       ctx.addIssue({
         path: ['partnerEmail'],
         message: 'Email de tu pareja no válido',

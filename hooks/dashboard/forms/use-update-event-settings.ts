@@ -102,17 +102,12 @@ export function useUpdateEventSettings({
         return
       }
 
-      if (
-        partnerId &&
-        values.partnerName &&
-        values.partnerLastName &&
-        values.partnerEmail
-      ) {
+      if (partnerId && values.partnerName && values.partnerLastName) {
         const updatedPartner = await updateUserById(
           partnerId,
           values.partnerName,
           values.partnerLastName,
-          values.partnerEmail
+          values.partnerEmail || undefined
         )
 
         if (updatedPartner.error) {

@@ -31,7 +31,17 @@ describe('UpdateEventSettingsFormSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('requires the rest of the partner data once one field is filled', () => {
+  it('accepts the partner onboarding creates: name and lastName, no email', () => {
+    const result = UpdateEventSettingsFormSchema.safeParse({
+      ...baseValues,
+      partnerName: 'Juan',
+      partnerLastName: 'Perez',
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('requires the partner lastName once the name is filled', () => {
     const result = UpdateEventSettingsFormSchema.safeParse({
       ...baseValues,
       partnerName: 'Juan',
@@ -40,7 +50,7 @@ describe('UpdateEventSettingsFormSchema', () => {
     expect(result.success).toBe(false)
     expect(
       result.success ? [] : result.error.errors.map(error => error.path[0])
-    ).toEqual(['partnerLastName', 'partnerEmail'])
+    ).toEqual(['partnerLastName'])
   })
 
   it('rejects an invalid partner email', () => {
