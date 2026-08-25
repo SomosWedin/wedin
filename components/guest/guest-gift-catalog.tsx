@@ -1,12 +1,11 @@
 'use client'
 
-import type { Category } from '@prisma/client'
 import { useState } from 'react'
 import {
+  IoCheckmarkCircleOutline,
   IoGiftOutline,
-  IoPeopleOutline,
-  IoPersonOutline,
   IoSearchOutline,
+  IoSparklesOutline,
 } from 'react-icons/io5'
 import CartDrawer from '@/components/cart/cart-drawer'
 import CartStickyBar from '@/components/cart/cart-sticky-bar'
@@ -15,6 +14,7 @@ import GiftDetailDialog from '@/components/dialog/gift-detail-dialog'
 import {
   getGiftProgress,
   getQuantityProgress,
+  isGiftComplete,
 } from '@/components/guest/gift-progress'
 import GuestGiftCard, {
   type WishlistGiftWithGift,
@@ -26,13 +26,12 @@ import { useStore } from '@/hooks/use-store'
 import { useToast } from '@/hooks/use-toast'
 import { getPreviewCartKey } from '@/lib/site-preview'
 
-type TypeFilter = 'todos' | 'individual' | 'grupal'
+type TypeFilter = 'todos' | 'disponibles' | 'regalados'
 type SortOption = 'recent' | 'price-asc' | 'price-desc'
 
 type GuestGiftCatalogProps = {
   eventId: string
   wishlistGifts: WishlistGiftWithGift[]
-  categories: Category[]
 }
 
 const TYPE_FILTERS: {
@@ -42,17 +41,20 @@ const TYPE_FILTERS: {
 }[] = [
   { value: 'todos', label: 'Todos', icon: <IoGiftOutline /> },
   {
-    value: 'individual',
-    label: 'Regalo individual',
-    icon: <IoPersonOutline />,
+    value: 'disponibles',
+    label: 'Disponibles',
+    icon: <IoSparklesOutline />,
   },
-  { value: 'grupal', label: 'Regalo grupal', icon: <IoPeopleOutline /> },
+  {
+    value: 'regalados',
+    label: 'Ya regalados',
+    icon: <IoCheckmarkCircleOutline />,
+  },
 ]
 
 export default function GuestGiftCatalog({
   eventId,
   wishlistGifts,
-  categories,
 }: GuestGiftCatalogProps) {
   const { toast } = useToast()
   const isPreviewMode = useIsPreviewMode()
@@ -62,7 +64,6 @@ export default function GuestGiftCatalog({
   const cartItems = useStore(cartStore, state => state.items) ?? []
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos')
   const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
   const [sort, setSort] = useState<SortOption>('recent')
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedWishlistGift, setSelectedWishlistGift] =
@@ -183,18 +184,15 @@ export default function GuestGiftCatalog({
 
   const filteredWishlistGifts = wishlistGifts
     .filter(wishlistGift => {
+      const isComplete = isGiftComplete(wishlistGift)
       const matchesType =
         typeFilter === 'todos' ||
-        (typeFilter === 'grupal'
-          ? wishlistGift.isGroupGift
-          : !wishlistGift.isGroupGift)
+        (typeFilter === 'regalados' ? isComplete : !isComplete)
       const matchesSearch = wishlistGift.gift.name
         .toLowerCase()
         .includes(search.trim().toLowerCase())
-      const matchesCategory =
-        !categoryFilter || wishlistGift.gift.categoryId === categoryFilter
 
-      return matchesType && matchesSearch && matchesCategory
+      return matchesType && matchesSearch
     })
     .sort((a, b) => {
       if (sort === 'price-asc')
@@ -251,24 +249,12 @@ export default function GuestGiftCatalog({
             <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <Input
               type="text"
-              placeholder="Regalo"
+              placeholder="Buscar un regalo"
               className="pl-10"
               value={search}
               onChange={event => setSearch(event.target.value)}
             />
           </div>
-          <select
-            className="px-3 py-2 h-10 text-sm bg-white rounded-md border border-input"
-            value={categoryFilter}
-            onChange={event => setCategoryFilter(event.target.value)}
-          >
-            <option value="">Categoría: Todas</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
           <select
             className="px-3 py-2 h-10 text-sm bg-white rounded-md border border-input"
             value={sort}

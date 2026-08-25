@@ -1,6 +1,6 @@
 'use client'
 
-import type { Category, Event, Image as ImageModel, User } from '@prisma/client'
+import type { Event, Image as ImageModel, User } from '@prisma/client'
 import { useEffect, useState } from 'react'
 import { IoGiftOutline } from 'react-icons/io5'
 import EmptyState from '@/components/common/empty-state'
@@ -18,13 +18,11 @@ import {
 type SitePreviewProps = {
   event: Event & { images: ImageModel[]; users: User[] }
   wishlistGifts: WishlistGiftWithGift[]
-  categories: Category[]
 }
 
 export default function SitePreview({
   event,
   wishlistGifts,
-  categories,
 }: SitePreviewProps) {
   const [draft, setDraft] = useState<SitePreviewDraft | null>(null)
   const previewCartStore = useCartStore(getPreviewCartKey(event.id))
@@ -67,11 +65,7 @@ export default function SitePreview({
           description="Cuando agregues regalos en “Mi lista”, tus invitados los verán acá."
         />
       ) : (
-        <GuestGiftCatalog
-          eventId={event.id}
-          wishlistGifts={wishlistGifts}
-          categories={categories}
-        />
+        <GuestGiftCatalog eventId={event.id} wishlistGifts={wishlistGifts} />
       )}
     </>
   )

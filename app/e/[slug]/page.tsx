@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import { getCategories } from '@/actions/data/category'
 import {
   getEventByUrl,
   getPublicWishlistGifts,
@@ -19,19 +18,12 @@ export default async function GuestEventPage({ params }: GuestEventPageProps) {
 
   if (!event.isPublished) return <SiteUnavailable />
 
-  const [wishlistGifts, categories] = await Promise.all([
-    getPublicWishlistGifts(event.id),
-    getCategories(),
-  ])
+  const wishlistGifts = await getPublicWishlistGifts(event.id)
 
   return (
     <>
       <GuestHero event={event} />
-      <GuestGiftCatalog
-        eventId={event.id}
-        wishlistGifts={wishlistGifts}
-        categories={categories}
-      />
+      <GuestGiftCatalog eventId={event.id} wishlistGifts={wishlistGifts} />
     </>
   )
 }

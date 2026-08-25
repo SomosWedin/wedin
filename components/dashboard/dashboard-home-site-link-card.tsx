@@ -4,6 +4,7 @@ import { ArrowUpRight } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { IoLinkOutline } from 'react-icons/io5'
+import DownloadQrButton from '@/components/dashboard/download-qr-button'
 import EventUrlForm from '@/components/forms/dashboard/event-url'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -79,7 +80,7 @@ export default function DashboardHomeSiteLinkCard({
           <span className="font-medium">Web visible</span>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button
             type="button"
             variant="outline"
@@ -99,6 +100,11 @@ export default function DashboardHomeSiteLinkCard({
               <ArrowUpRight className="h-4 w-4" />
             </Link>
           </Button>
+
+          <DownloadQrButton
+            url={guestUrl}
+            fileName={`wedin-${currentUrl ?? 'sitio'}-qr`}
+          />
         </div>
       </div>
     </div>

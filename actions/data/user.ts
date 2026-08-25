@@ -96,7 +96,7 @@ export const updateUserById = async (
     return { success: updatedUser }
   } catch (error) {
     console.error('Error updating user:', error)
-    return { error: 'Error updating user' }
+    return { error: 'No pudimos actualizar tus datos.' }
   }
 }
 

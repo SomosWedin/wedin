@@ -13,6 +13,7 @@ import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
 import {
   getGiftProgress,
   getQuantityProgress,
+  isGiftComplete,
 } from '@/components/guest/gift-progress'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -40,7 +41,7 @@ export default function GuestGiftCard({
   onOpenGiftDetails,
 }: GuestGiftCardProps) {
   const { gift } = wishlistGift
-  const { priceValue, remaining, percentage } = getGiftProgress(
+  const { remaining, percentage } = getGiftProgress(
     gift.price,
     wishlistGift.transactions
   )
@@ -49,17 +50,9 @@ export default function GuestGiftCard({
     wishlistGift.transactions
   )
   const hasMultipleUnits = wishlistGift.quantity > 1
-  const isComplete =
-    wishlistGift.isFullyPaid ||
-    wishlistGift.isManuallyReceived ||
-    (wishlistGift.isGroupGift
-      ? priceValue > 0 && remaining <= 0
-      : remainingStock <= 0)
+  const isComplete = isGiftComplete(wishlistGift)
   const isAddedToCart =
-    !wishlistGift.isGroupGift &&
-    !hasMultipleUnits &&
-    isInCart &&
-    !isComplete
+    !wishlistGift.isGroupGift && !hasMultipleUnits && isInCart && !isComplete
   const isDisabled = isComplete || isAddedToCart
 
   const handleCardClick = () => {

@@ -1,4 +1,3 @@
-import { getCategories } from '@/actions/data/category'
 import { getEvent } from '@/actions/data/event'
 import { getPublicWishlistGifts } from '@/actions/data/public-event'
 import SitePreview from '@/components/preview/site-preview'
@@ -16,16 +15,7 @@ export default async function SitePreviewPage() {
     )
   }
 
-  const [wishlistGifts, categories] = await Promise.all([
-    getPublicWishlistGifts(event.id),
-    getCategories(),
-  ])
+  const wishlistGifts = await getPublicWishlistGifts(event.id)
 
-  return (
-    <SitePreview
-      event={event}
-      wishlistGifts={wishlistGifts}
-      categories={categories}
-    />
-  )
+  return <SitePreview event={event} wishlistGifts={wishlistGifts} />
 }
