@@ -56,10 +56,7 @@ export default function GuestGiftCard({
       ? priceValue > 0 && remaining <= 0
       : remainingStock <= 0)
   const isAddedToCart =
-    !wishlistGift.isGroupGift &&
-    !hasMultipleUnits &&
-    isInCart &&
-    !isComplete
+    !wishlistGift.isGroupGift && !hasMultipleUnits && isInCart && !isComplete
   const isDisabled = isComplete || isAddedToCart
 
   const handleCardClick = () => {

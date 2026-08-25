@@ -311,14 +311,14 @@ export async function updateTransactionStatusAsAdmin(
     // the whole group, so confirming (or rejecting) one confirms them all.
     const transactionIds = transaction?.bankTransferGroupId
       ? (
-        await prismaClient.transaction.findMany({
-          where: {
-            bankTransferGroupId: transaction.bankTransferGroupId,
-            eventId: transaction.eventId,
-          },
-          select: { id: true },
-        })
-      ).map(({ id }) => id)
+          await prismaClient.transaction.findMany({
+            where: {
+              bankTransferGroupId: transaction.bankTransferGroupId,
+              eventId: transaction.eventId,
+            },
+            select: { id: true },
+          })
+        ).map(({ id }) => id)
       : [transactionId]
 
     for (const id of transactionIds) {

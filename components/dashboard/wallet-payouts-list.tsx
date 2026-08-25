@@ -7,7 +7,6 @@ import {
   IoCashOutline,
   IoChevronDown,
   IoChevronUp,
-  IoGiftOutline,
   IoSwapVerticalOutline,
 } from 'react-icons/io5'
 import {
@@ -70,13 +69,13 @@ export default function WalletPayoutsList({
 
   const sortedPayouts = sortColumn
     ? [...filteredPayouts].sort((a, b) => {
-        const diff =
-          sortColumn === 'createdAt'
-            ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.amount) - Number(b.amount)
+      const diff =
+        sortColumn === 'createdAt'
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : Number(a.amount) - Number(b.amount)
 
-        return sortDirection === 'asc' ? diff : -diff
-      })
+      return sortDirection === 'asc' ? diff : -diff
+    })
     : filteredPayouts
 
   return (

@@ -31,17 +31,17 @@ const PAYMENT_METHODS: {
   label: string
   description: string
 }[] = [
-    {
-      value: 'CARD',
-      label: 'Online con tarjeta',
-      description: 'Pago inmediato con tarjeta de crédito o débito',
-    },
-    {
-      value: 'BANK_TRANSFER',
-      label: 'Transferencia bancaria',
-      description: 'Transferí y enviá el comprobante por WhatsApp',
-    },
-  ]
+  {
+    value: 'CARD',
+    label: 'Online con tarjeta',
+    description: 'Pago inmediato con tarjeta de crédito o débito',
+  },
+  {
+    value: 'BANK_TRANSFER',
+    label: 'Transferencia bancaria',
+    description: 'Transferí y enviá el comprobante por WhatsApp',
+  },
+]
 
 type CheckoutFormProps = {
   eventId: string
