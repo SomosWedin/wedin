@@ -1,31 +1,51 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Ellipsis, LogOut } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-
-import { cn } from '@/lib/utils';
-import { getMenuList } from '@/lib/menu-list';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { CollapseMenuButton } from '@/components/admin-panel/collapse-menu-button';
-import LogoutConfirmDialog from '@/components/dialog/logout-confirm-dialog';
+import { Ellipsis, LogOut } from 'lucide-react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useState } from 'react'
+import { CollapseMenuButton } from '@/components/admin-panel/collapse-menu-button'
+import LogoutConfirmDialog from '@/components/dialog/logout-confirm-dialog'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Tooltip,
-  TooltipTrigger,
   TooltipContent,
   TooltipProvider,
-} from '@/components/ui/tooltip';
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { getMenuList } from '@/lib/menu-list'
+import { cn } from '@/lib/utils'
 
 interface MenuProps {
-  isOpen: boolean | undefined;
+  isOpen: boolean | undefined
+}
+
+function MenuTooltip({
+  label,
+  enabled,
+  children,
+}: {
+  label: string
+  enabled: boolean
+  children: React.ReactNode
+}) {
+  if (!enabled) return <>{children}</>
+
+  return (
+    <TooltipProvider disableHoverableContent>
+      <Tooltip delayDuration={100}>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent side="right">{label}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
 }
 
 export function Menu({ isOpen }: MenuProps) {
-  const pathname = usePathname();
-  const menuList = getMenuList(pathname);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const pathname = usePathname()
+  const menuList = getMenuList()
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   return (
     <ScrollArea className="[&>div>div[style]]:!block h-unset">
@@ -57,46 +77,37 @@ export function Menu({ isOpen }: MenuProps) {
                 ({ href, label, icon: Icon, active, submenus }, index) =>
                   !submenus || submenus.length === 0 ? (
                     <div className="w-full" key={index}>
-                      <TooltipProvider disableHoverableContent>
-                        <Tooltip delayDuration={100}>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant={
-                                (active === undefined &&
-                                  pathname.startsWith(href)) ||
-                                active
-                                  ? 'secondary'
-                                  : 'ghost'
-                              }
-                              className="w-full justify-start h-10 mb-1"
-                              asChild
+                      <MenuTooltip label={label} enabled={isOpen === false}>
+                        <Button
+                          variant={
+                            (active === undefined &&
+                              pathname.startsWith(href)) ||
+                            active
+                              ? 'secondary'
+                              : 'ghost'
+                          }
+                          className="w-full justify-start h-10 mb-1"
+                          asChild
+                        >
+                          <Link href={href}>
+                            <span
+                              className={cn(isOpen === false ? '' : 'mr-4')}
                             >
-                              <Link href={href}>
-                                <span
-                                  className={cn(isOpen === false ? '' : 'mr-4')}
-                                >
-                                  <Icon size={18} />
-                                </span>
-                                <p
-                                  className={cn(
-                                    'max-w-[200px] truncate',
-                                    isOpen === false
-                                      ? '-translate-x-96 opacity-0'
-                                      : 'translate-x-0 opacity-100'
-                                  )}
-                                >
-                                  {label}
-                                </p>
-                              </Link>
-                            </Button>
-                          </TooltipTrigger>
-                          {isOpen === false && (
-                            <TooltipContent side="right">
+                              <Icon size={18} />
+                            </span>
+                            <p
+                              className={cn(
+                                'max-w-[200px] truncate',
+                                isOpen === false
+                                  ? '-translate-x-96 opacity-0'
+                                  : 'translate-x-0 opacity-100'
+                              )}
+                            >
                               {label}
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
+                            </p>
+                          </Link>
+                        </Button>
+                      </MenuTooltip>
                     </div>
                   ) : (
                     <div className="w-full" key={index}>
@@ -117,32 +128,25 @@ export function Menu({ isOpen }: MenuProps) {
             </li>
           ))}
           <li className="w-full grow flex items-end">
-            <TooltipProvider disableHoverableContent>
-              <Tooltip delayDuration={100}>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => setShowLogoutConfirm(true)}
-                    variant="logout"
-                    className="w-full justify-center h-10 mt-5"
-                  >
-                    <p
-                      className={cn(
-                        'whitespace-nowrap',
-                        isOpen === false ? 'opacity-0 hidden' : 'opacity-100'
-                      )}
-                    >
-                      Cerrar sesión
-                    </p>
-                    <span className={cn(isOpen === false ? '' : 'ml-4')}>
-                      <LogOut size={18} />
-                    </span>
-                  </Button>
-                </TooltipTrigger>
-                {isOpen === false && (
-                  <TooltipContent side="right">Cerrar sesión</TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+            <MenuTooltip label="Cerrar sesión" enabled={isOpen === false}>
+              <Button
+                onClick={() => setShowLogoutConfirm(true)}
+                variant="logout"
+                className="w-full justify-center h-10 mt-5"
+              >
+                <p
+                  className={cn(
+                    'whitespace-nowrap',
+                    isOpen === false ? 'opacity-0 hidden' : 'opacity-100'
+                  )}
+                >
+                  Cerrar sesión
+                </p>
+                <span className={cn(isOpen === false ? '' : 'ml-4')}>
+                  <LogOut size={18} />
+                </span>
+              </Button>
+            </MenuTooltip>
           </li>
         </ul>
       </nav>
@@ -151,5 +155,5 @@ export function Menu({ isOpen }: MenuProps) {
         onOpenChange={setShowLogoutConfirm}
       />
     </ScrollArea>
-  );
+  )
 }

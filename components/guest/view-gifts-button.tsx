@@ -1,13 +1,13 @@
-'use client';
+'use client'
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
 
 export default function ViewGiftsButton() {
   const handleClick = () => {
     document
       .getElementById('lista-de-regalos')
-      ?.scrollIntoView({ behavior: 'smooth' });
-  };
+      ?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   return (
     <Button
@@ -18,5 +18,5 @@ export default function ViewGiftsButton() {
     >
       Ver los regalos
     </Button>
-  );
+  )
 }

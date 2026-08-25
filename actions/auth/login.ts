@@ -1,36 +1,83 @@
-'use server';
+'use server'
 
-import { signIn } from '@/auth';
-import { MagicLoginSchema } from '@/schemas/auth';
-import { AuthError } from 'next-auth';
-import type { z } from 'zod';
+import { createHmac } from 'node:crypto'
+import { headers } from 'next/headers'
+import type { z } from 'zod'
+import { signIn } from '@/auth'
+import {
+  magicLinkCooldown,
+  magicLinkEmailLimit,
+  magicLinkIpLimit,
+} from '@/lib/rate-limit'
+import { MagicLoginSchema } from '@/schemas/auth'
 
-export type LoginValues = z.infer<typeof MagicLoginSchema>;
+export type LoginValues = z.infer<typeof MagicLoginSchema>
+
+const genericMessage =
+  'Si el correo es válido y no solicitaste un enlace recientemente, lo recibirás en unos minutos.'
+
+function createRateLimitKey(value: string) {
+  const secret = process.env.RATE_LIMIT_SECRET
+
+  if (!secret) {
+    throw new Error('RATE_LIMIT_SECRET is not configured.')
+  }
+
+  return createHmac('sha256', secret).update(value).digest('hex')
+}
 
 export async function login(values: LoginValues) {
-  const parsed = MagicLoginSchema.safeParse(values);
+  const parsed = MagicLoginSchema.safeParse(values)
 
   if (!parsed.success) {
-    return { error: 'Correo inválido' };
+    return {
+      error: 'Ingresá un correo válido.',
+    }
+  }
+
+  const email = parsed.data.email.trim().toLowerCase()
+
+  const emailKey = createRateLimitKey(email)
+
+  const requestHeaders = await headers()
+
+  const ip =
+    requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    requestHeaders.get('x-real-ip')
+
+  const ipKey = ip ? createRateLimitKey(ip) : null
+
+  const [cooldownResult, emailResult, ipResult] = await Promise.all([
+    magicLinkCooldown.limit(emailKey),
+    magicLinkEmailLimit.limit(emailKey),
+
+    ipKey ? magicLinkIpLimit.limit(ipKey) : Promise.resolve({ success: true }),
+  ])
+
+  const isRateLimited =
+    !cooldownResult.success || !emailResult.success || !ipResult.success
+
+  if (isRateLimited) {
+    return {
+      success: genericMessage,
+    }
   }
 
   try {
     await signIn('resend', {
-      email: parsed.data.email,
+      email,
       redirect: false,
-      redirectTo: '/onboarding'
-    });
+      redirectTo: '/onboarding',
+    })
 
     return {
-      success: 'Te enviamos un enlace para que confirmes e inicies sesión',
-    };
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return {
-        error: 'No pudimos enviar el enlace. Intentá nuevamente.',
-      };
+      success: genericMessage,
     }
+  } catch (error) {
+    console.error('Unable to send magic link:', error)
 
-    throw error;
+    return {
+      error: 'No pudimos enviar el enlace. Intentá nuevamente.',
+    }
   }
 }

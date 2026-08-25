@@ -1,24 +1,26 @@
-'use client';
+'use client'
 
-import type { ChangeEvent } from 'react';
-import { Input } from '@/components/ui/input';
+import type { ChangeEvent } from 'react'
+import { Input } from '@/components/ui/input'
 
 type PriceInputProps = {
-  value: string;
-  onChange: (value: string) => void;
-  onBlur?: () => void;
-};
+  value: string
+  onChange: (value: string) => void
+  onBlur?: () => void
+  disabled?: boolean
+}
 
 export default function PriceInput({
   value,
   onChange,
   onBlur,
+  disabled,
 }: PriceInputProps) {
-  const displayValue = value ? Number(value).toLocaleString('es-PY') : '';
+  const displayValue = value ? Number(value).toLocaleString('es-PY') : ''
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onChange(event.target.value.replace(/\D/g, ''));
-  };
+    onChange(event.target.value.replace(/\D/g, ''))
+  }
 
   return (
     <Input
@@ -28,6 +30,7 @@ export default function PriceInput({
       value={displayValue}
       onChange={handleChange}
       onBlur={onBlur}
+      disabled={disabled}
     />
-  );
+  )
 }

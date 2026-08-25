@@ -1,28 +1,28 @@
-import { Suspense, lazy } from 'react';
-import Link from 'next/link';
-import { IoAdd, IoGiftOutline } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
-import EmptyState from '@/components/common/empty-state';
-import DashboardWishlistSkeleton from '@/components/skeletons/dashboard-wishlist';
-import { getEvent } from '@/actions/data/event';
-import { getWishlistGifts } from '@/actions/data/wishlist-gift';
-import { getCategories } from '@/actions/data/category';
+import Link from 'next/link'
+import { lazy, Suspense } from 'react'
+import { IoAdd, IoGiftOutline } from 'react-icons/io5'
+import { getCategories } from '@/actions/data/category'
+import { getEvent } from '@/actions/data/event'
+import { getWishlistGifts } from '@/actions/data/wishlist-gift'
+import EmptyState from '@/components/common/empty-state'
+import DashboardWishlistSkeleton from '@/components/skeletons/dashboard-wishlist'
+import { Button } from '@/components/ui/button'
 
 const DashboardWishlistList = lazy(
   () => import('@/components/dashboard/dashboard-wishlist-list')
-);
+)
 
 export default async function DashboardWishlist() {
-  const event = await getEvent();
+  const event = await getEvent()
 
   if (!event || 'error' in event) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
   const [wishlistGifts, categories] = await Promise.all([
     getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
     getCategories(),
-  ]);
+  ])
 
   return (
     <div className="w-full h-full flex items-center flex-col gap-8">
@@ -44,12 +44,15 @@ export default async function DashboardWishlist() {
 
       {wishlistGifts.length === 0 ? (
         <EmptyState
-          icon={<IoGiftOutline className="text-6xl" />}
+          icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
           title="Sin regalos en tu lista"
           description="Todavía no tienes ningún regalo agregado, explorá la sección de regalos."
           action={
             <Link href="/gifts">
-              <Button variant="outline" className="gap-2 hover:bg-gray-100 transition-colors">
+              <Button
+                variant="outline"
+                className="gap-2 hover:bg-gray-100 transition-colors"
+              >
                 Agregar regalos
               </Button>
             </Link>
@@ -66,5 +69,5 @@ export default async function DashboardWishlist() {
         </Suspense>
       )}
     </div>
-  );
+  )
 }

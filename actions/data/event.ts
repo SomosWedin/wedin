@@ -1,27 +1,34 @@
-'use server';
+'use server'
 
-import { getCurrentUser } from '@/actions/get-current-user';
-import type { ErrorResponse } from '@/auth';
-import { EventUrlFormSchema } from '@/schemas/form';
-import { Event, Image as ImageModel, PrismaClient } from '@prisma/client';
-import { revalidatePath } from 'next/cache';
+import {
+  type Event,
+  type Image as ImageModel,
+  Prisma,
+  PrismaClient,
+  type User,
+} from '@prisma/client'
+import { revalidatePath } from 'next/cache'
+import { getCurrentUser } from '@/actions/get-current-user'
+import type { ErrorResponse } from '@/auth'
+import { EventUrlFormSchema } from '@/schemas/form'
 
-const prismaClient = new PrismaClient();
+const prismaClient = new PrismaClient()
 
 export const getEvent = async (): Promise<
   | (Event & {
-      images: ImageModel[];
+      images: ImageModel[]
+      users: User[]
     })
   | ErrorResponse
 > => {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser()
 
   if (!user)
     return {
       error: 'User not authenticated',
-    };
+    }
 
-  const userId = user.id;
+  const userId = user.id
 
   try {
     const event = await prismaClient.event.findFirst({
@@ -36,22 +43,22 @@ export const getEvent = async (): Promise<
         images: true,
         users: true,
       },
-    });
+    })
 
     if (!event) {
       return {
         error: 'Event not found',
-      };
+      }
     }
 
-    return event;
+    return event
   } catch (error) {
-    console.error('Error getting event:', error);
+    console.error('Error getting event:', error)
     return {
       error: 'Error getting event',
-    };
+    }
   }
-};
+}
 
 export const getEventById = async (
   eventId: string
@@ -59,95 +66,113 @@ export const getEventById = async (
   try {
     const event = await prismaClient.event.findUnique({
       where: { id: eventId },
-    });
+    })
 
     if (!event) {
       return {
         error: 'Event not found',
-      };
+      }
     }
 
-    return event;
+    return event
   } catch (error) {
-    console.error('Error getting event by ID:', error);
+    console.error('Error getting event by ID:', error)
     return {
       error: 'Error getting event by ID',
-    };
+    }
   }
-};
+}
 
 export const updateEvent = async (
   eventId: string,
   data: {
-    coverMessage?: string;
-    date?: Date;
+    coverMessage?: string
+    date?: Date
+    url?: string
   }
 ) => {
   try {
-    const updateData: Partial<Event> = {};
+    const updateData: Partial<Event> = {}
 
     if (data.coverMessage) {
-      updateData.coverMessage = data.coverMessage;
+      updateData.coverMessage = data.coverMessage
     }
 
     if (data.date) {
-      updateData.date = data.date;
+      updateData.date = data.date
+    }
+
+    if (data.url) {
+      updateData.url = data.url
     }
 
     const updatedEvent = await prismaClient.event.update({
       where: { id: eventId },
       data: updateData,
-    });
+    })
 
-    return { success: updatedEvent };
+    revalidatePath('/event-details')
+    revalidatePath('/event-settings')
+    revalidatePath('/dashboard')
+    return { success: updatedEvent }
   } catch (error) {
-    console.error('Error updating event:', error);
+    console.error('Error updating event:', error)
+
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      return {
+        error: 'Esa dirección ya está en uso, elegí otra.',
+      }
+    }
+
     return {
-      error: 'Error updating event',
-    };
+      error: 'No pudimos actualizar tu evento.',
+    }
   }
-};
+}
 
 export const updateEventUrl = async (eventId: string, url: string) => {
   const validatedFields = EventUrlFormSchema.safeParse({
     eventId,
     eventUrl: url,
-  });
+  })
 
   if (!validatedFields.success) {
     return {
       error:
         validatedFields.error.errors[0]?.message ??
         'La dirección de tu evento no es válida',
-    };
+    }
   }
 
-  const normalizedUrl = validatedFields.data.eventUrl;
+  const normalizedUrl = validatedFields.data.eventUrl
 
   try {
     const existingEvent = await prismaClient.event.findUnique({
       where: { url: normalizedUrl },
-    });
+    })
 
     if (existingEvent && existingEvent.id !== eventId) {
       return {
         error: 'Esa dirección ya está en uso, elegí otra.',
-      };
+      }
     }
 
     const updatedEvent = await prismaClient.event.update({
       where: { id: eventId },
       data: { url: normalizedUrl },
-    });
+    })
 
-    revalidatePath('/event-settings');
-    revalidatePath('/dashboard');
-    return { success: updatedEvent };
+    revalidatePath('/event-settings')
+    revalidatePath('/dashboard')
+    return { success: updatedEvent }
   } catch (error) {
-    console.error('Error updating event url:', error);
-    return { error: 'Error actualizando la dirección del evento' };
+    console.error('Error updating event url:', error)
+    return { error: 'Error actualizando la dirección del evento' }
   }
-};
+}
 
 export const setEventPublished = async (
   eventId: string,
@@ -157,29 +182,29 @@ export const setEventPublished = async (
     const updatedEvent = await prismaClient.event.update({
       where: { id: eventId },
       data: { isPublished },
-    });
+    })
 
-    revalidatePath('/dashboard');
+    revalidatePath('/dashboard')
     if (updatedEvent.url) {
-      revalidatePath(`/e/${updatedEvent.url}`);
+      revalidatePath(`/e/${updatedEvent.url}`)
     }
 
-    return { success: updatedEvent };
+    return { success: updatedEvent }
   } catch (error) {
-    console.error('Error updating event published status:', error);
-    return { error: 'Error actualizando la visibilidad de tu sitio' };
+    console.error('Error updating event published status:', error)
+    return { error: 'Error actualizando la visibilidad de tu sitio' }
   }
-};
+}
 
 export const getAllEvents = async (): Promise<Event[] | ErrorResponse> => {
   try {
-    const events = await prismaClient.event.findMany();
+    const events = await prismaClient.event.findMany()
 
-    return events;
+    return events
   } catch (error) {
-    console.error('Error getting all events:', error);
+    console.error('Error getting all events:', error)
     return {
       error: 'Error getting all events',
-    };
+    }
   }
-};
+}

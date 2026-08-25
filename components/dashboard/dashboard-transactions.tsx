@@ -1,27 +1,29 @@
-import { Suspense, lazy } from 'react';
-import Link from 'next/link';
-import EmptyState from '@/components/common/empty-state';
-import { IoGiftOutline } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
-import { LuArrowUpRight } from 'react-icons/lu';
-import DashboardTransactionsSkeleton from '@/components/skeletons/dashboard-transactions';
-import { getEvent } from '@/actions/data/event';
-import { getTransactions } from '@/actions/data/transaction';
+import Link from 'next/link'
+import { lazy, Suspense } from 'react'
+import { IoGiftOutline } from 'react-icons/io5'
+import { LuArrowUpRight } from 'react-icons/lu'
+import { getEvent } from '@/actions/data/event'
+import { getTransactions } from '@/actions/data/transaction'
+import { getWishlistGifts } from '@/actions/data/wishlist-gift'
+import EmptyState from '@/components/common/empty-state'
+import DashboardTransactionsSkeleton from '@/components/skeletons/dashboard-transactions'
+import { Button } from '@/components/ui/button'
 
 const DashboardTransactionsList = lazy(
   () => import('@/components/dashboard/dashboard-transactions-list')
-);
+)
 
 export default async function DashboardTransactions() {
-  const event = await getEvent();
+  const event = await getEvent()
 
   if (!event || 'error' in event) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
-  const transactions = await getTransactions({
-    searchParams: { eventId: event.id },
-  });
+  const [transactions, wishlistGifts] = await Promise.all([
+    getTransactions({ searchParams: { eventId: event.id } }),
+    getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
+  ])
 
   return (
     <div className="w-full h-full flex items-center flex-col gap-8">
@@ -43,15 +45,18 @@ export default async function DashboardTransactions() {
 
       {transactions.length === 0 ? (
         <EmptyState
-          icon={<IoGiftOutline className="text-6xl" />}
+          icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
           title="Sin transacciones"
           description="Todavía no tienes regalos recibidos"
         />
       ) : (
         <Suspense fallback={<DashboardTransactionsSkeleton />}>
-          <DashboardTransactionsList transactions={transactions} />
+          <DashboardTransactionsList
+            transactions={transactions}
+            wishlistGifts={wishlistGifts}
+          />
         </Suspense>
       )}
     </div>
-  );
+  )
 }

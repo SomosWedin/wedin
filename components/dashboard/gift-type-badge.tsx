@@ -1,11 +1,11 @@
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { IoPeopleOutline, IoPersonOutline } from 'react-icons/io5';
+import { IoPeopleOutline, IoPersonOutline } from 'react-icons/io5'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 type GiftTypeBadgeProps = {
-  isGroupGift: boolean;
-  className?: string;
-};
+  isGroupGift: boolean
+  className?: string
+}
 
 export default function GiftTypeBadge({
   isGroupGift,
@@ -21,5 +21,5 @@ export default function GiftTypeBadge({
       {isGroupGift ? <IoPeopleOutline /> : <IoPersonOutline />}
       {isGroupGift ? 'Regalo Grupal' : 'Regalo Individual'}
     </Badge>
-  );
+  )
 }

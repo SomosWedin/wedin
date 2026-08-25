@@ -1,27 +1,28 @@
-import { Suspense, lazy } from 'react';
-import { getEvent } from '@/actions/data/event';
-import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings';
-import { getBankDetails } from '@/actions/data/bank-details';
+import { lazy, Suspense } from 'react'
+import { getBankDetails } from '@/actions/data/bank-details'
+import { getEvent } from '@/actions/data/event'
+import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings'
 
 const DashboardBankDetailsUpdateForm = lazy(
-  () => import('@/components/forms/dashboard/bank-details-update')
-);
+  () => import('@/components/forms/dashboard/bank-details')
+)
 
 export default async function DashboardBankDetails() {
-  const event = await getEvent();
+  const event = await getEvent()
 
   if (!event || 'error' in event) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
-  const bankDetails = await getBankDetails(event.id);
+  const bankDetails = await getBankDetails(event.id)
 
   return (
-    <section className="w-full h-full flex flex-col gap-12 sm:gap-8 justify-start items-center">
+    <section className="w-full h-full flex flex-col gap-8 justify-start items-center">
       <div className="w-full flex flex-col gap-2 border-b border-gray-200 pb-6">
         <h1 className="text-2xl font-black">Configuración Bancaria</h1>
         <p className="text-textTertiary">
-          Define los detalles importantes de tu evento: Configuración Bancaria.
+          Define tus datos de cuenta bancaria para retirar los fondos de los
+          regalos.
         </p>
       </div>
 
@@ -32,5 +33,5 @@ export default async function DashboardBankDetails() {
         />
       </Suspense>
     </section>
-  );
+  )
 }

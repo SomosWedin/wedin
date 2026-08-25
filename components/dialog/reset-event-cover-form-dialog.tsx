@@ -1,3 +1,4 @@
+import { RxCross2 } from 'react-icons/rx'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,16 +9,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { RxCross2 } from 'react-icons/rx';
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 
 type ResetEventCoverFormDialogProps = {
-  handleReset: () => void;
-  isDirty: boolean;
-};
+  handleReset: () => void
+  isDirty: boolean
+}
 
-const ResetEventCoverFormDialog = ({ handleReset, isDirty }: ResetEventCoverFormDialogProps) => {
+const ResetEventCoverFormDialog = ({
+  handleReset,
+  isDirty,
+}: ResetEventCoverFormDialogProps) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -51,7 +54,7 @@ const ResetEventCoverFormDialog = ({ handleReset, isDirty }: ResetEventCoverForm
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
-};
+  )
+}
 
-export default ResetEventCoverFormDialog;
+export default ResetEventCoverFormDialog

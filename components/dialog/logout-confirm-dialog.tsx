@@ -1,26 +1,26 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import logout from '@/actions/auth/logout';
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { useState } from 'react'
+import logout from '@/actions/auth/logout'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 type LogoutConfirmDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
 
 export default function LogoutConfirmDialog({
   open,
   onOpenChange,
 }: LogoutConfirmDialogProps) {
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const handleConfirm = async () => {
-    setIsLoggingOut(true);
-    await logout();
-  };
+    setIsLoggingOut(true)
+    await logout()
+  }
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -38,13 +38,10 @@ export default function LogoutConfirmDialog({
               Asegúrate de que has guardado todo antes de cerrar sesión.
             </DialogPrimitive.Description>
           </div>
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+          <div className="flex flex-row justify-end gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
             <DialogPrimitive.Close
               disabled={isLoggingOut}
-              className={cn(
-                buttonVariants({ variant: 'outline' }),
-                'mt-2 sm:mt-0'
-              )}
+              className={cn(buttonVariants({ variant: 'outline' }))}
             >
               Cancelar
             </DialogPrimitive.Close>
@@ -63,5 +60,5 @@ export default function LogoutConfirmDialog({
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
-  );
+  )
 }

@@ -1,154 +1,220 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { IoGiftOutline, IoPeopleOutline, IoPersonOutline, IoSearchOutline } from 'react-icons/io5';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { useStore } from '@/hooks/use-store';
-import { useCartStore, type CartItem } from '@/hooks/use-cart-store';
+import { useState } from 'react'
+import {
+  IoCheckmarkCircleOutline,
+  IoGiftOutline,
+  IoSearchOutline,
+  IoSparklesOutline,
+} from 'react-icons/io5'
+import CartDrawer from '@/components/cart/cart-drawer'
+import CartStickyBar from '@/components/cart/cart-sticky-bar'
+import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog'
+import GiftDetailDialog from '@/components/dialog/gift-detail-dialog'
+import {
+  getGiftProgress,
+  getQuantityProgress,
+  isGiftComplete,
+} from '@/components/guest/gift-progress'
 import GuestGiftCard, {
   type WishlistGiftWithGift,
-} from '@/components/guest/guest-gift-card';
-import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog';
-import GiftDetailDialog from '@/components/dialog/gift-detail-dialog';
-import CartStickyBar from '@/components/cart/cart-sticky-bar';
-import CartDrawer from '@/components/cart/cart-drawer';
-import { getGiftProgress } from '@/components/guest/gift-progress';
-import type { Category } from '@prisma/client';
+} from '@/components/guest/guest-gift-card'
+import { useIsPreviewMode } from '@/components/guest/preview-mode'
+import { Input } from '@/components/ui/input'
+import { type CartItem, useCartStore } from '@/hooks/use-cart-store'
+import { useStore } from '@/hooks/use-store'
+import { useToast } from '@/hooks/use-toast'
+import { getPreviewCartKey } from '@/lib/site-preview'
 
-type TypeFilter = 'todos' | 'individual' | 'grupal';
-type SortOption = 'recent' | 'price-asc' | 'price-desc';
+type TypeFilter = 'todos' | 'disponibles' | 'regalados'
+type SortOption = 'recent' | 'price-asc' | 'price-desc'
 
 type GuestGiftCatalogProps = {
-  eventId: string;
-  wishlistGifts: WishlistGiftWithGift[];
-  categories: Category[];
-};
+  eventId: string
+  wishlistGifts: WishlistGiftWithGift[]
+}
 
-const TYPE_FILTERS: { value: TypeFilter; label: string; icon: React.ReactNode }[] = [
+const TYPE_FILTERS: {
+  value: TypeFilter
+  label: string
+  icon: React.ReactNode
+}[] = [
   { value: 'todos', label: 'Todos', icon: <IoGiftOutline /> },
-  { value: 'individual', label: 'Regalo individual', icon: <IoPersonOutline /> },
-  { value: 'grupal', label: 'Regalo grupal', icon: <IoPeopleOutline /> },
-];
+  {
+    value: 'disponibles',
+    label: 'Disponibles',
+    icon: <IoSparklesOutline />,
+  },
+  {
+    value: 'regalados',
+    label: 'Ya regalados',
+    icon: <IoCheckmarkCircleOutline />,
+  },
+]
 
 export default function GuestGiftCatalog({
   eventId,
   wishlistGifts,
-  categories,
 }: GuestGiftCatalogProps) {
-  const { toast } = useToast();
-  const cartStore = useCartStore(eventId);
-  const cartItems = useStore(cartStore, state => state.items) ?? [];
-
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos');
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [sort, setSort] = useState<SortOption>('recent');
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { toast } = useToast()
+  const isPreviewMode = useIsPreviewMode()
+  const cartStore = useCartStore(
+    isPreviewMode ? getPreviewCartKey(eventId) : eventId
+  )
+  const cartItems = useStore(cartStore, state => state.items) ?? []
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos')
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<SortOption>('recent')
+  const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedWishlistGift, setSelectedWishlistGift] =
-    useState<WishlistGiftWithGift | null>(null);
-  const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(
-    null
-  );
+    useState<WishlistGiftWithGift | null>(null)
+  const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(null)
   const [detailWishlistGift, setDetailWishlistGift] =
-    useState<WishlistGiftWithGift | null>(null);
+    useState<WishlistGiftWithGift | null>(null)
 
   const cartTotal = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
     0
-  );
+  )
+  const cartWishlistGiftIds = new Set(
+    cartItems.map(item => item.wishlistGiftId)
+  )
 
-  const addToCart = (wishlistGift: WishlistGiftWithGift, amount: string) => {
+  const addToCart = (
+    wishlistGift: WishlistGiftWithGift,
+    amount: string,
+    quantity: number = 1
+  ) => {
     cartStore.getState().addItem({
       wishlistGiftId: wishlistGift.id,
       giftName: wishlistGift.gift.name,
       giftImageUrl: wishlistGift.gift.image?.url ?? null,
       isGroupGift: wishlistGift.isGroupGift,
       amount,
-    });
+      quantity,
+      unitPrice: wishlistGift.gift.price,
+    })
     toast({
       title: 'Agregado al carrito 🎁',
-      description: `${wishlistGift.gift.name} — Gs. ${Number(amount).toLocaleString(
-        'es-PY'
-      )}`,
-    });
-  };
+      description: `${wishlistGift.gift.name} — Gs. ${Number(
+        amount
+      ).toLocaleString('es-PY')}`,
+    })
+  }
 
-  const handleAddFullPrice = (wishlistGift: WishlistGiftWithGift) => {
-    addToCart(wishlistGift, wishlistGift.gift.price);
-  };
+  const handleAddToCart = (
+    wishlistGift: WishlistGiftWithGift,
+    quantity: number
+  ) => {
+    const amount = String(Number(wishlistGift.gift.price) * quantity)
+    addToCart(wishlistGift, amount, quantity)
+  }
 
   const handleOpenContributionDialog = (wishlistGift: WishlistGiftWithGift) => {
-    setSelectedWishlistGift(wishlistGift);
-  };
+    setSelectedWishlistGift(wishlistGift)
+  }
 
   const handleOpenGiftDetails = (wishlistGift: WishlistGiftWithGift) => {
-    setDetailWishlistGift(wishlistGift);
-  };
+    const existingCartItem = cartItems.find(
+      item => item.wishlistGiftId === wishlistGift.id
+    )
+    setEditingCartItem(existingCartItem ?? null)
+    setDetailWishlistGift(wishlistGift)
+  }
 
   const handleEditCartItem = (item: CartItem) => {
     const wishlistGift = wishlistGifts.find(
       candidate => candidate.id === item.wishlistGiftId
-    );
-    if (!wishlistGift) return;
+    )
+    if (!wishlistGift) return
 
-    setEditingCartItem(item);
-    setSelectedWishlistGift(wishlistGift);
-    setIsCartOpen(false);
-  };
+    setEditingCartItem(item)
+    if (item.isGroupGift) {
+      setSelectedWishlistGift(wishlistGift)
+    } else {
+      setDetailWishlistGift(wishlistGift)
+    }
+    setIsCartOpen(false)
+  }
 
   const handleContributionSubmit = (amount: string) => {
-    if (!selectedWishlistGift) return;
+    if (!selectedWishlistGift) return
 
     if (editingCartItem) {
-      cartStore.getState().updateItemAmount(editingCartItem.id, amount);
+      cartStore.getState().updateItemAmount(editingCartItem.id, amount)
     } else {
-      addToCart(selectedWishlistGift, amount);
+      addToCart(selectedWishlistGift, amount)
     }
-  };
+  }
 
   const handleContributionDialogOpenChange = (open: boolean) => {
-    if (open) return;
+    if (open) return
 
-    setSelectedWishlistGift(null);
+    setSelectedWishlistGift(null)
     if (editingCartItem) {
-      setEditingCartItem(null);
-      setIsCartOpen(true);
+      setEditingCartItem(null)
+      setIsCartOpen(true)
     }
-  };
+  }
+
+  const handleDetailConfirm = (quantity: number) => {
+    if (!detailWishlistGift) return
+
+    if (editingCartItem) {
+      cartStore.getState().updateItemQuantity(editingCartItem.id, quantity)
+    } else {
+      handleAddToCart(detailWishlistGift, quantity)
+    }
+  }
+
+  const handleDetailDialogOpenChange = (open: boolean) => {
+    if (open) return
+
+    setDetailWishlistGift(null)
+    if (editingCartItem) {
+      setEditingCartItem(null)
+      setIsCartOpen(true)
+    }
+  }
 
   const handleRemoveCartItem = (id: string) => {
-    cartStore.getState().removeItem(id);
-    if (cartItems.length === 1) setIsCartOpen(false);
-  };
+    cartStore.getState().removeItem(id)
+    if (cartItems.length === 1) setIsCartOpen(false)
+  }
 
   const filteredWishlistGifts = wishlistGifts
     .filter(wishlistGift => {
+      const isComplete = isGiftComplete(wishlistGift)
       const matchesType =
         typeFilter === 'todos' ||
-        (typeFilter === 'grupal'
-          ? wishlistGift.isGroupGift
-          : !wishlistGift.isGroupGift);
+        (typeFilter === 'regalados' ? isComplete : !isComplete)
       const matchesSearch = wishlistGift.gift.name
         .toLowerCase()
-        .includes(search.trim().toLowerCase());
-      const matchesCategory =
-        !categoryFilter || wishlistGift.gift.categoryId === categoryFilter;
+        .includes(search.trim().toLowerCase())
 
-      return matchesType && matchesSearch && matchesCategory;
+      return matchesType && matchesSearch
     })
     .sort((a, b) => {
-      if (sort === 'price-asc') return Number(a.gift.price) - Number(b.gift.price);
-      if (sort === 'price-desc') return Number(b.gift.price) - Number(a.gift.price);
-      return 0;
-    });
+      if (sort === 'price-asc')
+        return Number(a.gift.price) - Number(b.gift.price)
+      if (sort === 'price-desc')
+        return Number(b.gift.price) - Number(a.gift.price)
+      return 0
+    })
 
   const selectedProgress = selectedWishlistGift
     ? getGiftProgress(
         selectedWishlistGift.gift.price,
         selectedWishlistGift.transactions
       )
-    : null;
+    : null
+
+  const detailProgress = detailWishlistGift
+    ? getQuantityProgress(
+        detailWishlistGift.quantity,
+        detailWishlistGift.transactions
+      )
+    : null
 
   return (
     <section
@@ -183,24 +249,12 @@ export default function GuestGiftCatalog({
             <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <Input
               type="text"
-              placeholder="Regalo"
+              placeholder="Buscar un regalo"
               className="pl-10"
               value={search}
               onChange={event => setSearch(event.target.value)}
             />
           </div>
-          <select
-            className="px-3 py-2 h-10 text-sm bg-white rounded-md border border-input"
-            value={categoryFilter}
-            onChange={event => setCategoryFilter(event.target.value)}
-          >
-            <option value="">Categoría: Todas</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
           <select
             className="px-3 py-2 h-10 text-sm bg-white rounded-md border border-input"
             value={sort}
@@ -223,7 +277,8 @@ export default function GuestGiftCatalog({
             <GuestGiftCard
               key={wishlistGift.id}
               wishlistGift={wishlistGift}
-              onAddFullPrice={handleAddFullPrice}
+              isInCart={cartWishlistGiftIds.has(wishlistGift.id)}
+              onAddFullPrice={gift => handleAddToCart(gift, 1)}
               onOpenContributionDialog={handleOpenContributionDialog}
               onOpenGiftDetails={handleOpenGiftDetails}
             />
@@ -244,15 +299,16 @@ export default function GuestGiftCatalog({
         />
       )}
 
-      {detailWishlistGift && (
+      {detailWishlistGift && detailProgress && (
         <GiftDetailDialog
           open={!!detailWishlistGift}
-          onOpenChange={open => {
-            if (!open) setDetailWishlistGift(null);
-          }}
+          onOpenChange={handleDetailDialogOpenChange}
           gift={detailWishlistGift.gift}
           isFavoriteGift={detailWishlistGift.isFavoriteGift}
-          onAddToCart={() => handleAddFullPrice(detailWishlistGift)}
+          totalQuantity={detailWishlistGift.quantity}
+          remainingStock={detailProgress.remainingStock}
+          initialQuantity={editingCartItem?.quantity}
+          onConfirm={handleDetailConfirm}
         />
       )}
 
@@ -270,5 +326,5 @@ export default function GuestGiftCatalog({
         onEditItem={handleEditCartItem}
       />
     </section>
-  );
+  )
 }

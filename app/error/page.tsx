@@ -1,9 +1,9 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { IoAlertCircleOutline } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
-import EmptyState from '@/components/common/empty-state';
-import wedinIcon from '@/public/assets/w-icon.svg';
+import Image from 'next/image'
+import Link from 'next/link'
+import { IoAlertCircleOutline } from 'react-icons/io5'
+import EmptyState from '@/components/common/empty-state'
+import { Button } from '@/components/ui/button'
+import wedinIcon from '@/public/assets/w-icon.svg'
 
 // Target of NextAuth's `pages.error` (auth.ts) — reached when an auth
 // failure hits NextAuth's own redirect rather than the app's custom
@@ -15,19 +15,20 @@ const ERROR_MESSAGES: Record<string, string> = {
     'Ese email ya está registrado con otro método de inicio de sesión.',
   AccessDenied: 'No tenés permiso para acceder con esa cuenta.',
   Configuration: 'Hubo un problema con la configuración de acceso.',
-  Verification: 'El enlace de verificación venció o ya fue usado. Asegurese que fue el ulitmo email enviado',
-};
+  Verification:
+    'El enlace de verificación venció o ya fue usado. Asegurese que fue el ulitmo email enviado',
+}
 
-const DEFAULT_MESSAGE = 'Ocurrió un error al iniciar sesión.';
+const DEFAULT_MESSAGE = 'Ocurrió un error al iniciar sesión.'
 
 type ErrorPageProps = {
-  searchParams?: { error?: string };
-};
+  searchParams?: { error?: string }
+}
 
 export default function ErrorPage({ searchParams }: ErrorPageProps) {
   const description =
     (searchParams?.error && ERROR_MESSAGES[searchParams.error]) ||
-    DEFAULT_MESSAGE;
+    DEFAULT_MESSAGE
 
   return (
     <div className="flex flex-col gap-8 justify-center items-center min-h-screen bg-white">
@@ -37,7 +38,7 @@ export default function ErrorPage({ searchParams }: ErrorPageProps) {
       </Link>
 
       <EmptyState
-        icon={<IoAlertCircleOutline className="text-6xl" />}
+        icon={<IoAlertCircleOutline className="text-4xl sm:text-6xl" />}
         title="No pudimos iniciar tu sesión"
         description={description}
         action={
@@ -47,5 +48,5 @@ export default function ErrorPage({ searchParams }: ErrorPageProps) {
         }
       />
     </div>
-  );
+  )
 }

@@ -1,8 +1,9 @@
-'use server';
+'use server'
 
-import type { ErrorResponse } from '@/auth';
-import { PrismaClient, User } from '@prisma/client';
-const prismaClient = new PrismaClient();
+import { type Prisma, PrismaClient, type User } from '@prisma/client'
+import type { ErrorResponse } from '@/auth'
+
+const prismaClient = new PrismaClient()
 
 export const getUserByEmail = async (
   email: string
@@ -10,17 +11,17 @@ export const getUserByEmail = async (
   try {
     const currentUser = await prismaClient.user.findUnique({
       where: { email },
-    });
+    })
 
     if (currentUser === null) {
-      return { error: 'User not found' }; // Use return instead of throw to control flow
+      return { error: 'User not found' } // Use return instead of throw to control flow
     }
-    return currentUser;
-  } catch (error) {
+    return currentUser
+  } catch (_error) {
     // console.error('Error getting user by email:', error);
-    return { error: 'InternalError' };
+    return { error: 'InternalError' }
   }
-};
+}
 
 export const getSecondaryUser = async (
   primaryUserId: string,
@@ -36,39 +37,39 @@ export const getSecondaryUser = async (
           equals: eventId,
         },
       },
-    });
+    })
 
     if (!secondaryUser) {
-      return { error: 'Secondary event user not found' };
+      return { error: 'Secondary event user not found' }
     }
 
-    return secondaryUser;
-  } catch (error) {
-    return { error: 'Error getting secondary event user' };
+    return secondaryUser
+  } catch (_error) {
+    return { error: 'Error getting secondary event user' }
   }
-};
+}
 
 export const getLoginUserByEmail = async (email: string) => {
   try {
     return await prismaClient.user.findUnique({
       where: { email },
-    });
-  } catch (error) {
-    return null;
+    })
+  } catch (_error) {
+    return null
   }
-};
+}
 
 export const updateVerifiedOn = async (email: string) => {
   try {
     const currentUser = await prismaClient.user.update({
       where: { email: email },
       data: { emailVerified: new Date() },
-    });
-    return currentUser;
-  } catch (error) {
-    return null;
+    })
+    return currentUser
+  } catch (_error) {
+    return null
   }
-};
+}
 
 export const updateUserById = async (
   userId: string,
@@ -78,24 +79,26 @@ export const updateUserById = async (
   onboardingStep?: number
 ) => {
   try {
-    const updateData: Partial<User> = {};
+    const data: Prisma.UserUpdateInput = {}
 
-    name && (updateData.name = name);
-    lastName && (updateData.lastName = lastName);
-    onboardingStep && (updateData.onboardingStep = onboardingStep);
-    email && (updateData.email = email);
+    if (name !== undefined) data.name = name
+    if (lastName !== undefined) data.lastName = lastName
+    if (email !== undefined) data.email = email
+    if (onboardingStep !== undefined) {
+      data.onboardingStep = onboardingStep
+    }
 
     const updatedUser = await prismaClient.user.update({
       where: { id: userId },
-      data: updateData,
-    });
+      data: data,
+    })
 
-    return { success: updatedUser };
+    return { success: updatedUser }
   } catch (error) {
-    console.error('Error updating user:', error);
-    return { error: 'Error updating user' };
+    console.error('Error updating user:', error)
+    return { error: 'No pudimos actualizar tus datos.' }
   }
-};
+}
 
 export const upsertUser = async (email: string, provider?: string) => {
   try {
@@ -110,8 +113,8 @@ export const upsertUser = async (email: string, provider?: string) => {
         email: email,
         // provider: provider,
       },
-    });
+    })
   } catch (error) {
-    console.error('Error upserting user:', error, provider);
+    console.error('Error upserting user:', error, provider)
   }
-};
+}

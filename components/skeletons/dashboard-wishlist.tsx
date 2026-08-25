@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DashboardWishlistSkeleton() {
   return (
@@ -12,5 +12,5 @@ export default function DashboardWishlistSkeleton() {
         ))}
       </div>
     </div>
-  );
+  )
 }

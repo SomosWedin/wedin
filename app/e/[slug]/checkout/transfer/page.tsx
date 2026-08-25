@@ -1,42 +1,39 @@
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { IoLogoWhatsapp } from 'react-icons/io5';
-import { getCheckoutTransactions } from '@/actions/data/checkout';
-import { getEventByUrl } from '@/actions/data/public-event';
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { IoLogoWhatsapp } from 'react-icons/io5'
+import { getCheckoutTransactions } from '@/actions/data/checkout'
+import { getEventByUrl } from '@/actions/data/public-event'
 import {
-  WEDIN_BANK_ACCOUNT,
   buildWedinWhatsappLink,
-} from '@/lib/wedin-bank-account';
+  WEDIN_BANK_ACCOUNT,
+} from '@/lib/wedin-bank-account'
 
 type TransferPageProps = {
-  params: { slug: string };
-  searchParams?: { ref?: string };
-};
+  params: { slug: string }
+  searchParams?: { ref?: string }
+}
 
 export default async function TransferPage({
   params,
   searchParams,
 }: TransferPageProps) {
-  const transactionIds = searchParams?.ref?.split(',').filter(Boolean) ?? [];
+  const transactionIds = searchParams?.ref?.split(',').filter(Boolean) ?? []
 
-  if (transactionIds.length === 0) notFound();
+  if (transactionIds.length === 0) notFound()
 
-  const event = await getEventByUrl(params.slug);
+  const event = await getEventByUrl(params.slug)
 
-  if (!event) notFound();
+  if (!event) notFound()
 
-  const transactions = await getCheckoutTransactions(
-    transactionIds,
-    event.id
-  );
+  const transactions = await getCheckoutTransactions(transactionIds, event.id)
 
-  if (transactions.length === 0) notFound();
+  if (transactions.length === 0) notFound()
 
   const total = transactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
-  );
-  const orderReference = transactions[0].id.slice(-6).toUpperCase();
+  )
+  const orderReference = transactions[0].id.slice(-6).toUpperCase()
 
   return (
     <div className="flex justify-center px-4 py-6 sm:py-10 mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -99,5 +96,5 @@ export default async function TransferPage({
         </Link>
       </div>
     </div>
-  );
+  )
 }

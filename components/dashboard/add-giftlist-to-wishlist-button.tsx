@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { Button } from '@/components/ui/button';
-import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift';
-import { Loader2 } from 'lucide-react';
-import { IoCheckmarkCircle } from 'react-icons/io5';
+import { Loader2 } from 'lucide-react'
+import { IoCheckmarkCircle } from 'react-icons/io5'
+import { Button } from '@/components/ui/button'
+import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift'
 
 type AddGiftlistToWishlistButtonProps = {
-  eventId: string;
-  wishlistId: string;
-  giftIds: string[];
-  allInWishlist: boolean;
-};
+  eventId: string
+  wishlistId: string
+  giftIds: string[]
+  allInWishlist: boolean
+}
 
 export default function AddGiftlistToWishlistButton({
   eventId,
@@ -18,7 +18,7 @@ export default function AddGiftlistToWishlistButton({
   giftIds,
   allInWishlist,
 }: AddGiftlistToWishlistButtonProps) {
-  const { loading, addAllToWishlist } = useWishlistGift();
+  const { loading, addAllToWishlist } = useWishlistGift()
 
   if (allInWishlist) {
     return (
@@ -26,7 +26,7 @@ export default function AddGiftlistToWishlistButton({
         <IoCheckmarkCircle className="text-success" />
         Paquete agregado
       </Button>
-    );
+    )
   }
 
   return (
@@ -39,5 +39,5 @@ export default function AddGiftlistToWishlistButton({
       Agregar paquete completo
       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
     </Button>
-  );
+  )
 }

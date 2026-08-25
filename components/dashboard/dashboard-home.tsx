@@ -1,33 +1,42 @@
-import Link from 'next/link';
-import { FaCheck, FaChevronRight } from 'react-icons/fa6';
-import { ArrowUpRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
-import { getEvent } from '@/actions/data/event';
-import { getWishlistGifts } from '@/actions/data/wishlist-gift';
-import DashboardHomeSiteLinkCard from '@/components/dashboard/dashboard-home-site-link-card';
+import type { Event } from '@prisma/client'
+import { ArrowUpRight } from 'lucide-react'
+import Link from 'next/link'
+import { FaCheck, FaChevronRight } from 'react-icons/fa6'
+import { getEvent } from '@/actions/data/event'
+import { getWishlistGifts } from '@/actions/data/wishlist-gift'
+import DashboardHomeSiteLinkCard from '@/components/dashboard/dashboard-home-site-link-card'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { cn } from '@/lib/utils'
 
 type ChecklistItem = {
-  label: string;
-  completed: boolean;
-  href?: string;
-};
+  label: string
+  completed: boolean
+  href?: string
+}
+
+export type CompletedEvent = Event & {
+  url: string
+}
+
+export function hasEventUrl(event: Event): event is CompletedEvent {
+  return typeof event.url === 'string' && event.url.trim().length > 0
+}
 
 export default async function DashboardHome() {
-  const event = await getEvent();
+  const event = await getEvent()
 
   if (!event || 'error' in event) {
-    return <div>Error</div>;
+    return <div>Error</div>
   }
 
   const wishlistGifts = await getWishlistGifts({
     searchParams: { wishlistId: event.wishlistId },
-  });
+  })
 
-  const hasGift = wishlistGifts.length > 0;
-  const hasPresentation = !!event.coverMessage && event.images.length > 0;
-  const hasEventDetails = !!event.date && !!event.url;
+  const hasGift = wishlistGifts.length > 0
+  const hasPresentation = !!event.coverMessage
+  const hasEventDetails = !!event.date && !!event.url
 
   const items: ChecklistItem[] = [
     {
@@ -49,11 +58,15 @@ export default async function DashboardHome() {
       completed: hasEventDetails,
       href: '/event-settings',
     },
-  ];
+  ]
 
-  const completedCount = items.filter(item => item.completed).length;
-  const progressValue = (completedCount / items.length) * 100;
-  const allCompleted = completedCount === items.length;
+  const completedCount = items.filter(item => item.completed).length
+  const progressValue = (completedCount / items.length) * 100
+  const allChecklistItemsCompleted = completedCount === items.length
+  const completedEvent =
+    allChecklistItemsCompleted && hasEventUrl(event) ? event : null
+
+  const allCompleted = completedEvent !== null
 
   return (
     <section className="w-full h-full flex flex-col justify-start items-center gap-8">
@@ -67,7 +80,7 @@ export default async function DashboardHome() {
       </div>
 
       {allCompleted ? (
-        <DashboardHomeSiteLinkCard event={event} />
+        <DashboardHomeSiteLinkCard event={completedEvent} />
       ) : (
         <div className="border border-borderDefault bg-gray-50 w-full rounded-lg px-6 py-8">
           <div className="flex sm:flex-row flex-col justify-between items-start sm:items-center border-b border-gray-200 pb-6 gap-4">
@@ -105,7 +118,7 @@ export default async function DashboardHome() {
                   </div>
                   <FaChevronRight className="text-lg" />
                 </div>
-              );
+              )
 
               return item.href ? (
                 <Link
@@ -117,11 +130,11 @@ export default async function DashboardHome() {
                 </Link>
               ) : (
                 <div key={item.label}>{row}</div>
-              );
+              )
             })}
 
             <div className="flex mt-4">
-              <Button className="gap-2 bg-gray600 w-40" disabled>
+              <Button variant="success" className="gap-2" disabled>
                 Ver sitio web
                 <ArrowUpRight className="w-4 h-4" />
               </Button>
@@ -130,5 +143,5 @@ export default async function DashboardHome() {
         </div>
       )}
     </section>
-  );
+  )
 }

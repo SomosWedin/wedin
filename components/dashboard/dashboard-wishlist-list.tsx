@@ -1,39 +1,52 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import DeleteWishlistGiftDialog from '@/components/dialog/delete-wishlist-gift-dialog';
-import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialog';
-import GiftTypeBadge from '@/components/dashboard/gift-type-badge';
-import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge';
-import { computePercentage } from '@/components/guest/gift-progress';
-import { IoGiftOutline, IoSearchOutline, IoSparkles } from 'react-icons/io5';
-import type { Category, Prisma } from '@prisma/client';
+import type { Category, Prisma } from '@prisma/client'
+import Image from 'next/image'
+import { useState } from 'react'
+import {
+  IoCashOutline,
+  IoGiftOutline,
+  IoSearchOutline,
+  IoSparkles,
+} from 'react-icons/io5'
+import GiftFavoriteBadge from '@/components/dashboard/gift-favorite-badge'
+import GiftTypeBadge from '@/components/dashboard/gift-type-badge'
+import DeleteWishlistGiftDialog from '@/components/dialog/delete-wishlist-gift-dialog'
+import EditWishlistGiftDialog from '@/components/dialog/edit-wishlist-gift-dialog'
+import {
+  computePercentage,
+  getQuantityProgress,
+} from '@/components/guest/gift-progress'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift'
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
-  include: { gift: { include: { image: true } } };
-}>;
+  include: {
+    gift: { include: { image: true } }
+    transactions: { select: { quantity: true } }
+  }
+}>
 
 type DashboardWishlistListProps = {
-  eventId: string;
-  wishlistId: string;
-  wishlistGifts: WishlistGiftWithGift[];
-  categories: Category[];
-};
+  eventId: string
+  wishlistId: string
+  wishlistGifts: WishlistGiftWithGift[]
+  categories: Category[]
+}
 
 const ESTADO_OPTIONS = [
   { value: 'received', label: 'Regalo recibido' },
   { value: 'open_contribution', label: 'Contribución abierta' },
   { value: 'in_list', label: 'En lista' },
   { value: 'archived', label: 'Archivado' },
-] as const;
+] as const
 
 function getEstado(wishlistGift: WishlistGiftWithGift) {
-  const price = Number(wishlistGift.gift.price) || 0;
-  const contributed = Number(wishlistGift.groupGiftParts) || 0;
-  const groupPercentage = computePercentage(price, contributed);
+  const price = Number(wishlistGift.gift.price) || 0
+  const contributed = Number(wishlistGift.groupGiftParts) || 0
+  const groupPercentage = computePercentage(price, contributed)
 
   if (wishlistGift.isReceived) {
     return {
@@ -41,16 +54,16 @@ function getEstado(wishlistGift: WishlistGiftWithGift) {
       label: 'Archivado',
       percentage: wishlistGift.isFullyPaid ? 100 : groupPercentage,
       className: 'bg-gray100 text-textTertiary border-transparent',
-    };
+    }
   }
 
-  if (wishlistGift.isFullyPaid) {
+  if (wishlistGift.isFullyPaid || wishlistGift.isManuallyReceived) {
     return {
       status: 'received' as const,
       label: 'Regalo recibido',
       percentage: 100,
       className: 'bg-success/10 text-success border-transparent',
-    };
+    }
   }
 
   if (wishlistGift.isGroupGift) {
@@ -59,7 +72,7 @@ function getEstado(wishlistGift: WishlistGiftWithGift) {
       label: 'Contribución abierta',
       percentage: groupPercentage,
       className: 'bg-warning/10 text-warning border-transparent',
-    };
+    }
   }
 
   return {
@@ -67,7 +80,7 @@ function getEstado(wishlistGift: WishlistGiftWithGift) {
     label: 'En lista',
     percentage: 0,
     className: 'bg-gray100 text-textTertiary border-transparent',
-  };
+  }
 }
 
 export default function DashboardWishlistList({
@@ -76,49 +89,83 @@ export default function DashboardWishlistList({
   wishlistGifts,
   categories,
 }: DashboardWishlistListProps) {
-  const [search, setSearch] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [search, setSearch] = useState('')
+  const [estadoFilter, setEstadoFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
+  const { setManuallyReceived } = useWishlistGift()
+
+  const handleToggleManuallyReceived = async (
+    wishlistGiftId: string,
+    isManuallyReceived: boolean
+  ) => {
+    setTogglingIds(previous => new Set(previous).add(wishlistGiftId))
+    await setManuallyReceived({ wishlistGiftId, isManuallyReceived })
+    setTogglingIds(previous => {
+      const next = new Set(previous)
+      next.delete(wishlistGiftId)
+      return next
+    })
+  }
 
   const categoryNameById = new Map(
     categories.map(category => [category.id, category.name])
-  );
-  const receivedCount = wishlistGifts.filter(
-    wishlistGift => wishlistGift.isFullyPaid
-  ).length;
+  )
+  const activeWishlistGifts = wishlistGifts.filter(
+    wishlistGift => !wishlistGift.isReceived
+  )
+  const addedGiftCount = activeWishlistGifts.reduce(
+    (sum, wishlistGift) => sum + wishlistGift.quantity,
+    0
+  )
+  const totalGiftsValue = activeWishlistGifts.reduce(
+    (sum, wishlistGift) =>
+      sum + (Number(wishlistGift.gift.price) || 0) * wishlistGift.quantity,
+    0
+  )
 
   const filteredWishlistGifts = wishlistGifts.filter(wishlistGift => {
-    const estado = getEstado(wishlistGift);
+    const estado = getEstado(wishlistGift)
 
-    if (!estadoFilter && estado.status === 'archived') return false;
+    if (!estadoFilter && estado.status === 'archived') return false
 
     const matchesSearch = wishlistGift.gift.name
       .toLowerCase()
-      .includes(search.trim().toLowerCase());
-    const matchesEstado = !estadoFilter || estado.status === estadoFilter;
+      .includes(search.trim().toLowerCase())
+    const matchesEstado = !estadoFilter || estado.status === estadoFilter
     const matchesCategory =
-      !categoryFilter || wishlistGift.gift.categoryId === categoryFilter;
+      !categoryFilter || wishlistGift.gift.categoryId === categoryFilter
 
-    return matchesSearch && matchesEstado && matchesCategory;
-  });
+    return matchesSearch && matchesEstado && matchesCategory
+  })
 
   return (
     <div className="flex flex-col gap-6 w-full">
       <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-[unset] sm:max-h-24">
-        <div className="flex flex-col gap-1 px-6 py-5 w-full justify-center">
+        <div className="flex flex-col gap-1 p-4 sm:p-6 w-full justify-center">
           <h2 className="text-lg font-bold">Regalos agregados a tu lista</h2>
-          <p className="text-sm text-textTertiary">
-            Según la cantidad de invitados te recomendamos tener 20 regalos
-          </p>
         </div>
-        <div className="flex gap-3 items-center p-6">
-          <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
+        <div className="flex gap-3 items-center p-4 sm:p-6 w-full sm:w-1/2">
+          <div className="flex shrink-0 justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
             <IoGiftOutline className="text-xl" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold">{receivedCount}</span>
+            <span className="text-lg font-bold">{addedGiftCount}</span>
             <span className="text-sm whitespace-nowrap text-textTertiary">
-              Regalos recibidos
+              Regalos agregados
+            </span>
+          </div>
+        </div>
+        <div className="flex gap-3 items-center p-4 sm:p-6 w-full sm:w-1/2">
+          <div className="flex shrink-0 justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
+            <IoCashOutline className="text-xl" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-lg font-bold text-textPrimary">
+              Gs. {totalGiftsValue.toLocaleString('es-PY')}
+            </span>
+            <span className="text-sm whitespace-nowrap text-textTertiary">
+              en tu lista de regalos
             </span>
           </div>
         </div>
@@ -140,7 +187,7 @@ export default function DashboardWishlistList({
           value={estadoFilter}
           onChange={event => setEstadoFilter(event.target.value)}
         >
-          <option value="">Estado</option>
+          <option value="">Estado: Todos</option>
           {ESTADO_OPTIONS.map(option => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -163,10 +210,11 @@ export default function DashboardWishlistList({
 
       <div className="bg-white rounded-lg">
         <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50 rounded-t-lg">
-          <div className="col-span-4">Nombre y categoría</div>
+          <div className="col-span-3">Nombre y categoría</div>
           <div className="col-span-2">Tipo</div>
           <div className="col-span-2">Precio</div>
           <div className="col-span-2">Estado</div>
+          <div className="col-span-1">Recibido</div>
           <div className="col-span-2" />
         </div>
 
@@ -177,14 +225,14 @@ export default function DashboardWishlistList({
         )}
 
         {filteredWishlistGifts.map(wishlistGift => {
-          const estado = getEstado(wishlistGift);
+          const estado = getEstado(wishlistGift)
 
           return (
             <div
               key={wishlistGift.id}
               className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 group hover:bg-gray-50"
             >
-              <div className="flex col-span-4 gap-3 items-center">
+              <div className="flex col-span-3 gap-3 items-center">
                 <div className="flex overflow-hidden justify-center items-center w-12 h-12 bg-gray-200 rounded">
                   {wishlistGift.gift.image?.url ? (
                     <Image
@@ -213,7 +261,23 @@ export default function DashboardWishlistList({
               </div>
 
               <div className="col-span-2 text-sm">
-                Gs.{Number(wishlistGift.gift.price).toLocaleString('es-PY')}
+                <p>
+                  Gs.{Number(wishlistGift.gift.price).toLocaleString('es-PY')}
+                </p>
+                {!wishlistGift.isGroupGift &&
+                  wishlistGift.quantity > 1 &&
+                  (() => {
+                    const { completedQuantity } = getQuantityProgress(
+                      wishlistGift.quantity,
+                      wishlistGift.transactions
+                    )
+                    return (
+                      <p className="text-gray-500">
+                        {completedQuantity} de {wishlistGift.quantity} recibido
+                        {completedQuantity === 1 ? '' : 's'}
+                      </p>
+                    )
+                  })()}
               </div>
 
               <div className="flex col-span-2 gap-2 items-center text-sm">
@@ -221,13 +285,37 @@ export default function DashboardWishlistList({
                   <IoSparkles className="mr-1" />
                   {estado.label}
                 </Badge>
-                {wishlistGift.isGroupGift && !wishlistGift.isFullyPaid && (
-                  <span className="text-gray-500">{estado.percentage}%</span>
+                {wishlistGift.isGroupGift &&
+                  estado.status === 'open_contribution' && (
+                    <span className="text-gray-500">{estado.percentage}%</span>
+                  )}
+              </div>
+
+              <div className="flex col-span-1 gap-2 items-center">
+                {!wishlistGift.isReceived && (
+                  <>
+                    <span className="text-xs text-gray-500 sm:hidden">
+                      Recibido
+                    </span>
+                    <Switch
+                      checked={
+                        wishlistGift.isFullyPaid ||
+                        wishlistGift.isManuallyReceived
+                      }
+                      disabled={
+                        wishlistGift.isFullyPaid ||
+                        togglingIds.has(wishlistGift.id)
+                      }
+                      onCheckedChange={checked =>
+                        handleToggleManuallyReceived(wishlistGift.id, checked)
+                      }
+                    />
+                  </>
                 )}
               </div>
 
               {!wishlistGift.isReceived && (
-                <div className="flex col-span-2 gap-2 justify-end opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="flex col-span-2 gap-2 justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                   <EditWishlistGiftDialog
                     wishlistGiftId={wishlistGift.id}
                     wishlistId={wishlistId}
@@ -236,9 +324,15 @@ export default function DashboardWishlistList({
                     categories={categories}
                     isFavoriteGift={wishlistGift.isFavoriteGift}
                     isGroupGift={wishlistGift.isGroupGift}
-                    disabled={
-                      wishlistGift.isFullyPaid ||
-                      Number(wishlistGift.groupGiftParts) > 0
+                    quantity={wishlistGift.quantity}
+                    minQuantity={wishlistGift.reservedQuantity}
+                    lockPrice={
+                      !wishlistGift.isGroupGift &&
+                      wishlistGift.reservedQuantity > 0
+                    }
+                    allowTypeChange={
+                      wishlistGift.reservedQuantity === 0 &&
+                      wishlistGift.reservedAmount === 0
                     }
                   />
                   <DeleteWishlistGiftDialog
@@ -249,9 +343,9 @@ export default function DashboardWishlistList({
                 </div>
               )}
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

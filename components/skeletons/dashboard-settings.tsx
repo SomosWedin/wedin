@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DashboardSettingsSkeleton() {
   return (
@@ -35,5 +35,5 @@ export default function DashboardSettingsSkeleton() {
 
       <Skeleton className="h-10 w-64" />
     </div>
-  );
+  )
 }

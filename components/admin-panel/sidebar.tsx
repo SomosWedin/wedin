@@ -1,19 +1,20 @@
-'use client';
+'use client'
 
-import { Menu } from '@/components/admin-panel/menu';
-import { SidebarToggle } from '@/components/admin-panel/sidebar-toggle';
-import { Button } from '@/components/ui/button';
-import { useSidebar } from '@/hooks/use-sidebar';
-import { useStore } from '@/hooks/use-store';
-import { cn } from '@/lib/utils';
-import Link from 'next/link';
-import Image from 'next/image';
-import wedinIcon from '@/public/assets/w-icon.svg';
+import Image from 'next/image'
+import Link from 'next/link'
+import { Menu } from '@/components/admin-panel/menu'
+import { SidebarToggle } from '@/components/admin-panel/sidebar-toggle'
+import { Button } from '@/components/ui/button'
+import { useSidebar } from '@/hooks/use-sidebar'
+import { useStore } from '@/hooks/use-store'
+import { cn } from '@/lib/utils'
+import wedinIcon from '@/public/assets/w-icon.svg'
+import wedinLogo from '@/public/assets/w-logo.svg'
 
 export function Sidebar() {
-  const sidebar = useStore(useSidebar, x => x);
-  if (!sidebar) return null;
-  const { isOpen, toggleOpen, getOpenState, setIsHover, settings } = sidebar;
+  const sidebar = useStore(useSidebar, x => x)
+  if (!sidebar) return null
+  const { isOpen, toggleOpen, getOpenState, setIsHover, settings } = sidebar
   return (
     <aside
       className={cn(
@@ -40,22 +41,16 @@ export function Sidebar() {
             href="/dashboard"
             className="flex gap-1 items-center text-wedinMain"
           >
-            <Image src={wedinIcon} alt="wedin icon" width={46} />
-            <h1
-              className={cn(
-                'font-bold text-xl whitespace-nowrap transition-[transform,opacity,display] ease-in-out duration-300',
-                !getOpenState()
-                  ? '-translate-x-96 opacity-0 hidden'
-                  : 'translate-x-0 opacity-100'
-              )}
-            >
-              wedin
-            </h1>
+            <Image
+              src={getOpenState() ? wedinLogo : wedinIcon}
+              alt="wedin"
+              width={getOpenState() ? 110 : 40}
+            />
           </Link>
         </Button>
 
         <Menu isOpen={getOpenState()} />
       </div>
     </aside>
-  );
+  )
 }

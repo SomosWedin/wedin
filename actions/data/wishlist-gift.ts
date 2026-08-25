@@ -1,53 +1,61 @@
-'use server';
+'use server'
 
-import prismaClient from '@/prisma/client';
+import type { Prisma } from '@prisma/client'
+import { revalidatePath } from 'next/cache'
+import type { z } from 'zod'
+import prismaClient from '@/prisma/client'
 import {
   WishlistGiftCreateSchema,
   WishlistGiftDeleteSchema,
   WishlistGiftEditSchema,
+  WishlistGiftReceivedToggleSchema,
   WishlistGiftsCreateSchema,
-} from '@/schemas/form';
-import { GetwishlistGiftsParams } from '@/schemas/params';
-import type { Prisma } from '@prisma/client';
-import { revalidatePath } from 'next/cache';
-import type { z } from 'zod';
-import { getErrorMessage } from '../helper';
+} from '@/schemas/form'
+import { GetwishlistGiftsParams } from '@/schemas/params'
+import { getErrorMessage } from '../helper'
+import { recomputeWishlistGiftProgress } from './transaction'
 
 export async function getWishlistGifts({
   searchParams,
 }: {
-  searchParams?: z.infer<typeof GetwishlistGiftsParams>;
+  searchParams?: z.infer<typeof GetwishlistGiftsParams>
 }) {
-  const validatedParams = GetwishlistGiftsParams.safeParse(searchParams);
+  const validatedParams = GetwishlistGiftsParams.safeParse(searchParams)
 
-  if (!validatedParams.success) return [];
+  if (!validatedParams.success) return []
 
   const { wishlistId, name, category, page, itemsPerPage } =
-    validatedParams.data;
-  const query: Prisma.WishlistGiftWhereInput = { wishlistId };
+    validatedParams.data
+  const query: Prisma.WishlistGiftWhereInput = { wishlistId }
 
   if (name || category) {
     query.gift = {
       ...(name ? { name: { contains: name.trim(), mode: 'insensitive' } } : {}),
       ...(category ? { categoryId: category } : {}),
-    };
+    }
   }
 
   const skip =
-    page && itemsPerPage ? (Number(page) - 1) * itemsPerPage : undefined;
-  const take = itemsPerPage ? Number(itemsPerPage) : undefined;
+    page && itemsPerPage ? (Number(page) - 1) * itemsPerPage : undefined
+  const take = itemsPerPage ? Number(itemsPerPage) : undefined
 
   try {
     return await prismaClient.wishlistGift.findMany({
       where: query,
-      include: { gift: { include: { image: true } } },
+      include: {
+        gift: { include: { image: true } },
+        transactions: {
+          where: { status: 'COMPLETED' },
+          select: { quantity: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       skip,
       take,
-    });
+    })
   } catch (error) {
-    console.error('Error retrieving wishlist gifts:', error);
-    return [];
+    console.error('Error retrieving wishlist gifts:', error)
+    return []
   }
 }
 
@@ -55,122 +63,179 @@ export async function getWishlistGift(wishlistId: string, giftId: string) {
   try {
     return await prismaClient.wishlistGift.findFirst({
       where: { wishlistId, giftId, isReceived: false },
-    });
+    })
   } catch (error) {
-    console.error('Error retrieving wishlist gift:', error);
-    return null;
+    console.error('Error retrieving wishlist gift:', error)
+    return null
   }
 }
 
 export async function createWishlistGift(
   formData: z.infer<typeof WishlistGiftCreateSchema>
 ) {
-  const validatedFields = WishlistGiftCreateSchema.safeParse(formData);
+  const validatedFields = WishlistGiftCreateSchema.safeParse(formData)
 
   if (!validatedFields.success) {
-    return { error: 'Datos inválidos, por favor verifica tus datos.' };
+    return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
-  const { wishlistId, giftId, eventId, isFavoriteGift, isGroupGift } =
-    validatedFields.data;
+  const { wishlistId, giftId, eventId, isFavoriteGift, isGroupGift, quantity } =
+    validatedFields.data
 
-  const existing = await getWishlistGift(wishlistId, giftId);
+  const existing = await getWishlistGift(wishlistId, giftId)
 
   if (existing) {
-    return { error: 'Este regalo ya está en tu lista' };
+    return { error: 'Este regalo ya está en tu lista' }
   }
 
   try {
     const wishlistGift = await prismaClient.wishlistGift.create({
-      data: { wishlistId, giftId, eventId, isFavoriteGift, isGroupGift },
-    });
+      data: {
+        wishlistId,
+        giftId,
+        eventId,
+        isFavoriteGift,
+        isGroupGift,
+        quantity: isGroupGift ? 1 : quantity,
+      },
+    })
 
-    revalidatePath('/wishlist');
-    revalidatePath('/gifts');
-    return { wishlistGiftId: wishlistGift.id };
+    revalidatePath('/wishlist')
+    revalidatePath('/gifts')
+    return { wishlistGiftId: wishlistGift.id }
   } catch (error) {
-    console.error('Error creating wishlist gift:', error);
-    return { error: getErrorMessage(error) };
+    console.error('Error creating wishlist gift:', error)
+    return { error: getErrorMessage(error) }
   }
 }
 
 export async function createWishlistGifts(
   formData: z.infer<typeof WishlistGiftsCreateSchema>
 ) {
-  const validatedFields = WishlistGiftsCreateSchema.safeParse(formData);
+  const validatedFields = WishlistGiftsCreateSchema.safeParse(formData)
 
   if (!validatedFields.success) {
-    return { error: 'Datos inválidos, por favor verifica tus datos.' };
+    return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
-  const { wishlistId, giftIds, eventId } = validatedFields.data;
+  const { wishlistId, giftIds, eventId } = validatedFields.data
 
   try {
     const existing = await prismaClient.wishlistGift.findMany({
       where: { wishlistId, giftId: { in: giftIds }, isReceived: false },
       select: { giftId: true },
-    });
-    const existingGiftIds = new Set(existing.map(wishlistGift => wishlistGift.giftId));
-    const newGiftIds = giftIds.filter(giftId => !existingGiftIds.has(giftId));
+    })
+    const existingGiftIds = new Set(
+      existing.map(wishlistGift => wishlistGift.giftId)
+    )
+    const newGiftIds = giftIds.filter(giftId => !existingGiftIds.has(giftId))
 
     if (newGiftIds.length > 0) {
       await prismaClient.wishlistGift.createMany({
         data: newGiftIds.map(giftId => ({ wishlistId, giftId, eventId })),
-      });
+      })
     }
 
-    revalidatePath('/wishlist');
-    revalidatePath('/gifts');
-    return { success: true };
+    revalidatePath('/wishlist')
+    revalidatePath('/gifts')
+    return { success: true }
   } catch (error) {
-    console.error('Error creating wishlist gifts:', error);
-    return { error: getErrorMessage(error) };
+    console.error('Error creating wishlist gifts:', error)
+    return { error: getErrorMessage(error) }
   }
 }
 
 export async function editWishlistGift(
   formData: z.infer<typeof WishlistGiftEditSchema>
 ) {
-  const validatedFields = WishlistGiftEditSchema.safeParse(formData);
+  const validatedFields = WishlistGiftEditSchema.safeParse(formData)
 
   if (!validatedFields.success) {
-    return { error: 'Datos inválidos, por favor verifica tus datos.' };
+    return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
-  const { wishlistGiftId, giftId, isFavoriteGift, isGroupGift } =
-    validatedFields.data;
+  const { wishlistGiftId, giftId, isFavoriteGift, isGroupGift, quantity } =
+    validatedFields.data
 
   try {
+    const current = await prismaClient.wishlistGift.findUnique({
+      where: { id: wishlistGiftId },
+      select: { isGroupGift: true },
+    })
+
+    if (!current) {
+      return { error: 'Regalo no encontrado.' }
+    }
+
+    const isChangingType = isGroupGift !== current.isGroupGift
+
     const result = await prismaClient.wishlistGift.updateMany({
       where: {
         id: wishlistGiftId,
-        transactions: { none: { status: 'COMPLETED' } },
+        reservedQuantity: { lte: isGroupGift ? 0 : quantity },
+        ...(isChangingType ? { reservedAmount: 0 } : {}),
       },
-      data: { giftId, isFavoriteGift, isGroupGift },
-    });
+      data: {
+        giftId,
+        isFavoriteGift,
+        isGroupGift,
+        quantity: isGroupGift ? 1 : quantity,
+      },
+    })
 
     if (result.count === 0) {
-      return { error: 'No se puede editar un regalo que ya tiene contribuciones.' };
+      return {
+        error: isChangingType
+          ? 'No se puede cambiar el tipo de un regalo con contribuciones.'
+          : 'La cantidad no puede ser menor a las unidades ya reservadas o vendidas.',
+      }
     }
 
-    revalidatePath('/wishlist');
-    return { success: true };
+    await recomputeWishlistGiftProgress(wishlistGiftId)
+
+    revalidatePath('/wishlist')
+    return { success: true }
   } catch (error) {
-    console.error('Error editing wishlist gift:', error);
-    return { error: getErrorMessage(error) };
+    console.error('Error editing wishlist gift:', error)
+    return { error: getErrorMessage(error) }
+  }
+}
+
+export async function setWishlistGiftManuallyReceived(
+  formData: z.infer<typeof WishlistGiftReceivedToggleSchema>
+) {
+  const validatedFields = WishlistGiftReceivedToggleSchema.safeParse(formData)
+
+  if (!validatedFields.success) {
+    return { error: 'Datos inválidos, por favor verifica tus datos.' }
+  }
+
+  const { wishlistGiftId, isManuallyReceived } = validatedFields.data
+
+  try {
+    await prismaClient.wishlistGift.update({
+      where: { id: wishlistGiftId },
+      data: { isManuallyReceived },
+    })
+
+    revalidatePath('/wishlist')
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating wishlist gift received flag:', error)
+    return { error: getErrorMessage(error) }
   }
 }
 
 export async function deleteWishlistGift(
   formData: z.infer<typeof WishlistGiftDeleteSchema>
 ) {
-  const validatedFields = WishlistGiftDeleteSchema.safeParse(formData);
+  const validatedFields = WishlistGiftDeleteSchema.safeParse(formData)
 
   if (!validatedFields.success) {
-    return { error: 'Datos inválidos, por favor verifica tus datos.' };
+    return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
-  const { wishlistId, giftId } = validatedFields.data;
+  const { wishlistId, giftId } = validatedFields.data
 
   try {
     // Transaction.wishlistGiftId is a required relation, so a hard delete
@@ -180,17 +245,19 @@ export async function deleteWishlistGift(
     const archived = await prismaClient.wishlistGift.updateMany({
       where: { wishlistId, giftId, transactions: { some: {} } },
       data: { isReceived: true },
-    });
+    })
 
     if (archived.count === 0) {
-      await prismaClient.wishlistGift.deleteMany({ where: { wishlistId, giftId } });
+      await prismaClient.wishlistGift.deleteMany({
+        where: { wishlistId, giftId },
+      })
     }
 
-    revalidatePath('/wishlist');
-    revalidatePath('/gifts');
-    return { success: true };
+    revalidatePath('/wishlist')
+    revalidatePath('/gifts')
+    return { success: true }
   } catch (error) {
-    console.error('Error deleting wishlist gift:', error);
-    return { error: getErrorMessage(error) };
+    console.error('Error deleting wishlist gift:', error)
+    return { error: getErrorMessage(error) }
   }
 }

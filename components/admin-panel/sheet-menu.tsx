@@ -1,21 +1,31 @@
-import Link from 'next/link';
-import { MenuIcon, PanelsTopLeft } from 'lucide-react';
-import Image from 'next/image';
-import wedinIcon from '@/public/assets/w-icon.svg';
+'use client'
 
-import { Button } from '@/components/ui/button';
-import { Menu } from '@/components/admin-panel/menu';
+import { MenuIcon } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { Menu } from '@/components/admin-panel/menu'
+import { Button } from '@/components/ui/button'
 import {
   Sheet,
-  SheetHeader,
   SheetContent,
-  SheetTrigger,
+  SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import wedinLogo from '@/public/assets/w-logo.svg'
 
 export function SheetMenu() {
+  const [open, setOpen] = useState(false)
+  const pathname = usePathname()
+
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
+
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger className="lg:hidden" asChild>
         <Button className="h-8" variant="outline" size="icon">
           <MenuIcon size={20} />
@@ -26,21 +36,19 @@ export function SheetMenu() {
         side="left"
       >
         <SheetHeader>
+          <SheetTitle className="sr-only">Menú</SheetTitle>
           <Button
             className="flex justify-center items-center pb-2 pt-1"
             variant="link"
             asChild
           >
-            <Link href="/dashboard" className="flex items-center gap-1">
-              <Image src={wedinIcon} alt="wedin icon" width={46} />
-              <SheetTitle className="font-bold text-lg text-wedinMain">
-                wedin
-              </SheetTitle>
+            <Link href="/dashboard">
+              <Image src={wedinLogo} alt="wedin" width={110} />
             </Link>
           </Button>
         </SheetHeader>
         <Menu isOpen />
       </SheetContent>
     </Sheet>
-  );
+  )
 }

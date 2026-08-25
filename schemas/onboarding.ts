@@ -1,5 +1,5 @@
-import { z, boolean } from 'zod';
-import { EventType } from '@prisma/client';
+import { EventType } from '@prisma/client'
+import { boolean, z } from 'zod'
 
 export const StepTwoSchema = z
   .object({
@@ -29,7 +29,7 @@ export const StepTwoSchema = z
           inclusive: true,
           message: 'Nombre muy corto',
           path: ['partnerName'],
-        });
+        })
       }
 
       // Validate partnerLastName
@@ -41,18 +41,18 @@ export const StepTwoSchema = z
           inclusive: true,
           message: 'Apellido muy corto',
           path: ['partnerLastName'],
-        });
+        })
       }
     }
-  });
+  })
 
 export const StepThreeSchema = z.object({
   eventCountry: z.string().optional(),
   eventCity: z.string().optional(),
   isDecidingEventLocation: boolean(),
-});
+})
 
 export const StepFourSchema = z.object({
   eventDate: z.date().optional(),
   isDecidingEventDate: boolean(),
-});
+})

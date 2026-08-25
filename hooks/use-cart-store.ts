@@ -1,30 +1,33 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 export type CartItem = {
-  id: string;
-  wishlistGiftId: string;
-  giftName: string;
-  giftImageUrl: string | null;
-  amount: string;
-  isGroupGift: boolean;
-};
+  id: string
+  wishlistGiftId: string
+  giftName: string
+  giftImageUrl: string | null
+  amount: string
+  isGroupGift: boolean
+  quantity: number
+  unitPrice: string
+}
 
 type CartState = {
-  items: CartItem[];
-  addItem: (item: Omit<CartItem, 'id'>) => void;
-  removeItem: (id: string) => void;
-  updateItemAmount: (id: string, amount: string) => void;
-  clear: () => void;
-};
+  items: CartItem[]
+  addItem: (item: Omit<CartItem, 'id'>) => void
+  removeItem: (id: string) => void
+  updateItemAmount: (id: string, amount: string) => void
+  updateItemQuantity: (id: string, quantity: number) => void
+  clear: () => void
+}
 
-type CartStore = ReturnType<typeof createCartStore>;
+type CartStore = ReturnType<typeof createCartStore>
 
 // A guest could have multiple couples' sites open in the same browser, so
 // the store — and its localStorage key — must be scoped per event, not
 // global like `use-sidebar.ts`. One store instance is created per eventId
 // and cached for the lifetime of the tab.
-const storesByEventId = new Map<string, CartStore>();
+const storesByEventId = new Map<string, CartStore>()
 
 function createCartStore(eventId: string) {
   return create<CartState>()(
@@ -45,6 +48,18 @@ function createCartStore(eventId: string) {
               item.id === id ? { ...item, amount } : item
             ),
           })),
+        updateItemQuantity: (id, quantity) =>
+          set(state => ({
+            items: state.items.map(item =>
+              item.id === id
+                ? {
+                    ...item,
+                    quantity,
+                    amount: String((Number(item.unitPrice) || 0) * quantity),
+                  }
+                : item
+            ),
+          })),
         clear: () => set({ items: [] }),
       }),
       {
@@ -52,14 +67,14 @@ function createCartStore(eventId: string) {
         storage: createJSONStorage(() => localStorage),
       }
     )
-  );
+  )
 }
 
 export function useCartStore(eventId: string): CartStore {
-  let store = storesByEventId.get(eventId);
+  let store = storesByEventId.get(eventId)
   if (!store) {
-    store = createCartStore(eventId);
-    storesByEventId.set(eventId, store);
+    store = createCartStore(eventId)
+    storesByEventId.set(eventId, store)
   }
-  return store;
+  return store
 }

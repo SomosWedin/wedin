@@ -1,10 +1,10 @@
-import { ContentLayout } from '@/components/admin-panel/content-layout';
-import DashboardEventDetails from '@/components/dashboard/dashboard-event-details';
+import { ContentLayout } from '@/components/admin-panel/content-layout'
+import DashboardEventCover from '@/components/dashboard/dashboard-event-cover'
 
-export default function EventDetailsPage() {
+export default function EventCoverPage() {
   return (
     <ContentLayout title="Presentación">
-      <DashboardEventDetails />
+      <DashboardEventCover />
     </ContentLayout>
-  );
+  )
 }

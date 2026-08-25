@@ -1,26 +1,26 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { IoCartOutline } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link'
+import { IoCartOutline } from 'react-icons/io5'
+import CartItemRow from '@/components/cart/cart-item-row'
+import { useIsPreviewMode } from '@/components/guest/preview-mode'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import CartItemRow from '@/components/cart/cart-item-row';
-import type { CartItem } from '@/hooks/use-cart-store';
+} from '@/components/ui/dialog'
+import type { CartItem } from '@/hooks/use-cart-store'
 
 type CartDrawerProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  items: CartItem[];
-  total: number;
-  onRemoveItem: (id: string) => void;
-  onEditItem: (item: CartItem) => void;
-};
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  items: CartItem[]
+  total: number
+  onRemoveItem: (id: string) => void
+  onEditItem: (item: CartItem) => void
+}
 
 export default function CartDrawer({
   open,
@@ -30,7 +30,7 @@ export default function CartDrawer({
   onRemoveItem,
   onEditItem,
 }: CartDrawerProps) {
-  const pathname = usePathname();
+  const isPreviewMode = useIsPreviewMode()
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -79,13 +79,19 @@ export default function CartDrawer({
               >
                 Cancelar
               </Button>
-              <Button variant="success" className="flex-[7]" asChild>
-                <Link href={`${pathname}/checkout`}>Ir a pagar</Link>
-              </Button>
+              {isPreviewMode ? (
+                <Button variant="success" className="flex-[7]" disabled>
+                  Ir a pagar
+                </Button>
+              ) : (
+                <Button variant="success" className="flex-[7]" asChild>
+                  <Link href={'/checkout'}>Ir a pagar</Link>
+                </Button>
+              )}
             </div>
           </div>
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

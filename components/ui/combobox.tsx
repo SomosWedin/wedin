@@ -1,70 +1,71 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { LuPlusCircle } from 'react-icons/lu';
+import { Check, ChevronsUpDown, X } from 'lucide-react'
+import * as React from 'react'
+import { LuPlusCircle } from 'react-icons/lu'
+import { Button } from '@/components/ui/button'
 import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandList,
   CommandInput,
   CommandItem,
-} from '@/components/ui/command';
+  CommandList,
+} from '@/components/ui/command'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { ScrollArea } from './scroll-area';
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
+import { ScrollArea } from './scroll-area'
 
 export type ComboboxOptions = {
-  value: string;
-  label: string;
-};
+  value: string
+  label: string
+}
 interface ComboboxProps {
-  options: ComboboxOptions[];
-  selected: string;
-  className?: string;
-  placeholder?: string;
-  onChange?: (event: string | string[]) => void;
-  onCreate?: (value: string) => void;
-  width?: string;
-  searchPlaceholder?: string;
+  options: ComboboxOptions[]
+  selected: string
+  className?: string
+  placeholder?: string
+  onChange?: (event: string | string[]) => void
+  onCreate?: (value: string) => void
+  width?: string
+  searchPlaceholder?: string
+  clearable?: boolean
 }
 
 export function Combobox({
-  options,
-  selected,
   className,
-  placeholder,
+  clearable,
   onChange,
   onCreate,
+  options,
+  placeholder,
+  selected,
   width,
-  searchPlaceholder,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false);
-  const [query, setQuery] = React.useState<string>('');
+  const [open, setOpen] = React.useState(false)
+  const [query, setQuery] = React.useState<string>('')
 
   const handleSelect = (label: string) => {
     if (onChange) {
-      onChange(label);
+      onChange(label)
     }
-    setOpen(false);
-  };
+    setOpen(false)
+  }
 
   const handleCreate = () => {
     if (onCreate && !options.some(option => option.value === query)) {
-      onCreate(query);
-      setQuery('');
+      onCreate(query)
+      setQuery('')
     }
-  };
+  }
 
   const renderSelectedItems = () => {
-    return options.find(item => item.label === selected)?.label || '';
-  };
+    return options.find(item => item.label === selected)?.label || ''
+  }
 
   return (
     <div className={cn('block', className)}>
@@ -88,7 +89,29 @@ export function Combobox({
                 {placeholder ?? 'Select Item...'}
               </p>
             )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            {clearable && selected ? (
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label="Limpiar selección"
+                className="ml-2 shrink-0 rounded-sm p-0.5 hover:bg-gray-100"
+                onClick={event => {
+                  event.stopPropagation()
+                  onChange?.('')
+                }}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    onChange?.('')
+                  }
+                }}
+              >
+                <X className="h-4 w-4 opacity-50" />
+              </span>
+            ) : (
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className={`${width} max-w-sm p-0 bg-white`}>
@@ -155,5 +178,5 @@ export function Combobox({
         </PopoverContent>
       </Popover>
     </div>
-  );
+  )
 }

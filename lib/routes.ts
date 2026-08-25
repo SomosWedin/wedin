@@ -1,14 +1,6 @@
-export const publicRoutes: string[] = [
-  '/e',
-  '/email-verfiy',
-];
+export const publicRoutes: string[] = ['/e']
 
-export const authRoutes: string[] = [
-  '/login',
-  '/register',
-  '/password-reset',
-  '/new-password',
-];
+export const authRoutes: string[] = ['/login']
 
 export const protectedRoutes: string[] = [
   '/gifts',
@@ -17,15 +9,16 @@ export const protectedRoutes: string[] = [
   '/dashboard',
   '/event-details',
   '/event-settings',
+  '/preview',
   '/transactions',
   '/wishlist',
   '/gifts-received',
-];
+]
 
-export const adminRoutes: string[] = ['/admin'];
+export const adminRoutes: string[] = ['/admin']
 
-export const onboardingRoute: string[] = ['/onboarding'];
+export const onboardingRoute: string[] = ['/onboarding']
 
-export const apiAuthPrefix: string = '/api/auth';
+export const apiAuthPrefix: string = '/api/auth'
 
-export const DEFAULT_LOGIN_REDIRECT_ROUTE = '/dashboard';
+export const DEFAULT_LOGIN_REDIRECT_ROUTE = '/dashboard'

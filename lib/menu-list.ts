@@ -1,33 +1,33 @@
 import {
-  LucideIcon,
-  House,
-  Sparkles,
   Gift,
+  House,
   List,
+  type LucideIcon,
   SettingsIcon,
-  Wallet
-} from 'lucide-react';
+  Sparkles,
+  Wallet,
+} from 'lucide-react'
 
 type Submenu = {
-  href: string;
-  label: string;
-  active?: boolean;
-};
+  href: string
+  label: string
+  active?: boolean
+}
 
 type Menu = {
-  href: string;
-  label: string;
-  active?: boolean;
-  icon: LucideIcon;
-  submenus?: Submenu[];
-};
+  href: string
+  label: string
+  active?: boolean
+  icon: LucideIcon
+  submenus?: Submenu[]
+}
 
 type Group = {
-  groupLabel: string;
-  menus: Menu[];
-};
+  groupLabel: string
+  menus: Menu[]
+}
 
-export function getMenuList(pathname: string): Group[] {
+export function getMenuList(): Group[] {
   return [
     {
       groupLabel: '',
@@ -54,19 +54,19 @@ export function getMenuList(pathname: string): Group[] {
           icon: List,
         },
         {
-          href: "",
-          label: "Generales",
+          href: '',
+          label: 'Generales',
           icon: SettingsIcon,
           submenus: [
             {
-              href: "/event-settings",
-              label: "Detalles de tu evento"
+              href: '/event-settings',
+              label: 'Detalles de tu evento',
             },
             {
-              href: "/bank-details",
-              label: "Datos de tu cuenta"
-            }
-          ]
+              href: '/bank-details',
+              label: 'Datos de tu cuenta',
+            },
+          ],
         },
       ],
     },
@@ -85,5 +85,5 @@ export function getMenuList(pathname: string): Group[] {
         },
       ],
     },
-  ];
+  ]
 }

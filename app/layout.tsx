@@ -1,24 +1,24 @@
-import type { Metadata } from 'next';
-import { auth } from '@/auth';
-import { SessionProvider } from 'next-auth/react';
-import { Toaster } from '@/components/ui/toaster';
-import Provider from '@/utils/Provider';
-import { Inter } from 'next/font/google';
-import '../styles/globals.css';
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import { SessionProvider } from 'next-auth/react'
+import { auth } from '@/auth'
+import { Toaster } from '@/components/ui/toaster'
+import Provider from '@/utils/Provider'
+import '../styles/globals.css'
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Wedin',
   description: 'Organize your wedding with Wedin',
-};
+}
 
 export default async function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
-  const session = await auth();
+  const session = await auth()
   return (
     <SessionProvider session={session}>
       <html lang="en">
@@ -28,5 +28,5 @@ export default async function RootLayout({
         </body>
       </html>
     </SessionProvider>
-  );
+  )
 }
