@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { IoGiftOutline, IoLockClosedOutline } from 'react-icons/io5'
 import type { z } from 'zod'
+import { INVITEES_SERVICE_FEE_RATE } from '@/actions/data/fee'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -94,12 +95,11 @@ export default function CheckoutForm({
   if (!hasHydrated || !cartItems) return null
   if (cartItems.length === 0 && !loading) return null
 
-  // Here
   const subtotal = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
     0
   )
-  const serviceFee = paymentMethod === 'CARD' ? Math.round(subtotal * 0.03) : 0
+  const serviceFee = Math.round(subtotal * INVITEES_SERVICE_FEE_RATE)
   const total = subtotal + serviceFee
 
   return (

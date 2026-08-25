@@ -146,7 +146,7 @@ export async function createOrder(
 
     if (!response.ok || !json.respuesta) {
       return {
-        error: `Pagopar HERE error: ${JSON.stringify(json.resultado ?? json)}`,
+        error: `Pagopar error: ${JSON.stringify(json.resultado ?? json)}`,
       }
     }
 

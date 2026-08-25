@@ -6,6 +6,7 @@ import { createOrder } from '@/lib/pagopar'
 import prismaClient from '@/prisma/client'
 import { GuestCheckoutSchema } from '@/schemas/checkout'
 import { getErrorMessage, retryOnTransientWriteConflict } from '../helper'
+import { INVITEES_SERVICE_FEE_RATE } from './fee'
 import { getEventByUrl } from './public-event'
 import { applyTransactionStatusChange } from './transaction'
 
@@ -15,7 +16,7 @@ export type CheckoutCartItem = {
   quantity: number
 }
 
-class CartClaimError extends Error { }
+class CartClaimError extends Error {}
 
 const CARD_OPEN_TIMEOUT_MINUTES = 3
 
@@ -197,23 +198,23 @@ export async function createTransactionsForCart(
 
           const claim = wishlistGift.isGroupGift
             ? await tx.wishlistGift.updateMany({
-              where: {
-                id: wishlistGift.id,
-                isGroupGift: true,
-                reservedAmount: { lte: livePrice - amount },
-              },
-              data: { reservedAmount: { increment: amount } },
-            })
-            : await tx.wishlistGift.updateMany({
-              where: {
-                id: wishlistGift.id,
-                isGroupGift: false,
-                reservedQuantity: {
-                  lte: liveWishlistGift.quantity - requestedQty,
+                where: {
+                  id: wishlistGift.id,
+                  isGroupGift: true,
+                  reservedAmount: { lte: livePrice - amount },
                 },
-              },
-              data: { reservedQuantity: { increment: requestedQty } },
-            })
+                data: { reservedAmount: { increment: amount } },
+              })
+            : await tx.wishlistGift.updateMany({
+                where: {
+                  id: wishlistGift.id,
+                  isGroupGift: false,
+                  reservedQuantity: {
+                    lte: liveWishlistGift.quantity - requestedQty,
+                  },
+                },
+                data: { reservedQuantity: { increment: requestedQty } },
+              })
 
           if (claim.count !== 1) {
             throw new CartClaimError(
@@ -280,7 +281,7 @@ export async function createPagoparCheckoutSession(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
   )
-  const serviceFee = Math.round(subTotal * 0.03)
+  const serviceFee = Math.round(subTotal * INVITEES_SERVICE_FEE_RATE)
   const total = serviceFee + subTotal
 
   const [payer] = fullTransactions
