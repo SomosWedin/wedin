@@ -89,7 +89,8 @@ export default function DashboardTransactionsList({
   )
   const receivedCount = activeWishlistGifts.reduce((sum, wishlistGift) => {
     if (wishlistGift.isManuallyReceived) return sum + wishlistGift.quantity
-    if (wishlistGift.isGroupGift) return sum + (wishlistGift.isFullyPaid ? 1 : 0)
+    if (wishlistGift.isGroupGift)
+      return sum + (wishlistGift.isFullyPaid ? 1 : 0)
 
     return (
       sum +

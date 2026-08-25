@@ -9,6 +9,7 @@ import { RequestPayoutParams } from '@/schemas/params'
 import { getCurrentUser } from '../get-current-user'
 import { getErrorMessage } from '../helper'
 import { getBankDetails } from './bank-details'
+import { ORGANIZER_SERVICE_FEE_RATE } from './fee'
 
 async function getEventFinancials(eventId: string) {
   const [completedTransactions, activePayouts] = await Promise.all([
@@ -55,6 +56,10 @@ export async function getWalletSummary(eventId: string) {
       (sum, transaction) => sum + (Number(transaction.amount) || 0),
       0
     )
+    const grossTotal = Math.round(totalReceived)
+    const serviceFee = Math.round(grossTotal * ORGANIZER_SERVICE_FEE_RATE)
+    const netTotal = grossTotal - serviceFee
+
     const totalPaidOut = activePayouts.reduce(
       (sum, payout) => sum + (Number(payout.amount) || 0),
       0
@@ -63,7 +68,7 @@ export async function getWalletSummary(eventId: string) {
     return {
       totalReceived,
       giftsCount: completedTransactions.length,
-      balance: totalReceived - totalPaidOut,
+      balance: netTotal - totalPaidOut,
     }
   } catch (error) {
     console.error('Error getting wallet summary:', error)
@@ -114,8 +119,10 @@ export async function requestPayout(
   }
 
   const balance = await getEventBalance(eventId)
+  const serviceFee = Math.round(balance * ORGANIZER_SERVICE_FEE_RATE)
+  const totalMinusFee = balance - serviceFee
 
-  if (amount > balance) {
+  if (amount > totalMinusFee) {
     return { error: 'El monto solicitado supera tu saldo disponible.' }
   }
 

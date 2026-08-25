@@ -1,0 +1,2 @@
+export const ORGANIZER_SERVICE_FEE_RATE = 0.049
+export const INVITEES_SERVICE_FEE_RATE = 0.03

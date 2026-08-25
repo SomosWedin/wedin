@@ -6,6 +6,7 @@ import { createOrder } from '@/lib/pagopar'
 import prismaClient from '@/prisma/client'
 import { GuestCheckoutSchema } from '@/schemas/checkout'
 import { getErrorMessage, retryOnTransientWriteConflict } from '../helper'
+import { INVITEES_SERVICE_FEE_RATE } from './fee'
 import { getEventByUrl } from './public-event'
 import { applyTransactionStatusChange } from './transaction'
 
@@ -276,17 +277,20 @@ export async function createPagoparCheckoutSession(
     return { error: 'Una de las transacciones ya no está disponible.' }
   }
 
-  const total = fullTransactions.reduce(
+  const subTotal = fullTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
   )
+  const serviceFee = Math.round(subTotal * INVITEES_SERVICE_FEE_RATE)
+  const total = serviceFee + subTotal
 
   const [payer] = fullTransactions
 
   const order = await createOrder({
-    orderId,
-    totalAmount: total,
     description: 'Regalo de boda',
+    orderId,
+    serviceFee,
+    totalAmount: total,
     payer: {
       name: payer.payerName || '',
       email: payer.payerEmail || '',

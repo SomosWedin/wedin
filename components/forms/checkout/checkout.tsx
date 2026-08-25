@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { IoGiftOutline, IoLockClosedOutline } from 'react-icons/io5'
 import type { z } from 'zod'
+import { INVITEES_SERVICE_FEE_RATE } from '@/actions/data/fee'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -94,10 +95,12 @@ export default function CheckoutForm({
   if (!hasHydrated || !cartItems) return null
   if (cartItems.length === 0 && !loading) return null
 
-  const total = cartItems.reduce(
+  const subtotal = cartItems.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
     0
   )
+  const serviceFee = Math.round(subtotal * INVITEES_SERVICE_FEE_RATE)
+  const total = subtotal + serviceFee
 
   return (
     <Form {...form}>
@@ -185,7 +188,7 @@ export default function CheckoutForm({
           />
 
           <div className="flex flex-col gap-3">
-            <label className="flex gap-2 items-center cursor-pointer">
+            <div className="flex gap-2 items-center cursor-pointer">
               <Checkbox
                 checked={wantsMessage}
                 onCheckedChange={checked => {
@@ -197,7 +200,7 @@ export default function CheckoutForm({
               <span className="text-sm">
                 Te gustaría dejar un mensaje con tu regalo?
               </span>
-            </label>
+            </div>
 
             {wantsMessage && (
               <FormField
@@ -263,8 +266,17 @@ export default function CheckoutForm({
                 </div>
               ))}
             </div>
-            <div className="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
+            <div className="flex justify-between items-center pt-4">
+              <span className="text-textTertiary">Cargo por servicio (3%)</span>
+
+              <span className="font-semibold">
+                Gs. {serviceFee.toLocaleString('es-PY')}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center pt-4 mt-2 border-t">
               <span className="text-textTertiary">Total</span>
+
               <span className="text-xl font-semibold">
                 Gs. {total.toLocaleString('es-PY')}
               </span>

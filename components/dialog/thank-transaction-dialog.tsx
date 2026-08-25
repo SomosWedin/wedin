@@ -125,9 +125,7 @@ export default function ThankTransactionDialog({
         )}
 
         <div>
-          <p className="mb-1.5 text-sm font-medium">
-            Escribí tu mensaje:
-          </p>
+          <p className="mb-1.5 text-sm font-medium">Escribí tu mensaje:</p>
           <div className="relative">
             <Textarea
               value={notes}

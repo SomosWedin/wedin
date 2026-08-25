@@ -119,7 +119,11 @@ async function assertPriceEditAllowed(
     select: { isGroupGift: true, reservedQuantity: true },
   })
 
-  if (wishlistGift && !wishlistGift.isGroupGift && wishlistGift.reservedQuantity > 0) {
+  if (
+    wishlistGift &&
+    !wishlistGift.isGroupGift &&
+    wishlistGift.reservedQuantity > 0
+  ) {
     throw new PriceLockedError()
   }
 }

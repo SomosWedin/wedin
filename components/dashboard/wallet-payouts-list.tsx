@@ -7,9 +7,9 @@ import {
   IoCashOutline,
   IoChevronDown,
   IoChevronUp,
-  IoGiftOutline,
   IoSwapVerticalOutline,
 } from 'react-icons/io5'
+import { ORGANIZER_SERVICE_FEE_RATE } from '@/actions/data/fee'
 import {
   ESTADO_BY_PAYOUT_STATUS,
   ESTADO_OPTIONS_PAYOUT,
@@ -79,36 +79,57 @@ export default function WalletPayoutsList({
       })
     : filteredPayouts
 
+  const grossTotal = Math.round(summary.totalReceived)
+  const serviceFee = Math.round(grossTotal * ORGANIZER_SERVICE_FEE_RATE)
+  const netTotal = grossTotal - serviceFee
+
   return (
     <div className="flex flex-col gap-6 w-full">
-      <div className="flex flex-col sm:flex-row items-stretch bg-gray50 rounded-lg border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 max-h-[unset] sm:max-h-24">
-        <div className="flex flex-col gap-1 p-6 w-full justify-center">
-          <h2 className="text-lg font-bold">Resumen de tu billetera</h2>
-        </div>
-        <div className="flex gap-3 items-center p-6 w-1/2">
-          <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
-            <IoGiftOutline className="text-xl" />
+      <div className="overflow-hidden bg-gray-50 rounded-lg border border-gray-200">
+        <h2 className="p-6 text-lg font-bold border-b border-gray-200">
+          Resumen de tu billetera
+        </h2>
+
+        <div className="grid grid-cols-1 divide-y divide-gray-200 md:grid-cols-[minmax(0,1.35fr)_minmax(15rem,0.8fr)] md:divide-x md:divide-y-0">
+          <div className="p-6 min-w-0">
+            <span className="text-xs font-semibold tracking-wide uppercase text-textTertiary">
+              Total neto
+            </span>
+            <span className="block mt-1 text-3xl font-bold tracking-tight whitespace-nowrap">
+              Gs. {netTotal.toLocaleString('es-PY')}
+            </span>
+
+            <div className="flex flex-col gap-2 mt-5 max-w-lg">
+              <div className="grid grid-cols-[minmax(0,1fr)_max-content] gap-4 text-sm text-textTertiary">
+                <span>Total recibido</span>
+                <span className="whitespace-nowrap tabular-nums">
+                  Gs. {grossTotal.toLocaleString('es-PY')}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-[minmax(0,1fr)_max-content] gap-4 text-sm text-red-600">
+                <span>Costo de servicio (4,9%)</span>
+                <span className="whitespace-nowrap tabular-nums">
+                  − Gs. {serviceFee.toLocaleString('es-PY')}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold">
-              Gs. {summary.totalReceived.toLocaleString('es-PY')}
-            </span>
-            <span className="text-sm whitespace-nowrap text-textTertiary">
-              Regalos recibidos
-            </span>
-          </div>
-        </div>
-        <div className="flex gap-3 items-center p-6 w-1/2">
-          <div className="flex justify-center items-center w-10 h-10 bg-white rounded-full border border-gray-200">
-            <IoCashOutline className="text-xl" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold">
-              Gs. {summary.balance.toLocaleString('es-PY')}
-            </span>
-            <span className="text-sm whitespace-nowrap text-textTertiary">
-              Disponible para retiro
-            </span>
+
+          <div className="flex items-center gap-3 p-6 min-w-0">
+            <div className="flex justify-center items-center w-11 h-11 bg-white rounded-full border border-gray-200 shrink-0">
+              <IoCashOutline className="text-xl" />
+            </div>
+
+            <div className="min-w-0">
+              <span className="block text-2xl font-bold tracking-tight whitespace-nowrap tabular-nums">
+                Gs. {summary.balance.toLocaleString('es-PY')}
+              </span>
+
+              <span className="block text-sm text-textTertiary">
+                Disponible para retiro
+              </span>
+            </div>
           </div>
         </div>
       </div>

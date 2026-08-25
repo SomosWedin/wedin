@@ -14,7 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { RequestPayoutFormValues } from '@/hooks/dialog/forms/use-request-payout-dialog'
+import type { RequestPayoutFormValues } from '@/hooks/dialog/forms/use-request-payout-dialog'
 
 type RequestPayoutFormProps = {
   form: UseFormReturn<RequestPayoutFormValues>

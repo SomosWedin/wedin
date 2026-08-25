@@ -273,8 +273,8 @@ export default function DashboardWishlistList({
                     )
                     return (
                       <p className="text-gray-500">
-                        {completedQuantity} de {wishlistGift.quantity}{' '}
-                        recibido{completedQuantity === 1 ? '' : 's'}
+                        {completedQuantity} de {wishlistGift.quantity} recibido
+                        {completedQuantity === 1 ? '' : 's'}
                       </p>
                     )
                   })()}
