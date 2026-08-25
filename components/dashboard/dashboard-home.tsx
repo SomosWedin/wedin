@@ -134,10 +134,7 @@ export default async function DashboardHome() {
             })}
 
             <div className="flex mt-4">
-              <Button
-                className="gap-2 w-40 bg-gray600 border border-borderDefault text-textTertiary disabled:opacity-100"
-                disabled
-              >
+              <Button variant="success" className="gap-2" disabled>
                 Ver sitio web
                 <ArrowUpRight className="w-4 h-4" />
               </Button>
