@@ -4,6 +4,7 @@ import { ArrowUpRight } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { IoLinkOutline } from 'react-icons/io5'
+import DownloadQrButton from '@/components/dashboard/download-qr-button'
 import EventUrlForm from '@/components/forms/dashboard/event-url'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -79,14 +80,14 @@ export default function DashboardHomeSiteLinkCard({
           <span className="font-medium">Web visible</span>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button
             type="button"
             variant="outline"
             className="gap-2"
             onClick={handleShare}
           >
-            <span className="sm:hidden">Copiar link</span>
+            <span className="sm:hidden">Copiar</span>
 
             <span className="hidden sm:inline">Copiar link de tu sitio</span>
 
@@ -95,10 +96,18 @@ export default function DashboardHomeSiteLinkCard({
 
           <Button variant="success" className="gap-2" asChild>
             <Link href={guestUrl} target="_blank" rel="noopener noreferrer">
-              Ver sitio web
+              <span className="sm:hidden">Ver sitio</span>
+
+              <span className="hidden sm:inline">Ver sitio web</span>
+
               <ArrowUpRight className="h-4 w-4" />
             </Link>
           </Button>
+
+          <DownloadQrButton
+            url={guestUrl}
+            fileName={`wedin-${currentUrl ?? 'sitio'}-qr`}
+          />
         </div>
       </div>
     </div>

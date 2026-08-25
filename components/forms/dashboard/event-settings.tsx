@@ -37,17 +37,18 @@ export default function DashboardEventSettingsForm({
   currentUser,
   secondaryEventUser,
 }: DashboardEventSettingsFormProps) {
-  const { loading, form, onSubmit, isDirty } = useUpdateEventSettings({
-    event,
-    currentUser,
-    secondaryEventUser,
-  })
+  const { loading, form, onSubmit, onInvalid, isDirty } =
+    useUpdateEventSettings({
+      event,
+      currentUser,
+      secondaryEventUser,
+    })
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={form.handleSubmit(onSubmit, onInvalid)}
         className="w-full flex flex-col gap-8"
       >
         <div className="flex flex-col gap-4 sm:grid sm:grid-cols-3 sm:gap-2">

@@ -31,3 +31,31 @@ export function getQuantityProgress(
 
   return { completedQuantity, remainingStock }
 }
+
+type CompletableWishlistGift = {
+  isFullyPaid: boolean
+  isManuallyReceived: boolean
+  isGroupGift: boolean
+  quantity: number
+  gift: { price: string }
+  transactions: { amount: string; quantity: number }[]
+}
+
+export function isGiftComplete(wishlistGift: CompletableWishlistGift) {
+  const { priceValue, remaining } = getGiftProgress(
+    wishlistGift.gift.price,
+    wishlistGift.transactions
+  )
+  const { remainingStock } = getQuantityProgress(
+    wishlistGift.quantity,
+    wishlistGift.transactions
+  )
+
+  return (
+    wishlistGift.isFullyPaid ||
+    wishlistGift.isManuallyReceived ||
+    (wishlistGift.isGroupGift
+      ? priceValue > 0 && remaining <= 0
+      : remainingStock <= 0)
+  )
+}

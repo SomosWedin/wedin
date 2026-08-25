@@ -21,13 +21,14 @@ export const UpdateEventSettingsFormSchema = z
       .max(255, { message: 'Apellido muy largo' }),
     partnerName: z.string().nullable(),
     partnerLastName: z.string().nullable(),
-    partnerEmail: z
-      .string()
-      .email({ message: 'Email de tu pareja no válido' })
-      .nullable(),
+    partnerEmail: z.string().nullable(),
   })
   .superRefine((data, ctx) => {
-    if (data.eventType === EventType.WEDDING) {
+    if (data.eventType !== EventType.WEDDING) return
+
+    const hasPartnerNameData = Boolean(data.partnerName || data.partnerLastName)
+
+    if (hasPartnerNameData) {
       if (!data.partnerName) {
         ctx.addIssue({
           path: ['partnerName'],
@@ -57,14 +58,17 @@ export const UpdateEventSettingsFormSchema = z
           code: z.ZodIssueCode.custom,
         })
       }
-      if (!data.partnerEmail) {
-        ctx.addIssue({
-          path: ['partnerEmail'],
-          message:
-            'El email de tu pareja es obligatorio para este tipo de evento',
-          code: z.ZodIssueCode.custom,
-        })
-      }
+    }
+
+    if (
+      data.partnerEmail &&
+      !z.string().email().safeParse(data.partnerEmail).success
+    ) {
+      ctx.addIssue({
+        path: ['partnerEmail'],
+        message: 'Email de tu pareja no válido',
+        code: z.ZodIssueCode.custom,
+      })
     }
   })
 

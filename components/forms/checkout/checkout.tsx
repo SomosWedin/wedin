@@ -266,7 +266,7 @@ export default function CheckoutForm({
                 </div>
               ))}
             </div>
-            <div className="flex justify-between items-center pt-4">
+            <div className="flex justify-between items-center pt-2">
               <span className="text-textTertiary">Cargo por servicio (3%)</span>
 
               <span className="font-semibold">

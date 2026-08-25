@@ -1,6 +1,12 @@
 'use server'
 
-import { Event, Image as ImageModel, PrismaClient, User } from '@prisma/client'
+import {
+  type Event,
+  type Image as ImageModel,
+  Prisma,
+  PrismaClient,
+  type User,
+} from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/actions/get-current-user'
 import type { ErrorResponse } from '@/auth'
@@ -111,8 +117,18 @@ export const updateEvent = async (
     return { success: updatedEvent }
   } catch (error) {
     console.error('Error updating event:', error)
+
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      return {
+        error: 'Esa dirección ya está en uso, elegí otra.',
+      }
+    }
+
     return {
-      error: 'Error updating event',
+      error: 'No pudimos actualizar tu evento.',
     }
   }
 }
