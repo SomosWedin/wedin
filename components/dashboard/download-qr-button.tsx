@@ -55,7 +55,10 @@ export default function DownloadQrButton({
       onClick={handleDownload}
       disabled={loading}
     >
-      Descargar QR
+      <span className="sm:hidden">QR</span>
+
+      <span className="hidden sm:inline">Descargar QR</span>
+
       <IoQrCodeOutline className="text-lg" />
     </Button>
   )

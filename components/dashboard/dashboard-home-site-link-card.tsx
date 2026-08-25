@@ -87,7 +87,7 @@ export default function DashboardHomeSiteLinkCard({
             className="gap-2"
             onClick={handleShare}
           >
-            <span className="sm:hidden">Copiar link</span>
+            <span className="sm:hidden">Copiar</span>
 
             <span className="hidden sm:inline">Copiar link de tu sitio</span>
 
@@ -96,7 +96,10 @@ export default function DashboardHomeSiteLinkCard({
 
           <Button variant="success" className="gap-2" asChild>
             <Link href={guestUrl} target="_blank" rel="noopener noreferrer">
-              Ver sitio web
+              <span className="sm:hidden">Ver sitio</span>
+
+              <span className="hidden sm:inline">Ver sitio web</span>
+
               <ArrowUpRight className="h-4 w-4" />
             </Link>
           </Button>
