@@ -1,6 +1,6 @@
 'use server'
 
-import type { Prisma } from '@prisma/client'
+import type { EventType, Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import prismaClient from '@/prisma/client'
@@ -11,6 +11,7 @@ import {
   getErrorMessage,
   PriceLockedError,
 } from '../helper'
+import { getCategories } from './category'
 
 export async function getGift(giftId: string) {
   try {
@@ -25,8 +26,10 @@ export async function getGift(giftId: string) {
 
 export async function getGifts({
   searchParams,
+  eventType,
 }: {
   searchParams?: z.infer<typeof GetGiftsParams>
+  eventType?: EventType
 }) {
   const validatedParams = GetGiftsParams.safeParse(searchParams)
 
@@ -43,7 +46,18 @@ export async function getGifts({
     }
   }
 
-  if (category) {
+  const allowedCategoryIds = eventType
+    ? (await getCategories(eventType)).map(allowed => allowed.id)
+    : []
+
+  if (allowedCategoryIds.length) {
+    query.categoryId = {
+      in:
+        category && allowedCategoryIds.includes(category)
+          ? [category]
+          : allowedCategoryIds,
+    }
+  } else if (category) {
     query.categoryId = category
   }
 

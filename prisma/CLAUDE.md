@@ -52,7 +52,16 @@ whenever you touch something documented below.
     `WishlistGift.quantity`/`reservedQuantity` below: before deploying a
     change like that to an environment, run a one-time raw Mongo backfill
     against that environment's database (not checked into this repo — kept
-    as a local, one-off script per environment, run by hand).
+    as a local, one-off script per environment, run by hand). What this does
+    _not_ do is make reads fail: verified on an unmigrated `Category` in
+    production, Prisma substitutes the `@default` for a missing scalar and an
+    empty array for a missing scalar list, so `findMany` returns rows rather
+    than throwing. The visible symptom is silent and worse — a filter like
+    `eventTypes: { has: ... }` matches nothing, so the query succeeds and
+    returns zero rows. `getCategories` is built for that: it falls back to
+    the unscoped list, and `getCategoryIdsForEventType` returns `null` rather
+    than `[]` so callers skip scoping instead of filtering the catalog down
+    to nothing.
 
 ## Field notes
 
@@ -72,6 +81,24 @@ whenever you touch something documented below.
   behavior for existing gifts.
 - `Transaction.quantity` — always `1` for group-gift contributions; can be
   > 1 for an individual-gift purchase.
+- `Category.eventType` — which `EventType` a category is offered for; drives
+  `getCategories(eventType)` and the catalog scoping in `getGifts` /
+  `getGiftlists`. Deliberately a scalar, not a list: a category wanted for
+  both event types gets **two rows with the same name** (team decision,
+  2026-08-26). That is why `name` is no longer `@unique` on its own and
+  `@@unique([name, eventType])` replaces it — dropping that compound index
+  makes the duplicate-name model impossible, so don't.
+  The open cost: `Gift.categoryId` points at one row, so duplicating a
+  category splits the gifts beneath it. Two rows named "Aniversarios" do not
+  share a catalog — a gift tagged to the `WEDDING` one is invisible to an
+  `OTHER` event. Nothing needs this yet (every category has exactly one event
+  type), but whoever first duplicates a name has to decide where the gifts
+  live.
+- `Category.eventType` is **optional on purpose**. A required scalar with
+  `@default(WEDDING)` would silently tag every not-yet-migrated document as a
+  wedding category; `null` instead means "not assigned yet", which is what
+  `getCategoryIdsForEventType` keys on to suppress scoping while a database
+  is mid-migration.
 - `Transaction.bankTransferGroupId` — shared by every transaction created
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a
