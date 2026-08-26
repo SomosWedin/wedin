@@ -72,7 +72,11 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
   it from every path that reads or claims those counters, not just from
   checkout. A guest who pays at Pagopar more than 30 min in lands on the
   already-released transaction and the webhook logs it for manual
-  reconciliation instead of completing.
+  reconciliation instead of completing. Reviving a released transaction from
+  `/admin` re-takes the slot under the same conditional claim the checkout
+  uses, and is refused when the unit was resold in the meantime — otherwise
+  one unit would end up with two `COMPLETED` transactions, both counting
+  toward the withdrawable balance.
 
 ### Terminology (Spanish UI ↔ code/domain)
 

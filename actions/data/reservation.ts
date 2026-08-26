@@ -1,5 +1,3 @@
-'use server'
-
 import type { Prisma } from '@prisma/client'
 import prismaClient from '@/prisma/client'
 import { applyTransactionStatusChange } from './transaction'
@@ -7,6 +5,8 @@ import { applyTransactionStatusChange } from './transaction'
 const CARD_OPEN_TIMEOUT_MINUTES = 3
 const CARD_PENDING_TIMEOUT_MINUTES = 30
 const BANK_TRANSFER_TIMEOUT_HOURS = 48
+
+const MAX_HOLDS_PER_SWEEP = 25
 
 function minutesAgo(minutes: number) {
   return new Date(Date.now() - minutes * 60 * 1000)
@@ -52,6 +52,7 @@ export async function releaseExpiredHolds(scope: ReleaseExpiredHoldsScope) {
     const staleTransactions = await prismaClient.transaction.findMany({
       where,
       select: { id: true },
+      take: MAX_HOLDS_PER_SWEEP,
     })
 
     for (const { id } of staleTransactions) {
