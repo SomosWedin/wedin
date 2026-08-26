@@ -99,10 +99,6 @@ whenever you touch something documented below.
   wedding category; `null` instead means "not assigned yet", which is what
   `getCategoryIdsForEventType` keys on to suppress scoping while a database
   is mid-migration.
-- `Category.sortOrder` — the catalog list has a deliberate order ("Luna de
-  miel" first), so `getCategories` sorts on this before falling back to
-  `name`. The canonical categories occupy 1..9 (see `prisma/seed.ts`); give
-  any legacy row a higher number so it sorts last.
 - `Transaction.bankTransferGroupId` — shared by every transaction created
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a

@@ -6,7 +6,7 @@ import prismaClient from '@/prisma/client'
 async function findAllCategories() {
   try {
     return await prismaClient.category.findMany({
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      orderBy: { name: 'asc' },
     })
   } catch (error) {
     console.error('Error retrieving categories:', error)

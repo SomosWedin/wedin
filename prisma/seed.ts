@@ -12,20 +12,20 @@ async function main() {
   // Seed categories
   const categories = await Promise.all(
     [
-      { name: 'Luna de miel', eventType: 'WEDDING', sortOrder: 1 },
-      { name: 'Muebles y decoraciones', eventType: 'WEDDING', sortOrder: 2 },
-      { name: 'Cama y cocina', eventType: 'WEDDING', sortOrder: 3 },
-      { name: 'Construcciones y reformas', eventType: 'WEDDING', sortOrder: 4 },
-      { name: 'Entrada en departamento', eventType: 'WEDDING', sortOrder: 5 },
-      { name: 'Baby shower', eventType: 'OTHER', sortOrder: 6 },
-      { name: '15 años', eventType: 'OTHER', sortOrder: 7 },
-      { name: 'Cumpleaños', eventType: 'OTHER', sortOrder: 8 },
-      { name: 'Aniversarios', eventType: 'OTHER', sortOrder: 9 },
-    ].map(async ({ name, eventType, sortOrder }) => {
+      { name: 'Luna de miel', eventType: 'WEDDING' },
+      { name: 'Muebles y decoraciones', eventType: 'WEDDING' },
+      { name: 'Cama y cocina', eventType: 'WEDDING' },
+      { name: 'Construcciones y reformas', eventType: 'WEDDING' },
+      { name: 'Entrada en departamento', eventType: 'WEDDING' },
+      { name: 'Baby shower', eventType: 'OTHER' },
+      { name: '15 años', eventType: 'OTHER' },
+      { name: 'Cumpleaños', eventType: 'OTHER' },
+      { name: 'Aniversarios', eventType: 'OTHER' },
+    ].map(async ({ name, eventType }) => {
       return prismaSeed.category.upsert({
         where: { name_eventType: { name, eventType } },
-        update: { sortOrder },
-        create: { name, eventType, sortOrder },
+        update: {},
+        create: { name, eventType },
       })
     })
   )

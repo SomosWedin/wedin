@@ -282,7 +282,6 @@ model Category {
   id        String     @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   eventType EventType?
-  sortOrder Int        @default(0)
 
   @@unique([name, eventType])
 }
