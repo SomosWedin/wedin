@@ -9,8 +9,7 @@
     "format": "biome check --write --linter-enabled=false .",
     "format:check": "biome check --linter-enabled=false .",
     "test": "vitest",
-    "test:run": "vitest run",
-    "redefine-categories": "ts-node scripts/redefine-categories.ts"
+    "test:run": "vitest run"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,scss,md}": [

@@ -32,14 +32,11 @@ whenever you touch something documented below.
     `WishlistGift.quantity`/`reservedQuantity` below: before deploying a
     change like that to an environment, run a one-time raw Mongo backfill
     against that environment's database (not checked into this repo — kept
-    as a local, one-off script per environment, run by hand).
-    `Category.eventTypes`/`sortOrder` is the exception that *is* checked in,
-    as `scripts/redefine-categories.ts` — it has to be, because the taxonomy
-    change it performs is the same in every environment. It backfills via
-    `$runCommandRaw` rather than the typed client on purpose: after
-    `db push` but before the backfill, any Prisma read of a `Category` throws
-    on documents missing `sortOrder`, so the migration cannot bootstrap
-    itself through `prismaClient.category.findMany`.
+    as a local, one-off script per environment, run by hand). `Category`
+    is the sharpest case so far: between `db push` and the backfill, _any_
+    Prisma read of a `Category` throws on documents missing `sortOrder`, so
+    the backfill has to go through `$runCommandRaw` — it cannot bootstrap
+    itself via `prismaClient.category.findMany`.
 
 ## Field notes
 
@@ -58,19 +55,19 @@ whenever you touch something documented below.
   unused for group gifts. Default `1` preserves pre-quantity-feature
   behavior for existing gifts.
 - `Transaction.quantity` — always `1` for group-gift contributions; can be
-  >1 for an individual-gift purchase.
+  > 1 for an individual-gift purchase.
 - `Category.eventTypes` — which `EventType`s a category is offered for;
   drives `getCategories(eventType)` and the catalog scoping in `getGifts` /
   `getGiftlists`. A list rather than a scalar because `Category.name` is
   `@unique`: with a scalar, a category offered for both event types would
   need two rows sharing a name, which the index rejects. The two taxonomies
-  are disjoint today, so nothing sets both — legacy rows are the exception,
-  parked on `['WEDDING', 'OTHER']` by the migration so they stay visible
-  until their gifts are retagged.
+  are disjoint today, so nothing sets both — the exception is a legacy row
+  mid-migration, parked on `['WEDDING', 'OTHER']` so it stays visible until
+  its gifts are retagged.
 - `Category.sortOrder` — the catalog list has a deliberate order ("Luna de
   miel" first), so `getCategories` sorts on this before falling back to
-  `name`. Canonical categories occupy 1..9 in `prisma/categories.ts`; legacy
-  rows get 100 so they sort last.
+  `name`. The canonical categories occupy 1..9 (see `prisma/seed.ts`); give
+  any legacy row a higher number so it sorts last.
 - `Transaction.bankTransferGroupId` — shared by every transaction created
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a

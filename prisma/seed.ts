@@ -1,6 +1,5 @@
 const { PrismaClient } = require('@prisma/client')
 const { faker } = require('@faker-js/faker')
-const { CATEGORIES } = require('./categories')
 
 const prismaSeed = new PrismaClient()
 
@@ -12,23 +11,31 @@ async function main() {
 
   // Seed categories
   const categories = await Promise.all(
-    CATEGORIES.map(
-      async ({
-        name,
-        eventTypes,
-        sortOrder,
-      }: {
-        name: string
-        eventTypes: string[]
-        sortOrder: number
-      }) => {
-        return prismaSeed.category.upsert({
-          where: { name },
-          update: { eventTypes, sortOrder },
-          create: { name, eventTypes, sortOrder },
-        })
-      }
-    )
+    [
+      { name: 'Luna de miel', eventTypes: ['WEDDING'], sortOrder: 1 },
+      { name: 'Muebles y decoraciones', eventTypes: ['WEDDING'], sortOrder: 2 },
+      { name: 'Cama y cocina', eventTypes: ['WEDDING'], sortOrder: 3 },
+      {
+        name: 'Construcciones y reformas',
+        eventTypes: ['WEDDING'],
+        sortOrder: 4,
+      },
+      {
+        name: 'Entrada en departamento',
+        eventTypes: ['WEDDING'],
+        sortOrder: 5,
+      },
+      { name: 'Baby shower', eventTypes: ['OTHER'], sortOrder: 6 },
+      { name: '15 años', eventTypes: ['OTHER'], sortOrder: 7 },
+      { name: 'Cumpleaños', eventTypes: ['OTHER'], sortOrder: 8 },
+      { name: 'Aniversarios', eventTypes: ['OTHER'], sortOrder: 9 },
+    ].map(async ({ name, eventTypes, sortOrder }) => {
+      return prismaSeed.category.upsert({
+        where: { name },
+        update: { eventTypes, sortOrder },
+        create: { name, eventTypes, sortOrder },
+      })
+    })
   )
 
   // Seed gift lists without quantity and totalPrice
