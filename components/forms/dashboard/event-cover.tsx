@@ -8,8 +8,8 @@ import { FaCheck } from 'react-icons/fa6'
 import { MdOutlineFileUpload } from 'react-icons/md'
 import { RxCross2 } from 'react-icons/rx'
 import EventCoverPreviewDialog from '@/components/dashboard/event-cover-preview-dialog'
-import UnsavedChangesDialog from '@/components/dialog/unsaved-changes-dialog'
 import ResetEventCoverFormDialog from '@/components/dialog/reset-event-cover-form-dialog'
+import UnsavedChangesDialog from '@/components/dialog/unsaved-changes-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Form,
