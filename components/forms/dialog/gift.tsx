@@ -3,12 +3,13 @@
 import type { Category } from '@prisma/client'
 import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import type { BaseSyntheticEvent, ChangeEventHandler, RefObject } from 'react'
+import { useEffect } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { CiImageOn } from 'react-icons/ci'
 import { IoInformationCircleOutline } from 'react-icons/io5'
 import { MdOutlineFileUpload } from 'react-icons/md'
-import type { z } from 'zod'
 import PriceInput from '@/components/forms/common/price-input'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,9 +40,7 @@ import {
   IMAGE_UPLOAD_ACCEPT,
   MAX_IMAGE_SIZE_MB,
 } from '@/lib/image-upload'
-import { GiftFormSchema } from '@/schemas/form'
-
-export type GiftFormValues = z.infer<typeof GiftFormSchema>
+import type { GiftFormValues } from '@/schemas/form'
 
 type GiftFormProps = {
   form: UseFormReturn<GiftFormValues>
@@ -79,6 +78,8 @@ export default function GiftForm({
   onCancel,
 }: GiftFormProps) {
   const isGroupGift = form.watch('isGroupGift')
+  const pathname = usePathname()
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
 
   return (
     <Form {...form}>
@@ -223,7 +224,7 @@ export default function GiftForm({
             )}
           />
 
-          {!isGroupGift && (
+          {!isGroupGift && !isAdminRoute && (
             <FormField
               control={form.control}
               name="quantity"
@@ -269,30 +270,32 @@ export default function GiftForm({
           )}
         </div>
 
-        <FormField
-          control={form.control}
-          name="isFavoriteGift"
-          render={({ field }) => (
-            <FormItem className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <FormLabel>El que más queremos ⭐</FormLabel>
+        {!isAdminRoute && (
+          <FormField
+            control={form.control}
+            name="isFavoriteGift"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between">
+                <div className="flex flex-col gap-1">
+                  <FormLabel>El que más queremos ⭐</FormLabel>
 
-                <p className="text-sm text-textTertiary">
-                  Destacá este regalo para tus invitados
-                </p>
-              </div>
+                  <p className="text-sm text-textTertiary">
+                    Destacá este regalo para tus invitados
+                  </p>
+                </div>
 
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
 
-        {allowTypeChange && (
+        {allowTypeChange && !isAdminRoute && (
           <FormField
             control={form.control}
             name="isGroupGift"

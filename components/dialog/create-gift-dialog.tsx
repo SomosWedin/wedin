@@ -14,8 +14,8 @@ import {
 import { useCreateGift } from '@/hooks/dialog/forms/use-create-gift'
 
 type CreateGiftDialogProps = {
-  eventId: string
-  wishlistId: string
+  eventId?: string
+  wishlistId?: string
   categories: Category[]
 }
 
@@ -56,18 +56,18 @@ export default function CreateGiftDialog({
 
         <GiftForm
           form={form}
-          categories={categories}
-          loading={loading}
-          isValid={isValid}
-          imagePreview={imagePreview}
-          preparingImage={preparingImage}
-          fileInputRef={fileInputRef}
-          uploadInputId="create-gift-image-upload"
-          submitLabel="Agregar a la lista"
           allowTypeChange
+          categories={categories}
+          fileInputRef={fileInputRef}
+          imagePreview={imagePreview}
+          isValid={isValid}
+          loading={loading}
+          onCancel={() => handleOpenChange(false)}
           onFileChange={handleFileChange}
           onSubmit={handleSubmit}
-          onCancel={() => handleOpenChange(false)}
+          preparingImage={preparingImage}
+          submitLabel="Agregar a la lista"
+          uploadInputId="create-gift-image-upload"
         />
       </DialogContent>
     </Dialog>

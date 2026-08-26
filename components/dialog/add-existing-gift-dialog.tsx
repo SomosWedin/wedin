@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  ExistingGift,
+  type ExistingGift,
   useAddExistingGift,
 } from '@/hooks/dialog/forms/use-add-existing-gift'
 
@@ -56,18 +56,18 @@ export default function AddExistingGiftDialog({
 
         <GiftForm
           form={form}
-          categories={categories}
-          loading={loading}
-          isValid={isValid}
-          imagePreview={imagePreview}
-          preparingImage={preparingImage}
-          fileInputRef={fileInputRef}
-          uploadInputId={`existing-gift-image-${gift.id}`}
-          submitLabel="Agregar a la lista"
           allowTypeChange
+          categories={categories}
+          fileInputRef={fileInputRef}
+          imagePreview={imagePreview}
+          isValid={isValid}
+          loading={loading}
+          onCancel={() => handleOpenChange(false)}
           onFileChange={handleFileChange}
           onSubmit={handleSubmit}
-          onCancel={() => handleOpenChange(false)}
+          preparingImage={preparingImage}
+          submitLabel="Agregar a la lista"
+          uploadInputId={`existing-gift-image-${gift.id}`}
         />
       </DialogContent>
     </Dialog>

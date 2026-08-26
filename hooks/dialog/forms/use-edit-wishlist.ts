@@ -7,11 +7,10 @@ import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { type SubmitHandler, useForm } from 'react-hook-form'
 import { createGift, editGift } from '@/actions/data/gift'
 import { editWishlistGift } from '@/actions/data/wishlist-gift'
-import type { GiftFormValues } from '@/components/forms/dialog/gift'
 import { useToast } from '@/hooks/use-toast'
 import { prepareImageForUpload } from '@/lib/image-upload'
 import { uploadGiftImageToAws } from '@/lib/s3'
-import { GiftFormSchema } from '@/schemas/form'
+import { GiftFormSchema, type GiftFormValues } from '@/schemas/form'
 
 export type EditableGift = Gift & {
   image: ImageModel | null
@@ -141,7 +140,6 @@ export function useEditWishlistGift({
         if (imageFile) {
           const uploadResponse = await uploadGiftImageToAws({
             file: imageFile,
-            eventId,
           })
 
           if (uploadResponse.error || !uploadResponse.url) {

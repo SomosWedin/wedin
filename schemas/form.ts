@@ -126,12 +126,12 @@ export const GiftFormSchema = z.object({
   isDefault: z.boolean().default(false),
   sourceGiftId: z.string(),
   isEditedVersion: z.boolean().default(false),
-  eventId: z.string().min(1, { message: 'No se encontro un event ID' }),
+  eventId: z.string().optional(),
 
   image: z.any().optional() as ZodType<File>,
   imageUrl: z.string(),
 
-  wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }), // wishlistGiftPostSchema
+  wishlistId: z.string().optional(), // wishlistGiftPostSchema
   isFavoriteGift: z.boolean().default(false), // wishlistGiftPostSchema
   isGroupGift: z.boolean().default(false), // wishlistGiftPostSchema
   quantity: z.coerce // wishlistGiftPostSchema
@@ -142,8 +142,12 @@ export const GiftFormSchema = z.object({
     .default(1),
 })
 
-// We want to ignore the imageUrl field when creating/editing a gift
-export const GiftPostSchema = GiftFormSchema.omit({ image: true })
+export type GiftFormValues = z.infer<typeof GiftFormSchema>
+
+// We want to ignore the image field when creating/editing a gift
+export const GiftPostSchema = GiftFormSchema.omit({
+  image: true,
+})
 
 export const GiftEditSchema = GiftPostSchema.pick({
   name: true,

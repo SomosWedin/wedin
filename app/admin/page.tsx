@@ -1,6 +1,12 @@
 import { redirect } from 'next/navigation'
 import { lazy, Suspense } from 'react'
-import { IoCashOutline, IoGiftOutline } from 'react-icons/io5'
+import {
+  IoCashOutline,
+  IoGiftOutline,
+  IoSwapHorizontalOutline,
+} from 'react-icons/io5'
+import { getCategories } from '@/actions/data/category'
+import { getGifts } from '@/actions/data/gift'
 import { getAllPayoutsForAdmin } from '@/actions/data/payout'
 import { getAllTransactionsForAdmin } from '@/actions/data/transaction'
 import { getCurrentUser } from '@/actions/get-current-user'
@@ -14,6 +20,7 @@ const AdminTransactionsList = lazy(
 const AdminPayoutsList = lazy(
   () => import('@/components/admin/admin-payouts-list')
 )
+const AdminGiftsList = lazy(() => import('@/components/admin/admin-gifts-list'))
 
 export default async function AdminPage() {
   const currentUser = await getCurrentUser()
@@ -22,9 +29,11 @@ export default async function AdminPage() {
     redirect('/dashboard')
   }
 
-  const [transactions, payouts] = await Promise.all([
+  const [transactions, payouts, gifts, categories] = await Promise.all([
     getAllTransactionsForAdmin(),
     getAllPayoutsForAdmin(),
+    getGifts({ searchParams: { isDefault: true } }),
+    getCategories(),
   ])
 
   return (
@@ -45,19 +54,25 @@ export default async function AdminPage() {
             value="transacciones"
             className="gap-2 text-xs sm:text-sm"
           >
-            <IoGiftOutline className="text-lg" />
+            <IoSwapHorizontalOutline className="text-lg" />
             Transacciones
           </TabsTrigger>
           <TabsTrigger value="retiros" className="gap-2 text-xs sm:text-sm">
             <IoCashOutline className="text-lg" />
             Solicitudes de retiro
           </TabsTrigger>
+          <TabsTrigger value="regalos" className="gap-2 text-xs sm:text-sm">
+            <IoGiftOutline className="text-lg" />
+            Regalos
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="transacciones" className="mt-6">
           {transactions.length === 0 ? (
             <EmptyState
-              icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
+              icon={
+                <IoSwapHorizontalOutline className="text-4xl sm:text-6xl" />
+              }
               title="Sin transacciones"
               description="Todavía no hay transacciones en ningún evento"
             />
@@ -78,6 +93,20 @@ export default async function AdminPage() {
           ) : (
             <Suspense fallback={<DashboardTransactionsSkeleton />}>
               <AdminPayoutsList payouts={payouts} />
+            </Suspense>
+          )}
+        </TabsContent>
+
+        <TabsContent value="regalos" className="mt-6">
+          {gifts.length === 0 ? (
+            <EmptyState
+              icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
+              title="Sin regalos"
+              description="Todavía no hay regalos"
+            />
+          ) : (
+            <Suspense fallback={<DashboardTransactionsSkeleton />}>
+              <AdminGiftsList gifts={gifts} categories={categories} />
             </Suspense>
           )}
         </TabsContent>

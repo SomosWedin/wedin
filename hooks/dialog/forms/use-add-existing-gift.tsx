@@ -7,12 +7,11 @@ import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { type SubmitHandler, useForm } from 'react-hook-form'
 import { createGift } from '@/actions/data/gift'
 import { createWishlistGift } from '@/actions/data/wishlist-gift'
-import type { GiftFormValues } from '@/components/forms/dialog/gift'
 import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/hooks/use-toast'
 import { prepareImageForUpload } from '@/lib/image-upload'
 import { uploadGiftImageToAws } from '@/lib/s3'
-import { GiftFormSchema } from '@/schemas/form'
+import { GiftFormSchema, type GiftFormValues } from '@/schemas/form'
 
 export type ExistingGift = Gift & {
   image: ImageModel | null
@@ -125,7 +124,6 @@ export function useAddExistingGift({
         if (imageFile) {
           const uploadResponse = await uploadGiftImageToAws({
             file: imageFile,
-            eventId,
           })
 
           if (uploadResponse.error || !uploadResponse.url) {

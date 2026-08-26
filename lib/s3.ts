@@ -23,8 +23,6 @@ export const uploadEventCoverImagesToAws = async ({
       fileName: file.name,
       fileType: file.type,
       fileSize: file.size,
-      id: eventId,
-      type: 'eventId',
       checksum,
     })
 
@@ -57,21 +55,13 @@ export const uploadEventCoverImagesToAws = async ({
   return { uploadedImages }
 }
 
-export const uploadGiftImageToAws = async ({
-  file,
-  eventId,
-}: {
-  file: File
-  eventId: string
-}) => {
+export const uploadGiftImageToAws = async ({ file }: { file: File }) => {
   const checksum = await computeSHA256(file)
 
   const presignResponse = await getSignedURL({
     fileName: file.name,
     fileType: file.type,
     fileSize: file.size,
-    id: eventId,
-    type: 'eventId',
     checksum,
   })
 
@@ -90,7 +80,6 @@ export const uploadGiftImageToAws = async ({
     body: file,
     headers: {
       'Content-Type': file.type,
-      metadata: JSON.stringify({ eventId }),
     },
   })
 

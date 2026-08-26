@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client'
+import type prismaClient from '@/prisma/client'
 
 // Retries Mongo's transient write-conflict error (P2034) under real
 // concurrency — expected, not a genuine failure.
@@ -36,4 +37,24 @@ export const getErrorMessage = (error: unknown): string => {
   }
 
   return message
+}
+
+export class PriceLockedError extends Error { }
+
+export async function assertPriceEditAllowed(
+  wishlistGiftId: string,
+  tx: Prisma.TransactionClient | typeof prismaClient
+) {
+  const wishlistGift = await tx.wishlistGift.findUnique({
+    where: { id: wishlistGiftId },
+    select: { isGroupGift: true, reservedQuantity: true },
+  })
+
+  if (
+    wishlistGift &&
+    !wishlistGift.isGroupGift &&
+    wishlistGift.reservedQuantity > 0
+  ) {
+    throw new PriceLockedError()
+  }
 }

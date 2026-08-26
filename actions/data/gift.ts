@@ -4,13 +4,13 @@ import type { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import prismaClient from '@/prisma/client'
-import {
-  GiftCreateSchema,
-  GiftEditSchema,
-  type GiftPostSchema,
-} from '@/schemas/form'
+import { GiftCreateSchema, GiftEditSchema } from '@/schemas/form'
 import { GetGiftsParams } from '@/schemas/params'
-import { getErrorMessage } from '../helper'
+import {
+  assertPriceEditAllowed,
+  getErrorMessage,
+  PriceLockedError,
+} from '../helper'
 
 export async function getGift(giftId: string) {
   try {
@@ -91,45 +91,8 @@ export async function getGifts({
   }
 }
 
-// export async function updateGiftImageUrl(
-//   url: string | null | undefined,
-//   giftId: string
-// ) {
-//   try {
-//     await prismaClient.gift.update({
-//       where: { id: giftId },
-//       data: { imageUrl: url },
-//     });
-
-//     revalidatePath('/dashboard');
-//   } catch (error) {
-//     console.error('Error updating gift image URL:', error);
-//     return { error: 'Error al agregar la imagen' };
-//   }
-// }
-
-class PriceLockedError extends Error {}
-
-async function assertPriceEditAllowed(
-  wishlistGiftId: string,
-  tx: Prisma.TransactionClient | typeof prismaClient
-) {
-  const wishlistGift = await tx.wishlistGift.findUnique({
-    where: { id: wishlistGiftId },
-    select: { isGroupGift: true, reservedQuantity: true },
-  })
-
-  if (
-    wishlistGift &&
-    !wishlistGift.isGroupGift &&
-    wishlistGift.reservedQuantity > 0
-  ) {
-    throw new PriceLockedError()
-  }
-}
-
 export async function editGift(
-  formData: z.infer<typeof GiftPostSchema>,
+  formData: z.infer<typeof GiftEditSchema>,
   giftId: string,
   wishlistGiftId: string
 ) {
@@ -158,13 +121,13 @@ export async function editGift(
           ...giftData,
           ...(imageUrl
             ? {
-                image: {
-                  upsert: {
-                    create: { url: imageUrl },
-                    update: { url: imageUrl },
-                  },
+              image: {
+                upsert: {
+                  create: { url: imageUrl },
+                  update: { url: imageUrl },
                 },
-              }
+              },
+            }
             : {}),
         },
       })
@@ -191,7 +154,7 @@ export async function editGift(
 }
 
 export async function createGift(
-  formData: z.infer<typeof GiftPostSchema>,
+  formData: z.infer<typeof GiftCreateSchema>,
   wishlistGiftId?: string
 ) {
   const validatedFields = GiftCreateSchema.safeParse(formData)
@@ -226,7 +189,8 @@ export async function createGift(
       return { error: 'Error al crear regalo' }
     }
 
-    revalidatePath('/dashboard')
+    revalidatePath('/admin')
+    revalidatePath('/gifts')
     return { giftId: newGift.id }
   } catch (error) {
     if (error instanceof PriceLockedError) {
