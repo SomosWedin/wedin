@@ -11,7 +11,7 @@ import {
 } from '@/schemas/form'
 import { GetGiftsParams } from '@/schemas/params'
 import { getErrorMessage } from '../helper'
-import { getCategoryIdsForEventType } from './category'
+import { getCategories } from './category'
 
 export async function getGift(giftId: string) {
   try {
@@ -47,10 +47,10 @@ export async function getGifts({
   }
 
   const allowedCategoryIds = eventType
-    ? await getCategoryIdsForEventType(eventType)
-    : null
+    ? (await getCategories(eventType)).map(allowed => allowed.id)
+    : []
 
-  if (allowedCategoryIds) {
+  if (allowedCategoryIds.length) {
     query.categoryId = {
       in:
         category && allowedCategoryIds.includes(category)

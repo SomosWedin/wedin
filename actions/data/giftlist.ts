@@ -4,7 +4,7 @@ import type { EventType, Prisma } from '@prisma/client'
 import type { z } from 'zod'
 import prismaClient from '@/prisma/client'
 import type { GetGiftlistsSearchParams } from '@/schemas/params'
-import { getCategoryIdsForEventType } from './category'
+import { getCategories } from './category'
 
 export async function getGiftlist(giftlistId: string) {
   try {
@@ -44,10 +44,10 @@ export async function getGiftlists({
   }
 
   const allowedCategoryIds = eventType
-    ? await getCategoryIdsForEventType(eventType)
-    : null
+    ? (await getCategories(eventType)).map(allowed => allowed.id)
+    : []
 
-  if (allowedCategoryIds) {
+  if (allowedCategoryIds.length) {
     query.categoryId = {
       in:
         category && allowedCategoryIds.includes(category)
