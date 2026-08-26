@@ -1,21 +1,30 @@
 'use server'
 
-import type { EventType } from '@prisma/client'
+import type { EventType, Prisma } from '@prisma/client'
 import prismaClient from '@/prisma/client'
 
-export async function getCategories(eventType?: EventType) {
+async function findCategories(where?: Prisma.CategoryWhereInput) {
   try {
     return await prismaClient.category.findMany({
-      where: eventType ? { eventTypes: { has: eventType } } : undefined,
+      where,
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     })
   } catch (error) {
     console.error('Error retrieving categories:', error)
-    return []
+    return null
   }
 }
 
+export async function getCategories(eventType?: EventType) {
+  if (eventType) {
+    const scoped = await findCategories({ eventTypes: { has: eventType } })
+    if (scoped?.length) return scoped
+  }
+
+  return (await findCategories()) ?? []
+}
+
 export async function getCategoryIdsForEventType(eventType: EventType) {
-  const categories = await getCategories(eventType)
-  return categories.map(category => category.id)
+  const scoped = await findCategories({ eventTypes: { has: eventType } })
+  return scoped?.length ? scoped.map(category => category.id) : null
 }

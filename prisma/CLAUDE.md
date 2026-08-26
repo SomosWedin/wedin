@@ -36,7 +36,10 @@ whenever you touch something documented below.
     is the sharpest case so far: between `db push` and the backfill, _any_
     Prisma read of a `Category` throws on documents missing `sortOrder`, so
     the backfill has to go through `$runCommandRaw` — it cannot bootstrap
-    itself via `prismaClient.category.findMany`.
+    itself via `prismaClient.category.findMany`. `getCategories` is written
+    to survive that window: it falls back to the unscoped list, and
+    `getCategoryIdsForEventType` returns `null` rather than `[]` so callers
+    skip scoping instead of filtering the catalog down to nothing.
 
 ## Field notes
 
