@@ -2,8 +2,8 @@
 
 import { PrismaClient } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
-import { EventImage } from '@/hooks/dashboard/forms/use-event-cover'
-import { deleteEventCoverImageFromAws } from '@/lib/s3'
+import type { EventImage } from '@/hooks/dashboard/forms/use-event-cover'
+import { deleteEventCoverImageFromAws } from '../upload-to-s3'
 
 const prismaClient = new PrismaClient()
 

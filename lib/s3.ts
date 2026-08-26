@@ -69,17 +69,3 @@ export const uploadEventCoverImagesToAws = async ({
 export const uploadGiftImageToAws = async ({ file }: { file: File }) => {
   return uploadImageToAws(file)
 }
-
-export const deleteEventCoverImageFromAws = async (imageUrl: string) => {
-  const deleteResponse = await fetch(imageUrl, {
-    method: 'DELETE',
-  })
-
-  if (!deleteResponse.ok) {
-    return {
-      error: deleteResponse.statusText || 'No se pudo eliminar la imagen',
-    }
-  }
-
-  return { success: true }
-}
