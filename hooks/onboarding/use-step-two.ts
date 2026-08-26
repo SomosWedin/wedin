@@ -16,7 +16,7 @@ type UseStepTwoProps = {
 export function useStepTwo({ onSubmit }: UseStepTwoProps) {
   const form = useForm<StepTwoValues>({
     resolver: zodResolver(StepTwoSchema),
-    mode: 'onBlur',
+    mode: 'all',
     defaultValues: {
       name: '',
       lastName: '',
