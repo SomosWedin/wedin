@@ -325,10 +325,7 @@ export function useEventCover({
     if (newImagesToUpload.length > 0) {
       const files = newImagesToUpload.map(({ file }) => file)
 
-      const uploadResponse = await uploadEventCoverImagesToAws({
-        files: files,
-        eventId,
-      })
+      const uploadResponse = await uploadEventCoverImagesToAws({ files: files })
 
       if (uploadResponse?.error) {
         toast({
@@ -371,7 +368,6 @@ export function useEventCover({
       for (const image of imagesToReplace) {
         const uploadResponse = await uploadEventCoverImagesToAws({
           files: [image.file],
-          eventId,
         })
 
         if (uploadResponse?.error) {

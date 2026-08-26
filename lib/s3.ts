@@ -1,61 +1,11 @@
 import { getSignedURL } from '@/actions/upload-to-s3'
 import { computeSHA256 } from './utils'
 
-type UploadImagesToAwsParams = {
-  files: File[]
-  eventId: string
-}
+type UploadResult =
+  | { url: string; error?: never }
+  | { url?: never; error: string }
 
-export const uploadEventCoverImagesToAws = async ({
-  files,
-  eventId,
-}: UploadImagesToAwsParams) => {
-  if (files.length === 0) {
-    return { uploadedImages: [] }
-  }
-
-  const uploadedImages: string[] = []
-
-  for (const file of files) {
-    const checksum = await computeSHA256(file)
-
-    const presignResponse = await getSignedURL({
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      checksum,
-    })
-
-    if (presignResponse.error || !presignResponse?.success) {
-      return { error: presignResponse.error }
-    }
-
-    const imageUrl = presignResponse.success.split('?')[0]
-
-    if (!imageUrl) {
-      return { error: 'Failed to upload image' }
-    }
-
-    const awsImagePosting = await fetch(presignResponse.success, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-        metadata: JSON.stringify({ eventId }),
-      },
-    })
-
-    if (!awsImagePosting.ok) {
-      return { error: awsImagePosting.statusText }
-    }
-
-    uploadedImages.push(imageUrl)
-  }
-
-  return { uploadedImages }
-}
-
-export const uploadGiftImageToAws = async ({ file }: { file: File }) => {
+const uploadImageToAws = async (file: File): Promise<UploadResult> => {
   const checksum = await computeSHA256(file)
 
   const presignResponse = await getSignedURL({
@@ -65,17 +15,13 @@ export const uploadGiftImageToAws = async ({ file }: { file: File }) => {
     checksum,
   })
 
-  if (presignResponse.error || !presignResponse?.success) {
-    return { error: presignResponse.error }
+  if (!presignResponse.success) {
+    return {
+      error: presignResponse.error ?? 'No se pudo generar la URL de subida',
+    }
   }
 
-  const imageUrl = presignResponse.success.split('?')[0]
-
-  if (!imageUrl) {
-    return { error: 'Failed to upload image' }
-  }
-
-  const awsImagePosting = await fetch(presignResponse.success, {
+  const uploadResponse = await fetch(presignResponse.success, {
     method: 'PUT',
     body: file,
     headers: {
@@ -83,11 +29,45 @@ export const uploadGiftImageToAws = async ({ file }: { file: File }) => {
     },
   })
 
-  if (!awsImagePosting.ok) {
-    return { error: awsImagePosting.statusText }
+  if (!uploadResponse.ok) {
+    return {
+      error: uploadResponse.statusText || 'No se pudo subir la imagen',
+    }
   }
 
-  return { url: imageUrl }
+  return {
+    url: presignResponse.success.split('?')[0],
+  }
+}
+
+type UploadImagesToAwsParams = {
+  files: File[]
+}
+
+export const uploadEventCoverImagesToAws = async ({
+  files,
+}: UploadImagesToAwsParams) => {
+  const uploadedImages: string[] = []
+
+  for (const file of files) {
+    const result = await uploadImageToAws(file)
+
+    if (result.error) {
+      return { error: result.error }
+    }
+
+    if (!result.url) {
+      return { error: result.error }
+    }
+
+    uploadedImages.push(result.url)
+  }
+
+  return { uploadedImages }
+}
+
+export const uploadGiftImageToAws = async ({ file }: { file: File }) => {
+  return uploadImageToAws(file)
 }
 
 export const deleteEventCoverImageFromAws = async (imageUrl: string) => {
@@ -96,7 +76,9 @@ export const deleteEventCoverImageFromAws = async (imageUrl: string) => {
   })
 
   if (!deleteResponse.ok) {
-    return { error: deleteResponse.statusText }
+    return {
+      error: deleteResponse.statusText || 'No se pudo eliminar la imagen',
+    }
   }
 
   return { success: true }
