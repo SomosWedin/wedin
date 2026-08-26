@@ -32,14 +32,16 @@ whenever you touch something documented below.
     `WishlistGift.quantity`/`reservedQuantity` below: before deploying a
     change like that to an environment, run a one-time raw Mongo backfill
     against that environment's database (not checked into this repo — kept
-    as a local, one-off script per environment, run by hand). `Category`
-    is the sharpest case so far: between `db push` and the backfill, _any_
-    Prisma read of a `Category` throws on documents missing `sortOrder`, so
-    the backfill has to go through `$runCommandRaw` — it cannot bootstrap
-    itself via `prismaClient.category.findMany`. `getCategories` is written
-    to survive that window: it falls back to the unscoped list, and
-    `getCategoryIdsForEventType` returns `null` rather than `[]` so callers
-    skip scoping instead of filtering the catalog down to nothing.
+    as a local, one-off script per environment, run by hand). What this does
+    _not_ do is make reads fail: verified on an unmigrated `Category` in
+    production, Prisma substitutes the `@default` for a missing scalar and an
+    empty array for a missing scalar list, so `findMany` returns rows rather
+    than throwing. The visible symptom is silent and worse — a filter like
+    `eventTypes: { has: ... }` matches nothing, so the query succeeds and
+    returns zero rows. `getCategories` is built for that: it falls back to
+    the unscoped list, and `getCategoryIdsForEventType` returns `null` rather
+    than `[]` so callers skip scoping instead of filtering the catalog down
+    to nothing.
 
 ## Field notes
 
