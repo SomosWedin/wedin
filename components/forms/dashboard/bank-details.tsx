@@ -42,101 +42,148 @@ export default function DashboardBankDetailsUpdateForm({
   const identificationType = form.watch('identificationType')
 
   return (
-    <>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="w-full flex flex-col gap-8"
-        >
-          <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-3">
-            <FormField
-              control={form.control}
-              name="accountHolder"
-              render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
-                  <FormLabel>Nombre y apellido</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Maria Pérez"
-                      className="!mt-1.5"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="w-full flex flex-col gap-8"
+      >
+        <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-3">
+          <FormField
+            control={form.control}
+            name="accountHolder"
+            render={({ field }) => (
+              <FormItem className="col-span-2 sm:col-span-1">
+                <FormLabel>Nombre y apellido</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Maria Pérez"
+                    className="!mt-1.5"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
 
-            <FormField
-              control={form.control}
-              name="identificationType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo de documento</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl className="!mt-1.5">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Documento" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="ci">CI</SelectItem>
-                      <SelectItem value="ruc">RUC</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              name="identificationNumber"
-              control={form.control}
-              render={({ field }) => (
-                <IdentificationNumberField
-                  field={{
-                    ...field,
-                    value: field.value || '',
-                  }}
-                  identificationType={identificationType}
-                />
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-3">
-            <FormField
-              control={form.control}
-              name="bankName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Entidad</FormLabel>
+          <FormField
+            control={form.control}
+            name="identificationType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo de documento</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl className="!mt-1.5">
-                    <Combobox
-                      options={bankEntitiesPY}
-                      placeholder="Elegí una entidad"
-                      selected={field.value}
-                      onChange={field.onChange}
-                      width="w-96"
-                    />
+                    <SelectTrigger>
+                      <SelectValue placeholder="Documento" />
+                    </SelectTrigger>
                   </FormControl>
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
+                  <SelectContent className="bg-white">
+                    <SelectItem value="ci">CI</SelectItem>
+                    <SelectItem value="ruc">RUC</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
 
+          <FormField
+            name="identificationNumber"
+            control={form.control}
+            render={({ field }) => (
+              <IdentificationNumberField
+                field={{
+                  ...field,
+                  value: field.value || '',
+                }}
+                identificationType={identificationType}
+              />
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-3">
+          <FormField
+            control={form.control}
+            name="bankName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Entidad</FormLabel>
+                <FormControl className="!mt-1.5">
+                  <Combobox
+                    options={bankEntitiesPY}
+                    placeholder="Elegí una entidad"
+                    selected={field.value}
+                    onChange={field.onChange}
+                    width="w-96"
+                  />
+                </FormControl>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="accountNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Número de cuenta</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Ej. 61920381"
+                    className="!mt-1.5"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="accountType"
+            render={({ field }) => (
+              <FormItem className="col-span-2 sm:col-span-1">
+                <FormLabel>Moneda de la cuenta</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl className="!mt-1.5">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Moneda" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="pyg">PYG</SelectItem>
+                    <SelectItem value="usd">USD</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="flex flex-col gap-4 w-full">
+          <h2 className="text-xl font-medium">Datos de facturación</h2>
+
+          <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-3">
             <FormField
               control={form.control}
-              name="accountNumber"
+              name="razonSocial"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Número de cuenta</FormLabel>
+                  <FormLabel>Razón social</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. 61920381"
+                      placeholder="Nombre y apellido"
                       className="!mt-1.5"
                       {...field}
                     />
@@ -148,91 +195,42 @@ export default function DashboardBankDetailsUpdateForm({
 
             <FormField
               control={form.control}
-              name="accountType"
+              name="ruc"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
-                  <FormLabel>Moneda de la cuenta</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl className="!mt-1.5">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Moneda" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="pyg">PYG</SelectItem>
-                      <SelectItem value="usd">USD</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <FormItem>
+                  <FormLabel>RUC</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Ej. 800.223-5"
+                      className="!mt-1.5"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage className="font-normal text-red-600" />
                 </FormItem>
               )}
             />
           </div>
+        </div>
 
-          <div className="flex flex-col gap-4 w-full">
-            <h2 className="text-xl font-medium">Datos de facturación</h2>
-
-            <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="razonSocial"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Razón social</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Nombre y apellido"
-                        className="!mt-1.5"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="font-normal text-red-600" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="ruc"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>RUC</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ej. 800.223-5"
-                        className="!mt-1.5"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="font-normal text-red-600" />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-
-          <div className="justify-start w-full mt-6">
-            <Button
-              type="submit"
-              variant="success"
-              className="gap-2 w-60"
-              disabled={loading || !isDirty || !isValid}
-            >
-              Guardar
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <FaCheck className="text-lg" />
-              )}
-            </Button>
-          </div>
-        </form>
-      </Form>
+        <div className="justify-start w-full mt-6">
+          <Button
+            type="submit"
+            variant="success"
+            className="gap-2 w-60"
+            disabled={loading || !isDirty || !isValid}
+          >
+            Guardar
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FaCheck className="text-lg" />
+            )}
+          </Button>
+        </div>
+      </form>
 
       <UnsavedChangesDialog hasUnsavedChanges={isDirty} />
-    </>
+    </Form>
   )
 }
