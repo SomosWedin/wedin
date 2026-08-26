@@ -67,16 +67,20 @@ export default async function TransferPage({
             <p className="font-medium">{WEDIN_BANK_ACCOUNT.bankName}</p>
           </div>
           <div>
-            <p className="text-sm text-textTertiary">Número de cuenta</p>
+            <p className="text-sm text-textTertiary">Número de cuenta (Gs.)</p>
             <p className="font-medium">{WEDIN_BANK_ACCOUNT.accountNumber}</p>
+          </div>
+          <div>
+            <p className="text-sm text-textTertiary">Número de cuenta (USD)</p>
+            <p className="font-medium">{WEDIN_BANK_ACCOUNT.accountNumberUsd}</p>
           </div>
           <div>
             <p className="text-sm text-textTertiary">Alias</p>
             <p className="font-medium">{WEDIN_BANK_ACCOUNT.alias}</p>
           </div>
           <div>
-            <p className="text-sm text-textTertiary">Nombre de la cuenta</p>
-            <p className="font-medium">{WEDIN_BANK_ACCOUNT.accountHolder}</p>
+            <p className="text-sm text-textTertiary">Razón social</p>
+            <p className="font-medium">{WEDIN_BANK_ACCOUNT.razonSocial}</p>
           </div>
           <div>
             <p className="text-sm text-textTertiary">Documento RUC</p>
