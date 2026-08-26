@@ -13,6 +13,7 @@ cash-gifting/crowdfunding platform wrapped in a registry UI, targeting
 Paraguay (prices shown in Gs./guaraníes).
 
 Two sides of the app:
+
 - **Organizer dashboard** (`(dashboard)` routes) — the couple runs onboarding
   (event type, couple profile, location, date →
   `actions/common/onboarding.ts`), edits the public site's "Presentación"
@@ -24,12 +25,14 @@ Two sides of the app:
   cart, and check out.
 
 Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`):
+
 - **Regalo individual** — one guest fully covers the price.
 - **Regalo grupal** — multiple guests crowdfund toward the price
   (`groupGiftParts`, `isFullyPaid`).
 - **Monto libre** — open-ended cash gift, no fixed price.
 
 ### Payments & transactions
+
 - `Transaction.paymentMethod: PaymentMethod` — `CARD` (Pagopar hosted
   checkout, `lib/pagopar.ts`) or `BANK_TRANSFER` (manual: guest sees Wedin's
   own bank account + a WhatsApp link to send proof, staff confirm by hand).
@@ -57,8 +60,26 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
   doesn't yet block it (see `app/admin/CLAUDE.md`). `BANK_TRANSFER`
   transactions have no automated path to `COMPLETED` at all; that's the one
   case staff are expected to set by hand.
+- **Stock is held from the moment a checkout starts, not when it's paid.**
+  `createTransactionsForCart` claims `WishlistGift.reservedAmount` /
+  `reservedQuantity` up front, and `applyTransactionStatusChange` releases
+  the claim only on `FAILED`/`REFUNDED`. An abandoned checkout would
+  therefore hold the gift forever, so `releaseExpiredHolds`
+  (`actions/data/reservation.ts`) expires stale holds by moving them to
+  `FAILED`: card checkouts that never reached Pagopar after 3 min, card
+  checkouts sitting at Pagopar after 30 min, bank transfers awaiting proof
+  after 48 h. It's a lazy sweep — there is no cron in this project — so call
+  it from every path that reads or claims those counters, not just from
+  checkout. A guest who pays at Pagopar more than 30 min in lands on the
+  already-released transaction and the webhook logs it for manual
+  reconciliation instead of completing. Reviving a released transaction from
+  `/admin` re-takes the slot under the same conditional claim the checkout
+  uses, and is refused when the unit was resold in the meantime — otherwise
+  one unit would end up with two `COMPLETED` transactions, both counting
+  toward the withdrawable balance.
 
 ### Terminology (Spanish UI ↔ code/domain)
+
 - regalo(s) → gift(s)
 - lista de regalos / "Mi lista" → wishlist/registry
 - billetera / retiro → wallet / withdrawal (cash-out to bank)
@@ -70,6 +91,7 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
 Staff-only access (`/admin`) is documented in `app/admin/CLAUDE.md`.
 
 ## Conventions
+
 - Formatting/linting: lint-staged runs Prettier then Biome (`biome.json`) on commit.
 - New server-side logic goes in `actions/<domain>/`; matching validation in `schemas/`.
 - MongoDB/Prisma gotchas (sparse `@unique` indexes, enum value migrations) are

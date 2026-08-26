@@ -17,6 +17,26 @@ whenever you touch something documented below.
   db.<Collection>.dropIndex("<Field>_key")
   db.<Collection>.createIndex({ <field>: 1 }, { unique: true, sparse: true, name: "<Field>_key" })
   ```
+  Order matters: create the sparse index **before** `prisma db push`, not
+  after. `db push` can only create a unique index non-sparse, so on a
+  collection where more than one document lacks the field the creation fails
+  outright on duplicate nulls. Given an existing `unique: true, sparse: true`
+  index of the right name it leaves it alone (verified against `wedin-prod`,
+  2026-08-25).
+  Sparse only skips documents **missing** the field — an explicit `null`
+  still gets indexed, so more than one of those collides even on a sparse
+  index. Clear the field rather than setting it null.
+- **Environment index drift is real; audit before assuming**: as of
+  2026-08-25 `wedin-prod` had accumulated, over and above the schema, a
+  `Transaction_dlocalPaymentId_key` (unique, non-sparse, on a field deleted
+  with the pre-Pagopar gateway — the second card checkout in prod threw
+  `P2002` on it) and an `Image.url` unique index misnamed `Event_url_key`,
+  apparently a past sparse repair aimed at the wrong collection. It was also
+  missing `Image_giftId_key` entirely. All three were fixed by hand and the
+  environment now matches the schema. `db push` reports only additions, so it
+  will not tell you about a stale index — list the indexes per collection and
+  diff against the schema when a `P2002` names a constraint you don't
+  recognize.
 - **`prisma db push` never touches existing documents** — it only updates
   the schema definition. Two ways this bites:
   - Renaming/narrowing an enum's values leaves old documents holding the old

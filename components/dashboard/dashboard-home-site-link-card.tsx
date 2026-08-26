@@ -81,6 +81,11 @@ export default function DashboardHomeSiteLinkCard({
         </div>
 
         <div className="flex flex-wrap gap-3">
+          <DownloadQrButton
+            url={guestUrl}
+            fileName={`wedin-${currentUrl ?? 'sitio'}-qr`}
+          />
+
           <Button
             type="button"
             variant="outline"
@@ -103,11 +108,6 @@ export default function DashboardHomeSiteLinkCard({
               <ArrowUpRight className="h-4 w-4" />
             </Link>
           </Button>
-
-          <DownloadQrButton
-            url={guestUrl}
-            fileName={`wedin-${currentUrl ?? 'sitio'}-qr`}
-          />
         </div>
       </div>
     </div>
