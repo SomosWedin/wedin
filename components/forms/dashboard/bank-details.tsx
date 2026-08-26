@@ -3,6 +3,7 @@
 import type { BankDetails } from '@prisma/client'
 import { Loader2 } from 'lucide-react'
 import { FaCheck } from 'react-icons/fa6'
+import UnsavedChangesDialog from '@/components/dialog/unsaved-changes-dialog'
 import IdentificationNumberField from '@/components/forms/common/identification-number-field-input'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
@@ -228,6 +229,8 @@ export default function DashboardBankDetailsUpdateForm({
           </Button>
         </div>
       </form>
+
+      <UnsavedChangesDialog hasUnsavedChanges={isDirty} />
     </Form>
   )
 }

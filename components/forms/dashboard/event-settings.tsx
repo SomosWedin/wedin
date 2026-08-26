@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale'
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { FaCheck } from 'react-icons/fa6'
+import UnsavedChangesDialog from '@/components/dialog/unsaved-changes-dialog'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -247,6 +248,8 @@ export default function DashboardEventSettingsForm({
           </Button>
         </div>
       </form>
+
+      <UnsavedChangesDialog hasUnsavedChanges={isDirty} />
     </Form>
   )
 }

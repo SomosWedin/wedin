@@ -71,6 +71,8 @@ export function useUpdateBankDetails({
         return
       }
 
+      form.reset(values)
+
       toast({
         title: 'Los datos bancarios se actualizaron con éxito. 📅',
       })
