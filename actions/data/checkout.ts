@@ -8,6 +8,7 @@ import { GuestCheckoutSchema } from '@/schemas/checkout'
 import { getErrorMessage, retryOnTransientWriteConflict } from '../helper'
 import { INVITEES_SERVICE_FEE_RATE } from './fee'
 import { getEventByUrl } from './public-event'
+import { releaseExpiredHolds } from './reservation'
 import { applyTransactionStatusChange } from './transaction'
 
 export type CheckoutCartItem = {
@@ -17,35 +18,6 @@ export type CheckoutCartItem = {
 }
 
 class CartClaimError extends Error {}
-
-const CARD_OPEN_TIMEOUT_MINUTES = 3
-
-const CARD_PENDING_TIMEOUT_MINUTES = 30
-
-async function expireStaleHolds(wishlistGiftIds: string[]) {
-  const openCutoff = new Date(
-    Date.now() - CARD_OPEN_TIMEOUT_MINUTES * 60 * 1000
-  )
-  const pendingCutoff = new Date(
-    Date.now() - CARD_PENDING_TIMEOUT_MINUTES * 60 * 1000
-  )
-
-  const staleTransactions = await prismaClient.transaction.findMany({
-    where: {
-      wishlistGiftId: { in: wishlistGiftIds },
-      paymentMethod: 'CARD',
-      OR: [
-        { status: 'OPEN', createdAt: { lt: openCutoff } },
-        { status: 'PENDING', createdAt: { lt: pendingCutoff } },
-      ],
-    },
-    select: { id: true },
-  })
-
-  for (const { id } of staleTransactions) {
-    await applyTransactionStatusChange(id, 'FAILED', null)
-  }
-}
 
 export async function createTransactionsForCart(
   eventId: string,
@@ -74,7 +46,9 @@ export async function createTransactionsForCart(
   const bankTransferGroupId =
     paymentMethod === 'BANK_TRANSFER' ? randomUUID() : undefined
 
-  await expireStaleHolds(cartItems.map(item => item.wishlistGiftId))
+  await releaseExpiredHolds({
+    wishlistGiftIds: cartItems.map(item => item.wishlistGiftId),
+  })
 
   const wishlistGifts = await prismaClient.wishlistGift.findMany({
     where: {
