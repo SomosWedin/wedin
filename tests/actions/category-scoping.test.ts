@@ -23,6 +23,11 @@ const weddingCategories = [
   { id: 'c2', name: 'Cama y cocina', eventTypes: ['WEDDING'], sortOrder: 3 },
 ]
 
+const allCategories = [
+  ...weddingCategories,
+  { id: 'c3', name: 'Baby shower', eventTypes: ['OTHER'], sortOrder: 6 },
+]
+
 describe('category scoping', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -31,7 +36,7 @@ describe('category scoping', () => {
   })
 
   it('scopes gifts to the categories of the event type', async () => {
-    mocks.categoryFindMany.mockResolvedValue(weddingCategories)
+    mocks.categoryFindMany.mockResolvedValue(allCategories)
 
     await getGifts({ searchParams: {}, eventType: 'WEDDING' })
 
@@ -41,7 +46,7 @@ describe('category scoping', () => {
   })
 
   it('narrows to a single category when one is selected', async () => {
-    mocks.categoryFindMany.mockResolvedValue(weddingCategories)
+    mocks.categoryFindMany.mockResolvedValue(allCategories)
 
     await getGifts({ searchParams: { category: 'c2' }, eventType: 'WEDDING' })
 
@@ -52,6 +57,27 @@ describe('category scoping', () => {
 
   it('does not scope gifts when the category read fails', async () => {
     mocks.categoryFindMany.mockRejectedValue(new Error('stale client'))
+
+    await getGifts({ searchParams: {}, eventType: 'WEDDING' })
+
+    expect(mocks.giftFindMany.mock.calls[0][0].where.categoryId).toBeUndefined()
+  })
+
+  it('ignores a category filter outside the event type instead of emptying', async () => {
+    mocks.categoryFindMany.mockResolvedValue(allCategories)
+
+    await getGifts({ searchParams: { category: 'c3' }, eventType: 'WEDDING' })
+
+    expect(mocks.giftFindMany.mock.calls[0][0].where.categoryId).toEqual({
+      in: ['c1', 'c2'],
+    })
+  })
+
+  it('does not scope when any category is still untagged', async () => {
+    mocks.categoryFindMany.mockResolvedValue([
+      ...allCategories,
+      { id: 'c9', name: 'Casa', eventTypes: [], sortOrder: 0 },
+    ])
 
     await getGifts({ searchParams: {}, eventType: 'WEDDING' })
 
@@ -77,11 +103,22 @@ describe('category scoping', () => {
   })
 
   it('falls back to every category when the event type matches none', async () => {
-    mocks.categoryFindMany
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce(weddingCategories)
+    const otherOnly = [allCategories[2]]
+    mocks.categoryFindMany.mockResolvedValue(otherOnly)
+
+    await expect(getCategories('WEDDING')).resolves.toEqual(otherOnly)
+  })
+
+  it('returns only the matching categories when the event type matches', async () => {
+    mocks.categoryFindMany.mockResolvedValue(allCategories)
 
     await expect(getCategories('WEDDING')).resolves.toEqual(weddingCategories)
+  })
+
+  it('returns every category when called with no event type', async () => {
+    mocks.categoryFindMany.mockResolvedValue(allCategories)
+
+    await expect(getCategories()).resolves.toEqual(allCategories)
   })
 
   it('returns an empty list when categories cannot be read at all', async () => {

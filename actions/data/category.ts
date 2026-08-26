@@ -1,12 +1,11 @@
 'use server'
 
-import type { EventType, Prisma } from '@prisma/client'
+import type { EventType } from '@prisma/client'
 import prismaClient from '@/prisma/client'
 
-async function findCategories(where?: Prisma.CategoryWhereInput) {
+async function findAllCategories() {
   try {
     return await prismaClient.category.findMany({
-      where,
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     })
   } catch (error) {
@@ -16,15 +15,23 @@ async function findCategories(where?: Prisma.CategoryWhereInput) {
 }
 
 export async function getCategories(eventType?: EventType) {
-  if (eventType) {
-    const scoped = await findCategories({ eventTypes: { has: eventType } })
-    if (scoped?.length) return scoped
-  }
+  const categories = await findAllCategories()
+  if (!categories) return []
+  if (!eventType) return categories
 
-  return (await findCategories()) ?? []
+  const scoped = categories.filter(category =>
+    category.eventTypes.includes(eventType)
+  )
+  return scoped.length ? scoped : categories
 }
 
 export async function getCategoryIdsForEventType(eventType: EventType) {
-  const scoped = await findCategories({ eventTypes: { has: eventType } })
-  return scoped?.length ? scoped.map(category => category.id) : null
+  const categories = await findAllCategories()
+  if (!categories) return null
+  if (categories.some(category => category.eventTypes.length === 0)) return null
+
+  const scoped = categories.filter(category =>
+    category.eventTypes.includes(eventType)
+  )
+  return scoped.length ? scoped.map(category => category.id) : null
 }

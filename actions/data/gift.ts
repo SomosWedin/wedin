@@ -52,9 +52,10 @@ export async function getGifts({
 
   if (allowedCategoryIds) {
     query.categoryId = {
-      in: category
-        ? allowedCategoryIds.filter(id => id === category)
-        : allowedCategoryIds,
+      in:
+        category && allowedCategoryIds.includes(category)
+          ? [category]
+          : allowedCategoryIds,
     }
   } else if (category) {
     query.categoryId = category
