@@ -223,7 +223,9 @@ export default function AdminPayoutsList({ payouts }: AdminPayoutsListProps) {
               </div>
               <div className="col-span-4 text-textTertiary text-sm">
                 {payout.bankDetails.bankName} ·{' '}
-                {payout.bankDetails.accountNumber}
+                {payout.bankDetails.accountIdentifierType === 'alias'
+                  ? `Alias: ${payout.bankDetails.alias ?? ''}`
+                  : payout.bankDetails.accountNumber}
                 <span className="block">
                   {payout.bankDetails.accountHolder}
                 </span>
