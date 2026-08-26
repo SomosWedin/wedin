@@ -76,15 +76,3 @@ whenever you touch something documented below.
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a
   Pagopar-issued hash to group by.
-- `BankDetails.accountIdentifierType` — `'account'` or `'alias'`, chosen by
-  the organizer with the chips on `/bank-details`. Deliberately nullable
-  rather than a required field with `@default("account")`: every
-  `BankDetails` document written before the alias feature lacks the field,
-  and a required field missing from an existing document breaks the read
-  (see the backfill note above). Read it as `=== 'alias' ? alias :
-accountNumber` so `null` falls through to the account number.
-- `BankDetails.accountNumber` / `alias` — both nullable, exactly one is
-  authoritative per `accountIdentifierType`. The form keeps whatever the
-  organizer typed in the other one, so switching chips back and forth
-  doesn't lose data; only the selected one should ever be shown to staff
-  processing a payout.

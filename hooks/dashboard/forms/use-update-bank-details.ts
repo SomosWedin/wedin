@@ -28,10 +28,7 @@ export function useUpdateBankDetails({
       eventId: eventId,
       bankName: bankDetails?.bankName || '',
       accountHolder: bankDetails?.accountHolder || '',
-      accountIdentifierType:
-        bankDetails?.accountIdentifierType === 'alias' ? 'alias' : 'account',
       accountNumber: bankDetails?.accountNumber || '',
-      alias: bankDetails?.alias || '',
       accountType: bankDetails?.accountType || 'pyg',
       identificationType: bankDetails?.identificationType || 'ci',
       identificationNumber: bankDetails?.identificationNumber || '',

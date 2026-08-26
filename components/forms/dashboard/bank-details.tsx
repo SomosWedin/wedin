@@ -25,12 +25,6 @@ import {
 } from '@/components/ui/select'
 import { useUpdateBankDetails } from '@/hooks/dashboard/forms/use-update-bank-details'
 import { bankEntitiesPY } from '@/lib/bank-entities-py'
-import { cn } from '@/lib/utils'
-
-const BANK_ACCOUNT_IDENTIFIER_CHIPS = [
-  { value: 'account', label: 'Cuenta bancaria' },
-  { value: 'alias', label: 'Alias' },
-] as const
 
 type BankDetailsFormProps = {
   eventId: string
@@ -46,7 +40,6 @@ export default function DashboardBankDetailsUpdateForm({
     bankDetails: bankDetails,
   })
   const identificationType = form.watch('identificationType')
-  const accountIdentifierType = form.watch('accountIdentifierType')
 
   return (
     <>
@@ -114,35 +107,6 @@ export default function DashboardBankDetailsUpdateForm({
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="accountIdentifierType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>¿Cómo querés recibir tus retiros?</FormLabel>
-                <FormControl>
-                  <div className="flex !mt-1.5 gap-2">
-                    {BANK_ACCOUNT_IDENTIFIER_CHIPS.map(chip => (
-                      <button
-                        key={chip.value}
-                        type="button"
-                        onClick={() => field.onChange(chip.value)}
-                        className={cn(
-                          'rounded-full border px-4 py-1.5 text-sm transition-colors',
-                          field.value === chip.value
-                            ? 'border-wedinMain bg-active font-medium text-wedinMain'
-                            : 'border-borderDefault text-textTertiary hover:bg-gray-50'
-                        )}
-                      >
-                        {chip.label}
-                      </button>
-                    ))}
-                  </div>
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
           <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-3">
             <FormField
               control={form.control}
@@ -166,23 +130,13 @@ export default function DashboardBankDetailsUpdateForm({
 
             <FormField
               control={form.control}
-              name={
-                accountIdentifierType === 'alias' ? 'alias' : 'accountNumber'
-              }
+              name="accountNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    {accountIdentifierType === 'alias'
-                      ? 'Alias'
-                      : 'Número de cuenta'}
-                  </FormLabel>
+                  <FormLabel>Número de cuenta</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={
-                        accountIdentifierType === 'alias'
-                          ? 'Ej. maria.perez'
-                          : 'Ej. 61920381'
-                      }
+                      placeholder="Ej. 61920381"
                       className="!mt-1.5"
                       {...field}
                     />

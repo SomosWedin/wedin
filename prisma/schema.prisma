@@ -123,20 +123,18 @@ model Event {
 }
 
 model BankDetails {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  bankName              String
-  accountHolder         String
-  accountIdentifierType String?
-  accountNumber         String?
-  alias                 String?
-  accountType           String
-  identificationType    String
-  identificationNumber  String
-  eventId               String   @unique @db.ObjectId
-  razonSocial           String?
-  ruc                   String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  bankName             String
+  accountHolder        String
+  accountNumber        String
+  accountType          String
+  identificationType   String
+  identificationNumber String
+  eventId              String   @unique @db.ObjectId
+  razonSocial          String?
+  ruc                  String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   event   Event    @relation(fields: [eventId], references: [id])
   payouts Payout[]
