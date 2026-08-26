@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client')
 const { faker } = require('@faker-js/faker')
+const { CATEGORIES } = require('./categories')
 
 const prismaSeed = new PrismaClient()
 
@@ -11,22 +12,23 @@ async function main() {
 
   // Seed categories
   const categories = await Promise.all(
-    [
-      'Luna de miel',
-      'Casa',
-      'Electrodomésticos',
-      'Viajes',
-      'Gastronomía',
-      'Aventura',
-      'Relax',
-      'Cultura y arte',
-    ].map(async name => {
-      return prismaSeed.category.upsert({
-        where: { name },
-        update: {},
-        create: { name },
-      })
-    })
+    CATEGORIES.map(
+      async ({
+        name,
+        eventTypes,
+        sortOrder,
+      }: {
+        name: string
+        eventTypes: string[]
+        sortOrder: number
+      }) => {
+        return prismaSeed.category.upsert({
+          where: { name },
+          update: { eventTypes, sortOrder },
+          create: { name, eventTypes, sortOrder },
+        })
+      }
+    )
   )
 
   // Seed gift lists without quantity and totalPrice

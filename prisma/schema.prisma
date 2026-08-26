@@ -167,6 +167,8 @@ model Gift {
   event         Event?         @relation(fields: [eventId], references: [id])
   wishlistGifts WishlistGift[]
   image         Image?
+
+  @@index([categoryId])
 }
 
 model WishlistGift {
@@ -272,11 +274,15 @@ model Giftlist {
   totalPrice String?
 
   gifts Gift[]
+
+  @@index([categoryId])
 }
 
 model Category {
-  id   String @id @default(auto()) @map("_id") @db.ObjectId
-  name String @unique
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  name       String      @unique
+  eventTypes EventType[]
+  sortOrder  Int         @default(0)
 }
 
 model VerificationToken {

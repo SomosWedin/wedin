@@ -20,10 +20,10 @@ export default async function GiftsPage({
   }
 
   const [gifts, giftlists, wishlistGifts, categories] = await Promise.all([
-    getGifts({ searchParams }),
-    getGiftlists({ searchParams }),
+    getGifts({ searchParams, eventType: event.eventType }),
+    getGiftlists({ searchParams, eventType: event.eventType }),
     getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
-    getCategories(),
+    getCategories(event.eventType),
   ])
 
   const wishlistGiftIds = new Set(

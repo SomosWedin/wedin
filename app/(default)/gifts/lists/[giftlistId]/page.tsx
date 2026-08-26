@@ -25,7 +25,7 @@ export default async function GiftlistDetailPage({
   const [giftlist, wishlistGifts, categories] = await Promise.all([
     getGiftlist(params.giftlistId),
     getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
-    getCategories(),
+    getCategories(event.eventType),
   ])
 
   if (!giftlist) {
