@@ -10,7 +10,7 @@ import { createWishlistGift } from '@/actions/data/wishlist-gift'
 import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/hooks/use-toast'
 import { prepareImageForUpload } from '@/lib/image-upload'
-import { uploadGiftImageToAws } from '@/lib/s3'
+import { uploadImage } from '@/lib/image-uploader'
 import { GiftFormSchema, type GiftFormValues } from '@/schemas/form'
 
 export type ExistingGift = Gift & {
@@ -122,9 +122,7 @@ export function useAddExistingGift({
         let imageUrl = gift.image?.url ?? ''
 
         if (imageFile) {
-          const uploadResponse = await uploadGiftImageToAws({
-            file: imageFile,
-          })
+          const uploadResponse = await uploadImage(imageFile)
 
           if (uploadResponse.error || !uploadResponse.url) {
             toast({

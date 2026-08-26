@@ -25,19 +25,19 @@ const s3Client = new S3Client({
 
 const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/i
 
-type GetSignedURLParams = {
+type CreateImageUploadUrlParams = {
   fileName: string
   fileType: string
   fileSize: number
   checksum: string
 }
 
-export const getSignedURL = async ({
+export const createImageUploadUrl = async ({
   fileName,
   fileType,
   fileSize,
   checksum,
-}: GetSignedURLParams) => {
+}: CreateImageUploadUrlParams) => {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -83,7 +83,29 @@ export const getSignedURL = async ({
     expiresIn: 60,
   })
 
-  return { success: signedUrl }
+  return { uploadUrl: signedUrl }
+}
+
+export const deleteStoredImage = async (imageUrl: string) => {
+  try {
+    const url = new URL(imageUrl)
+    const key = decodeURIComponent(url.pathname.slice(1))
+
+    await s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: process.env.AWS_BUCKET,
+        Key: key,
+      })
+    )
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting S3 image:', error)
+
+    return {
+      error: 'No se pudo eliminar la imagen',
+    }
+  }
 }
 
 export const deleteEventCoverImageFromAws = async (imageUrl: string) => {

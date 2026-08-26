@@ -9,7 +9,7 @@ import { createGift, editGift } from '@/actions/data/gift'
 import { editWishlistGift } from '@/actions/data/wishlist-gift'
 import { useToast } from '@/hooks/use-toast'
 import { prepareImageForUpload } from '@/lib/image-upload'
-import { uploadGiftImageToAws } from '@/lib/s3'
+import { uploadImage } from '@/lib/image-uploader'
 import { GiftFormSchema, type GiftFormValues } from '@/schemas/form'
 
 export type EditableGift = Gift & {
@@ -138,9 +138,7 @@ export function useEditWishlistGift({
         let imageUrl = gift.image?.url ?? ''
 
         if (imageFile) {
-          const uploadResponse = await uploadGiftImageToAws({
-            file: imageFile,
-          })
+          const uploadResponse = await uploadImage(imageFile)
 
           if (uploadResponse.error || !uploadResponse.url) {
             toast({

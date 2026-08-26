@@ -10,10 +10,10 @@ import type { z } from 'zod'
 import { suggestCoverMessage } from '@/actions/ai/suggest-cover-message'
 import { updateEvent } from '@/actions/data/event'
 import { addImages, deleteImages } from '@/actions/data/images'
-import { deleteEventCoverImageFromAws } from '@/actions/upload-to-s3'
+import { deleteStoredImage } from '@/actions/image-storage'
 import { useToast } from '@/hooks/use-toast'
 import { prepareImageForUpload } from '@/lib/image-upload'
-import { uploadEventCoverImagesToAws } from '@/lib/s3'
+import { uploadImages } from '@/lib/image-uploader'
 import { EventCoverFormSchema } from '@/schemas/form'
 
 type EventCoverUpdateFormProps = {
@@ -185,11 +185,11 @@ export function useEventCover({
 
     try {
       if (newImages.length > 0) {
-        const uploadResponse = await uploadEventCoverImagesToAws({
-          files: newImages.map(image => image.file),
-        })
+        const uploadResponse = await uploadImages(
+          newImages.map(image => image.file)
+        )
 
-        if (uploadResponse.error || !uploadResponse.uploadedImages) {
+        if (uploadResponse.error || !uploadResponse.imageUrls) {
           toast({
             title: uploadResponse.error,
             variant: 'destructive',
@@ -199,7 +199,7 @@ export function useEventCover({
 
         const addImagesResponse = await addImages({
           eventId,
-          imageUrls: uploadResponse.uploadedImages,
+          imageUrls: uploadResponse.imageUrls,
         })
 
         if (addImagesResponse.error || !addImagesResponse.images) {
@@ -235,7 +235,7 @@ export function useEventCover({
         for (const image of imagesToDelete) {
           if (!image.url) continue
 
-          void deleteEventCoverImageFromAws(image.url).then(response => {
+          void deleteStoredImage(image.url).then(response => {
             if (response.error) {
               toast({
                 title: response.error,

@@ -3,7 +3,7 @@
 import { PrismaClient } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { EventImage } from '@/hooks/dashboard/forms/use-event-cover'
-import { deleteEventCoverImageFromAws } from '../upload-to-s3'
+import { deleteStoredImage } from '../image-storage'
 
 const prismaClient = new PrismaClient()
 
@@ -95,7 +95,7 @@ export async function deleteEventImage(
 
   try {
     for (const imageUrl of imagesUrl) {
-      await deleteEventCoverImageFromAws(imageUrl)
+      await deleteStoredImage(imageUrl)
     }
   } catch (error) {
     console.error('AWS Error', error)
