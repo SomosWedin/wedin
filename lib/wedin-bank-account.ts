@@ -2,9 +2,10 @@ import { buildWhatsappLink } from './whatsapp'
 
 export const WEDIN_BANK_ACCOUNT = {
   bankName: 'Ueno Bank',
-  accountNumber: '8263 2493',
-  accountHolder: 'Wedin App',
-  ruc: '800.022.353-8',
+  accountNumber: '619 310 7707',
+  alias: '80175973-0',
+  accountHolder: 'Teodoro EAS',
+  ruc: '80175973-0',
 }
 
 export const WEDIN_WHATSAPP_NUMBER = '595982938273'

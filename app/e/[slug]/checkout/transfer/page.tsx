@@ -71,6 +71,10 @@ export default async function TransferPage({
             <p className="font-medium">{WEDIN_BANK_ACCOUNT.accountNumber}</p>
           </div>
           <div>
+            <p className="text-sm text-textTertiary">Alias</p>
+            <p className="font-medium">{WEDIN_BANK_ACCOUNT.alias}</p>
+          </div>
+          <div>
             <p className="text-sm text-textTertiary">Nombre de la cuenta</p>
             <p className="font-medium">{WEDIN_BANK_ACCOUNT.accountHolder}</p>
           </div>
