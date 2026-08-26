@@ -6,8 +6,6 @@ const CARD_OPEN_TIMEOUT_MINUTES = 3
 const CARD_PENDING_TIMEOUT_MINUTES = 30
 const BANK_TRANSFER_TIMEOUT_HOURS = 48
 
-const MAX_HOLDS_PER_SWEEP = 25
-
 function minutesAgo(minutes: number) {
   return new Date(Date.now() - minutes * 60 * 1000)
 }
@@ -16,10 +14,11 @@ type ReleaseExpiredHoldsScope = {
   wishlistGiftIds?: string[]
   wishlistId?: string
   eventId?: string
+  limit?: number
 }
 
 export async function releaseExpiredHolds(scope: ReleaseExpiredHoldsScope) {
-  const { wishlistGiftIds, wishlistId, eventId } = scope
+  const { wishlistGiftIds, wishlistId, eventId, limit } = scope
 
   if (!wishlistGiftIds?.length && !wishlistId && !eventId) return
 
@@ -52,7 +51,7 @@ export async function releaseExpiredHolds(scope: ReleaseExpiredHoldsScope) {
     const staleTransactions = await prismaClient.transaction.findMany({
       where,
       select: { id: true },
-      take: MAX_HOLDS_PER_SWEEP,
+      ...(limit ? { take: limit } : {}),
     })
 
     for (const { id } of staleTransactions) {
