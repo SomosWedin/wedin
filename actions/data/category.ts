@@ -19,19 +19,15 @@ export async function getCategories(eventType?: EventType) {
   if (!categories) return []
   if (!eventType) return categories
 
-  const scoped = categories.filter(category =>
-    category.eventTypes.includes(eventType)
-  )
+  const scoped = categories.filter(category => category.eventType === eventType)
   return scoped.length ? scoped : categories
 }
 
 export async function getCategoryIdsForEventType(eventType: EventType) {
   const categories = await findAllCategories()
   if (!categories) return null
-  if (categories.some(category => category.eventTypes.length === 0)) return null
+  if (categories.some(category => category.eventType === null)) return null
 
-  const scoped = categories.filter(category =>
-    category.eventTypes.includes(eventType)
-  )
+  const scoped = categories.filter(category => category.eventType === eventType)
   return scoped.length ? scoped.map(category => category.id) : null
 }

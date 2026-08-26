@@ -279,10 +279,12 @@ model Giftlist {
 }
 
 model Category {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  name       String      @unique
-  eventTypes EventType[]
-  sortOrder  Int         @default(0)
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  eventType EventType?
+  sortOrder Int        @default(0)
+
+  @@unique([name, eventType])
 }
 
 model VerificationToken {

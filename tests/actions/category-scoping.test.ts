@@ -19,13 +19,13 @@ import { getGifts } from '@/actions/data/gift'
 import { getGiftlists } from '@/actions/data/giftlist'
 
 const weddingCategories = [
-  { id: 'c1', name: 'Luna de miel', eventTypes: ['WEDDING'], sortOrder: 1 },
-  { id: 'c2', name: 'Cama y cocina', eventTypes: ['WEDDING'], sortOrder: 3 },
+  { id: 'c1', name: 'Luna de miel', eventType: 'WEDDING', sortOrder: 1 },
+  { id: 'c2', name: 'Cama y cocina', eventType: 'WEDDING', sortOrder: 3 },
 ]
 
 const allCategories = [
   ...weddingCategories,
-  { id: 'c3', name: 'Baby shower', eventTypes: ['OTHER'], sortOrder: 6 },
+  { id: 'c3', name: 'Baby shower', eventType: 'OTHER', sortOrder: 6 },
 ]
 
 describe('category scoping', () => {
@@ -76,7 +76,7 @@ describe('category scoping', () => {
   it('does not scope when any category is still untagged', async () => {
     mocks.categoryFindMany.mockResolvedValue([
       ...allCategories,
-      { id: 'c9', name: 'Casa', eventTypes: [], sortOrder: 0 },
+      { id: 'c9', name: 'Casa', eventType: null, sortOrder: 0 },
     ])
 
     await getGifts({ searchParams: {}, eventType: 'WEDDING' })
