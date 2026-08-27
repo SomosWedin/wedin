@@ -2,30 +2,28 @@ import { createGift } from '@/actions/data/gift'
 import { createWishlistGift } from '@/actions/data/wishlist-gift'
 import type { GiftFormValues } from '@/schemas/form'
 
-type CreateGiftFlowParams = {
+export type GiftCreationMode =
+  | { mode: 'admin' }
+  | { mode: 'wishlist'; eventId: string; wishlistId: string }
+
+type CreateGiftFlowParams = GiftCreationMode & {
   values: GiftFormValues
   imageUrl: string
-  isAdminRoute: boolean
-  eventId?: string
-  wishlistId?: string
 }
 
 type CreateGiftFlowResult =
   | { giftId: string; wishlistGiftId?: string; error?: never; step?: never }
   | { error: string; step: 'gift' | 'wishlist' }
 
-export async function createGiftFlow({
-  values,
-  imageUrl,
-  isAdminRoute,
-  eventId,
-  wishlistId,
-}: CreateGiftFlowParams): Promise<CreateGiftFlowResult> {
+export async function createGiftFlow(
+  params: CreateGiftFlowParams
+): Promise<CreateGiftFlowResult> {
+  const isAdmin = params.mode === 'admin'
   const giftResponse = await createGift({
-    ...values,
-    isDefault: isAdminRoute,
-    eventId: isAdminRoute ? undefined : eventId,
-    imageUrl,
+    ...params.values,
+    isDefault: isAdmin,
+    eventId: isAdmin ? undefined : params.eventId,
+    imageUrl: params.imageUrl,
   })
 
   if (giftResponse.error || !giftResponse.giftId) {
@@ -35,17 +33,15 @@ export async function createGiftFlow({
     }
   }
 
-  if (isAdminRoute || !wishlistId || !eventId) {
-    return { giftId: giftResponse.giftId }
-  }
+  if (isAdmin) return { giftId: giftResponse.giftId }
 
   const wishlistResponse = await createWishlistGift({
-    wishlistId,
-    eventId,
+    wishlistId: params.wishlistId,
+    eventId: params.eventId,
     giftId: giftResponse.giftId,
-    isFavoriteGift: values.isFavoriteGift,
-    isGroupGift: values.isGroupGift,
-    quantity: values.quantity,
+    isFavoriteGift: params.values.isFavoriteGift,
+    isGroupGift: params.values.isGroupGift,
+    quantity: params.values.quantity,
   })
 
   if (wishlistResponse.error || !wishlistResponse.wishlistGiftId) {

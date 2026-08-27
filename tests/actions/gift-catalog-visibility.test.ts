@@ -17,6 +17,10 @@ vi.mock('next/cache', () => ({
   revalidatePath: mocks.revalidatePath,
 }))
 
+vi.mock('@/actions/get-current-user', () => ({
+  getCurrentUser: vi.fn(),
+}))
+
 import { getGifts } from '@/actions/data/gift'
 
 describe('gift catalog visibility', () => {

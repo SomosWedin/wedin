@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   wishlistGiftCreate: vi.fn(),
   wishlistGiftFindFirst: vi.fn(),
   revalidatePath: vi.fn(),
+  getCurrentUser: vi.fn(),
 }))
 
 vi.mock('@/prisma/client', () => ({
@@ -23,6 +24,10 @@ vi.mock('@/prisma/client', () => ({
 
 vi.mock('next/cache', () => ({
   revalidatePath: mocks.revalidatePath,
+}))
+
+vi.mock('@/actions/get-current-user', () => ({
+  getCurrentUser: mocks.getCurrentUser,
 }))
 
 vi.mock('@/actions/data/transaction', () => ({
@@ -46,6 +51,7 @@ const values = {
 
 describe('createGiftFlow', () => {
   beforeEach(() => {
+    mocks.getCurrentUser.mockResolvedValue({ role: 'ADMIN' })
     mocks.giftCreate.mockResolvedValue({ id: 'gift-1' })
     mocks.wishlistGiftCreate.mockResolvedValue({ id: 'wishlist-gift-1' })
     mocks.wishlistGiftFindFirst.mockResolvedValue(null)
@@ -53,9 +59,9 @@ describe('createGiftFlow', () => {
 
   it('creates a non-default gift and links it to the couple wishlist', async () => {
     const result = await createGiftFlow({
+      mode: 'wishlist',
       values,
       imageUrl: 'https://cdn.example.com/gift.jpg',
-      isAdminRoute: false,
       eventId: 'event-1',
       wishlistId: 'wishlist-1',
     })
@@ -87,11 +93,9 @@ describe('createGiftFlow', () => {
 
   it('creates a default admin gift without linking it to a wishlist', async () => {
     const result = await createGiftFlow({
+      mode: 'admin',
       values,
       imageUrl: '',
-      isAdminRoute: true,
-      eventId: undefined,
-      wishlistId: undefined,
     })
 
     expect(mocks.giftCreate).toHaveBeenCalledWith({
@@ -103,5 +107,37 @@ describe('createGiftFlow', () => {
 
     expect(mocks.wishlistGiftCreate).not.toHaveBeenCalled()
     expect(result).toEqual({ giftId: 'gift-1' })
+  })
+
+  it('reports a wishlist-linking failure after creating a couple gift', async () => {
+    mocks.wishlistGiftCreate.mockRejectedValue(
+      new Error('No se pudo agregar el regalo a la lista')
+    )
+
+    const result = await createGiftFlow({
+      mode: 'wishlist',
+      values,
+      imageUrl: '',
+      eventId: 'event-1',
+      wishlistId: 'wishlist-1',
+    })
+
+    expect(result).toEqual({
+      error: 'No se pudo agregar el regalo a la lista',
+      step: 'wishlist',
+    })
+  })
+
+  it('rejects creating a default gift when the current user is not an admin', async () => {
+    mocks.getCurrentUser.mockResolvedValue({ role: 'ORGANIZER' })
+
+    const result = await createGiftFlow({
+      mode: 'admin',
+      values,
+      imageUrl: '',
+    })
+
+    expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(result).toEqual({ error: 'No autorizado.', step: 'gift' })
   })
 })

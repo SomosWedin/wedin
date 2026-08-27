@@ -98,17 +98,9 @@ export default async function AdminPage() {
         </TabsContent>
 
         <TabsContent value="regalos" className="mt-6">
-          {gifts.length === 0 ? (
-            <EmptyState
-              icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
-              title="Sin regalos"
-              description="Todavía no hay regalos"
-            />
-          ) : (
-            <Suspense fallback={<DashboardTransactionsSkeleton />}>
-              <AdminGiftsList gifts={gifts} categories={categories} />
-            </Suspense>
-          )}
+          <Suspense fallback={<DashboardTransactionsSkeleton />}>
+            <AdminGiftsList gifts={gifts} categories={categories} />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>

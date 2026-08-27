@@ -1,33 +1,34 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { createGift } from '@/actions/data/gift'
-import { createWishlistGift } from '@/actions/data/wishlist-gift'
-import { ToastAction } from '@/components/ui/toast'
+import { createGift, editGift } from '@/actions/data/gift'
+import { editWishlistGift } from '@/actions/data/wishlist-gift'
 import type { GiftFormValues } from '@/schemas/form'
 import {
   type GiftWithImage,
   useGiftFormController,
 } from './use-gift-form-controller'
 
-export type ExistingGift = GiftWithImage
+export type EditableGift = GiftWithImage
 
-type UseAddExistingGiftProps = {
-  gift: ExistingGift
-  eventId: string
+type UseEditWishlistGiftProps = {
+  wishlistGiftId: string
   wishlistId: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  eventId: string
+  gift: EditableGift
+  isFavoriteGift: boolean
+  isGroupGift: boolean
+  quantity: number
 }
 
-export function useAddExistingGift({
-  gift,
-  eventId,
+export function useEditWishlistGift({
+  wishlistGiftId,
   wishlistId,
-  open,
-  onOpenChange,
-}: UseAddExistingGiftProps) {
-  const router = useRouter()
+  eventId,
+  gift,
+  isFavoriteGift,
+  isGroupGift,
+  quantity,
+}: UseEditWishlistGiftProps) {
   const defaultValues: GiftFormValues = {
     name: gift.name,
     categoryId: gift.categoryId,
@@ -36,18 +37,16 @@ export function useAddExistingGift({
     eventId,
     imageUrl: gift.image?.url ?? '',
     wishlistId,
-    isFavoriteGift: false,
-    isGroupGift: false,
-    quantity: 1,
+    isFavoriteGift,
+    isGroupGift,
+    quantity,
   }
 
   return useGiftFormController({
     defaultValues,
     initialImageUrl: gift.image?.url,
-    open,
-    onOpenChange,
     submit: async ({ values, imageUrl, hasNewImage }) => {
-      const hasChanges =
+      const hasGiftChanges =
         values.name !== gift.name ||
         values.categoryId !== gift.categoryId ||
         values.price !== gift.price ||
@@ -55,12 +54,13 @@ export function useAddExistingGift({
 
       let giftId = gift.id
 
-      if (hasChanges) {
-        const giftResponse = await createGift({
-          ...values,
-          isDefault: false,
-          imageUrl,
-        })
+      if (hasGiftChanges) {
+        const giftResponse = gift.isDefault
+          ? await createGift(
+            { ...values, isDefault: false, imageUrl },
+            wishlistGiftId
+          )
+          : await editGift({ ...values, imageUrl }, gift.id, wishlistGiftId)
 
         if (giftResponse.error || !giftResponse.giftId) {
           return {
@@ -76,21 +76,21 @@ export function useAddExistingGift({
         giftId = giftResponse.giftId
       }
 
-      const linkResponse = await createWishlistGift({
+      const response = await editWishlistGift({
+        wishlistGiftId,
         wishlistId,
-        eventId,
         giftId,
         isFavoriteGift: values.isFavoriteGift,
         isGroupGift: values.isGroupGift,
         quantity: values.quantity,
       })
 
-      if (linkResponse.error) {
+      if (response.error) {
         return {
           success: false,
           feedback: {
-            title: 'Error al agregar el regalo a tu lista',
-            description: linkResponse.error,
+            title: 'Error al editar el regalo',
+            description: response.error,
             variant: 'destructive',
           },
         }
@@ -98,20 +98,10 @@ export function useAddExistingGift({
 
       return {
         success: true,
-        feedback: {
-          title: 'Regalo agregado a tu lista. 🎁',
-          action: (
-            <ToastAction
-              altText="Ver lista"
-              onClick={() => router.push('/wishlist')}
-            >
-              Ver lista
-            </ToastAction>
-          ),
-        },
+        feedback: { title: 'Regalo actualizado. ✅' },
       }
     },
-    unexpectedErrorTitle: 'No pudimos agregar el regalo',
-    errorContext: 'Error adding existing gift:',
+    unexpectedErrorTitle: 'No pudimos editar el regalo',
+    errorContext: 'Error editing wishlist gift:',
   })
 }

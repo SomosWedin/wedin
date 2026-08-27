@@ -3,6 +3,7 @@
 import type { EventType, Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
+import { getCurrentUser } from '@/actions/get-current-user'
 import prismaClient from '@/prisma/client'
 import { GiftCreateSchema, GiftEditSchema } from '@/schemas/form'
 import { GetGiftsParams } from '@/schemas/params'
@@ -12,6 +13,39 @@ import {
   PriceLockedError,
 } from '../helper'
 import { getCategories } from './category'
+
+const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.'
+
+type GiftEditValues = z.infer<typeof GiftEditSchema>
+type GiftEditor = Pick<Prisma.TransactionClient, 'gift'>
+
+function validateGiftEdit(formData: GiftEditValues) {
+  const result = GiftEditSchema.safeParse(formData)
+  return result.success ? result.data : null
+}
+
+function updateGiftRecord(
+  client: GiftEditor,
+  giftId: string,
+  { imageUrl, ...giftData }: GiftEditValues
+) {
+  return client.gift.update({
+    where: { id: giftId },
+    data: {
+      ...giftData,
+      ...(imageUrl
+        ? {
+          image: {
+            upsert: {
+              create: { url: imageUrl },
+              update: { url: imageUrl },
+            },
+          },
+        }
+        : {}),
+    },
+  })
+}
 
 export async function getGift(giftId: string) {
   try {
@@ -106,38 +140,20 @@ export async function getGifts({
 }
 
 export async function editGift(
-  formData: z.infer<typeof GiftEditSchema>,
+  formData: GiftEditValues,
   giftId: string,
   wishlistGiftId: string
 ) {
-  const validatedFields = GiftEditSchema.safeParse(formData)
+  const values = validateGiftEdit(formData)
 
-  if (!validatedFields.success) {
-    return { error: 'Datos inválidos, por favor verifica tus datos.' }
+  if (!values) {
+    return { error: INVALID_GIFT_DATA_ERROR }
   }
-
-  const { imageUrl, ...giftData } = validatedFields.data
 
   try {
     const gift = await prismaClient.$transaction(async tx => {
-      await assertPriceEditAllowed(wishlistGiftId, giftData.price, tx)
-
-      return tx.gift.update({
-        where: { id: giftId },
-        data: {
-          ...giftData,
-          ...(imageUrl
-            ? {
-              image: {
-                upsert: {
-                  create: { url: imageUrl },
-                  update: { url: imageUrl },
-                },
-              },
-            }
-            : {}),
-        },
-      })
+      await assertPriceEditAllowed(wishlistGiftId, values.price, tx)
+      return updateGiftRecord(tx, giftId, values)
     })
 
     if (!gift) {
@@ -172,6 +188,14 @@ export async function createGift(
 
   const { imageUrl, ...giftData } = validatedFields.data
 
+  if (giftData.isDefault) {
+    const currentUser = await getCurrentUser()
+
+    if (currentUser?.role !== 'ADMIN') {
+      return { error: 'No autorizado.' }
+    }
+  }
+
   try {
     if (wishlistGiftId) {
       await assertPriceEditAllowed(wishlistGiftId, giftData.price, prismaClient)
@@ -200,6 +224,102 @@ export async function createGift(
     }
 
     console.error('Error creating gift:', error)
+    return { error: getErrorMessage(error) }
+  }
+}
+
+export async function editDefaultGiftAsAdmin(
+  formData: GiftEditValues,
+  giftId: string
+) {
+  const currentUser = await getCurrentUser()
+
+  if (currentUser?.role !== 'ADMIN') {
+    return { error: 'No autorizado.' }
+  }
+
+  const values = validateGiftEdit(formData)
+
+  if (!values) {
+    return { error: INVALID_GIFT_DATA_ERROR }
+  }
+
+  try {
+    const existingGift = await prismaClient.gift.findFirst({
+      where: { id: giftId, isDefault: true },
+      select: { id: true },
+    })
+
+    if (!existingGift) {
+      return { error: 'Regalo no encontrado.' }
+    }
+
+    const gift = await updateGiftRecord(prismaClient, giftId, values)
+
+    revalidatePath('/admin')
+    revalidatePath('/gifts')
+    return { giftId: gift.id }
+  } catch (error) {
+    console.error('Error editing default gift:', error)
+    return { error: getErrorMessage(error) }
+  }
+}
+
+export async function deleteDefaultGiftAsAdmin(giftId: string) {
+  const currentUser = await getCurrentUser()
+
+  if (currentUser?.role !== 'ADMIN') {
+    return { error: 'No autorizado.' }
+  }
+
+  try {
+    const deleted = await prismaClient.$transaction(async tx => {
+      const gift = await tx.gift.findFirst({
+        where: { id: giftId, isDefault: true },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          categoryId: true,
+          image: { select: { url: true } },
+          wishlistGifts: { select: { id: true, eventId: true } },
+        },
+      })
+
+      if (!gift) return false
+
+      for (const wishlistGift of gift.wishlistGifts) {
+        const privateGift = await tx.gift.create({
+          data: {
+            name: gift.name,
+            price: gift.price,
+            categoryId: gift.categoryId,
+            eventId: wishlistGift.eventId,
+            isDefault: false,
+            ...(gift.image?.url
+              ? { image: { create: { url: gift.image.url } } }
+              : {}),
+          },
+        })
+
+        await tx.wishlistGift.update({
+          where: { id: wishlistGift.id },
+          data: { giftId: privateGift.id },
+        })
+      }
+
+      await tx.image.deleteMany({ where: { giftId } })
+      await tx.gift.delete({ where: { id: giftId } })
+      return true
+    })
+
+    if (!deleted) return { error: 'Regalo no encontrado.' }
+
+    revalidatePath('/admin')
+    revalidatePath('/gifts')
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting default gift:', error)
     return { error: getErrorMessage(error) }
   }
 }

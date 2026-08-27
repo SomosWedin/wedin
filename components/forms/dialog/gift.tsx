@@ -3,9 +3,7 @@
 import type { Category } from '@prisma/client'
 import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
 import type { BaseSyntheticEvent, ChangeEventHandler, RefObject } from 'react'
-import { useEffect } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { CiImageOn } from 'react-icons/ci'
 import { IoInformationCircleOutline } from 'react-icons/io5'
@@ -42,7 +40,7 @@ import {
 } from '@/lib/image-upload'
 import type { GiftFormValues } from '@/schemas/form'
 
-type GiftFormProps = {
+export type GiftFormProps = {
   form: UseFormReturn<GiftFormValues>
   categories: Category[]
   loading: boolean
@@ -55,6 +53,7 @@ type GiftFormProps = {
   minQuantity?: number
   lockPrice?: boolean
   allowTypeChange?: boolean
+  adminMode?: boolean
   onFileChange: ChangeEventHandler<HTMLInputElement>
   onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
   onCancel: () => void
@@ -73,13 +72,12 @@ export default function GiftForm({
   minQuantity = 1,
   lockPrice = false,
   allowTypeChange = false,
+  adminMode = false,
   onFileChange,
   onSubmit,
   onCancel,
 }: GiftFormProps) {
   const isGroupGift = form.watch('isGroupGift')
-  const pathname = usePathname()
-  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
 
   return (
     <Form {...form}>
@@ -224,7 +222,7 @@ export default function GiftForm({
             )}
           />
 
-          {!isGroupGift && !isAdminRoute && (
+          {!isGroupGift && !adminMode && (
             <FormField
               control={form.control}
               name="quantity"
@@ -270,7 +268,7 @@ export default function GiftForm({
           )}
         </div>
 
-        {!isAdminRoute && (
+        {!adminMode && (
           <FormField
             control={form.control}
             name="isFavoriteGift"
@@ -295,7 +293,7 @@ export default function GiftForm({
           />
         )}
 
-        {allowTypeChange && !isAdminRoute && (
+        {allowTypeChange && !adminMode && (
           <FormField
             control={form.control}
             name="isGroupGift"

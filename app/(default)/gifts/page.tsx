@@ -51,6 +51,7 @@ export default async function GiftsPage({
             </p>
           </div>
           <CreateGiftDialog
+            mode="wishlist"
             eventId={event.id}
             wishlistId={event.wishlistId}
             categories={categories}

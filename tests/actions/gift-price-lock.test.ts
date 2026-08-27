@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   giftCreate: vi.fn(),
   wishlistGiftFindUnique: vi.fn(),
   revalidatePath: vi.fn(),
+  getCurrentUser: vi.fn(),
 }))
 
 vi.mock('@/prisma/client', () => ({
@@ -22,6 +23,10 @@ vi.mock('@/prisma/client', () => ({
 
 vi.mock('next/cache', () => ({
   revalidatePath: mocks.revalidatePath,
+}))
+
+vi.mock('@/actions/get-current-user', () => ({
+  getCurrentUser: mocks.getCurrentUser,
 }))
 
 import { createGift, editGift } from '@/actions/data/gift'

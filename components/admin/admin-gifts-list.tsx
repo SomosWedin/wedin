@@ -14,6 +14,8 @@ import {
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
 import CreateGiftDialog from '../dialog/create-gift-dialog'
+import DeleteAdminGiftDialog from '../dialog/delete-admin-gift-dialog'
+import EditAdminGiftDialog from '../dialog/edit-admin-gift-dialog'
 
 type GiftWithImage = Prisma.GiftGetPayload<{
   include: { image: true }
@@ -89,7 +91,8 @@ export default function AdminGiftsList({
       !normalizedSearch ||
       gift.name.toLowerCase().includes(normalizedSearch) ||
       categoryName.toLowerCase().includes(normalizedSearch)
-    const matchesCategory = !categoryFilter || categoryName === categoryFilter
+    const matchesCategory =
+      !categoryFilter || gift.categoryId === categoryFilter
     const matchesDateRange =
       (!fromDate || gift.createdAt >= fromDate) &&
       (!toDate || gift.createdAt <= toDate)
@@ -151,13 +154,13 @@ export default function AdminGiftsList({
             onClick={event => event.currentTarget.showPicker?.()}
           />
         </div>
-        <CreateGiftDialog categories={categories} />
+        <CreateGiftDialog mode="admin" categories={categories} />
       </div>
 
       <div className="bg-white rounded-lg">
         <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50 rounded-t-lg">
-          <div className="col-span-5">Regalo</div>
-          <div className="col-span-3">Categoría</div>
+          <div className="col-span-4">Regalo</div>
+          <div className="col-span-2">Categoría</div>
           <button
             type="button"
             className="flex col-span-2 gap-3 items-center text-left hover:text-textPrimary"
@@ -182,6 +185,7 @@ export default function AdminGiftsList({
               direction={sortDirection}
             />
           </button>
+          <div className="col-span-2 text-right">Acciones</div>
         </div>
 
         {sortedGifts.length === 0 && (
@@ -195,7 +199,7 @@ export default function AdminGiftsList({
             key={gift.id}
             className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 hover:bg-gray-50"
           >
-            <div className="flex col-span-5 gap-3 items-center min-w-0">
+            <div className="flex col-span-4 gap-3 items-center min-w-0">
               <div className="flex justify-center items-center w-12 h-12 bg-gray-100 rounded overflow-hidden shrink-0">
                 {gift.image?.url ? (
                   <Image
@@ -211,7 +215,7 @@ export default function AdminGiftsList({
               </div>
               <span className="font-medium truncate">{gift.name}</span>
             </div>
-            <div className="col-span-3 text-sm text-textTertiary">
+            <div className="col-span-2 text-sm text-textTertiary">
               {categoryNameById.get(gift.categoryId) ?? 'Sin categoría'}
             </div>
             <div className="col-span-2 text-sm text-textTertiary">
@@ -219,6 +223,10 @@ export default function AdminGiftsList({
             </div>
             <div className="col-span-2 whitespace-nowrap tabular-nums">
               Gs. {Number(gift.price).toLocaleString('es-PY')}
+            </div>
+            <div className="col-span-2 flex justify-end gap-2">
+              <EditAdminGiftDialog gift={gift} categories={categories} />
+              <DeleteAdminGiftDialog giftId={gift.id} giftName={gift.name} />
             </div>
           </div>
         ))}

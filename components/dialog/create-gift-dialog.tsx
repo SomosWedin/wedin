@@ -2,46 +2,36 @@
 
 import type { Category } from '@prisma/client'
 import { IoAdd } from 'react-icons/io5'
-import GiftForm from '@/components/forms/dialog/gift'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import { useCreateGift } from '@/hooks/dialog/forms/use-create-gift'
+import GiftFormDialogContent from './gift-form-dialog-content'
 
-type CreateGiftDialogProps = {
-  eventId?: string
-  wishlistId?: string
-  categories: Category[]
-}
+type CreateGiftDialogProps =
+  | {
+    mode: 'admin'
+    categories: Category[]
+  }
+  | {
+    mode: 'wishlist'
+    eventId: string
+    wishlistId: string
+    categories: Category[]
+  }
 
-export default function CreateGiftDialog({
-  eventId,
-  wishlistId,
-  categories,
-}: CreateGiftDialogProps) {
-  const {
-    form,
-    open,
-    loading,
-    imagePreview,
-    preparingImage,
-    fileInputRef,
-    isValid,
-    handleFileChange,
-    handleOpenChange,
-    handleSubmit,
-  } = useCreateGift({
-    eventId,
-    wishlistId,
-  })
+export default function CreateGiftDialog(props: CreateGiftDialogProps) {
+  const controller = useCreateGift(
+    props.mode === 'admin'
+      ? { mode: 'admin' }
+      : {
+        mode: 'wishlist',
+        eventId: props.eventId,
+        wishlistId: props.wishlistId,
+      }
+  )
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={controller.open} onOpenChange={controller.handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="success" className="gap-2">
           Crear regalo
@@ -49,27 +39,17 @@ export default function CreateGiftDialog({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Agregar regalo</DialogTitle>
-        </DialogHeader>
-
-        <GiftForm
-          form={form}
-          allowTypeChange
-          categories={categories}
-          fileInputRef={fileInputRef}
-          imagePreview={imagePreview}
-          isValid={isValid}
-          loading={loading}
-          onCancel={() => handleOpenChange(false)}
-          onFileChange={handleFileChange}
-          onSubmit={handleSubmit}
-          preparingImage={preparingImage}
-          submitLabel="Agregar a la lista"
-          uploadInputId="create-gift-image-upload"
-        />
-      </DialogContent>
+      <GiftFormDialogContent
+        title="Agregar regalo"
+        controller={controller}
+        categories={props.categories}
+        uploadInputId="create-gift-image-upload"
+        submitLabel={
+          props.mode === 'admin' ? 'Crear regalo' : 'Agregar a la lista'
+        }
+        allowTypeChange
+        adminMode={props.mode === 'admin'}
+      />
     </Dialog>
   )
 }
