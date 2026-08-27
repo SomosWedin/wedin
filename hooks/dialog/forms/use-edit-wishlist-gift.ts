@@ -1,7 +1,6 @@
 'use client'
 
-import { createGift, editGift } from '@/actions/data/gift'
-import { editWishlistGift } from '@/actions/data/wishlist-gift'
+import { editGiftWithWishlistGift } from '@/actions/data/wishlist-gift'
 import type { GiftFormValues } from '@/schemas/form'
 import {
   type GiftWithImage,
@@ -45,47 +44,24 @@ export function useEditWishlistGift({
   return useGiftFormController({
     defaultValues,
     initialImageUrl: gift.image?.url,
-    submit: async ({ values, imageUrl, hasNewImage }) => {
-      const hasGiftChanges =
-        values.name !== gift.name ||
-        values.categoryId !== gift.categoryId ||
-        values.price !== gift.price ||
-        hasNewImage
-
-      let giftId = gift.id
-
-      if (hasGiftChanges) {
-        const giftResponse = gift.isDefault
-          ? await createGift(
-            { ...values, isDefault: false, imageUrl },
-            wishlistGiftId
-          )
-          : await editGift({ ...values, imageUrl }, gift.id, wishlistGiftId)
-
-        if (giftResponse.error || !giftResponse.giftId) {
-          return {
-            success: false,
-            feedback: {
-              title: 'Error al guardar los cambios del regalo',
-              description: giftResponse.error,
-              variant: 'destructive',
-            },
-          }
-        }
-
-        giftId = giftResponse.giftId
-      }
-
-      const response = await editWishlistGift({
-        wishlistGiftId,
-        wishlistId,
-        giftId,
-        isFavoriteGift: values.isFavoriteGift,
-        isGroupGift: values.isGroupGift,
-        quantity: values.quantity,
+    submit: async ({ values, imageUrl }) => {
+      const response = await editGiftWithWishlistGift({
+        gift: {
+          name: values.name,
+          categoryId: values.categoryId,
+          price: values.price,
+          imageUrl,
+        },
+        wishlistGift: {
+          wishlistGiftId,
+          wishlistId,
+          isFavoriteGift: values.isFavoriteGift,
+          isGroupGift: values.isGroupGift,
+          quantity: values.quantity,
+        },
       })
 
-      if (response.error) {
+      if ('error' in response) {
         return {
           success: false,
           feedback: {

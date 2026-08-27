@@ -2,6 +2,7 @@
 
 import type { Category } from '@prisma/client'
 import { IoPencilOutline } from 'react-icons/io5'
+import type { GiftlistOption } from '@/actions/data/giftlist'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import {
@@ -13,11 +14,13 @@ import GiftFormDialogContent from './gift-form-dialog-content'
 type EditAdminGiftDialogProps = {
   gift: EditableAdminGift
   categories: Category[]
+  giftlists: GiftlistOption[]
 }
 
 export default function EditAdminGiftDialog({
   gift,
   categories,
+  giftlists,
 }: EditAdminGiftDialogProps) {
   const controller = useEditAdminGift(gift)
 
@@ -39,6 +42,7 @@ export default function EditAdminGiftDialog({
         title="Editar regalo"
         controller={controller}
         categories={categories}
+        giftlists={giftlists}
         uploadInputId={`edit-admin-gift-image-${gift.id}`}
         submitLabel="Guardar"
         adminMode

@@ -1,5 +1,5 @@
-import { createGift } from '@/actions/data/gift'
-import { createWishlistGift } from '@/actions/data/wishlist-gift'
+import { createAdminGift } from '@/actions/data/gift'
+import { createGiftWithWishlistGift } from '@/actions/data/wishlist-gift'
 import type { GiftFormValues } from '@/schemas/form'
 
 export type GiftCreationMode =
@@ -19,41 +19,54 @@ export async function createGiftFlow(
   params: CreateGiftFlowParams
 ): Promise<CreateGiftFlowResult> {
   const isAdmin = params.mode === 'admin'
-  const giftResponse = await createGift({
-    ...params.values,
-    isDefault: isAdmin,
-    eventId: isAdmin ? undefined : params.eventId,
-    imageUrl: params.imageUrl,
-  })
 
-  if (giftResponse.error || !giftResponse.giftId) {
-    return {
-      error: giftResponse.error ?? 'No se pudo crear el regalo',
-      step: 'gift',
+  if (isAdmin) {
+    const giftResponse = await createAdminGift({
+      name: params.values.name,
+      categoryId: params.values.categoryId,
+      price: params.values.price,
+      imageUrl: params.imageUrl,
+      giftlistId: params.values.giftlistId,
+      newGiftlistName: params.values.newGiftlistName,
+    })
+
+    if (giftResponse.error || !giftResponse.giftId) {
+      return {
+        error: giftResponse.error ?? 'No se pudo crear el regalo',
+        step: 'gift',
+      }
     }
+
+    return { giftId: giftResponse.giftId }
   }
 
-  if (isAdmin) return { giftId: giftResponse.giftId }
-
-  const wishlistResponse = await createWishlistGift({
-    wishlistId: params.wishlistId,
-    eventId: params.eventId,
-    giftId: giftResponse.giftId,
-    isFavoriteGift: params.values.isFavoriteGift,
-    isGroupGift: params.values.isGroupGift,
-    quantity: params.values.quantity,
+  const response = await createGiftWithWishlistGift({
+    gift: {
+      name: params.values.name,
+      categoryId: params.values.categoryId,
+      price: params.values.price,
+      isDefault: false,
+      eventId: params.eventId,
+      imageUrl: params.imageUrl,
+    },
+    wishlistGift: {
+      wishlistId: params.wishlistId,
+      eventId: params.eventId,
+      isFavoriteGift: params.values.isFavoriteGift,
+      isGroupGift: params.values.isGroupGift,
+      quantity: params.values.quantity,
+    },
   })
 
-  if (wishlistResponse.error || !wishlistResponse.wishlistGiftId) {
+  if ('error' in response) {
     return {
-      error:
-        wishlistResponse.error ?? 'No se pudo agregar el regalo a tu lista',
+      error: response.error,
       step: 'wishlist',
     }
   }
 
   return {
-    giftId: giftResponse.giftId,
-    wishlistGiftId: wishlistResponse.wishlistGiftId,
+    giftId: response.giftId,
+    wishlistGiftId: response.wishlistGiftId,
   }
 }

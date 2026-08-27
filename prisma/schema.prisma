@@ -255,11 +255,9 @@ model Payout {
 }
 
 model Giftlist {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
   name       String
-  quantity   String?
-  categoryId String  @db.ObjectId
-  totalPrice String?
+  categoryId String @db.ObjectId
 
   gifts Gift[]
 

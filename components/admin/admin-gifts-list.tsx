@@ -11,6 +11,7 @@ import {
   IoSearchOutline,
   IoSwapVerticalOutline,
 } from 'react-icons/io5'
+import type { GiftlistOption } from '@/actions/data/giftlist'
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
 import CreateGiftDialog from '../dialog/create-gift-dialog'
@@ -24,6 +25,7 @@ type GiftWithImage = Prisma.GiftGetPayload<{
 type AdminGiftsListProps = {
   gifts: GiftWithImage[]
   categories: Category[]
+  giftlists: GiftlistOption[]
 }
 
 type SortColumn = 'createdAt' | 'price'
@@ -48,6 +50,7 @@ function SortIcon({
 export default function AdminGiftsList({
   gifts,
   categories,
+  giftlists,
 }: AdminGiftsListProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -59,6 +62,10 @@ export default function AdminGiftsList({
   const categoryNameById = useMemo(
     () => new Map(categories.map(category => [category.id, category.name])),
     [categories]
+  )
+  const giftlistNameById = useMemo(
+    () => new Map(giftlists.map(giftlist => [giftlist.id, giftlist.name])),
+    [giftlists]
   )
 
   const categoryOptions = useMemo(
@@ -86,11 +93,15 @@ export default function AdminGiftsList({
   const filteredGifts = gifts.filter(gift => {
     const categoryName =
       categoryNameById.get(gift.categoryId) ?? 'Sin categoría'
+    const giftlistName = gift.giftlistId
+      ? giftlistNameById.get(gift.giftlistId)
+      : undefined
     const normalizedSearch = search.trim().toLowerCase()
     const matchesSearch =
       !normalizedSearch ||
       gift.name.toLowerCase().includes(normalizedSearch) ||
-      categoryName.toLowerCase().includes(normalizedSearch)
+      categoryName.toLowerCase().includes(normalizedSearch) ||
+      Boolean(giftlistName?.toLowerCase().includes(normalizedSearch))
     const matchesCategory =
       !categoryFilter || gift.categoryId === categoryFilter
     const matchesDateRange =
@@ -102,13 +113,13 @@ export default function AdminGiftsList({
 
   const sortedGifts = sortColumn
     ? [...filteredGifts].sort((a, b) => {
-      const diff =
-        sortColumn === 'createdAt'
-          ? a.createdAt.getTime() - b.createdAt.getTime()
-          : Number(a.price) - Number(b.price)
+        const diff =
+          sortColumn === 'createdAt'
+            ? a.createdAt.getTime() - b.createdAt.getTime()
+            : Number(a.price) - Number(b.price)
 
-      return sortDirection === 'asc' ? diff : -diff
-    })
+        return sortDirection === 'asc' ? diff : -diff
+      })
     : filteredGifts
 
   return (
@@ -154,7 +165,11 @@ export default function AdminGiftsList({
             onClick={event => event.currentTarget.showPicker?.()}
           />
         </div>
-        <CreateGiftDialog mode="admin" categories={categories} />
+        <CreateGiftDialog
+          mode="admin"
+          categories={categories}
+          giftlists={giftlists}
+        />
       </div>
 
       <div className="bg-white rounded-lg">
@@ -213,7 +228,15 @@ export default function AdminGiftsList({
                   <IoGiftOutline className="text-2xl text-gray-400" />
                 )}
               </div>
-              <span className="font-medium truncate">{gift.name}</span>
+              <div className="min-w-0">
+                <p className="truncate font-medium">{gift.name}</p>
+                <p className="truncate text-xs text-textTertiary">
+                  {gift.giftlistId
+                    ? (giftlistNameById.get(gift.giftlistId) ??
+                      'Colección no encontrada')
+                    : 'Sin colección'}
+                </p>
+              </div>
             </div>
             <div className="col-span-2 text-sm text-textTertiary">
               {categoryNameById.get(gift.categoryId) ?? 'Sin categoría'}
@@ -225,7 +248,11 @@ export default function AdminGiftsList({
               Gs. {Number(gift.price).toLocaleString('es-PY')}
             </div>
             <div className="col-span-2 flex justify-end gap-2">
-              <EditAdminGiftDialog gift={gift} categories={categories} />
+              <EditAdminGiftDialog
+                gift={gift}
+                categories={categories}
+                giftlists={giftlists}
+              />
               <DeleteAdminGiftDialog giftId={gift.id} giftName={gift.name} />
             </div>
           </div>

@@ -99,6 +99,10 @@ whenever you touch something documented below.
   wedding category; `null` instead means "not assigned yet", which is what
   `getCategoryIdsForEventType` keys on to suppress scoping while a database
   is mid-migration.
+- `Giftlist.categoryId` is the collection's category boundary. Admin gift
+  actions enforce that every attached `Gift.categoryId` matches it, and remove
+  a collection when its final gift is moved or deleted. Counts and total prices
+  are derived from `Giftlist.gifts`; do not add denormalized fields for them.
 - `Transaction.bankTransferGroupId` — shared by every transaction created
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a

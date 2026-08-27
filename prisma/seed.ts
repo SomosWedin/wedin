@@ -30,14 +30,12 @@ async function main() {
     })
   )
 
-  // Seed gift lists without quantity and totalPrice
+  // Seed gift lists
   const giftlists = await Promise.all(
     categories.map(async category => {
       return prismaSeed.giftlist.create({
         data: {
           name: `${category.name} Package`,
-          quantity: '0', // Initial placeholder
-          totalPrice: '0', // Initial placeholder
           categoryId: category.id,
         },
       })
@@ -45,14 +43,11 @@ async function main() {
   )
 
   // Seed gifts and assign to gift lists
-  // Track gifts by giftlist for later calculation
-  const giftsByList = new Map()
-
   for (let i = 0; i < 150; i++) {
     const randomGiftlist = faker.helpers.arrayElement(giftlists)
     const price = faker.number.int({ min: 89000, max: 1820000 }).toString()
 
-    const defaultGift = await prismaSeed.gift.create({
+    await prismaSeed.gift.create({
       data: {
         name: faker.commerce.productName(),
         isDefault: true,
@@ -66,29 +61,6 @@ async function main() {
             url: faker.image.url(),
           },
         },
-      },
-    })
-
-    // Track gifts for this giftlist
-    if (!giftsByList.has(randomGiftlist.id)) {
-      giftsByList.set(randomGiftlist.id, [])
-    }
-    giftsByList.get(randomGiftlist.id).push({ id: defaultGift.id, price })
-  }
-
-  // Update gift lists with calculated quantity and totalPrice
-  for (const giftlist of giftlists) {
-    const giftsForList = giftsByList.get(giftlist.id) || []
-    const totalPrice = giftsForList.reduce(
-      (acc: number, curr: { id: string; price: string }) =>
-        acc + Number(curr.price),
-      0
-    )
-    await prismaSeed.giftlist.update({
-      where: { id: giftlist.id },
-      data: {
-        quantity: giftsForList.length.toString(),
-        totalPrice: totalPrice.toString(),
       },
     })
   }

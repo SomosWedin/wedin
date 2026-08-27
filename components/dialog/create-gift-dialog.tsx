@@ -2,6 +2,7 @@
 
 import type { Category } from '@prisma/client'
 import { IoAdd } from 'react-icons/io5'
+import type { GiftlistOption } from '@/actions/data/giftlist'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import { useCreateGift } from '@/hooks/dialog/forms/use-create-gift'
@@ -9,25 +10,26 @@ import GiftFormDialogContent from './gift-form-dialog-content'
 
 type CreateGiftDialogProps =
   | {
-    mode: 'admin'
-    categories: Category[]
-  }
+      mode: 'admin'
+      categories: Category[]
+      giftlists: GiftlistOption[]
+    }
   | {
-    mode: 'wishlist'
-    eventId: string
-    wishlistId: string
-    categories: Category[]
-  }
+      mode: 'wishlist'
+      eventId: string
+      wishlistId: string
+      categories: Category[]
+    }
 
 export default function CreateGiftDialog(props: CreateGiftDialogProps) {
   const controller = useCreateGift(
     props.mode === 'admin'
       ? { mode: 'admin' }
       : {
-        mode: 'wishlist',
-        eventId: props.eventId,
-        wishlistId: props.wishlistId,
-      }
+          mode: 'wishlist',
+          eventId: props.eventId,
+          wishlistId: props.wishlistId,
+        }
   )
 
   return (
@@ -43,6 +45,7 @@ export default function CreateGiftDialog(props: CreateGiftDialogProps) {
         title="Agregar regalo"
         controller={controller}
         categories={props.categories}
+        giftlists={props.mode === 'admin' ? props.giftlists : undefined}
         uploadInputId="create-gift-image-upload"
         submitLabel={
           props.mode === 'admin' ? 'Crear regalo' : 'Agregar a la lista'

@@ -7,6 +7,7 @@ import {
 } from 'react-icons/io5'
 import { getCategories } from '@/actions/data/category'
 import { getGifts } from '@/actions/data/gift'
+import { getGiftlistOptionsForAdmin } from '@/actions/data/giftlist'
 import { getAllPayoutsForAdmin } from '@/actions/data/payout'
 import { getAllTransactionsForAdmin } from '@/actions/data/transaction'
 import { getCurrentUser } from '@/actions/get-current-user'
@@ -29,12 +30,14 @@ export default async function AdminPage() {
     redirect('/dashboard')
   }
 
-  const [transactions, payouts, gifts, categories] = await Promise.all([
-    getAllTransactionsForAdmin(),
-    getAllPayoutsForAdmin(),
-    getGifts({ searchParams: { isDefault: true } }),
-    getCategories(),
-  ])
+  const [transactions, payouts, gifts, categories, giftlists] =
+    await Promise.all([
+      getAllTransactionsForAdmin(),
+      getAllPayoutsForAdmin(),
+      getGifts({ searchParams: { isDefault: true } }),
+      getCategories(),
+      getGiftlistOptionsForAdmin(),
+    ])
 
   return (
     <div className="container w-full h-full flex items-center flex-col gap-6 p-8">
@@ -99,7 +102,11 @@ export default async function AdminPage() {
 
         <TabsContent value="regalos" className="mt-6">
           <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminGiftsList gifts={gifts} categories={categories} />
+            <AdminGiftsList
+              gifts={gifts}
+              categories={categories}
+              giftlists={giftlists}
+            />
           </Suspense>
         </TabsContent>
       </Tabs>

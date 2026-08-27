@@ -5,6 +5,9 @@ const mocks = vi.hoisted(() => ({
   giftFindUnique: vi.fn(),
   wishlistGiftCreate: vi.fn(),
   wishlistGiftFindFirst: vi.fn(),
+  giftlistFindFirst: vi.fn(),
+  giftlistCreate: vi.fn(),
+  transaction: vi.fn(),
   revalidatePath: vi.fn(),
   getCurrentUser: vi.fn(),
 }))
@@ -15,10 +18,15 @@ vi.mock('@/prisma/client', () => ({
       create: mocks.giftCreate,
       findUnique: mocks.giftFindUnique,
     },
+    giftlist: {
+      findFirst: mocks.giftlistFindFirst,
+      create: mocks.giftlistCreate,
+    },
     wishlistGift: {
       create: mocks.wishlistGiftCreate,
       findFirst: mocks.wishlistGiftFindFirst,
     },
+    $transaction: mocks.transaction,
   },
 }))
 
@@ -53,8 +61,23 @@ describe('createGiftFlow', () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockResolvedValue({ role: 'ADMIN' })
     mocks.giftCreate.mockResolvedValue({ id: 'gift-1' })
+    mocks.giftlistCreate.mockResolvedValue({ id: 'giftlist-1' })
     mocks.wishlistGiftCreate.mockResolvedValue({ id: 'wishlist-gift-1' })
     mocks.wishlistGiftFindFirst.mockResolvedValue(null)
+    mocks.transaction.mockImplementation(
+      async (callback: (tx: unknown) => unknown) =>
+        callback({
+          gift: { create: mocks.giftCreate },
+          giftlist: {
+            findFirst: mocks.giftlistFindFirst,
+            create: mocks.giftlistCreate,
+          },
+          wishlistGift: {
+            findFirst: mocks.wishlistGiftFindFirst,
+            create: mocks.wishlistGiftCreate,
+          },
+        })
+    )
   })
 
   it('creates a non-default gift and links it to the couple wishlist', async () => {
@@ -106,6 +129,35 @@ describe('createGiftFlow', () => {
     })
 
     expect(mocks.wishlistGiftCreate).not.toHaveBeenCalled()
+    expect(result).toEqual({ giftId: 'gift-1' })
+  })
+
+  it('creates a new collection and its admin gift in one server transaction', async () => {
+    mocks.giftlistFindFirst.mockResolvedValue(null)
+
+    const result = await createGiftFlow({
+      mode: 'admin',
+      values: {
+        ...values,
+        newGiftlistName: 'Esenciales del hogar',
+      },
+      imageUrl: '',
+    })
+
+    expect(mocks.giftlistCreate).toHaveBeenCalledWith({
+      data: {
+        name: 'Esenciales del hogar',
+        categoryId: 'category-1',
+      },
+      select: { id: true },
+    })
+    expect(mocks.giftCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ giftlistId: 'giftlist-1' }),
+    })
+    expect(mocks.giftlistCreate.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.giftCreate.mock.invocationCallOrder[0]
+    )
+    expect(mocks.transaction).toHaveBeenCalledOnce()
     expect(result).toEqual({ giftId: 'gift-1' })
   })
 

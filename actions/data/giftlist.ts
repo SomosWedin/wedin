@@ -1,10 +1,29 @@
 'use server'
 
-import type { EventType, Prisma } from '@prisma/client'
+import type { EventType, Giftlist, Prisma } from '@prisma/client'
 import type { z } from 'zod'
+import { getCurrentUser } from '@/actions/get-current-user'
 import prismaClient from '@/prisma/client'
 import type { GetGiftlistsSearchParams } from '@/schemas/params'
 import { getCategories } from './category'
+
+export type GiftlistOption = Pick<Giftlist, 'id' | 'name' | 'categoryId'>
+
+export async function getGiftlistOptionsForAdmin(): Promise<GiftlistOption[]> {
+  const currentUser = await getCurrentUser()
+
+  if (currentUser?.role !== 'ADMIN') return []
+
+  try {
+    return await prismaClient.giftlist.findMany({
+      select: { id: true, name: true, categoryId: true },
+      orderBy: { name: 'asc' },
+    })
+  } catch (error) {
+    console.error('Error retrieving gift list options:', error)
+    return []
+  }
+}
 
 export async function getGiftlist(giftlistId: string) {
   try {

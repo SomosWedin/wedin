@@ -8,6 +8,7 @@ import type { UseFormReturn } from 'react-hook-form'
 import { CiImageOn } from 'react-icons/ci'
 import { IoInformationCircleOutline } from 'react-icons/io5'
 import { MdOutlineFileUpload } from 'react-icons/md'
+import type { GiftlistOption } from '@/actions/data/giftlist'
 import PriceInput from '@/components/forms/common/price-input'
 import { Button } from '@/components/ui/button'
 import {
@@ -43,6 +44,7 @@ import type { GiftFormValues } from '@/schemas/form'
 export type GiftFormProps = {
   form: UseFormReturn<GiftFormValues>
   categories: Category[]
+  giftlists?: GiftlistOption[]
   loading: boolean
   isValid: boolean
   imagePreview: string | null
@@ -62,6 +64,7 @@ export type GiftFormProps = {
 export default function GiftForm({
   form,
   categories,
+  giftlists = [],
   loading,
   isValid,
   imagePreview,
@@ -78,6 +81,12 @@ export default function GiftForm({
   onCancel,
 }: GiftFormProps) {
   const isGroupGift = form.watch('isGroupGift')
+  const categoryId = form.watch('categoryId')
+  const newGiftlistName = form.watch('newGiftlistName')
+  const isCreatingGiftlist = newGiftlistName !== undefined
+  const matchingGiftlists = giftlists.filter(
+    giftlist => giftlist.categoryId === categoryId
+  )
 
   return (
     <Form {...form}>
@@ -157,7 +166,23 @@ export default function GiftForm({
             <FormItem>
               <FormLabel>Categoría</FormLabel>
 
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                value={field.value}
+                onValueChange={value => {
+                  if (adminMode && value !== field.value) {
+                    form.setValue('giftlistId', undefined, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                    form.setValue('newGiftlistName', undefined, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+
+                  field.onChange(value)
+                }}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Elegí una categoría" />
@@ -177,6 +202,110 @@ export default function GiftForm({
             </FormItem>
           )}
         />
+
+        {adminMode && (
+          <>
+            <FormField
+              control={form.control}
+              name="giftlistId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Colección (opcional)</FormLabel>
+
+                  <Select
+                    disabled={!categoryId}
+                    value={
+                      !categoryId
+                        ? undefined
+                        : isCreatingGiftlist
+                          ? '__create_giftlist__'
+                          : (field.value ?? '__no_giftlist__')
+                    }
+                    onValueChange={value => {
+                      if (value === '__create_giftlist__') {
+                        field.onChange(undefined)
+                        form.setValue('newGiftlistName', '', {
+                          shouldDirty: true,
+                          shouldTouch: false,
+                          shouldValidate: false,
+                        })
+                        form.clearErrors('newGiftlistName')
+                        return
+                      }
+
+                      form.setValue('newGiftlistName', undefined, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                      form.clearErrors('newGiftlistName')
+                      field.onChange(
+                        value === '__no_giftlist__' ? undefined : value
+                      )
+                    }}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            categoryId
+                              ? 'Elegí una colección'
+                              : 'Primero elegí una categoría'
+                          }
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+
+                    <SelectContent className="bg-white">
+                      <SelectItem value="__no_giftlist__">
+                        Sin colección
+                      </SelectItem>
+                      {matchingGiftlists.map(giftlist => (
+                        <SelectItem key={giftlist.id} value={giftlist.id}>
+                          {giftlist.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__create_giftlist__">
+                        + Crear nueva colección
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {categoryId && matchingGiftlists.length === 0 && (
+                    <p className="text-xs text-textTertiary">
+                      No hay colecciones en esta categoría. Podés crear una
+                      nueva o dejar el regalo sin colección.
+                    </p>
+                  )}
+
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
+
+            {isCreatingGiftlist && (
+              <FormField
+                control={form.control}
+                name="newGiftlistName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre de la nueva colección</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value ?? ''}
+                        placeholder="Esenciales para el hogar"
+                      />
+                    </FormControl>
+                    <p className="text-xs text-textTertiary">
+                      La colección se creará cuando guardes el regalo.
+                    </p>
+                    <FormMessage className="font-normal text-red-600" />
+                  </FormItem>
+                )}
+              />
+            )}
+          </>
+        )}
 
         <div className="flex gap-3">
           <FormField
@@ -228,14 +357,22 @@ export default function GiftForm({
               name="quantity"
               render={({ field }) => (
                 <FormItem className="flex-[2]">
-                  <FormLabel className="flex gap-1 items-center h-5">
-                    Cantidad
+                  <div className="flex h-5 items-center gap-1">
+                    <FormLabel>Cantidad</FormLabel>
+
                     <TooltipProvider disableHoverableContent>
                       <Tooltip delayDuration={100}>
                         <TooltipTrigger asChild>
-                          <span tabIndex={0}>
-                            <IoInformationCircleOutline className="text-textTertiary" />
-                          </span>
+                          <button
+                            type="button"
+                            aria-label="Información sobre la cantidad"
+                            className="inline-flex"
+                          >
+                            <IoInformationCircleOutline
+                              aria-hidden="true"
+                              className="text-textTertiary"
+                            />
+                          </button>
                         </TooltipTrigger>
 
                         <TooltipContent side="top">
@@ -244,7 +381,7 @@ export default function GiftForm({
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                  </FormLabel>
+                  </div>
 
                   <FormControl>
                     <Input

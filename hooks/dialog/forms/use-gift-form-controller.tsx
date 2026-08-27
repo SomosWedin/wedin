@@ -90,8 +90,7 @@ export function useGiftFormController({
   const handleOpenChange = (nextOpen: boolean) => {
     if (controlledOpen === undefined) setInternalOpen(nextOpen)
     onOpenChange?.(nextOpen)
-
-    if (!nextOpen) resetDialog()
+    resetDialog()
   }
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {

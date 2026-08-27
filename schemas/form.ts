@@ -111,6 +111,12 @@ export const EventCoverFormSchema = z.object({
     }),
 })
 
+export const GiftlistNameSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'Ingresá un nombre para la colección' })
+  .max(60, { message: 'El nombre de la colección es demasiado largo' })
+
 export const GiftFormSchema = z.object({
   name: z
     .string()
@@ -125,6 +131,8 @@ export const GiftFormSchema = z.object({
     }),
   isDefault: z.boolean().default(false),
   eventId: z.string().optional(),
+  giftlistId: z.string().min(1).optional(),
+  newGiftlistName: GiftlistNameSchema.optional(),
 
   image: z.custom<File>().optional(),
   imageUrl: z.string(),
@@ -163,6 +171,29 @@ export const GiftCreateSchema = GiftPostSchema.pick({
   imageUrl: true,
 })
 
+const AdminGiftlistSelectionSchema = z.object({
+  giftlistId: GiftPostSchema.shape.giftlistId,
+  newGiftlistName: GiftPostSchema.shape.newGiftlistName,
+})
+
+function hasOnlyOneGiftlistSelection(values: {
+  giftlistId?: string
+  newGiftlistName?: string
+}) {
+  return !(values.giftlistId && values.newGiftlistName)
+}
+
+const AdminGiftMutationSchema = GiftEditSchema.merge(
+  AdminGiftlistSelectionSchema
+)
+  .strict()
+  .refine(hasOnlyOneGiftlistSelection, {
+    message: 'Elegí una colección existente o creá una nueva, no ambas.',
+  })
+
+export const AdminGiftCreateSchema = AdminGiftMutationSchema
+export const AdminGiftEditSchema = AdminGiftMutationSchema
+
 export const WishlistGiftCreateSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }),
   eventId: z.string().min(1, { message: 'No se encontro un event ID' }),
@@ -170,6 +201,11 @@ export const WishlistGiftCreateSchema = z.object({
   isFavoriteGift: z.boolean().default(false),
   isGroupGift: z.boolean().default(false),
   quantity: z.coerce.number().int().min(1).max(20).default(1),
+})
+
+export const GiftWithWishlistGiftCreateSchema = z.object({
+  gift: GiftCreateSchema,
+  wishlistGift: WishlistGiftCreateSchema.omit({ giftId: true }),
 })
 
 export const WishlistGiftsCreateSchema = z.object({
@@ -185,6 +221,11 @@ export const WishlistGiftEditSchema = z.object({
   isFavoriteGift: z.boolean().default(false),
   isGroupGift: z.boolean().default(false),
   quantity: z.coerce.number().int().min(1).max(20).default(1),
+})
+
+export const GiftWithWishlistGiftEditSchema = z.object({
+  gift: GiftEditSchema,
+  wishlistGift: WishlistGiftEditSchema.omit({ giftId: true }),
 })
 
 export const WishlistGiftDeleteSchema = z.object({

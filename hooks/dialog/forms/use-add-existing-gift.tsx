@@ -1,8 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { createGift } from '@/actions/data/gift'
-import { createWishlistGift } from '@/actions/data/wishlist-gift'
+import {
+  createGiftWithWishlistGift,
+  createWishlistGift,
+} from '@/actions/data/wishlist-gift'
 import { ToastAction } from '@/components/ui/toast'
 import type { GiftFormValues } from '@/schemas/form'
 import {
@@ -53,46 +55,54 @@ export function useAddExistingGift({
         values.price !== gift.price ||
         hasNewImage
 
-      let giftId = gift.id
-
       if (hasChanges) {
-        const giftResponse = await createGift({
-          ...values,
-          isDefault: false,
-          imageUrl,
+        const response = await createGiftWithWishlistGift({
+          gift: {
+            name: values.name,
+            categoryId: values.categoryId,
+            price: values.price,
+            isDefault: false,
+            eventId,
+            imageUrl,
+          },
+          wishlistGift: {
+            wishlistId,
+            eventId,
+            isFavoriteGift: values.isFavoriteGift,
+            isGroupGift: values.isGroupGift,
+            quantity: values.quantity,
+          },
         })
 
-        if (giftResponse.error || !giftResponse.giftId) {
+        if ('error' in response) {
           return {
             success: false,
             feedback: {
-              title: 'Error al guardar los cambios del regalo',
-              description: giftResponse.error,
+              title: 'Error al agregar el regalo a tu lista',
+              description: response.error,
               variant: 'destructive',
             },
           }
         }
+      } else {
+        const response = await createWishlistGift({
+          wishlistId,
+          eventId,
+          giftId: gift.id,
+          isFavoriteGift: values.isFavoriteGift,
+          isGroupGift: values.isGroupGift,
+          quantity: values.quantity,
+        })
 
-        giftId = giftResponse.giftId
-      }
-
-      const linkResponse = await createWishlistGift({
-        wishlistId,
-        eventId,
-        giftId,
-        isFavoriteGift: values.isFavoriteGift,
-        isGroupGift: values.isGroupGift,
-        quantity: values.quantity,
-      })
-
-      if (linkResponse.error) {
-        return {
-          success: false,
-          feedback: {
-            title: 'Error al agregar el regalo a tu lista',
-            description: linkResponse.error,
-            variant: 'destructive',
-          },
+        if ('error' in response) {
+          return {
+            success: false,
+            feedback: {
+              title: 'Error al agregar el regalo a tu lista',
+              description: response.error,
+              variant: 'destructive',
+            },
+          }
         }
       }
 

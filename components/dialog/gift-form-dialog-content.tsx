@@ -1,6 +1,7 @@
 'use client'
 
 import type { Category } from '@prisma/client'
+import type { GiftlistOption } from '@/actions/data/giftlist'
 import GiftForm from '@/components/forms/dialog/gift'
 import {
   DialogContent,
@@ -13,6 +14,7 @@ type GiftFormDialogContentProps = {
   title: string
   controller: GiftFormController
   categories: Category[]
+  giftlists?: GiftlistOption[]
   uploadInputId: string
   submitLabel: string
   minQuantity?: number
@@ -25,6 +27,7 @@ export default function GiftFormDialogContent({
   title,
   controller,
   categories,
+  giftlists,
   uploadInputId,
   submitLabel,
   minQuantity,
@@ -33,7 +36,7 @@ export default function GiftFormDialogContent({
   adminMode,
 }: GiftFormDialogContentProps) {
   return (
-    <DialogContent className="max-w-lg">
+    <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
@@ -41,6 +44,7 @@ export default function GiftFormDialogContent({
       <GiftForm
         form={controller.form}
         categories={categories}
+        giftlists={giftlists}
         loading={controller.loading}
         isValid={controller.isValid}
         imagePreview={controller.imagePreview}

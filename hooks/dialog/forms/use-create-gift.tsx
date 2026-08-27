@@ -16,6 +16,8 @@ export function useCreateGift(mode: GiftCreationMode) {
     price: '',
     isDefault: isAdmin,
     eventId: isAdmin ? undefined : mode.eventId,
+    giftlistId: undefined,
+    newGiftlistName: undefined,
     imageUrl: '',
     wishlistId: isAdmin ? undefined : mode.wishlistId,
     isFavoriteGift: false,

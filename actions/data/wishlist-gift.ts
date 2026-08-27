@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import prismaClient from '@/prisma/client'
 import {
+  GiftWithWishlistGiftCreateSchema,
+  GiftWithWishlistGiftEditSchema,
   WishlistGiftCreateSchema,
   WishlistGiftDeleteSchema,
   WishlistGiftEditSchema,
@@ -12,11 +14,85 @@ import {
   WishlistGiftsCreateSchema,
 } from '@/schemas/form'
 import { GetwishlistGiftsParams } from '@/schemas/params'
-import { getErrorMessage } from '../helper'
+import {
+  getErrorMessage,
+  PriceLockedError,
+  retryOnTransientWriteConflict,
+  revalidateGiftAndWishlistPaths,
+  WishlistGiftMutationError,
+} from '../helper'
+import { createGiftRecord, updateGiftRecord } from './gift-operations'
 import { releaseExpiredHolds } from './reservation'
 import { recomputeWishlistGiftProgress } from './transaction'
 
 const MAX_HOLDS_PER_RENDER = 25
+const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.'
+
+type WishlistGiftWriter = Pick<Prisma.TransactionClient, 'wishlistGift'>
+type WishlistGiftCreateValues = z.infer<typeof WishlistGiftCreateSchema>
+type WishlistGiftEditValues = z.infer<typeof WishlistGiftEditSchema>
+type WishlistGiftProgressUpdate = Pick<
+  Prisma.WishlistGiftUpdateManyMutationInput,
+  'groupGiftParts' | 'isFullyPaid'
+>
+
+async function createWishlistGiftRecord(
+  client: WishlistGiftWriter,
+  values: WishlistGiftCreateValues
+) {
+  const existing = await client.wishlistGift.findFirst({
+    where: {
+      wishlistId: values.wishlistId,
+      giftId: values.giftId,
+      isReceived: false,
+    },
+    select: { id: true },
+  })
+
+  if (existing) {
+    throw new WishlistGiftMutationError('Este regalo ya está en tu lista')
+  }
+
+  return client.wishlistGift.create({
+    data: {
+      ...values,
+      quantity: values.isGroupGift ? 1 : values.quantity,
+    },
+  })
+}
+
+async function updateWishlistGiftRecord(
+  client: WishlistGiftWriter,
+  values: WishlistGiftEditValues,
+  currentIsGroupGift: boolean,
+  progress: WishlistGiftProgressUpdate = {}
+) {
+  const isChangingType = values.isGroupGift !== currentIsGroupGift
+  const result = await client.wishlistGift.updateMany({
+    where: {
+      id: values.wishlistGiftId,
+      reservedQuantity: { lte: values.isGroupGift ? 0 : values.quantity },
+      ...(isChangingType ? { reservedAmount: 0 } : {}),
+    },
+    data: {
+      giftId: values.giftId,
+      isFavoriteGift: values.isFavoriteGift,
+      isGroupGift: values.isGroupGift,
+      quantity: values.isGroupGift ? 1 : values.quantity,
+      ...progress,
+    },
+  })
+
+  if (result.count === 0) {
+    throw new WishlistGiftMutationError(
+      isChangingType
+        ? 'No se puede cambiar el tipo de un regalo con contribuciones.'
+        : 'La cantidad no puede ser menor a las unidades ya reservadas o vendidas.'
+    )
+  }
+
+  return result
+}
 
 export async function getWishlistGifts({
   searchParams,
@@ -81,35 +157,58 @@ export async function createWishlistGift(
   const validatedFields = WishlistGiftCreateSchema.safeParse(formData)
 
   if (!validatedFields.success) {
-    return { error: 'Datos inválidos, por favor verifica tus datos.' }
-  }
-
-  const { wishlistId, giftId, eventId, isFavoriteGift, isGroupGift, quantity } =
-    validatedFields.data
-
-  const existing = await getWishlistGift(wishlistId, giftId)
-
-  if (existing) {
-    return { error: 'Este regalo ya está en tu lista' }
+    return { error: INVALID_GIFT_DATA_ERROR }
   }
 
   try {
-    const wishlistGift = await prismaClient.wishlistGift.create({
-      data: {
-        wishlistId,
-        giftId,
-        eventId,
-        isFavoriteGift,
-        isGroupGift,
-        quantity: isGroupGift ? 1 : quantity,
-      },
-    })
+    const wishlistGift = await createWishlistGiftRecord(
+      prismaClient,
+      validatedFields.data
+    )
 
     revalidatePath('/wishlist')
     revalidatePath('/gifts')
     return { wishlistGiftId: wishlistGift.id }
   } catch (error) {
+    if (error instanceof WishlistGiftMutationError) {
+      return { error: error.message }
+    }
+
     console.error('Error creating wishlist gift:', error)
+    return { error: getErrorMessage(error) }
+  }
+}
+
+export async function createGiftWithWishlistGift(
+  formData: z.infer<typeof GiftWithWishlistGiftCreateSchema>
+) {
+  const validatedFields = GiftWithWishlistGiftCreateSchema.safeParse(formData)
+
+  if (!validatedFields.success || validatedFields.data.gift.isDefault) {
+    return { error: INVALID_GIFT_DATA_ERROR }
+  }
+
+  try {
+    const result = await retryOnTransientWriteConflict(() =>
+      prismaClient.$transaction(async tx => {
+        const gift = await createGiftRecord(tx, validatedFields.data.gift)
+        const wishlistGift = await createWishlistGiftRecord(tx, {
+          ...validatedFields.data.wishlistGift,
+          giftId: gift.id,
+        })
+
+        return { giftId: gift.id, wishlistGiftId: wishlistGift.id }
+      })
+    )
+
+    revalidateGiftAndWishlistPaths()
+    return result
+  } catch (error) {
+    if (error instanceof WishlistGiftMutationError) {
+      return { error: error.message }
+    }
+
+    console.error('Error creating gift and wishlist gift:', error)
     return { error: getErrorMessage(error) }
   }
 }
@@ -156,11 +255,10 @@ export async function editWishlistGift(
   const validatedFields = WishlistGiftEditSchema.safeParse(formData)
 
   if (!validatedFields.success) {
-    return { error: 'Datos inválidos, por favor verifica tus datos.' }
+    return { error: INVALID_GIFT_DATA_ERROR }
   }
 
-  const { wishlistGiftId, giftId, isFavoriteGift, isGroupGift, quantity } =
-    validatedFields.data
+  const { wishlistGiftId } = validatedFields.data
 
   try {
     const current = await prismaClient.wishlistGift.findUnique({
@@ -172,36 +270,146 @@ export async function editWishlistGift(
       return { error: 'Regalo no encontrado.' }
     }
 
-    const isChangingType = isGroupGift !== current.isGroupGift
-
-    const result = await prismaClient.wishlistGift.updateMany({
-      where: {
-        id: wishlistGiftId,
-        reservedQuantity: { lte: isGroupGift ? 0 : quantity },
-        ...(isChangingType ? { reservedAmount: 0 } : {}),
-      },
-      data: {
-        giftId,
-        isFavoriteGift,
-        isGroupGift,
-        quantity: isGroupGift ? 1 : quantity,
-      },
-    })
-
-    if (result.count === 0) {
-      return {
-        error: isChangingType
-          ? 'No se puede cambiar el tipo de un regalo con contribuciones.'
-          : 'La cantidad no puede ser menor a las unidades ya reservadas o vendidas.',
-      }
-    }
+    await updateWishlistGiftRecord(
+      prismaClient,
+      validatedFields.data,
+      current.isGroupGift
+    )
 
     await recomputeWishlistGiftProgress(wishlistGiftId)
 
     revalidatePath('/wishlist')
     return { success: true }
   } catch (error) {
+    if (error instanceof WishlistGiftMutationError) {
+      return { error: error.message }
+    }
+
     console.error('Error editing wishlist gift:', error)
+    return { error: getErrorMessage(error) }
+  }
+}
+
+export async function editGiftWithWishlistGift(
+  formData: z.infer<typeof GiftWithWishlistGiftEditSchema>
+) {
+  const validatedFields = GiftWithWishlistGiftEditSchema.safeParse(formData)
+
+  if (!validatedFields.success) {
+    return { error: INVALID_GIFT_DATA_ERROR }
+  }
+
+  const { gift: giftValues, wishlistGift: wishlistGiftValues } =
+    validatedFields.data
+
+  try {
+    const result = await retryOnTransientWriteConflict(() =>
+      prismaClient.$transaction(async tx => {
+        const current = await tx.wishlistGift.findFirst({
+          where: {
+            id: wishlistGiftValues.wishlistGiftId,
+            wishlistId: wishlistGiftValues.wishlistId,
+          },
+          select: {
+            eventId: true,
+            giftId: true,
+            isGroupGift: true,
+            reservedQuantity: true,
+            gift: {
+              select: {
+                id: true,
+                name: true,
+                categoryId: true,
+                price: true,
+                isDefault: true,
+                image: { select: { url: true } },
+              },
+            },
+            transactions: {
+              where: { status: 'COMPLETED' },
+              select: { amount: true, quantity: true },
+            },
+          },
+        })
+
+        if (!current) {
+          throw new WishlistGiftMutationError('Regalo no encontrado.')
+        }
+
+        const giftChanged =
+          giftValues.name !== current.gift.name ||
+          giftValues.categoryId !== current.gift.categoryId ||
+          giftValues.price !== current.gift.price ||
+          giftValues.imageUrl !== (current.gift.image?.url ?? '')
+
+        if (
+          giftChanged &&
+          giftValues.price !== current.gift.price &&
+          !current.isGroupGift &&
+          current.reservedQuantity > 0
+        ) {
+          throw new PriceLockedError()
+        }
+
+        let giftId = current.giftId
+
+        if (giftChanged) {
+          const gift = current.gift.isDefault
+            ? await createGiftRecord(tx, {
+                ...giftValues,
+                isDefault: false,
+                eventId: current.eventId,
+              })
+            : await updateGiftRecord(tx, current.giftId, giftValues)
+
+          giftId = gift.id
+        }
+
+        const completedAmount = current.transactions.reduce(
+          (sum, transaction) => sum + (Number(transaction.amount) || 0),
+          0
+        )
+        const completedQuantity = current.transactions.reduce(
+          (sum, transaction) => sum + transaction.quantity,
+          0
+        )
+        const progress = wishlistGiftValues.isGroupGift
+          ? {
+              groupGiftParts: String(completedAmount),
+              isFullyPaid:
+                Number(giftValues.price) > 0 &&
+                completedAmount >= Number(giftValues.price),
+            }
+          : {
+              isFullyPaid: completedQuantity >= wishlistGiftValues.quantity,
+            }
+
+        await updateWishlistGiftRecord(
+          tx,
+          { ...wishlistGiftValues, giftId },
+          current.isGroupGift,
+          progress
+        )
+
+        return { giftId }
+      })
+    )
+
+    revalidateGiftAndWishlistPaths()
+    return result
+  } catch (error) {
+    if (error instanceof WishlistGiftMutationError) {
+      return { error: error.message }
+    }
+
+    if (error instanceof PriceLockedError) {
+      return {
+        error:
+          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+      }
+    }
+
+    console.error('Error editing gift and wishlist gift:', error)
     return { error: getErrorMessage(error) }
   }
 }
