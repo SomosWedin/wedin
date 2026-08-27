@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { distributeServiceFee } from '@/lib/pagopar'
+import { distributeServiceFee } from '@/lib/pagopar-fee'
 
 describe('distributeServiceFee', () => {
   it('folds the fee into a single item entirely', () => {
