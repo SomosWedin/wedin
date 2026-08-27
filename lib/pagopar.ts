@@ -48,6 +48,40 @@ function sha1(value: string): string {
   return createHash('sha1').update(value).digest('hex')
 }
 
+// Pagopar requires monto_total to equal the sum of every item's
+// precio_total, so the service fee can't be sent as its own line if we
+// don't want it to show up as a separate item on Pagopar's checkout page —
+// it has to be folded into the gift prices instead. This splits it
+// proportionally to each item's amount using a largest-remainder
+// allocation, so the per-guaraní rounding still sums to exactly
+// `serviceFee` (amounts here are whole guaraníes, no decimals).
+export function distributeServiceFee(
+  amounts: number[],
+  serviceFee: number
+): number[] {
+  const subtotal = amounts.reduce((sum, amount) => sum + amount, 0)
+
+  if (serviceFee <= 0 || subtotal <= 0) {
+    return amounts
+  }
+
+  const shares = amounts.map(amount => (amount / subtotal) * serviceFee)
+  const feeShares = shares.map(Math.floor)
+  let leftover = serviceFee - feeShares.reduce((sum, share) => sum + share, 0)
+
+  const byRemainderDesc = shares
+    .map((share, index) => ({ index, remainder: share - feeShares[index] }))
+    .sort((a, b) => b.remainder - a.remainder)
+
+  for (const { index } of byRemainderDesc) {
+    if (leftover <= 0) break
+    feeShares[index] += 1
+    leftover -= 1
+  }
+
+  return amounts.map((amount, index) => amount + feeShares[index])
+}
+
 // Pagopar wants "YYYY-MM-DD HH:MM:SS", no timezone offset.
 function formatPagoparDate(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -69,40 +103,26 @@ export async function createOrder(
 
   const token = sha1(privateKey + orderId + String(totalAmount))
 
-  const compras_items = [
-    ...items.map((item, index) => ({
-      nombre: item.name,
-      cantidad: item.quantity,
-      categoria: 4,
-      ciudad: '1',
-      descripcion: item.name,
-      id_producto: index + 1,
-      precio_total: item.amount,
-      public_key: publicKey,
-      url_imagen: item.imageUrl ?? '',
-      vendedor_telefono: '',
-      vendedor_direccion: '',
-      vendedor_direccion_referencia: '',
-      vendedor_direccion_coordenadas: '',
-    })),
-    // agregamos para que el monto_total del body sea igual al total de
-    // la suma de precio_total entre todos los producto
-    {
-      nombre: 'Cargo por servicio',
-      cantidad: 1,
-      categoria: 4,
-      ciudad: '1',
-      descripcion: 'Cargo por servicio (3%)',
-      id_producto: items.length + 1,
-      precio_total: serviceFee,
-      public_key: publicKey,
-      url_imagen: '',
-      vendedor_telefono: '',
-      vendedor_direccion: '',
-      vendedor_direccion_referencia: '',
-      vendedor_direccion_coordenadas: '',
-    },
-  ]
+  const itemAmounts = distributeServiceFee(
+    items.map(item => item.amount),
+    serviceFee
+  )
+
+  const compras_items = items.map((item, index) => ({
+    nombre: item.name,
+    cantidad: item.quantity,
+    categoria: 4,
+    ciudad: '1',
+    descripcion: item.name,
+    id_producto: index + 1,
+    precio_total: itemAmounts[index],
+    public_key: publicKey,
+    url_imagen: item.imageUrl ?? '',
+    vendedor_telefono: '',
+    vendedor_direccion: '',
+    vendedor_direccion_referencia: '',
+    vendedor_direccion_coordenadas: '',
+  }))
 
   try {
     const response = await fetch(
