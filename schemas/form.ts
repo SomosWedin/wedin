@@ -128,7 +128,7 @@ export const GiftFormSchema = z.object({
   isEditedVersion: z.boolean().default(false),
   eventId: z.string().optional(),
 
-  image: z.any().optional() as ZodType<File>,
+  image: z.custom<File>().optional(),
   imageUrl: z.string(),
 
   wishlistId: z.string().optional(), // wishlistGiftPostSchema

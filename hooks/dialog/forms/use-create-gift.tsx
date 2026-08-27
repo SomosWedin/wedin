@@ -4,13 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { usePathname, useRouter } from 'next/navigation'
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { type SubmitHandler, useForm } from 'react-hook-form'
-import { createGift } from '@/actions/data/gift'
-import { createWishlistGift } from '@/actions/data/wishlist-gift'
 import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/hooks/use-toast'
 import { prepareImageForUpload } from '@/lib/image-upload'
 import { uploadImage } from '@/lib/image-uploader'
 import { GiftFormSchema, type GiftFormValues } from '@/schemas/form'
+import { createGiftFlow } from './create-gift-flow'
 
 type UseCreateGiftProps = {
   eventId?: string
@@ -117,41 +116,25 @@ export function useCreateGift({ eventId, wishlistId }: UseCreateGiftProps) {
         imageUrl = uploadResponse.url
       }
 
-      const giftResponse = await createGift({
-        ...values,
-        isEditedVersion: false,
+      const result = await createGiftFlow({
+        values,
         imageUrl,
+        isAdminRoute,
+        eventId,
+        wishlistId,
       })
 
-      if (giftResponse.error || !giftResponse.giftId) {
+      if (result.error) {
         toast({
-          title: 'Error al crear el regalo',
-          description: giftResponse.error,
+          title:
+            result.step === 'gift'
+              ? 'Error al crear el regalo'
+              : 'Error al agregar el regalo a tu lista',
+          description: result.error,
           variant: 'destructive',
         })
 
         return
-      }
-
-      if (wishlistId && eventId) {
-        const linkResponse = await createWishlistGift({
-          wishlistId,
-          eventId,
-          giftId: giftResponse.giftId,
-          isFavoriteGift: values.isFavoriteGift,
-          isGroupGift: values.isGroupGift,
-          quantity: values.quantity,
-        })
-
-        if (linkResponse.error) {
-          toast({
-            title: 'Error al agregar el regalo a tu lista',
-            description: linkResponse.error,
-            variant: 'destructive',
-          })
-
-          return
-        }
       }
 
       if (!isAdminRoute) {
