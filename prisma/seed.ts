@@ -12,19 +12,20 @@ async function main() {
   // Seed categories
   const categories = await Promise.all(
     [
-      'Luna de miel',
-      'Casa',
-      'Electrodomésticos',
-      'Viajes',
-      'Gastronomía',
-      'Aventura',
-      'Relax',
-      'Cultura y arte',
-    ].map(async name => {
+      { name: 'Luna de miel', eventType: 'WEDDING' },
+      { name: 'Muebles y decoraciones', eventType: 'WEDDING' },
+      { name: 'Cama y cocina', eventType: 'WEDDING' },
+      { name: 'Construcciones y reformas', eventType: 'WEDDING' },
+      { name: 'Entrada en departamento', eventType: 'WEDDING' },
+      { name: 'Baby shower', eventType: 'OTHER' },
+      { name: '15 años', eventType: 'OTHER' },
+      { name: 'Cumpleaños', eventType: 'OTHER' },
+      { name: 'Aniversarios', eventType: 'OTHER' },
+    ].map(async ({ name, eventType }) => {
       return prismaSeed.category.upsert({
-        where: { name },
+        where: { name_eventType: { name, eventType } },
         update: {},
-        create: { name },
+        create: { name, eventType },
       })
     })
   )

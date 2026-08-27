@@ -484,6 +484,8 @@ export function useEventCover({
     setReplacedImages([])
     setImageErrors([])
 
+    form.reset({ coverMessage: data.coverMessage })
+
     setLoading(false)
 
     router.refresh()

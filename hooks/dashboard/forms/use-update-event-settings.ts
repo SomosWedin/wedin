@@ -121,6 +121,8 @@ export function useUpdateEventSettings({
       return
     }
 
+    form.reset(values)
+
     toast({
       title: 'El evento y usuario se actualizó con éxito. 📅',
     })

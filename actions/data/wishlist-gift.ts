@@ -13,7 +13,10 @@ import {
 } from '@/schemas/form'
 import { GetwishlistGiftsParams } from '@/schemas/params'
 import { getErrorMessage } from '../helper'
+import { releaseExpiredHolds } from './reservation'
 import { recomputeWishlistGiftProgress } from './transaction'
+
+const MAX_HOLDS_PER_RENDER = 25
 
 export async function getWishlistGifts({
   searchParams,
@@ -38,6 +41,8 @@ export async function getWishlistGifts({
   const skip =
     page && itemsPerPage ? (Number(page) - 1) * itemsPerPage : undefined
   const take = itemsPerPage ? Number(itemsPerPage) : undefined
+
+  await releaseExpiredHolds({ wishlistId, limit: MAX_HOLDS_PER_RENDER })
 
   try {
     return await prismaClient.wishlistGift.findMany({

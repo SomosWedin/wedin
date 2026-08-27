@@ -136,16 +136,47 @@ function releaseWishlistGiftClaim(transaction: {
   )
 }
 
-function reclaimWishlistGiftClaim(transaction: {
+async function reclaimWishlistGiftClaim(transaction: {
   wishlistGiftId: string
   amount: string
   quantity: number
 }) {
-  return adjustWishlistGiftClaim(
-    transaction,
-    Number(transaction.amount) || 0,
-    transaction.quantity
-  )
+  const wishlistGift = await prismaClient.wishlistGift.findUnique({
+    where: { id: transaction.wishlistGiftId },
+    select: {
+      isGroupGift: true,
+      quantity: true,
+      gift: { select: { price: true } },
+    },
+  })
+
+  if (!wishlistGift) return false
+
+  const amount = Number(transaction.amount) || 0
+
+  const claim = wishlistGift.isGroupGift
+    ? await prismaClient.wishlistGift.updateMany({
+        where: {
+          id: transaction.wishlistGiftId,
+          isGroupGift: true,
+          reservedAmount: {
+            lte: (Number(wishlistGift.gift.price) || 0) - amount,
+          },
+        },
+        data: { reservedAmount: { increment: amount } },
+      })
+    : await prismaClient.wishlistGift.updateMany({
+        where: {
+          id: transaction.wishlistGiftId,
+          isGroupGift: false,
+          reservedQuantity: {
+            lte: wishlistGift.quantity - transaction.quantity,
+          },
+        },
+        data: { reservedQuantity: { increment: transaction.quantity } },
+      })
+
+  return claim.count === 1
 }
 
 // Transaction + retry so concurrent completions on the same gift can't
@@ -219,6 +250,22 @@ export async function applyTransactionStatusChange(
     return
   }
 
+  const isResurrection =
+    (transaction.status === 'FAILED' || transaction.status === 'REFUNDED') &&
+    status !== 'FAILED' &&
+    status !== 'REFUNDED'
+
+  if (isResurrection && !(await reclaimWishlistGiftClaim(transaction))) {
+    console.error(
+      `Cannot resurrect transaction ${transactionId} out of ${transaction.status}: its gift has no stock left.`,
+      { transactionId, wishlistGiftId: transaction.wishlistGiftId }
+    )
+    return {
+      error:
+        'Ese regalo ya no tiene unidades disponibles — alguien más lo compró mientras la transacción estaba cancelada.',
+    }
+  }
+
   // Conditional updateMany makes a duplicate/concurrent call a no-op (count: 0).
   const count = await retryOnTransientWriteConflict(() =>
     prismaClient.$transaction(async tx => {
@@ -242,15 +289,13 @@ export async function applyTransactionStatusChange(
     })
   )
 
-  if (count === 0) return
+  if (count === 0) {
+    if (isResurrection) await releaseWishlistGiftClaim(transaction)
+    return
+  }
 
   if (status === 'FAILED' || status === 'REFUNDED') {
     await releaseWishlistGiftClaim(transaction)
-  } else if (
-    transaction.status === 'FAILED' ||
-    transaction.status === 'REFUNDED'
-  ) {
-    await reclaimWishlistGiftClaim(transaction)
   }
 
   await recomputeWishlistGiftProgress(transaction.wishlistGiftId)
@@ -322,11 +367,16 @@ export async function updateTransactionStatusAsAdmin(
       : [transactionId]
 
     for (const id of transactionIds) {
-      await applyTransactionStatusChange(
+      const result = await applyTransactionStatusChange(
         id,
         validatedStatus.data,
         currentUser.id
       )
+
+      if (result?.error) {
+        revalidatePath('/admin')
+        return { error: result.error }
+      }
     }
 
     revalidatePath('/admin')
