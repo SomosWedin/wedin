@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react'
 import {
   IoCashOutline,
   IoGiftOutline,
+  IoPricetagOutline,
   IoSwapHorizontalOutline,
 } from 'react-icons/io5'
 import { getCategories } from '@/actions/data/category'
@@ -22,6 +23,9 @@ const AdminPayoutsList = lazy(
   () => import('@/components/admin/admin-payouts-list')
 )
 const AdminGiftsList = lazy(() => import('@/components/admin/admin-gifts-list'))
+const AdminCategoriesList = lazy(
+  () => import('@/components/admin/admin-categories-list')
+)
 
 export default async function AdminPage() {
   const currentUser = await getCurrentUser()
@@ -68,6 +72,10 @@ export default async function AdminPage() {
             <IoGiftOutline className="text-lg" />
             Regalos
           </TabsTrigger>
+          <TabsTrigger value="categorias" className="gap-2 text-xs sm:text-sm">
+            <IoPricetagOutline className="text-lg" />
+            Categorías
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="transacciones" className="mt-6">
@@ -107,6 +115,12 @@ export default async function AdminPage() {
               categories={categories}
               giftlists={giftlists}
             />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="categorias" className="mt-6">
+          <Suspense fallback={<DashboardTransactionsSkeleton />}>
+            <AdminCategoriesList categories={categories} />
           </Suspense>
         </TabsContent>
       </Tabs>

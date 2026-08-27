@@ -117,6 +117,18 @@ export const GiftlistNameSchema = z
   .min(1, { message: 'Ingresá un nombre para la colección' })
   .max(60, { message: 'El nombre de la colección es demasiado largo' })
 
+export const CategoryNameSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'Ingresá un nombre para la categoría' })
+  .max(60, { message: 'El nombre de la categoría es demasiado largo' })
+
+export const AdminCategorySchema = z.object({
+  name: CategoryNameSchema,
+  eventType: z.nativeEnum(EventType),
+})
+export type AdminCategoryValues = z.infer<typeof AdminCategorySchema>
+
 export const GiftFormSchema = z.object({
   name: z
     .string()
