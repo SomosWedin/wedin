@@ -188,8 +188,12 @@ export default function CheckoutForm({
           />
 
           <div className="flex flex-col gap-3">
-            <div className="flex gap-2 items-center cursor-pointer">
+            <label
+              htmlFor="wantsMessage"
+              className="flex gap-2 items-center cursor-pointer"
+            >
               <Checkbox
+                id="wantsMessage"
                 checked={wantsMessage}
                 onCheckedChange={checked => {
                   const next = checked === true
@@ -200,7 +204,7 @@ export default function CheckoutForm({
               <span className="text-sm">
                 Te gustaría dejar un mensaje con tu regalo?
               </span>
-            </div>
+            </label>
 
             {wantsMessage && (
               <FormField
