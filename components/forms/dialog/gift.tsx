@@ -253,7 +253,23 @@ export default function GiftForm({
             <FormItem>
               <FormLabel>Categoría</FormLabel>
 
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                value={field.value}
+                onValueChange={value => {
+                  if (adminMode && value !== field.value) {
+                    form.setValue('giftlistId', undefined, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                    form.setValue('newGiftlistName', undefined, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+
+                  field.onChange(value)
+                }}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Elegí una categoría" />

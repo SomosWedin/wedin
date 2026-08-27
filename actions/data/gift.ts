@@ -136,7 +136,6 @@ export async function createAdminGift(formData: AdminGiftCreateValues) {
       return { error: 'Error al crear regalo' }
     }
 
-    revalidatePath('/admin')
     revalidatePath('/gifts')
     return { giftId: newGift.id }
   } catch (error) {

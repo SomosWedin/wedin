@@ -491,6 +491,130 @@ export async function editGiftWithWishlistGift(
   }
 }
 
+export async function editGiftWithWishlistGift(
+  formData: z.infer<typeof GiftWithWishlistGiftEditSchema>
+) {
+  const validatedFields = GiftWithWishlistGiftEditSchema.safeParse(formData)
+
+  if (!validatedFields.success) {
+    return { error: INVALID_GIFT_DATA_ERROR }
+  }
+
+  const { gift: giftValues, wishlistGift: wishlistGiftValues } =
+    validatedFields.data
+
+  try {
+    const result = await retryOnTransientWriteConflict(() =>
+      prismaClient.$transaction(async tx => {
+        const current = await tx.wishlistGift.findFirst({
+          where: {
+            id: wishlistGiftValues.wishlistGiftId,
+            wishlistId: wishlistGiftValues.wishlistId,
+          },
+          select: {
+            eventId: true,
+            giftId: true,
+            isGroupGift: true,
+            reservedQuantity: true,
+            gift: {
+              select: {
+                id: true,
+                name: true,
+                categoryId: true,
+                price: true,
+                isDefault: true,
+                image: { select: { url: true } },
+              },
+            },
+            transactions: {
+              where: { status: 'COMPLETED' },
+              select: { amount: true, quantity: true },
+            },
+          },
+        })
+
+        if (!current) {
+          throw new WishlistGiftMutationError('Regalo no encontrado.')
+        }
+
+        const giftChanged =
+          giftValues.name !== current.gift.name ||
+          giftValues.categoryId !== current.gift.categoryId ||
+          giftValues.price !== current.gift.price ||
+          giftValues.imageUrl !== (current.gift.image?.url ?? '')
+
+        if (
+          giftChanged &&
+          giftValues.price !== current.gift.price &&
+          !current.isGroupGift &&
+          current.reservedQuantity > 0
+        ) {
+          throw new PriceLockedError()
+        }
+
+        let giftId = current.giftId
+
+        if (giftChanged) {
+          const gift = current.gift.isDefault
+            ? await createGiftRecord(tx, {
+                ...giftValues,
+                isDefault: false,
+                eventId: current.eventId,
+              })
+            : await updateGiftRecord(tx, current.giftId, giftValues)
+
+          giftId = gift.id
+        }
+
+        const completedAmount = current.transactions.reduce(
+          (sum, transaction) => sum + (Number(transaction.amount) || 0),
+          0
+        )
+        const completedQuantity = current.transactions.reduce(
+          (sum, transaction) => sum + transaction.quantity,
+          0
+        )
+        const progress = wishlistGiftValues.isGroupGift
+          ? {
+              groupGiftParts: String(completedAmount),
+              isFullyPaid:
+                Number(giftValues.price) > 0 &&
+                completedAmount >= Number(giftValues.price),
+            }
+          : {
+              isFullyPaid: completedQuantity >= wishlistGiftValues.quantity,
+            }
+
+        await updateWishlistGiftRecord(
+          tx,
+          { ...wishlistGiftValues, giftId },
+          current.isGroupGift,
+          progress
+        )
+
+        return { giftId }
+      })
+    )
+
+    revalidateGiftAndWishlistPaths()
+    return result
+  } catch (error) {
+    if (error instanceof WishlistGiftMutationError) {
+      return { error: error.message }
+    }
+
+    if (error instanceof PriceLockedError) {
+      return {
+        error:
+          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+      }
+    }
+
+    console.error('Error editing gift and wishlist gift:', error)
+    return { error: getErrorMessage(error) }
+  }
+}
+
 export async function setWishlistGiftManuallyReceived(
   formData: z.infer<typeof WishlistGiftReceivedToggleSchema>
 ) {
