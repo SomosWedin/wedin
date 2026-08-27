@@ -36,8 +36,6 @@ const values = {
   categoryId: 'category-1',
   price: '150000',
   isDefault: false,
-  sourceGiftId: '',
-  isEditedVersion: false,
   eventId: 'event-1',
   imageUrl: '',
   wishlistId: 'wishlist-1',

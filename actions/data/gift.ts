@@ -120,14 +120,7 @@ export async function editGift(
 
   try {
     const gift = await prismaClient.$transaction(async tx => {
-      const currentGift = await tx.gift.findUnique({
-        where: { id: giftId },
-        select: { price: true },
-      })
-
-      if (currentGift && giftData.price !== currentGift.price) {
-        await assertPriceEditAllowed(wishlistGiftId, tx)
-      }
+      await assertPriceEditAllowed(wishlistGiftId, giftData.price, tx)
 
       return tx.gift.update({
         where: { id: giftId },
@@ -177,24 +170,16 @@ export async function createGift(
     return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
-  const { imageUrl, sourceGiftId, ...giftData } = validatedFields.data
+  const { imageUrl, ...giftData } = validatedFields.data
 
   try {
-    if (sourceGiftId && wishlistGiftId) {
-      const sourceGift = await prismaClient.gift.findUnique({
-        where: { id: sourceGiftId },
-        select: { price: true },
-      })
-
-      if (sourceGift && giftData.price !== sourceGift.price) {
-        await assertPriceEditAllowed(wishlistGiftId, prismaClient)
-      }
+    if (wishlistGiftId) {
+      await assertPriceEditAllowed(wishlistGiftId, giftData.price, prismaClient)
     }
 
     const newGift = await prismaClient.gift.create({
       data: {
         ...giftData,
-        ...(sourceGiftId ? { sourceGiftId } : {}),
         ...(imageUrl ? { image: { create: { url: imageUrl } } } : {}),
       },
     })

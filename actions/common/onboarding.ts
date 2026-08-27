@@ -109,7 +109,6 @@ export const updateProfileStepTwo = async (
             lastName: partnerLastName,
             isOnboarded: true,
             isPrimary: false,
-            isMagicLinkLogin: true,
             eventId: session.user.eventId,
             onboardingStep: 5,
             role: UserType.COUPLE,

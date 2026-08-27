@@ -124,8 +124,6 @@ export const GiftFormSchema = z.object({
       message: 'El precio no puede ser mayor de PYG 99,999,999',
     }),
   isDefault: z.boolean().default(false),
-  sourceGiftId: z.string(),
-  isEditedVersion: z.boolean().default(false),
   eventId: z.string().optional(),
 
   image: z.custom<File>().optional(),
@@ -161,8 +159,6 @@ export const GiftCreateSchema = GiftPostSchema.pick({
   categoryId: true,
   price: true,
   isDefault: true,
-  isEditedVersion: true,
-  sourceGiftId: true,
   eventId: true,
   imageUrl: true,
 })

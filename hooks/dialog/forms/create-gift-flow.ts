@@ -24,7 +24,6 @@ export async function createGiftFlow({
   const giftResponse = await createGift({
     ...values,
     isDefault: isAdminRoute,
-    isEditedVersion: false,
     eventId: isAdminRoute ? undefined : eventId,
     imageUrl,
   })

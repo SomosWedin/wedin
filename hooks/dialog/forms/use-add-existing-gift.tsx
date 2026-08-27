@@ -50,8 +50,6 @@ export function useAddExistingGift({
       categoryId: gift.categoryId,
       price: gift.price,
       isDefault: false,
-      isEditedVersion: false,
-      sourceGiftId: gift.id,
       eventId,
       imageUrl: gift.image?.url ?? '',
       wishlistId,
@@ -140,8 +138,6 @@ export function useAddExistingGift({
         const giftResponse = await createGift({
           ...values,
           isDefault: false,
-          isEditedVersion: true,
-          sourceGiftId: gift.id,
           imageUrl,
         })
 

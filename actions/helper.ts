@@ -43,15 +43,21 @@ export class PriceLockedError extends Error { }
 
 export async function assertPriceEditAllowed(
   wishlistGiftId: string,
+  newPrice: string,
   tx: Prisma.TransactionClient | typeof prismaClient
 ) {
   const wishlistGift = await tx.wishlistGift.findUnique({
     where: { id: wishlistGiftId },
-    select: { isGroupGift: true, reservedQuantity: true },
+    select: {
+      gift: { select: { price: true } },
+      isGroupGift: true,
+      reservedQuantity: true,
+    },
   })
 
   if (
     wishlistGift &&
+    wishlistGift.gift.price !== newPrice &&
     !wishlistGift.isGroupGift &&
     wishlistGift.reservedQuantity > 0
   ) {

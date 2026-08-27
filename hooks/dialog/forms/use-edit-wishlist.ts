@@ -56,8 +56,6 @@ export function useEditWishlistGift({
       categoryId: gift.categoryId,
       price: gift.price,
       isDefault: false,
-      isEditedVersion: false,
-      sourceGiftId: gift.id,
       eventId,
       imageUrl: gift.image?.url ?? '',
       wishlistId,
@@ -81,8 +79,6 @@ export function useEditWishlistGift({
       categoryId: gift.categoryId,
       price: gift.price,
       isDefault: false,
-      isEditedVersion: false,
-      sourceGiftId: gift.id,
       eventId,
       imageUrl: gift.image?.url ?? '',
       wishlistId,
@@ -158,8 +154,6 @@ export function useEditWishlistGift({
             {
               ...values,
               isDefault: false,
-              isEditedVersion: true,
-              sourceGiftId: gift.id,
               imageUrl,
             },
             wishlistGiftId

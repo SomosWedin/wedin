@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   $transaction: vi.fn(),
-  giftFindUnique: vi.fn(),
   giftUpdate: vi.fn(),
   giftCreate: vi.fn(),
   wishlistGiftFindUnique: vi.fn(),
@@ -13,7 +12,6 @@ vi.mock('@/prisma/client', () => ({
   default: {
     $transaction: mocks.$transaction,
     gift: {
-      findUnique: mocks.giftFindUnique,
       create: mocks.giftCreate,
     },
     wishlistGift: {
@@ -34,8 +32,6 @@ const baseFormData = {
   price: '150000',
   imageUrl: '',
   isDefault: false,
-  isEditedVersion: false,
-  sourceGiftId: '',
   eventId: 'e1',
   wishlistId: 'w1',
   isFavoriteGift: false,
@@ -51,25 +47,28 @@ describe('editGift price lock', () => {
     mocks.$transaction.mockImplementation(
       async (callback: (tx: unknown) => unknown) =>
         callback({
-          gift: { findUnique: mocks.giftFindUnique, update: mocks.giftUpdate },
+          gift: { update: mocks.giftUpdate },
           wishlistGift: { findUnique: mocks.wishlistGiftFindUnique },
         })
     )
   })
 
   it('allows any edit when the price is not changing', async () => {
-    mocks.giftFindUnique.mockResolvedValue({ price: '150000' })
+    mocks.wishlistGiftFindUnique.mockResolvedValue({
+      gift: { price: '150000' },
+      isGroupGift: false,
+      reservedQuantity: 1,
+    })
     mocks.giftUpdate.mockResolvedValue({ id: 'g1' })
 
     const result = await editGift(baseFormData, 'g1', 'wg1')
 
     expect(result).toEqual({ giftId: 'g1' })
-    expect(mocks.wishlistGiftFindUnique).not.toHaveBeenCalled()
   })
 
   it('blocks a price change on an individual gift with an active claim', async () => {
-    mocks.giftFindUnique.mockResolvedValue({ price: '100000' })
     mocks.wishlistGiftFindUnique.mockResolvedValue({
+      gift: { price: '100000' },
       isGroupGift: false,
       reservedQuantity: 1,
     })
@@ -81,8 +80,8 @@ describe('editGift price lock', () => {
   })
 
   it('allows a price change on an individual gift with no claims yet', async () => {
-    mocks.giftFindUnique.mockResolvedValue({ price: '100000' })
     mocks.wishlistGiftFindUnique.mockResolvedValue({
+      gift: { price: '100000' },
       isGroupGift: false,
       reservedQuantity: 0,
     })
@@ -94,8 +93,8 @@ describe('editGift price lock', () => {
   })
 
   it('allows a price change on a group gift regardless of contributions', async () => {
-    mocks.giftFindUnique.mockResolvedValue({ price: '100000' })
     mocks.wishlistGiftFindUnique.mockResolvedValue({
+      gift: { price: '100000' },
       isGroupGift: true,
       reservedQuantity: 0, // group gifts never touch reservedQuantity
     })
@@ -107,19 +106,15 @@ describe('editGift price lock', () => {
   })
 })
 
-describe('createGift price lock (edited-version-of-existing-gift path)', () => {
+describe('createGift price lock (customized copy path)', () => {
   beforeEach(() => {
     mocks.giftCreate.mockResolvedValue({ id: 'g2' })
   })
 
   it('skips the lock entirely for a genuinely new registry entry (no wishlistGiftId)', async () => {
-    mocks.giftFindUnique.mockResolvedValue({ price: '999999' }) // would be locked if checked
-
     const result = await createGift({
       ...baseFormData,
       isDefault: false,
-      isEditedVersion: false,
-      sourceGiftId: '',
       eventId: 'e1',
     })
 
@@ -127,9 +122,9 @@ describe('createGift price lock (edited-version-of-existing-gift path)', () => {
     expect(mocks.wishlistGiftFindUnique).not.toHaveBeenCalled()
   })
 
-  it('blocks creating an edited-version copy with a new price while claimed', async () => {
-    mocks.giftFindUnique.mockResolvedValue({ price: '100000' })
+  it('blocks creating a customized copy with a new price while claimed', async () => {
     mocks.wishlistGiftFindUnique.mockResolvedValue({
+      gift: { price: '100000' },
       isGroupGift: false,
       reservedQuantity: 2,
     })
@@ -138,8 +133,6 @@ describe('createGift price lock (edited-version-of-existing-gift path)', () => {
       {
         ...baseFormData,
         isDefault: false,
-        isEditedVersion: true,
-        sourceGiftId: 'source-g1',
         eventId: 'e1',
       },
       'wg1'
@@ -149,21 +142,23 @@ describe('createGift price lock (edited-version-of-existing-gift path)', () => {
     expect(mocks.giftCreate).not.toHaveBeenCalled()
   })
 
-  it('allows creating an edited-version copy with the same price regardless of claims', async () => {
-    mocks.giftFindUnique.mockResolvedValue({ price: '150000' }) // same as baseFormData.price
+  it('allows creating a customized copy with the same price regardless of claims', async () => {
+    mocks.wishlistGiftFindUnique.mockResolvedValue({
+      gift: { price: '150000' },
+      isGroupGift: false,
+      reservedQuantity: 2,
+    })
 
     const result = await createGift(
       {
         ...baseFormData,
         isDefault: false,
-        isEditedVersion: true,
-        sourceGiftId: 'source-g1',
         eventId: 'e1',
       },
       'wg1'
     )
 
     expect(result).toEqual({ giftId: 'g2' })
-    expect(mocks.wishlistGiftFindUnique).not.toHaveBeenCalled()
+    expect(mocks.wishlistGiftFindUnique).toHaveBeenCalledOnce()
   })
 })

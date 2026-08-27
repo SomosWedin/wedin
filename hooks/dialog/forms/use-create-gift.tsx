@@ -38,8 +38,6 @@ export function useCreateGift({ eventId, wishlistId }: UseCreateGiftProps) {
       categoryId: '',
       price: '',
       isDefault: isAdminRoute,
-      isEditedVersion: false,
-      sourceGiftId: '',
       eventId,
       imageUrl: '',
       wishlistId,
