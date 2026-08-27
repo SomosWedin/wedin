@@ -113,13 +113,13 @@ export default function AdminGiftsList({
 
   const sortedGifts = sortColumn
     ? [...filteredGifts].sort((a, b) => {
-        const diff =
-          sortColumn === 'createdAt'
-            ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.price) - Number(b.price)
+      const diff =
+        sortColumn === 'createdAt'
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : Number(a.price) - Number(b.price)
 
-        return sortDirection === 'asc' ? diff : -diff
-      })
+      return sortDirection === 'asc' ? diff : -diff
+    })
     : filteredGifts
 
   return (
