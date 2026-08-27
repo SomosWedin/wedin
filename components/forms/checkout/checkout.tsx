@@ -270,10 +270,10 @@ export default function CheckoutForm({
                 </div>
               ))}
             </div>
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-textTertiary">Cargo por servicio (3%)</span>
+            <div className="flex justify-between items-center pt-1">
+              <span className="text-sm text-textTertiary">Cargo por servicio</span>
 
-              <span className="font-semibold">
+              <span className="text-sm font-semibold">
                 Gs. {serviceFee.toLocaleString('es-PY')}
               </span>
             </div>
