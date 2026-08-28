@@ -212,7 +212,7 @@ export default function AdminGiftsList({
         {sortedGifts.map(gift => (
           <div
             key={gift.id}
-            className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 hover:bg-gray-50"
+            className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 group hover:bg-gray-50"
           >
             <div className="flex col-span-4 gap-3 items-center min-w-0">
               <div className="flex justify-center items-center w-12 h-12 bg-gray-100 rounded overflow-hidden shrink-0">

@@ -29,7 +29,7 @@ export default function AdminCategoriesList({
           categories.map(category => (
             <div
               key={category.id}
-              className="grid grid-cols-1 items-center gap-4 border-b border-gray-100 px-4 py-4 hover:bg-gray-50 sm:grid-cols-12"
+              className="grid grid-cols-1 items-center gap-4 border-b border-gray-100 px-4 py-4 hover:bg-gray-50 sm:grid-cols-12 group"
             >
               <div className="min-w-0 sm:col-span-5">
                 <p className="truncate font-medium">{category.name}</p>
