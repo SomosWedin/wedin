@@ -247,7 +247,7 @@ export default function AdminGiftsList({
             <div className="col-span-2 whitespace-nowrap tabular-nums">
               Gs. {Number(gift.price).toLocaleString('es-PY')}
             </div>
-            <div className="col-span-2 flex justify-end gap-2">
+            <div className="flex col-span-2 gap-2 justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
               <EditAdminGiftDialog
                 gift={gift}
                 categories={categories}
