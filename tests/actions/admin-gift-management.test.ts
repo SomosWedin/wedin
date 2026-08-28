@@ -57,7 +57,6 @@ vi.mock('@/actions/data/transaction', () => ({
 
 import {
   createAdminGift,
-  createGift,
   deleteDefaultGiftAsAdmin,
   editAdminGift,
 } from '@/actions/data/gift'
@@ -274,26 +273,6 @@ describe('admin creates and edits catalog gifts', () => {
     })
     expect(mocks.transaction).toHaveBeenCalledOnce()
     expect(result).toEqual({ giftId: 'gift-1' })
-  })
-
-  it('keeps generic gift creation separate from collection creation', async () => {
-    const valuesWithCollectionFields = {
-      ...createValues,
-      isDefault: false,
-      eventId: 'event-1',
-      giftlistId: 'giftlist-1',
-      newGiftlistName: 'Esenciales del hogar',
-    }
-
-    const result = await createGift(valuesWithCollectionFields)
-
-    expect(result).toEqual({ giftId: 'private-gift-1' })
-    expect(mocks.transaction).not.toHaveBeenCalled()
-    expect(mocks.giftlistFindFirst).not.toHaveBeenCalled()
-    expect(mocks.giftlistCreate).not.toHaveBeenCalled()
-    expect(mocks.giftCreate).toHaveBeenCalledWith({
-      data: expect.not.objectContaining({ giftlistId: expect.anything() }),
-    })
   })
 
   it('removes the previous collection when moving its final gift', async () => {

@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   $transaction: vi.fn(),
+  eventFindFirst: vi.fn(),
   giftUpdate: vi.fn(),
   giftCreate: vi.fn(),
-  wishlistGiftFindUnique: vi.fn(),
+  giftFindMany: vi.fn(),
   wishlistGiftFindFirst: vi.fn(),
   wishlistGiftCreate: vi.fn(),
   wishlistGiftUpdateMany: vi.fn(),
@@ -16,12 +17,13 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/prisma/client', () => ({
   default: {
     $transaction: mocks.$transaction,
+    event: { findFirst: mocks.eventFindFirst },
     gift: {
       update: mocks.giftUpdate,
       create: mocks.giftCreate,
+      findMany: mocks.giftFindMany,
     },
     wishlistGift: {
-      findUnique: mocks.wishlistGiftFindUnique,
       findFirst: mocks.wishlistGiftFindFirst,
       create: mocks.wishlistGiftCreate,
       updateMany: mocks.wishlistGiftUpdateMany,
@@ -41,24 +43,10 @@ vi.mock('@/actions/data/transaction', () => ({
   recomputeWishlistGiftProgress: mocks.recomputeWishlistGiftProgress,
 }))
 
-import { createGift } from '@/actions/data/gift'
 import {
   createGiftWithWishlistGift,
   editGiftWithWishlistGift,
 } from '@/actions/data/wishlist-gift'
-
-const baseFormData = {
-  name: 'Silla',
-  categoryId: 'cat1',
-  price: '150000',
-  imageUrl: '',
-  isDefault: false,
-  eventId: 'e1',
-  wishlistId: 'w1',
-  isFavoriteGift: false,
-  isGroupGift: false,
-  quantity: 1,
-}
 
 const PRICE_LOCKED_ERROR =
   'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.'
@@ -95,7 +83,9 @@ function currentWishlistGift(isDefault: boolean) {
       categoryId: 'category-1',
       price: '150000',
       isDefault,
+      eventId: isDefault ? null : 'event-1',
       image: null,
+      wishlistGifts: [{ id: 'wishlist-gift-1' }],
     },
     transactions: [],
   }
@@ -108,20 +98,25 @@ describe('organizer wishlist gift price and copy policy', () => {
     transactionCompleted = false
     mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.giftUpdate.mockResolvedValue({ id: 'private-gift-1' })
+    mocks.eventFindFirst.mockResolvedValue({ id: 'event-1' })
+    mocks.giftFindMany.mockResolvedValue([
+      { id: 'private-gift-1', isDefault: false, eventId: 'event-1' },
+    ])
     mocks.wishlistGiftFindFirst.mockResolvedValue(null)
     mocks.wishlistGiftCreate.mockResolvedValue({ id: 'wishlist-gift-1' })
     mocks.wishlistGiftUpdateMany.mockResolvedValue({ count: 1 })
     mocks.$transaction.mockImplementation(async callback => {
       const result = await callback({
+        event: { findFirst: mocks.eventFindFirst },
         gift: {
           create: mocks.giftCreate,
           update: mocks.giftUpdate,
+          findMany: mocks.giftFindMany,
         },
         wishlistGift: {
           findFirst: mocks.wishlistGiftFindFirst,
           create: mocks.wishlistGiftCreate,
           updateMany: mocks.wishlistGiftUpdateMany,
-          findUnique: mocks.wishlistGiftFindUnique,
         },
       })
       transactionCompleted = true
@@ -498,62 +493,5 @@ describe('organizer wishlist gift price and copy policy', () => {
       data: expect.objectContaining({ name: 'Silla personalizada' }),
     })
     expect(result).toEqual({ giftId: 'private-gift-1' })
-  })
-})
-
-describe('organizer creates customized gift copies', () => {
-  beforeEach(() => {
-    mocks.giftCreate.mockResolvedValue({ id: 'g2' })
-  })
-
-  it('skips the lock entirely for a genuinely new registry entry (no wishlistGiftId)', async () => {
-    const result = await createGift({
-      ...baseFormData,
-      isDefault: false,
-      eventId: 'e1',
-    })
-
-    expect(result).toEqual({ giftId: 'g2' })
-    expect(mocks.wishlistGiftFindUnique).not.toHaveBeenCalled()
-  })
-
-  it('blocks creating a customized copy with a new price while claimed', async () => {
-    mocks.wishlistGiftFindUnique.mockResolvedValue({
-      gift: { price: '100000' },
-      isGroupGift: false,
-      reservedQuantity: 2,
-    })
-
-    const result = await createGift(
-      {
-        ...baseFormData,
-        isDefault: false,
-        eventId: 'e1',
-      },
-      'wg1'
-    )
-
-    expect(result).toEqual({ error: PRICE_LOCKED_ERROR })
-    expect(mocks.giftCreate).not.toHaveBeenCalled()
-  })
-
-  it('allows creating a customized copy with the same price regardless of claims', async () => {
-    mocks.wishlistGiftFindUnique.mockResolvedValue({
-      gift: { price: '150000' },
-      isGroupGift: false,
-      reservedQuantity: 2,
-    })
-
-    const result = await createGift(
-      {
-        ...baseFormData,
-        isDefault: false,
-        eventId: 'e1',
-      },
-      'wg1'
-    )
-
-    expect(result).toEqual({ giftId: 'g2' })
-    expect(mocks.wishlistGiftFindUnique).toHaveBeenCalledOnce()
   })
 })

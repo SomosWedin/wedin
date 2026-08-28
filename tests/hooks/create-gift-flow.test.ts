@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   giftCreate: vi.fn(),
   giftFindUnique: vi.fn(),
+  giftFindMany: vi.fn(),
+  eventFindFirst: vi.fn(),
   wishlistGiftCreate: vi.fn(),
   wishlistGiftFindFirst: vi.fn(),
   giftlistFindFirst: vi.fn(),
@@ -17,7 +19,9 @@ vi.mock('@/prisma/client', () => ({
     gift: {
       create: mocks.giftCreate,
       findUnique: mocks.giftFindUnique,
+      findMany: mocks.giftFindMany,
     },
+    event: { findFirst: mocks.eventFindFirst },
     giftlist: {
       findFirst: mocks.giftlistFindFirst,
       create: mocks.giftlistCreate,
@@ -61,13 +65,21 @@ describe('createGiftFlow', () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockResolvedValue({ role: 'ADMIN' })
     mocks.giftCreate.mockResolvedValue({ id: 'gift-1' })
+    mocks.giftFindMany.mockResolvedValue([
+      { id: 'gift-1', isDefault: false, eventId: 'event-1' },
+    ])
+    mocks.eventFindFirst.mockResolvedValue({ id: 'event-1' })
     mocks.giftlistCreate.mockResolvedValue({ id: 'giftlist-1' })
     mocks.wishlistGiftCreate.mockResolvedValue({ id: 'wishlist-gift-1' })
     mocks.wishlistGiftFindFirst.mockResolvedValue(null)
     mocks.transaction.mockImplementation(
       async (callback: (tx: unknown) => unknown) =>
         callback({
-          gift: { create: mocks.giftCreate },
+          gift: {
+            create: mocks.giftCreate,
+            findMany: mocks.giftFindMany,
+          },
+          event: { findFirst: mocks.eventFindFirst },
           giftlist: {
             findFirst: mocks.giftlistFindFirst,
             create: mocks.giftlistCreate,

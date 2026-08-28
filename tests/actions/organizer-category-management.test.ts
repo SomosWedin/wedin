@@ -63,7 +63,9 @@ function currentWishlistGift(isDefault: boolean) {
       categoryId: 'category-1',
       price: '150000',
       isDefault,
+      eventId: isDefault ? null : 'event-1',
       image: null,
+      wishlistGifts: [{ id: 'wishlist-gift-1' }],
     },
     transactions: [],
   }
@@ -155,5 +157,29 @@ describe('organizer category management', () => {
     })
     expectFinancialProgressUntouched()
     expect(result).toEqual({ giftId: 'private-gift-1' })
+  })
+
+  it('isolates the current wishlist before editing a legacy shared private gift', async () => {
+    mocks.giftCreate.mockResolvedValueOnce({ id: 'isolated-gift-1' })
+    mocks.wishlistGiftFindFirst.mockResolvedValue({
+      ...currentWishlistGift(false),
+      gift: {
+        ...currentWishlistGift(false).gift,
+        wishlistGifts: [{ id: 'wishlist-gift-1' }, { id: 'wishlist-gift-2' }],
+      },
+    })
+
+    const result = await editGiftWithWishlistGift({
+      gift: giftValues,
+      wishlistGift: wishlistGiftValues,
+    })
+
+    expect(mocks.giftCreate).toHaveBeenCalledOnce()
+    expect(mocks.giftUpdate).not.toHaveBeenCalled()
+    expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'wishlist-gift-1', reservedQuantity: { lte: 1 } },
+      data: expect.objectContaining({ giftId: 'isolated-gift-1' }),
+    })
+    expect(result).toEqual({ giftId: 'isolated-gift-1' })
   })
 })

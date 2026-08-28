@@ -16,9 +16,9 @@ const prismaClient = new PrismaClient()
 
 export const getEvent = async (): Promise<
   | (Event & {
-      images: ImageModel[]
-      users: User[]
-    })
+    images: ImageModel[]
+    users: User[]
+  })
   | ErrorResponse
 > => {
   const user = await getCurrentUser()
@@ -56,29 +56,6 @@ export const getEvent = async (): Promise<
     console.error('Error getting event:', error)
     return {
       error: 'Error getting event',
-    }
-  }
-}
-
-export const getEventById = async (
-  eventId: string
-): Promise<Event | ErrorResponse> => {
-  try {
-    const event = await prismaClient.event.findUnique({
-      where: { id: eventId },
-    })
-
-    if (!event) {
-      return {
-        error: 'Event not found',
-      }
-    }
-
-    return event
-  } catch (error) {
-    console.error('Error getting event by ID:', error)
-    return {
-      error: 'Error getting event by ID',
     }
   }
 }
@@ -193,18 +170,5 @@ export const setEventPublished = async (
   } catch (error) {
     console.error('Error updating event published status:', error)
     return { error: 'Error actualizando la visibilidad de tu sitio' }
-  }
-}
-
-export const getAllEvents = async (): Promise<Event[] | ErrorResponse> => {
-  try {
-    const events = await prismaClient.event.findMany()
-
-    return events
-  } catch (error) {
-    console.error('Error getting all events:', error)
-    return {
-      error: 'Error getting all events',
-    }
   }
 }

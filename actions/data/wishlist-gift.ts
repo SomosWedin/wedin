@@ -9,7 +9,7 @@ import {
   GiftWithWishlistGiftEditSchema,
   WishlistGiftCreateSchema,
   WishlistGiftDeleteSchema,
-  WishlistGiftEditSchema,
+  type WishlistGiftEditSchema,
   WishlistGiftReceivedToggleSchema,
   WishlistGiftsCreateSchema,
 } from '@/schemas/form'
@@ -27,7 +27,10 @@ import { releaseExpiredHolds } from './reservation'
 const MAX_HOLDS_PER_RENDER = 25
 const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.'
 
-type WishlistGiftWriter = Pick<Prisma.TransactionClient, 'wishlistGift'>
+type WishlistGiftWriter = Pick<
+  Prisma.TransactionClient,
+  'event' | 'gift' | 'wishlistGift'
+>
 type WishlistGiftCreateValues = z.infer<typeof WishlistGiftCreateSchema>
 type WishlistGiftEditValues = z.infer<typeof WishlistGiftEditSchema>
 type WishlistGiftProgressUpdate = Pick<
@@ -35,10 +38,68 @@ type WishlistGiftProgressUpdate = Pick<
   'groupGiftParts' | 'isFullyPaid'
 >
 
+async function assertWishlistGiftLinksAllowed(
+  client: WishlistGiftWriter,
+  {
+    eventId,
+    giftIds,
+    wishlistId,
+  }: { eventId: string; giftIds: string[]; wishlistId: string }
+) {
+  const event = await client.event.findFirst({
+    where: { id: eventId, wishlistId },
+    select: { id: true },
+  })
+
+  if (!event) {
+    throw new WishlistGiftMutationError(
+      'El evento y la lista de regalos no coinciden.'
+    )
+  }
+
+  const uniqueGiftIds = Array.from(new Set(giftIds))
+  const gifts = await client.gift.findMany({
+    where: { id: { in: uniqueGiftIds } },
+    select: { id: true, isDefault: true, eventId: true },
+  })
+
+  if (gifts.length !== uniqueGiftIds.length) {
+    throw new WishlistGiftMutationError('Uno o más regalos no existen.')
+  }
+
+  const privateGifts = gifts.filter(gift => !gift.isDefault)
+  if (privateGifts.some(gift => gift.eventId !== eventId)) {
+    throw new WishlistGiftMutationError(
+      'El regalo privado no pertenece a este evento.'
+    )
+  }
+
+  if (privateGifts.length > 0) {
+    const existingPrivateLink = await client.wishlistGift.findFirst({
+      where: { giftId: { in: privateGifts.map(gift => gift.id) } },
+      select: { id: true },
+    })
+
+    if (existingPrivateLink) {
+      throw new WishlistGiftMutationError(
+        'El regalo privado ya pertenece a una lista de regalos.'
+      )
+    }
+  }
+
+  return uniqueGiftIds
+}
+
 async function createWishlistGiftRecord(
   client: WishlistGiftWriter,
   values: WishlistGiftCreateValues
 ) {
+  await assertWishlistGiftLinksAllowed(client, {
+    eventId: values.eventId,
+    giftIds: [values.giftId],
+    wishlistId: values.wishlistId,
+  })
+
   const existing = await client.wishlistGift.findFirst({
     where: {
       wishlistId: values.wishlistId,
@@ -160,9 +221,10 @@ export async function createWishlistGift(
   }
 
   try {
-    const wishlistGift = await createWishlistGiftRecord(
-      prismaClient,
-      validatedFields.data
+    const wishlistGift = await retryOnTransientWriteConflict(() =>
+      prismaClient.$transaction(tx =>
+        createWishlistGiftRecord(tx, validatedFields.data)
+      )
     )
 
     revalidatePath('/wishlist')
@@ -224,25 +286,44 @@ export async function createWishlistGifts(
   const { wishlistId, giftIds, eventId } = validatedFields.data
 
   try {
-    const existing = await prismaClient.wishlistGift.findMany({
-      where: { wishlistId, giftId: { in: giftIds }, isReceived: false },
-      select: { giftId: true },
-    })
-    const existingGiftIds = new Set(
-      existing.map(wishlistGift => wishlistGift.giftId)
-    )
-    const newGiftIds = giftIds.filter(giftId => !existingGiftIds.has(giftId))
+    await retryOnTransientWriteConflict(() =>
+      prismaClient.$transaction(async tx => {
+        const uniqueGiftIds = await assertWishlistGiftLinksAllowed(tx, {
+          eventId,
+          giftIds,
+          wishlistId,
+        })
+        const existing = await tx.wishlistGift.findMany({
+          where: {
+            wishlistId,
+            giftId: { in: uniqueGiftIds },
+            isReceived: false,
+          },
+          select: { giftId: true },
+        })
+        const existingGiftIds = new Set(
+          existing.map(wishlistGift => wishlistGift.giftId)
+        )
+        const newGiftIds = uniqueGiftIds.filter(
+          giftId => !existingGiftIds.has(giftId)
+        )
 
-    if (newGiftIds.length > 0) {
-      await prismaClient.wishlistGift.createMany({
-        data: newGiftIds.map(giftId => ({ wishlistId, giftId, eventId })),
+        if (newGiftIds.length > 0) {
+          await tx.wishlistGift.createMany({
+            data: newGiftIds.map(giftId => ({ wishlistId, giftId, eventId })),
+          })
+        }
       })
-    }
+    )
 
     revalidatePath('/wishlist')
     revalidatePath('/gifts')
     return { success: true }
   } catch (error) {
+    if (error instanceof WishlistGiftMutationError) {
+      return { error: error.message }
+    }
+
     console.error('Error creating wishlist gifts:', error)
     return { error: getErrorMessage(error) }
   }
@@ -267,6 +348,7 @@ export async function editGiftWithWishlistGift(
           where: {
             id: wishlistGiftValues.wishlistGiftId,
             wishlistId: wishlistGiftValues.wishlistId,
+            event: { wishlistId: wishlistGiftValues.wishlistId },
           },
           select: {
             eventId: true,
@@ -284,7 +366,9 @@ export async function editGiftWithWishlistGift(
                 categoryId: true,
                 price: true,
                 isDefault: true,
+                eventId: true,
                 image: { select: { url: true } },
+                wishlistGifts: { select: { id: true }, take: 2 },
               },
             },
             transactions: {
@@ -296,6 +380,15 @@ export async function editGiftWithWishlistGift(
 
         if (!current) {
           throw new WishlistGiftMutationError('Regalo no encontrado.')
+        }
+
+        if (
+          !current.gift.isDefault &&
+          current.gift.eventId !== current.eventId
+        ) {
+          throw new WishlistGiftMutationError(
+            'El regalo privado no pertenece a este evento.'
+          )
         }
 
         const giftChanged =
@@ -319,12 +412,14 @@ export async function editGiftWithWishlistGift(
         let giftId = current.giftId
 
         if (giftChanged) {
-          const gift = current.gift.isDefault
+          const mustCreatePrivateCopy =
+            current.gift.isDefault || current.gift.wishlistGifts.length > 1
+          const gift = mustCreatePrivateCopy
             ? await createGiftRecord(tx, {
-                ...giftValues,
-                isDefault: false,
-                eventId: current.eventId,
-              })
+              ...giftValues,
+              isDefault: false,
+              eventId: current.eventId,
+            })
             : await updateGiftRecord(tx, current.giftId, giftValues)
 
           giftId = gift.id
@@ -337,27 +432,27 @@ export async function editGiftWithWishlistGift(
         const progress =
           wishlistSettingsChanged || !giftChanged || priceChanged
             ? (() => {
-                const completedAmount = current.transactions.reduce(
-                  (sum, transaction) => sum + (Number(transaction.amount) || 0),
-                  0
-                )
-                const completedQuantity = current.transactions.reduce(
-                  (sum, transaction) => sum + transaction.quantity,
-                  0
-                )
+              const completedAmount = current.transactions.reduce(
+                (sum, transaction) => sum + (Number(transaction.amount) || 0),
+                0
+              )
+              const completedQuantity = current.transactions.reduce(
+                (sum, transaction) => sum + transaction.quantity,
+                0
+              )
 
-                return wishlistGiftValues.isGroupGift
-                  ? {
-                      groupGiftParts: String(completedAmount),
-                      isFullyPaid:
-                        Number(giftValues.price) > 0 &&
-                        completedAmount >= Number(giftValues.price),
-                    }
-                  : {
-                      isFullyPaid:
-                        completedQuantity >= wishlistGiftValues.quantity,
-                    }
-              })()
+              return wishlistGiftValues.isGroupGift
+                ? {
+                  groupGiftParts: String(completedAmount),
+                  isFullyPaid:
+                    Number(giftValues.price) > 0 &&
+                    completedAmount >= Number(giftValues.price),
+                }
+                : {
+                  isFullyPaid:
+                    completedQuantity >= wishlistGiftValues.quantity,
+                }
+            })()
             : {}
 
         await updateWishlistGiftRecord(

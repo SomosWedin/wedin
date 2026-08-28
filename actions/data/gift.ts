@@ -5,17 +5,9 @@ import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
 import prismaClient from '@/prisma/client'
-import {
-  AdminGiftCreateSchema,
-  AdminGiftEditSchema,
-  GiftCreateSchema,
-} from '@/schemas/form'
+import { AdminGiftCreateSchema, AdminGiftEditSchema } from '@/schemas/form'
 import { GetGiftsParams } from '@/schemas/params'
-import {
-  assertPriceEditAllowed,
-  getErrorMessage,
-  PriceLockedError,
-} from '../helper'
+import { getErrorMessage } from '../helper'
 import { getCategories } from './category'
 import { createGiftRecord, updateGiftRecord } from './gift-operations'
 import {
@@ -26,20 +18,8 @@ import {
 
 const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.'
 
-type GiftCreateValues = z.infer<typeof GiftCreateSchema>
 type AdminGiftCreateValues = z.infer<typeof AdminGiftCreateSchema>
 type AdminGiftEditValues = z.infer<typeof AdminGiftEditSchema>
-
-export async function getGift(giftId: string) {
-  try {
-    return await prismaClient.gift.findUnique({
-      where: { id: giftId },
-    })
-  } catch (error) {
-    console.error('Error retrieving gift:', error)
-    return null
-  }
-}
 
 export async function getGifts({
   searchParams,
@@ -119,50 +99,6 @@ export async function getGifts({
   } catch (error) {
     console.error('Error retrieving gifts:', error)
     return []
-  }
-}
-
-export async function createGift(
-  formData: GiftCreateValues,
-  wishlistGiftId?: string
-) {
-  const validatedFields = GiftCreateSchema.safeParse(formData)
-
-  if (!validatedFields.success) {
-    return { error: INVALID_GIFT_DATA_ERROR }
-  }
-
-  if (validatedFields.data.isDefault) {
-    return { error: 'No autorizado.' }
-  }
-
-  try {
-    if (wishlistGiftId) {
-      await assertPriceEditAllowed(
-        wishlistGiftId,
-        validatedFields.data.price,
-        prismaClient
-      )
-    }
-
-    const newGift = await createGiftRecord(prismaClient, validatedFields.data)
-
-    if (!newGift) {
-      return { error: 'Error al crear regalo' }
-    }
-
-    revalidatePath('/gifts')
-    return { giftId: newGift.id }
-  } catch (error) {
-    if (error instanceof PriceLockedError) {
-      return {
-        error:
-          'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.',
-      }
-    }
-
-    console.error('Error creating gift:', error)
-    return { error: getErrorMessage(error) }
   }
 }
 
@@ -306,13 +242,6 @@ export async function editAdminGift(
   } catch (error) {
     if (error instanceof GiftlistSelectionError) {
       return { error: error.message }
-    }
-
-    if (error instanceof PriceLockedError) {
-      return {
-        error:
-          'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.',
-      }
     }
 
     console.error('Error editing default gift:', error)
