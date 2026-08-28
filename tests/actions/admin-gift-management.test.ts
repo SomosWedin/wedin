@@ -92,6 +92,7 @@ describe('admin creates and edits catalog gifts', () => {
     mocks.giftCount.mockResolvedValue(1)
     mocks.giftlistFindFirst.mockResolvedValue(null)
     mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-1',
       eventTypeIds: ['event-type-wedding'],
     })
     mocks.giftlistCreate.mockResolvedValue({ id: 'giftlist-new' })
@@ -148,6 +149,28 @@ describe('admin creates and edits catalog gifts', () => {
 
     expect(result).toEqual({ error: 'No autorizado.' })
     expect(mocks.giftFindFirst).not.toHaveBeenCalled()
+  })
+
+  it('rejects creating a catalog gift with a nonexistent category', async () => {
+    mocks.categoryFindUnique.mockResolvedValue(null)
+
+    const result = await createAdminGift(createValues)
+
+    expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      error: 'La categoría seleccionada no existe.',
+    })
+  })
+
+  it('rejects moving a catalog gift to a nonexistent category', async () => {
+    mocks.categoryFindUnique.mockResolvedValue(null)
+
+    const result = await editAdminGift(editValues, 'gift-1')
+
+    expect(mocks.giftUpdate).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      error: 'La categoría seleccionada no existe.',
+    })
   })
 
   it('rejects a duplicate catalog gift name in the same category', async () => {
@@ -214,9 +237,9 @@ describe('admin creates and edits catalog gifts', () => {
       where: { id: 'gift-1' },
       data: {
         name: editValues.name,
-        categoryId: editValues.categoryId,
         price: editValues.price,
-        giftlistId: null,
+        category: { connect: { id: editValues.categoryId } },
+        giftlist: { disconnect: true },
         image: {
           upsert: {
             create: { url: editValues.imageUrl },
@@ -246,8 +269,8 @@ describe('admin creates and edits catalog gifts', () => {
     })
     expect(mocks.giftCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        categoryId: 'category-1',
-        giftlistId: 'giftlist-1',
+        category: { connect: { id: 'category-1' } },
+        giftlist: { connect: { id: 'giftlist-1' } },
         isDefault: true,
       }),
     })
@@ -278,7 +301,9 @@ describe('admin creates and edits catalog gifts', () => {
       select: { id: true },
     })
     expect(mocks.giftCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ giftlistId: 'giftlist-new' }),
+      data: expect.objectContaining({
+        giftlist: { connect: { id: 'giftlist-new' } },
+      }),
     })
     expect(mocks.transaction).toHaveBeenCalledOnce()
     expect(result).toEqual({ giftId: 'gift-1' })
@@ -329,7 +354,9 @@ describe('admin creates and edits catalog gifts', () => {
     })
     expect(mocks.giftUpdate).toHaveBeenCalledWith({
       where: { id: 'gift-1' },
-      data: expect.objectContaining({ giftlistId: 'giftlist-new' }),
+      data: expect.objectContaining({
+        giftlist: { connect: { id: 'giftlist-new' } },
+      }),
     })
     expect(mocks.transaction).toHaveBeenCalledOnce()
     expect(result).toEqual({ giftId: 'gift-1' })
@@ -397,8 +424,8 @@ describe('admin creates and edits catalog gifts', () => {
       data: {
         name: 'Sofá original',
         price: '800000',
-        categoryId: 'category-1',
-        eventId: 'event-1',
+        category: { connect: { id: 'category-1' } },
+        event: { connect: { id: 'event-1' } },
         isDefault: false,
         image: { create: { url: 'https://cdn.example.com/original.jpg' } },
       },
@@ -436,8 +463,8 @@ describe('admin creates and edits catalog gifts', () => {
       data: {
         name: 'Sofá living',
         price: '850000',
-        categoryId: 'category-1',
-        eventId: 'event-1',
+        category: { connect: { id: 'category-1' } },
+        event: { connect: { id: 'event-1' } },
         isDefault: false,
         image: {
           create: { url: 'https://cdn.example.com/sofa.jpg' },

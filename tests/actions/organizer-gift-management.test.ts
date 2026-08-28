@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   $transaction: vi.fn(),
   eventFindFirst: vi.fn(),
+  categoryFindUnique: vi.fn(),
   giftUpdate: vi.fn(),
   giftCreate: vi.fn(),
   giftFindFirst: vi.fn(),
@@ -19,6 +20,7 @@ vi.mock('@/prisma/client', () => ({
   default: {
     $transaction: mocks.$transaction,
     event: { findFirst: mocks.eventFindFirst },
+    category: { findUnique: mocks.categoryFindUnique },
     gift: {
       update: mocks.giftUpdate,
       create: mocks.giftCreate,
@@ -101,6 +103,7 @@ describe('organizer wishlist gift price and copy policy', () => {
     mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.giftUpdate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.eventFindFirst.mockResolvedValue({ id: 'event-1' })
+    mocks.categoryFindUnique.mockResolvedValue({ id: 'category-1' })
     mocks.giftFindFirst.mockResolvedValue(null)
     mocks.giftFindMany.mockImplementation(({ where }) =>
       where.name
@@ -113,6 +116,7 @@ describe('organizer wishlist gift price and copy policy', () => {
     mocks.$transaction.mockImplementation(async callback => {
       const result = await callback({
         event: { findFirst: mocks.eventFindFirst },
+        category: { findUnique: mocks.categoryFindUnique },
         gift: {
           create: mocks.giftCreate,
           update: mocks.giftUpdate,
@@ -321,6 +325,27 @@ describe('organizer wishlist gift price and copy policy', () => {
     })
   })
 
+  it('rejects creating a private gift with a nonexistent category', async () => {
+    mocks.categoryFindUnique.mockResolvedValue(null)
+
+    const result = await createGiftWithWishlistGift({
+      gift: { ...giftValues, isDefault: false, eventId: 'event-1' },
+      wishlistGift: {
+        wishlistId: 'wishlist-1',
+        eventId: 'event-1',
+        isFavoriteGift: false,
+        isGroupGift: false,
+        quantity: 1,
+      },
+    })
+
+    expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(mocks.wishlistGiftCreate).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      error: 'La categoría seleccionada no existe.',
+    })
+  })
+
   it('rejects a duplicate private gift name in the same event and category', async () => {
     mocks.giftFindMany.mockImplementation(({ where }) =>
       where.name
@@ -374,7 +399,10 @@ describe('organizer wishlist gift price and copy policy', () => {
     })
 
     expect(mocks.giftCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ isDefault: false, eventId: 'event-1' }),
+      data: expect.objectContaining({
+        isDefault: false,
+        event: { connect: { id: 'event-1' } },
+      }),
     })
     expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
       where: { id: 'wishlist-gift-1', reservedQuantity: { lte: 1 } },
@@ -524,6 +552,22 @@ describe('organizer wishlist gift price and copy policy', () => {
       data: expect.objectContaining({ name: 'Silla personalizada' }),
     })
     expect(result).toEqual({ giftId: 'private-gift-1' })
+  })
+
+  it('rejects moving a private gift to a nonexistent category', async () => {
+    mocks.wishlistGiftFindFirst.mockResolvedValue(currentWishlistGift(false))
+    mocks.categoryFindUnique.mockResolvedValue(null)
+
+    const result = await editGiftWithWishlistGift({
+      gift: giftValues,
+      wishlistGift: wishlistGiftValues,
+    })
+
+    expect(mocks.giftUpdate).not.toHaveBeenCalled()
+    expect(mocks.wishlistGiftUpdateMany).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      error: 'La categoría seleccionada no existe.',
+    })
   })
 
   it('rejects renaming a private gift to a duplicate in its category', async () => {

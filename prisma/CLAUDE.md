@@ -88,6 +88,13 @@ whenever you touch something documented below.
   relations to `EventType`. A category may have several types. Repeating a
   category name is allowed only when its event-type sets do not overlap;
   enforce that in the admin action because Mongo cannot express that index.
+- `Gift.categoryId` is required and backed by the explicit `Gift.category` /
+  `Category.gifts` relation. Mongo does not enforce cross-collection foreign
+  keys, so supported gift writes validate the category and use a nested
+  relation `connect`. Before applying this relation to an existing database,
+  run `yarn prisma generate` and `yarn migrate:gift-categories`; the script
+  deletes unreferenced orphan gifts and images, but retains and reports any
+  orphan referenced by a wishlist to protect transaction history.
 - `Giftlist` has no category field: its categories are derived from its
   `gifts`. Its selected types must be compatible with every gift category.
   A collection with no selected types is intentionally available as a safe

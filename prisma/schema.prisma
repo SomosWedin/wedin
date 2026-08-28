@@ -152,6 +152,7 @@ model Gift {
   updatedAt  DateTime @updatedAt
 
   giftlist      Giftlist?      @relation(fields: [giftlistId], references: [id])
+  category      Category       @relation(fields: [categoryId], references: [id])
   event         Event?         @relation(fields: [eventId], references: [id])
   wishlistGifts WishlistGift[]
   image         Image?
@@ -266,6 +267,7 @@ model Category {
   eventTypeIds String[] @db.ObjectId
 
   eventTypes EventType[] @relation("CategoryEventTypes", fields: [eventTypeIds], references: [id])
+  gifts      Gift[]
 }
 
 model EventType {

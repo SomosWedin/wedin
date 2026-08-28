@@ -101,7 +101,9 @@ async function main() {
         giftlist: {
           connect: { id: randomGiftlist.giftlist.id },
         },
-        categoryId: randomGiftlist.categoryId,
+        category: {
+          connect: { id: randomGiftlist.categoryId },
+        },
         image: {
           create: {
             url: faker.image.url(),

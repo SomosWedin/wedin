@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
+  categoryFindUnique: vi.fn(),
   giftCreate: vi.fn(),
   giftFindMany: vi.fn(),
   giftUpdate: vi.fn(),
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/prisma/client', () => ({
   default: {
     $transaction: mocks.transaction,
+    category: { findUnique: mocks.categoryFindUnique },
     gift: {
       create: mocks.giftCreate,
       findMany: mocks.giftFindMany,
@@ -82,11 +84,13 @@ function expectFinancialProgressUntouched() {
 describe('organizer category management', () => {
   beforeEach(() => {
     mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
+    mocks.categoryFindUnique.mockResolvedValue({ id: 'category-2' })
     mocks.giftFindMany.mockResolvedValue([])
     mocks.giftUpdate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.wishlistGiftUpdateMany.mockResolvedValue({ count: 1 })
     mocks.transaction.mockImplementation(async callback =>
       callback({
+        category: { findUnique: mocks.categoryFindUnique },
         gift: {
           create: mocks.giftCreate,
           findMany: mocks.giftFindMany,
@@ -116,8 +120,8 @@ describe('organizer category management', () => {
     expect(mocks.giftCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         isDefault: false,
-        categoryId: 'category-2',
-        eventId: 'event-1',
+        category: { connect: { id: 'category-2' } },
+        event: { connect: { id: 'event-1' } },
       }),
     })
     expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
@@ -157,7 +161,9 @@ describe('organizer category management', () => {
     expect(mocks.giftCreate).not.toHaveBeenCalled()
     expect(mocks.giftUpdate).toHaveBeenCalledWith({
       where: { id: 'private-gift-1' },
-      data: expect.objectContaining({ categoryId: 'category-2' }),
+      data: expect.objectContaining({
+        category: { connect: { id: 'category-2' } },
+      }),
     })
     expectFinancialProgressUntouched()
     expect(result).toEqual({ giftId: 'private-gift-1' })

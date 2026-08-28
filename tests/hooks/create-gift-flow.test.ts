@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   giftCreate: vi.fn(),
+  categoryFindUnique: vi.fn(),
   giftFindUnique: vi.fn(),
   giftFindMany: vi.fn(),
   eventFindFirst: vi.fn(),
@@ -16,6 +17,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/prisma/client', () => ({
   default: {
+    category: { findUnique: mocks.categoryFindUnique },
     gift: {
       create: mocks.giftCreate,
       findUnique: mocks.giftFindUnique,
@@ -64,6 +66,7 @@ const values = {
 describe('createGiftFlow', () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockResolvedValue({ role: 'ADMIN' })
+    mocks.categoryFindUnique.mockResolvedValue({ id: 'category-1' })
     mocks.giftCreate.mockResolvedValue({ id: 'gift-1' })
     mocks.giftFindMany.mockImplementation(({ where }) =>
       where.name ? [] : [{ id: 'gift-1', isDefault: false, eventId: 'event-1' }]
@@ -75,6 +78,7 @@ describe('createGiftFlow', () => {
     mocks.transaction.mockImplementation(
       async (callback: (tx: unknown) => unknown) =>
         callback({
+          category: { findUnique: mocks.categoryFindUnique },
           gift: {
             create: mocks.giftCreate,
             findMany: mocks.giftFindMany,
@@ -104,7 +108,7 @@ describe('createGiftFlow', () => {
     expect(mocks.giftCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         isDefault: false,
-        eventId: 'event-1',
+        event: { connect: { id: 'event-1' } },
         image: {
           create: { url: 'https://cdn.example.com/gift.jpg' },
         },
@@ -136,7 +140,7 @@ describe('createGiftFlow', () => {
     expect(mocks.giftCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         isDefault: true,
-        eventId: undefined,
+        category: { connect: { id: 'category-1' } },
       }),
     })
 
@@ -164,7 +168,9 @@ describe('createGiftFlow', () => {
       select: { id: true },
     })
     expect(mocks.giftCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ giftlistId: 'giftlist-1' }),
+      data: expect.objectContaining({
+        giftlist: { connect: { id: 'giftlist-1' } },
+      }),
     })
     expect(mocks.giftlistCreate.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.giftCreate.mock.invocationCallOrder[0]

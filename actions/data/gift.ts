@@ -200,8 +200,8 @@ export async function editAdminGift(
             data: {
               name: existingGift.name,
               price: existingGift.price,
-              categoryId: existingGift.categoryId,
-              eventId: wishlistGift.eventId,
+              category: { connect: { id: existingGift.categoryId } },
+              event: { connect: { id: wishlistGift.eventId } },
               isDefault: false,
               ...(existingGift.image?.url
                 ? { image: { create: { url: existingGift.image.url } } }
@@ -274,8 +274,8 @@ export async function deleteDefaultGiftAsAdmin(giftId: string) {
           data: {
             name: gift.name,
             price: gift.price,
-            categoryId: gift.categoryId,
-            eventId: wishlistGift.eventId,
+            category: { connect: { id: gift.categoryId } },
+            event: { connect: { id: wishlistGift.eventId } },
             isDefault: false,
             ...(gift.image?.url
               ? { image: { create: { url: gift.image.url } } }
