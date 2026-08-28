@@ -23,7 +23,6 @@ import {
 } from '../helper'
 import { createGiftRecord, updateGiftRecord } from './gift-operations'
 import { releaseExpiredHolds } from './reservation'
-import { recomputeWishlistGiftProgress } from './transaction'
 
 const MAX_HOLDS_PER_RENDER = 25
 const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.'
@@ -249,47 +248,6 @@ export async function createWishlistGifts(
   }
 }
 
-export async function editWishlistGift(
-  formData: z.infer<typeof WishlistGiftEditSchema>
-) {
-  const validatedFields = WishlistGiftEditSchema.safeParse(formData)
-
-  if (!validatedFields.success) {
-    return { error: INVALID_GIFT_DATA_ERROR }
-  }
-
-  const { wishlistGiftId } = validatedFields.data
-
-  try {
-    const current = await prismaClient.wishlistGift.findUnique({
-      where: { id: wishlistGiftId },
-      select: { isGroupGift: true },
-    })
-
-    if (!current) {
-      return { error: 'Regalo no encontrado.' }
-    }
-
-    await updateWishlistGiftRecord(
-      prismaClient,
-      validatedFields.data,
-      current.isGroupGift
-    )
-
-    await recomputeWishlistGiftProgress(wishlistGiftId)
-
-    revalidatePath('/wishlist')
-    return { success: true }
-  } catch (error) {
-    if (error instanceof WishlistGiftMutationError) {
-      return { error: error.message }
-    }
-
-    console.error('Error editing wishlist gift:', error)
-    return { error: getErrorMessage(error) }
-  }
-}
-
 export async function editGiftWithWishlistGift(
   formData: z.infer<typeof GiftWithWishlistGiftEditSchema>
 ) {
@@ -313,7 +271,9 @@ export async function editGiftWithWishlistGift(
           select: {
             eventId: true,
             giftId: true,
+            isFavoriteGift: true,
             isGroupGift: true,
+            quantity: true,
             isFullyPaid: true,
             groupGiftParts: true,
             reservedQuantity: true,
@@ -343,6 +303,7 @@ export async function editGiftWithWishlistGift(
           giftValues.categoryId !== current.gift.categoryId ||
           giftValues.price !== current.gift.price ||
           giftValues.imageUrl !== (current.gift.image?.url ?? '')
+        const priceChanged = giftValues.price !== current.gift.price
 
         if (
           giftChanged &&
@@ -369,24 +330,35 @@ export async function editGiftWithWishlistGift(
           giftId = gift.id
         }
 
-        const completedAmount = current.transactions.reduce(
-          (sum, transaction) => sum + (Number(transaction.amount) || 0),
-          0
-        )
-        const completedQuantity = current.transactions.reduce(
-          (sum, transaction) => sum + transaction.quantity,
-          0
-        )
-        const progress = wishlistGiftValues.isGroupGift
-          ? {
-              groupGiftParts: String(completedAmount),
-              isFullyPaid:
-                Number(giftValues.price) > 0 &&
-                completedAmount >= Number(giftValues.price),
-            }
-          : {
-              isFullyPaid: completedQuantity >= wishlistGiftValues.quantity,
-            }
+        const wishlistSettingsChanged =
+          wishlistGiftValues.isFavoriteGift !== current.isFavoriteGift ||
+          wishlistGiftValues.isGroupGift !== current.isGroupGift ||
+          wishlistGiftValues.quantity !== current.quantity
+        const progress =
+          wishlistSettingsChanged || !giftChanged || priceChanged
+            ? (() => {
+                const completedAmount = current.transactions.reduce(
+                  (sum, transaction) => sum + (Number(transaction.amount) || 0),
+                  0
+                )
+                const completedQuantity = current.transactions.reduce(
+                  (sum, transaction) => sum + transaction.quantity,
+                  0
+                )
+
+                return wishlistGiftValues.isGroupGift
+                  ? {
+                      groupGiftParts: String(completedAmount),
+                      isFullyPaid:
+                        Number(giftValues.price) > 0 &&
+                        completedAmount >= Number(giftValues.price),
+                    }
+                  : {
+                      isFullyPaid:
+                        completedQuantity >= wishlistGiftValues.quantity,
+                    }
+              })()
+            : {}
 
         await updateWishlistGiftRecord(
           tx,

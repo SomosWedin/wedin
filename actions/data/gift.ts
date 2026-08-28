@@ -9,7 +9,6 @@ import {
   AdminGiftCreateSchema,
   AdminGiftEditSchema,
   GiftCreateSchema,
-  GiftEditSchema,
 } from '@/schemas/form'
 import { GetGiftsParams } from '@/schemas/params'
 import {
@@ -27,15 +26,9 @@ import {
 
 const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.'
 
-type GiftEditValues = z.infer<typeof GiftEditSchema>
 type GiftCreateValues = z.infer<typeof GiftCreateSchema>
 type AdminGiftCreateValues = z.infer<typeof AdminGiftCreateSchema>
 type AdminGiftEditValues = z.infer<typeof AdminGiftEditSchema>
-
-function validateGiftEdit(formData: GiftEditValues) {
-  const result = GiftEditSchema.safeParse(formData)
-  return result.success ? result.data : null
-}
 
 export async function getGift(giftId: string) {
   try {
@@ -126,43 +119,6 @@ export async function getGifts({
   } catch (error) {
     console.error('Error retrieving gifts:', error)
     return []
-  }
-}
-
-export async function editGift(
-  formData: GiftEditValues,
-  giftId: string,
-  wishlistGiftId: string
-) {
-  const values = validateGiftEdit(formData)
-
-  if (!values) {
-    return { error: INVALID_GIFT_DATA_ERROR }
-  }
-
-  try {
-    const gift = await prismaClient.$transaction(async tx => {
-      await assertPriceEditAllowed(wishlistGiftId, values.price, tx)
-      return updateGiftRecord(tx, giftId, values)
-    })
-
-    if (!gift) {
-      return { error: 'Error al editar el regalo' }
-    }
-
-    revalidatePath('/dashboard')
-    revalidatePath('/wishlist')
-    return { giftId: gift.id }
-  } catch (error) {
-    if (error instanceof PriceLockedError) {
-      return {
-        error:
-          'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.',
-      }
-    }
-
-    console.error('Error editing gift:', error)
-    return { error: getErrorMessage(error) }
   }
 }
 
@@ -298,9 +254,11 @@ export async function editAdminGift(
         newGiftlistName,
       })
 
-      const priceChanged = existingGift.price !== values.price
+      const catalogFieldsChanged =
+        existingGift.price !== values.price ||
+        existingGift.categoryId !== values.categoryId
 
-      if (priceChanged) {
+      if (catalogFieldsChanged) {
         for (const wishlistGift of existingGift.wishlistGifts) {
           const privateGift = await tx.gift.create({
             data: {
