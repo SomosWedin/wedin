@@ -1,21 +1,31 @@
-import { EventType } from '@prisma/client'
+import type { EventType } from '@prisma/client'
 import Image from 'next/image'
 import { CiHeart } from 'react-icons/ci'
 import { FaChevronRight } from 'react-icons/fa6'
 import { GiWineGlass } from 'react-icons/gi'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { useOnboarding } from '@/hooks/use-onboarding'
+import { SYSTEM_EVENT_TYPES } from '@/lib/event-type'
 import wedinIcon from '@/public/assets/w-icon.svg'
 import OnboardingStepper from './stepper'
 
-export default function OnboardingStepOne() {
-  const { handleEventTypeUpdate, saveEventTypeToLocalStorage, loading } =
-    useOnboarding()
+export default function OnboardingStepOne({
+  eventTypes,
+}: {
+  eventTypes: EventType[]
+}) {
+  const { handleEventTypeUpdate, loading } = useOnboarding()
 
-  const handleCardClick = (eventType: EventType) => {
-    saveEventTypeToLocalStorage(eventType)
-    handleEventTypeUpdate(eventType)
+  const handleCardClick = (eventTypeId?: string) => {
+    if (eventTypeId) handleEventTypeUpdate(eventTypeId)
   }
+
+  const wedding = eventTypes.find(
+    eventType => eventType.key === SYSTEM_EVENT_TYPES.WEDDING.key
+  )
+  const other = eventTypes.find(
+    eventType => eventType.key === SYSTEM_EVENT_TYPES.OTHER.key
+  )
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -36,7 +46,7 @@ export default function OnboardingStepOne() {
             loading ? 'cursor-not-allowed pointer-events-none opacity-65' : ''
           }`}
           onClick={() => {
-            handleCardClick(EventType.WEDDING)
+            handleCardClick(wedding?.id)
           }}
         >
           <CardHeader>
@@ -57,7 +67,7 @@ export default function OnboardingStepOne() {
             loading ? 'cursor-not-allowed pointer-events-none opacity-70' : ''
           }`}
           onClick={() => {
-            handleCardClick(EventType.OTHER)
+            handleCardClick(other?.id)
           }}
         >
           <CardHeader>

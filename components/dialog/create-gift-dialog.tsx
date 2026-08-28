@@ -1,6 +1,6 @@
 'use client'
 
-import type { Category } from '@prisma/client'
+import type { Category, EventType } from '@prisma/client'
 import { IoAdd } from 'react-icons/io5'
 import type { GiftlistOption } from '@/actions/data/giftlist'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ type CreateGiftDialogProps =
       mode: 'admin'
       categories: Category[]
       giftlists: GiftlistOption[]
+      eventTypes: EventType[]
     }
   | {
       mode: 'wishlist'
@@ -45,6 +46,7 @@ export default function CreateGiftDialog(props: CreateGiftDialogProps) {
         title="Agregar regalo"
         controller={controller}
         categories={props.categories}
+        eventTypes={props.mode === 'admin' ? props.eventTypes : undefined}
         giftlists={props.mode === 'admin' ? props.giftlists : undefined}
         uploadInputId="create-gift-image-upload"
         submitLabel={

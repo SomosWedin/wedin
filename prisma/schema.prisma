@@ -14,11 +14,6 @@ enum UserType {
   INVITEE
 }
 
-enum EventType {
-  WEDDING
-  OTHER
-}
-
 enum TransactionStatus {
   OPEN
   PENDING
@@ -100,10 +95,11 @@ model Event {
   updatedAt    DateTime  @updatedAt
   country      String?
   city         String?
-  eventType    EventType @default(WEDDING)
+  eventTypeId  String?   @db.ObjectId
   isPublished  Boolean   @default(true)
 
-  wishlist Wishlist @relation(fields: [wishlistId], references: [id])
+  wishlist  Wishlist   @relation(fields: [wishlistId], references: [id])
+  eventType EventType? @relation(fields: [eventTypeId], references: [id])
 
   bankDetails BankDetails?
 
@@ -255,19 +251,33 @@ model Payout {
 }
 
 model Giftlist {
-  id             String @id @default(auto()) @map("_id") @db.ObjectId
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
   name           String
-  normalizedName String @unique
+  normalizedName String   @unique
+  eventTypeIds   String[] @db.ObjectId
 
-  gifts Gift[]
+  gifts      Gift[]
+  eventTypes EventType[] @relation("GiftlistEventTypes", fields: [eventTypeIds], references: [id])
 }
 
 model Category {
-  id        String     @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  eventType EventType?
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  eventTypeIds String[] @db.ObjectId
 
-  @@unique([name, eventType])
+  eventTypes EventType[] @relation("CategoryEventTypes", fields: [eventTypeIds], references: [id])
+}
+
+model EventType {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  key         String   @unique
+  categoryIds String[] @db.ObjectId
+  giftlistIds String[] @db.ObjectId
+
+  events     Event[]
+  categories Category[] @relation("CategoryEventTypes", fields: [categoryIds], references: [id])
+  giftlists  Giftlist[] @relation("GiftlistEventTypes", fields: [giftlistIds], references: [id])
 }
 
 model VerificationToken {

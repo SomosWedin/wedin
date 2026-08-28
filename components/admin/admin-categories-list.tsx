@@ -3,17 +3,18 @@
 import type { Category, EventType } from '@prisma/client'
 import AdminCategoryDialog from '@/components/dialog/admin-category-dialog'
 import DeleteAdminCategoryDialog from '@/components/dialog/delete-admin-category-dialog'
-import { EVENT_TYPE_LABEL } from '@/lib/event-type'
 
 export default function AdminCategoriesList({
   categories,
+  eventTypes,
 }: {
-  categories: Category[]
+  categories: (Category & { eventTypes: Pick<EventType, 'id' | 'name'>[] })[]
+  eventTypes: EventType[]
 }) {
   return (
     <div className="flex w-full flex-col gap-6">
       <div className="flex justify-end">
-        <AdminCategoryDialog />
+        <AdminCategoryDialog eventTypes={eventTypes} />
       </div>
       <div className="overflow-hidden rounded-lg bg-white">
         <div className="hidden grid-cols-12 gap-4 rounded-t-lg bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600 sm:grid">
@@ -35,12 +36,17 @@ export default function AdminCategoriesList({
                 <p className="truncate font-medium">{category.name}</p>
               </div>
               <div className="text-sm text-textTertiary sm:col-span-5">
-                {category.eventType
-                  ? EVENT_TYPE_LABEL[category.eventType as EventType]
+                {category.eventTypes.length
+                  ? category.eventTypes
+                      .map(eventType => eventType.name)
+                      .join(', ')
                   : 'Sin asignar'}
               </div>
               <div className="flex col-span-2 gap-2 justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-                <AdminCategoryDialog category={category} />
+                <AdminCategoryDialog
+                  category={category}
+                  eventTypes={eventTypes}
+                />
                 <DeleteAdminCategoryDialog
                   categoryId={category.id}
                   categoryName={category.name}

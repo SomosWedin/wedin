@@ -1,6 +1,6 @@
 'use client'
 
-import type { Category } from '@prisma/client'
+import type { Category, EventType } from '@prisma/client'
 import { useState } from 'react'
 import { IoAdd, IoPencilOutline } from 'react-icons/io5'
 import {
@@ -31,14 +31,18 @@ type CategoryFormController = ReturnType<typeof useCategoryFormController>
 function CategoryDialogContent({
   category,
   controller,
+  eventTypes,
 }: {
   category?: Category
   controller: CategoryFormController
+  eventTypes: EventType[]
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const eventType = controller.form.watch('eventType')
+  const eventTypeIds = controller.form.watch('eventTypeIds')
   const eventTypeChanged =
-    Boolean(category) && (category?.eventType ?? '') !== eventType
+    Boolean(category) &&
+    [...(category?.eventTypeIds ?? [])].sort().join(',') !==
+      [...eventTypeIds].sort().join(',')
 
   return (
     <>
@@ -50,6 +54,7 @@ function CategoryDialogContent({
         </DialogHeader>
         <CategoryForm
           form={controller.form}
+          eventTypes={eventTypes}
           loading={controller.loading}
           isValid={controller.isValid}
           submitLabel={category ? 'Guardar cambios' : 'Crear categoría'}
@@ -68,12 +73,12 @@ function CategoryDialogContent({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Cambiar el tipo de evento?</AlertDialogTitle>
+            <AlertDialogTitle>¿Cambiar los tipos de evento?</AlertDialogTitle>
             <AlertDialogDescription>
-              Todos los regalos de esta categoría quedarán disponibles para el
-              nuevo tipo de evento. Los regalos que ya fueron agregados a listas
-              existentes seguirán allí y podrán comprarse normalmente; sus
-              pagos, contribuciones y reservas no cambiarán.
+              Esto cambia en qué catálogos aparecen todos los regalos de la
+              categoría. Los regalos que ya están en listas de deseos seguirán
+              allí; sus precios, pagos, contribuciones y reservas no cambiarán.
+              No podrás quitar un tipo requerido por una colección asociada.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -93,7 +98,7 @@ function CategoryDialogContent({
   )
 }
 
-function CreateCategoryDialog() {
+function CreateCategoryDialog({ eventTypes }: { eventTypes: EventType[] }) {
   const controller = useCreateAdminCategory()
 
   return (
@@ -104,12 +109,18 @@ function CreateCategoryDialog() {
           <IoAdd className="text-2xl" />
         </Button>
       </DialogTrigger>
-      <CategoryDialogContent controller={controller} />
+      <CategoryDialogContent controller={controller} eventTypes={eventTypes} />
     </Dialog>
   )
 }
 
-function EditCategoryDialog({ category }: { category: Category }) {
+function EditCategoryDialog({
+  category,
+  eventTypes,
+}: {
+  category: Category
+  eventTypes: EventType[]
+}) {
   const controller = useEditAdminCategory(category)
 
   return (
@@ -125,19 +136,25 @@ function EditCategoryDialog({ category }: { category: Category }) {
           <IoPencilOutline />
         </Button>
       </DialogTrigger>
-      <CategoryDialogContent category={category} controller={controller} />
+      <CategoryDialogContent
+        category={category}
+        controller={controller}
+        eventTypes={eventTypes}
+      />
     </Dialog>
   )
 }
 
 export default function AdminCategoryDialog({
   category,
+  eventTypes,
 }: {
   category?: Category
+  eventTypes: EventType[]
 }) {
   return category ? (
-    <EditCategoryDialog category={category} />
+    <EditCategoryDialog category={category} eventTypes={eventTypes} />
   ) : (
-    <CreateCategoryDialog />
+    <CreateCategoryDialog eventTypes={eventTypes} />
   )
 }

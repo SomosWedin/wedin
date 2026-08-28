@@ -81,34 +81,27 @@ whenever you touch something documented below.
   behavior for existing gifts.
 - `Transaction.quantity` — always `1` for group-gift contributions; can be
   > 1 for an individual-gift purchase.
-- `Category.eventType` — which `EventType` a category is offered for; drives
-  `getCategories(eventType)` and the catalog scoping in `getGifts` /
-  `getGiftlists`. Deliberately a scalar, not a list: a category wanted for
-  both event types gets **two rows with the same name** (team decision,
-  2026-08-26). That is why `name` is no longer `@unique` on its own and
-  `@@unique([name, eventType])` replaces it — dropping that compound index
-  makes the duplicate-name model impossible, so don't.
-  The open cost: `Gift.categoryId` points at one row, so duplicating a
-  category splits the gifts beneath it. Two rows named "Aniversarios" do not
-  share a catalog — a gift tagged to the `WEDDING` one is invisible to an
-  `OTHER` event. Nothing needs this yet (every category has exactly one event
-  type), but whoever first duplicates a name has to decide where the gifts
-  live.
-- `Category.eventType` is **optional on purpose**. A required scalar with
-  `@default(WEDDING)` would silently tag every not-yet-migrated document as a
-  wedding category; `null` instead means "not assigned yet", which is what
-  `getCategoryIdsForEventType` keys on to suppress scoping while a database
-  is mid-migration.
+- `EventType` is a seeded model, not an enum. Its stable `key` (`wedding`,
+  `other`) is for application checks; its editable display `name` is for the
+  UI. `Event.eventTypeId` is optional while existing events are migrated.
+- `Category.eventTypeIds` and `Giftlist.eventTypeIds` are Mongo many-to-many
+  relations to `EventType`. A category may have several types. Repeating a
+  category name is allowed only when its event-type sets do not overlap;
+  enforce that in the admin action because Mongo cannot express that index.
 - `Giftlist` has no category field: its categories are derived from its
-  `gifts`. Admin actions allow a collection to contain gifts from multiple
-  categories and remove it when its final gift is moved or deleted.
+  `gifts`. Its selected types must be compatible with every gift category.
+  A collection with no selected types is intentionally available as a safe
+  migration fallback. Moving a gift does not delete its source collection;
+  deleting the final gift does.
   `normalizedName` is the trimmed, lowercase Spanish locale form of `name` and
   enforces case-insensitive global collection-name uniqueness. Counts and total
   prices are derived from `Giftlist.gifts`; do not add denormalized fields for
   them. Before `prisma db push` adds its required unique index to an existing
   database, run `yarn prisma generate` then `yarn migrate:giftlists`; the
   script detects duplicate names, backfills `normalizedName`, removes the
-  legacy `categoryId`, and drops its obsolete index.
+  legacy `categoryId`, and drops its obsolete index. Run
+  `yarn migrate:event-types` before `prisma db push` when upgrading from the
+  former enum-based event types.
 - `Transaction.bankTransferGroupId` — shared by every transaction created
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a

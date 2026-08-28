@@ -32,6 +32,24 @@ describe('giftlist catalog visibility', () => {
       },
       include: {
         gifts: { include: { image: true } },
+        eventTypes: { select: { id: true, name: true } },
+      },
+    })
+  })
+
+  it('includes typed and unassigned collections for an event type', async () => {
+    await getGiftlists({ eventTypeId: 'event-type-wedding' })
+
+    expect(mocks.findMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { eventTypeIds: { has: 'event-type-wedding' } },
+          { eventTypeIds: { isEmpty: true } },
+        ],
+      },
+      include: {
+        gifts: { include: { image: true } },
+        eventTypes: { select: { id: true, name: true } },
       },
     })
   })

@@ -14,11 +14,12 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import type { AdminCategoryValues } from '@/schemas/form'
+import type { AdminGiftlistValues } from '@/schemas/form'
 
-type CategoryFormProps = {
-  form: UseFormReturn<AdminCategoryValues>
+type GiftlistFormProps = {
+  form: UseFormReturn<AdminGiftlistValues>
   eventTypes: EventType[]
+  showEventTypes: boolean
   loading: boolean
   isValid: boolean
   submitLabel: string
@@ -26,15 +27,16 @@ type CategoryFormProps = {
   onCancel: () => void
 }
 
-export default function CategoryForm({
+export default function GiftlistForm({
   form,
   eventTypes,
+  showEventTypes,
   loading,
   isValid,
   submitLabel,
   onSubmit,
   onCancel,
-}: CategoryFormProps) {
+}: GiftlistFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -45,27 +47,35 @@ export default function CategoryForm({
             <FormItem>
               <FormLabel>Nombre</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Muebles y decoraciones" />
+                <Input {...field} placeholder="Esenciales del hogar" />
               </FormControl>
               <FormMessage className="font-normal text-red-600" />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="eventTypeIds"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipos de evento</FormLabel>
-              <EventTypeMultiSelect
-                eventTypes={eventTypes}
-                selectedIds={field.value}
-                onChange={field.onChange}
-              />
-              <FormMessage className="font-normal text-red-600" />
-            </FormItem>
-          )}
-        />
+        {showEventTypes &&
+          (eventTypes.length === 0 ? (
+            <p className="text-sm text-textTertiary">
+              Agregá regalos con categorías asignadas para habilitar tipos de
+              evento.
+            </p>
+          ) : (
+            <FormField
+              control={form.control}
+              name="eventTypeIds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipos de evento</FormLabel>
+                  <EventTypeMultiSelect
+                    eventTypes={eventTypes}
+                    selectedIds={field.value}
+                    onChange={field.onChange}
+                  />
+                  <FormMessage className="font-normal text-red-600" />
+                </FormItem>
+              )}
+            />
+          ))}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar

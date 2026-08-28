@@ -6,7 +6,7 @@ import { useCategoryFormController } from './use-category-form-controller'
 
 const defaultValues: AdminCategoryValues = {
   name: '',
-  eventType: 'WEDDING',
+  eventTypeIds: [],
 }
 
 export function useCreateAdminCategory() {

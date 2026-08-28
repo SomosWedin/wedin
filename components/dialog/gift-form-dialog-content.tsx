@@ -1,6 +1,6 @@
 'use client'
 
-import type { Category } from '@prisma/client'
+import type { Category, EventType } from '@prisma/client'
 import type { GiftlistOption } from '@/actions/data/giftlist'
 import GiftForm from '@/components/forms/dialog/gift'
 import {
@@ -14,6 +14,7 @@ type GiftFormDialogContentProps = {
   title: string
   controller: GiftFormController
   categories: Category[]
+  eventTypes?: EventType[]
   giftlists?: GiftlistOption[]
   uploadInputId: string
   submitLabel: string
@@ -27,6 +28,7 @@ export default function GiftFormDialogContent({
   title,
   controller,
   categories,
+  eventTypes,
   giftlists,
   uploadInputId,
   submitLabel,
@@ -44,6 +46,7 @@ export default function GiftFormDialogContent({
       <GiftForm
         form={controller.form}
         categories={categories}
+        eventTypes={eventTypes}
         giftlists={giftlists}
         loading={controller.loading}
         isValid={controller.isValid}

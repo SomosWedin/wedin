@@ -1,6 +1,5 @@
 'use server'
 
-import type { EventType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
@@ -11,21 +10,20 @@ import { getErrorMessage } from '../helper'
 const INVALID_CATEGORY_DATA_ERROR =
   'Datos inválidos, por favor verifica los datos de la categoría.'
 
-export async function getCategories(eventType?: EventType) {
+export async function getCategories(eventTypeId?: string) {
   try {
     const categories = await prismaClient.category.findMany({
       orderBy: { name: 'asc' },
+      include: { eventTypes: { select: { id: true, name: true, key: true } } },
     })
 
-    if (!eventType) return categories
-    if (categories.some(category => category.eventType === null)) {
-      return categories
-    }
+    if (!eventTypeId) return categories
 
-    const scoped = categories.filter(
-      category => category.eventType === eventType
+    return categories.filter(
+      category =>
+        category.eventTypeIds.length === 0 ||
+        category.eventTypeIds.includes(eventTypeId)
     )
-    return scoped.length ? scoped : categories
   } catch (error) {
     console.error('Error retrieving categories:', error)
     return []
@@ -43,14 +41,44 @@ async function findDuplicateCategory(
   values: AdminCategoryValues,
   categoryId?: string
 ) {
+  if (values.eventTypeIds.length === 0) return null
+
   return prismaClient.category.findFirst({
     where: {
       name: { equals: values.name, mode: 'insensitive' },
-      eventType: values.eventType,
+      eventTypeIds: { hasSome: values.eventTypeIds },
       ...(categoryId ? { id: { not: categoryId } } : {}),
     },
     select: { id: true },
   })
+}
+
+async function validateEventTypeIds(eventTypeIds: string[]) {
+  const uniqueIds = Array.from(new Set(eventTypeIds))
+  const eventTypes = await prismaClient.eventType.findMany({
+    where: { id: { in: uniqueIds } },
+    select: { id: true },
+  })
+
+  return eventTypes.length === uniqueIds.length ? uniqueIds : null
+}
+
+async function validateGiftlistTypeCompatibility(
+  categoryId: string,
+  eventTypeIds: string[]
+) {
+  const gifts = await prismaClient.gift.findMany({
+    where: { categoryId, giftlistId: { not: null } },
+    select: { giftlist: { select: { eventTypeIds: true } } },
+  })
+
+  const incompatible = gifts.some(gift =>
+    gift.giftlist?.eventTypeIds.some(
+      eventTypeId => !eventTypeIds.includes(eventTypeId)
+    )
+  )
+
+  return !incompatible
 }
 
 export async function createAdminCategory(formData: unknown) {
@@ -60,14 +88,27 @@ export async function createAdminCategory(formData: unknown) {
   if (!parsed.success) return { error: INVALID_CATEGORY_DATA_ERROR }
 
   try {
-    if (await findDuplicateCategory(parsed.data)) {
+    const eventTypeIds = await validateEventTypeIds(parsed.data.eventTypeIds)
+    if (!eventTypeIds)
+      return { error: 'El tipo de evento seleccionado no existe.' }
+
+    const values = { ...parsed.data, eventTypeIds }
+
+    if (await findDuplicateCategory(values)) {
       return {
         error:
           'Ya existe una categoría con ese nombre para ese tipo de evento.',
       }
     }
 
-    const category = await prismaClient.category.create({ data: parsed.data })
+    const category = await prismaClient.category.create({
+      data: {
+        name: values.name,
+        eventTypes: {
+          connect: eventTypeIds.map(id => ({ id })),
+        },
+      },
+    })
     revalidatePath('/admin')
     revalidatePath('/gifts')
     return { categoryId: category.id }
@@ -90,16 +131,34 @@ export async function editAdminCategory(categoryId: string, formData: unknown) {
     })
     if (!existing) return { error: 'Categoría no encontrada.' }
 
-    if (await findDuplicateCategory(parsed.data, categoryId)) {
+    const eventTypeIds = await validateEventTypeIds(parsed.data.eventTypeIds)
+    if (!eventTypeIds)
+      return { error: 'El tipo de evento seleccionado no existe.' }
+
+    const values = { ...parsed.data, eventTypeIds }
+
+    if (await findDuplicateCategory(values, categoryId)) {
       return {
         error:
           'Ya existe una categoría con ese nombre para ese tipo de evento.',
       }
     }
 
+    if (!(await validateGiftlistTypeCompatibility(categoryId, eventTypeIds))) {
+      return {
+        error:
+          'Esta categoría tiene regalos en colecciones que requieren tipos de evento que no seleccionaste.',
+      }
+    }
+
     const category = await prismaClient.category.update({
       where: { id: categoryId },
-      data: parsed.data,
+      data: {
+        name: values.name,
+        eventTypes: {
+          set: eventTypeIds.map(id => ({ id })),
+        },
+      },
     })
     revalidatePath('/admin')
     revalidatePath('/gifts')
@@ -116,19 +175,31 @@ export async function deleteAdminCategory(categoryId: string) {
   if (!(await ensureAdmin())) return { error: 'No autorizado.' }
 
   try {
-    const giftCount = await prismaClient.gift.count({ where: { categoryId } })
+    const result = await prismaClient.$transaction(async tx => {
+      const giftCount = await tx.gift.count({ where: { categoryId } })
+      if (giftCount > 0) return 'in-use' as const
 
-    if (giftCount > 0) {
+      const category = await tx.category.findUnique({
+        where: { id: categoryId },
+        select: { id: true },
+      })
+      if (!category) return 'not-found' as const
+
+      await tx.category.update({
+        where: { id: categoryId },
+        data: { eventTypes: { set: [] } },
+      })
+      await tx.category.delete({ where: { id: categoryId } })
+      return 'deleted' as const
+    })
+
+    if (result === 'in-use') {
       return {
         error:
           'No se puede eliminar una categoría que todavía tiene regalos asociados.',
       }
     }
-
-    const deleted = await prismaClient.category.deleteMany({
-      where: { id: categoryId },
-    })
-    if (deleted.count === 0) return { error: 'Categoría no encontrada.' }
+    if (result === 'not-found') return { error: 'Categoría no encontrada.' }
 
     revalidatePath('/admin')
     revalidatePath('/gifts')

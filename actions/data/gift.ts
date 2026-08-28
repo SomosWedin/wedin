@@ -1,6 +1,6 @@
 'use server'
 
-import type { EventType, Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
@@ -23,10 +23,10 @@ type AdminGiftEditValues = z.infer<typeof AdminGiftEditSchema>
 
 export async function getGifts({
   searchParams,
-  eventType,
+  eventTypeId,
 }: {
   searchParams?: z.infer<typeof GetGiftsParams>
-  eventType?: EventType
+  eventTypeId?: string
 }) {
   const validatedParams = GetGiftsParams.safeParse(searchParams)
 
@@ -43,17 +43,17 @@ export async function getGifts({
     }
   }
 
-  const allowedCategoryIds = eventType
-    ? (await getCategories(eventType)).map(allowed => allowed.id)
+  const allowedCategoryIds = eventTypeId
+    ? (await getCategories(eventTypeId)).map(allowed => allowed.id)
     : []
 
-  if (allowedCategoryIds.length) {
-    query.categoryId = {
-      in:
-        category && allowedCategoryIds.includes(category)
-          ? [category]
-          : allowedCategoryIds,
-    }
+  if (eventTypeId && allowedCategoryIds.length === 0) return []
+  if (eventTypeId && category && !allowedCategoryIds.includes(category)) {
+    return []
+  }
+
+  if (eventTypeId) {
+    query.categoryId = category ? category : { in: allowedCategoryIds }
   } else if (category) {
     query.categoryId = category
   }
@@ -120,6 +120,7 @@ export async function createAdminGift(formData: AdminGiftCreateValues) {
   try {
     const newGift = await prismaClient.$transaction(async tx => {
       const resolvedGiftlistId = await findOrCreateGiftlistId(tx, {
+        categoryId: values.categoryId,
         giftlistId,
         newGiftlistName,
       })
@@ -184,6 +185,7 @@ export async function editAdminGift(
       if (!existingGift) return null
 
       const resolvedGiftlistId = await findOrCreateGiftlistId(tx, {
+        categoryId: values.categoryId,
         giftlistId,
         newGiftlistName,
       })
@@ -220,10 +222,6 @@ export async function editAdminGift(
         values,
         resolvedGiftlistId
       )
-
-      if (existingGift.giftlistId !== resolvedGiftlistId) {
-        await deleteGiftlistIfEmpty(tx, existingGift.giftlistId)
-      }
 
       return {
         gift,

@@ -1,6 +1,10 @@
-import { EventType } from '@prisma/client'
+export const SYSTEM_EVENT_TYPES = {
+  WEDDING: { key: 'wedding', name: 'Casamiento' },
+  OTHER: { key: 'other', name: 'Otro tipo de evento' },
+} as const
 
-export const EVENT_TYPE_LABEL: Record<EventType, string> = {
-  [EventType.WEDDING]: 'Casamiento',
-  [EventType.OTHER]: 'Otro tipo de evento',
+export function isWeddingEventType(
+  eventType: { key: string } | null | undefined
+) {
+  return eventType?.key === SYSTEM_EVENT_TYPES.WEDDING.key
 }

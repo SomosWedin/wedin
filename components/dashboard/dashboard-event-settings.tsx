@@ -1,9 +1,9 @@
-import { EventType } from '@prisma/client'
 import { lazy, Suspense } from 'react'
 import { getEvent } from '@/actions/data/event'
 import { getSecondaryUser } from '@/actions/data/user'
 import { getCurrentUser } from '@/actions/get-current-user'
 import DashboardSettingsSkeleton from '@/components/skeletons/dashboard-settings'
+import { isWeddingEventType } from '@/lib/event-type'
 
 const DashboardEventSettingsForm = lazy(
   () => import('@/components/forms/dashboard/event-settings')
@@ -18,7 +18,7 @@ export default async function DashboardEventSettings() {
     return <div>Error</div>
   }
 
-  if (event.eventType === EventType.WEDDING) {
+  if (isWeddingEventType(event.eventType)) {
     secondaryEventUser = await getSecondaryUser(currentUser?.id, event?.id)
     if (!secondaryEventUser || 'error' in secondaryEventUser) {
       return <div>Error</div>

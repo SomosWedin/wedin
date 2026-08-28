@@ -1,4 +1,3 @@
-import { EventType } from '@prisma/client'
 import { type ZodType, z } from 'zod'
 
 export const UpdateEventSettingsFormSchema = z
@@ -7,7 +6,6 @@ export const UpdateEventSettingsFormSchema = z
       required_error: 'Debes seleccionar una fecha',
       invalid_type_error: '¡Eso no es una fecha!',
     }),
-    eventType: z.string(),
     eventUrl: z.string(),
     name: z
       .string()
@@ -24,42 +22,6 @@ export const UpdateEventSettingsFormSchema = z
     partnerEmail: z.string().nullable(),
   })
   .superRefine((data, ctx) => {
-    if (data.eventType !== EventType.WEDDING) return
-
-    const hasPartnerNameData = Boolean(data.partnerName || data.partnerLastName)
-
-    if (hasPartnerNameData) {
-      if (!data.partnerName) {
-        ctx.addIssue({
-          path: ['partnerName'],
-          message:
-            'El nombre de tu pareja es obligatorio para este tipo de evento',
-          code: z.ZodIssueCode.custom,
-        })
-      } else if (data.partnerName.length < 3) {
-        ctx.addIssue({
-          path: ['partnerName'],
-          message: 'El nombre de tu pareja debe contener al menos 3 caracteres',
-          code: z.ZodIssueCode.custom,
-        })
-      }
-      if (!data.partnerLastName) {
-        ctx.addIssue({
-          path: ['partnerLastName'],
-          message:
-            'El apellido de tu pareja es obligatorio para este tipo de evento',
-          code: z.ZodIssueCode.custom,
-        })
-      } else if (data.partnerLastName.length < 3) {
-        ctx.addIssue({
-          path: ['partnerLastName'],
-          message:
-            'El apellido de tu pareja debe contener al menos 3 caracteres',
-          code: z.ZodIssueCode.custom,
-        })
-      }
-    }
-
     if (
       data.partnerEmail &&
       !z.string().email().safeParse(data.partnerEmail).success
@@ -71,6 +33,42 @@ export const UpdateEventSettingsFormSchema = z
       })
     }
   })
+
+export function createUpdateEventSettingsFormSchema(isWedding: boolean) {
+  return UpdateEventSettingsFormSchema.superRefine((data, ctx) => {
+    if (!isWedding || !(data.partnerName || data.partnerLastName)) return
+
+    if (!data.partnerName) {
+      ctx.addIssue({
+        path: ['partnerName'],
+        message:
+          'El nombre de tu pareja es obligatorio para este tipo de evento',
+        code: z.ZodIssueCode.custom,
+      })
+    } else if (data.partnerName.length < 3) {
+      ctx.addIssue({
+        path: ['partnerName'],
+        message: 'El nombre de tu pareja debe contener al menos 3 caracteres',
+        code: z.ZodIssueCode.custom,
+      })
+    }
+
+    if (!data.partnerLastName) {
+      ctx.addIssue({
+        path: ['partnerLastName'],
+        message:
+          'El apellido de tu pareja es obligatorio para este tipo de evento',
+        code: z.ZodIssueCode.custom,
+      })
+    } else if (data.partnerLastName.length < 3) {
+      ctx.addIssue({
+        path: ['partnerLastName'],
+        message: 'El apellido de tu pareja debe contener al menos 3 caracteres',
+        code: z.ZodIssueCode.custom,
+      })
+    }
+  })
+}
 
 export const BankDetailsFormSchema = z.object({
   eventId: z.string(),
@@ -117,6 +115,12 @@ export const GiftlistNameSchema = z
   .min(1, { message: 'Ingresá un nombre para la colección' })
   .max(60, { message: 'El nombre de la colección es demasiado largo' })
 
+export const AdminGiftlistSchema = z.object({
+  name: GiftlistNameSchema,
+  eventTypeIds: z.array(z.string()),
+})
+export type AdminGiftlistValues = z.infer<typeof AdminGiftlistSchema>
+
 export const CategoryNameSchema = z
   .string()
   .trim()
@@ -125,13 +129,16 @@ export const CategoryNameSchema = z
 
 export const AdminCategorySchema = z.object({
   name: CategoryNameSchema,
-  eventType: z.nativeEnum(EventType),
+  eventTypeIds: z
+    .array(z.string())
+    .min(1, { message: 'Seleccioná al menos un tipo de evento' }),
 })
 export type AdminCategoryValues = z.infer<typeof AdminCategorySchema>
 
 export const GiftFormSchema = z.object({
   name: z
     .string()
+    .trim()
     .min(1, { message: 'El nombre del regalo no puede estar vacío' })
     .max(60, { message: 'El nombre del regalo es demasiado largo' }),
   categoryId: z.string().min(1, { message: 'Debes seleccionar una categoría' }),

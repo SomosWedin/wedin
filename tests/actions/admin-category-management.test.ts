@@ -1,4 +1,3 @@
-import { EventType } from '@prisma/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -7,18 +6,12 @@ const mocks = vi.hoisted(() => ({
   categoryFindUnique: vi.fn(),
   categoryCreate: vi.fn(),
   categoryUpdate: vi.fn(),
-  categoryDeleteMany: vi.fn(),
-  giftFindFirst: vi.fn(),
-  giftUpdate: vi.fn(),
-  giftCreate: vi.fn(),
+  categoryDelete: vi.fn(),
+  eventTypeFindMany: vi.fn(),
+  giftFindMany: vi.fn(),
   giftCount: vi.fn(),
-  giftlistFindFirst: vi.fn(),
-  giftlistCreate: vi.fn(),
-  giftlistDelete: vi.fn(),
-  giftlistCount: vi.fn(),
-  wishlistGiftUpdate: vi.fn(),
-  transaction: vi.fn(),
   revalidatePath: vi.fn(),
+  transaction: vi.fn(),
 }))
 
 vi.mock('@/actions/get-current-user', () => ({
@@ -32,22 +25,14 @@ vi.mock('@/prisma/client', () => ({
       findUnique: mocks.categoryFindUnique,
       create: mocks.categoryCreate,
       update: mocks.categoryUpdate,
-      deleteMany: mocks.categoryDeleteMany,
+      delete: mocks.categoryDelete,
     },
+    $transaction: mocks.transaction,
+    eventType: { findMany: mocks.eventTypeFindMany },
     gift: {
-      findFirst: mocks.giftFindFirst,
-      update: mocks.giftUpdate,
-      create: mocks.giftCreate,
+      findMany: mocks.giftFindMany,
       count: mocks.giftCount,
     },
-    giftlist: {
-      findFirst: mocks.giftlistFindFirst,
-      create: mocks.giftlistCreate,
-      delete: mocks.giftlistDelete,
-      count: mocks.giftlistCount,
-    },
-    wishlistGift: { update: mocks.wishlistGiftUpdate },
-    $transaction: mocks.transaction,
   },
 }))
 
@@ -58,15 +43,8 @@ import {
   deleteAdminCategory,
   editAdminCategory,
 } from '@/actions/data/category'
-import { editAdminGift } from '@/actions/data/gift'
 
-const values = { name: 'Hogar', eventType: EventType.WEDDING }
-const giftEditValues = {
-  name: 'Sofá living',
-  categoryId: 'category-2',
-  price: '850000',
-  imageUrl: 'https://cdn.example.com/sofa.jpg',
-}
+const values = { name: 'Hogar', eventTypeIds: ['event-type-wedding'] }
 
 describe('admin category management', () => {
   beforeEach(() => {
@@ -75,141 +53,87 @@ describe('admin category management', () => {
     mocks.categoryFindUnique.mockResolvedValue({ id: 'category-1' })
     mocks.categoryCreate.mockResolvedValue({ id: 'category-1' })
     mocks.categoryUpdate.mockResolvedValue({ id: 'category-1' })
-    mocks.categoryDeleteMany.mockResolvedValue({ count: 1 })
-    mocks.giftFindFirst.mockResolvedValue(null)
-    mocks.giftUpdate.mockResolvedValue({ id: 'gift-1' })
-    mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
+    mocks.categoryDelete.mockResolvedValue({ id: 'category-1' })
+    mocks.eventTypeFindMany.mockResolvedValue([{ id: 'event-type-wedding' }])
+    mocks.giftFindMany.mockResolvedValue([])
     mocks.giftCount.mockResolvedValue(0)
-    mocks.giftlistFindFirst.mockResolvedValue(null)
-    mocks.giftlistCreate.mockResolvedValue({ id: 'giftlist-1' })
-    mocks.giftlistDelete.mockResolvedValue({ id: 'giftlist-1' })
-    mocks.giftlistCount.mockResolvedValue(0)
-    mocks.wishlistGiftUpdate.mockResolvedValue({ id: 'wishlist-gift-1' })
-    mocks.transaction.mockImplementation(
-      async (callback: (tx: unknown) => unknown) =>
-        callback({
-          gift: {
-            findFirst: mocks.giftFindFirst,
-            update: mocks.giftUpdate,
-            create: mocks.giftCreate,
-            count: mocks.giftCount,
-          },
-          giftlist: {
-            findFirst: mocks.giftlistFindFirst,
-            create: mocks.giftlistCreate,
-            delete: mocks.giftlistDelete,
-          },
-          wishlistGift: { update: mocks.wishlistGiftUpdate },
-        })
+    mocks.transaction.mockImplementation(async callback =>
+      callback({
+        category: {
+          findUnique: mocks.categoryFindUnique,
+          update: mocks.categoryUpdate,
+          delete: mocks.categoryDelete,
+        },
+        gift: { count: mocks.giftCount },
+      })
     )
   })
 
   it('creates an admin category and trims its name', async () => {
-    const result = await createAdminCategory({
-      ...values,
-      name: '  Hogar  ',
-    })
+    const result = await createAdminCategory({ ...values, name: '  Hogar  ' })
 
     expect(mocks.categoryCreate).toHaveBeenCalledWith({
-      data: values,
+      data: {
+        name: 'Hogar',
+        eventTypes: { connect: [{ id: 'event-type-wedding' }] },
+      },
     })
     expect(result).toEqual({ categoryId: 'category-1' })
   })
 
-  it('allows the same name for a different event type', async () => {
+  it('allows the same name for disjoint event types', async () => {
+    mocks.eventTypeFindMany.mockResolvedValue([{ id: 'event-type-other' }])
+
     const result = await createAdminCategory({
-      ...values,
-      eventType: EventType.OTHER,
+      name: 'Hogar',
+      eventTypeIds: ['event-type-other'],
     })
 
     expect(mocks.categoryFindFirst).toHaveBeenCalledWith({
       where: {
         name: { equals: 'Hogar', mode: 'insensitive' },
-        eventType: EventType.OTHER,
+        eventTypeIds: { hasSome: ['event-type-other'] },
       },
       select: { id: true },
     })
     expect(result).toEqual({ categoryId: 'category-1' })
   })
 
-  it('keeps linked gifts and wishlist records untouched when editing type', async () => {
-    const result = await editAdminCategory('category-1', {
-      ...values,
-      eventType: EventType.OTHER,
+  it('rejects the same name when at least one event type overlaps', async () => {
+    mocks.categoryFindFirst.mockResolvedValue({ id: 'category-existing' })
+
+    const result = await createAdminCategory(values)
+
+    expect(result).toEqual({
+      error: 'Ya existe una categoría con ese nombre para ese tipo de evento.',
     })
+  })
+
+  it('keeps gifts and wishlist records untouched when editing types', async () => {
+    const result = await editAdminCategory('category-1', values)
 
     expect(mocks.categoryUpdate).toHaveBeenCalledWith({
       where: { id: 'category-1' },
-      data: { ...values, eventType: EventType.OTHER },
+      data: {
+        name: 'Hogar',
+        eventTypes: { set: [{ id: 'event-type-wedding' }] },
+      },
     })
     expect(result).toEqual({ categoryId: 'category-1' })
   })
 
-  it('preserves every linked wishlist gift when changing only the catalog category', async () => {
-    mocks.giftFindFirst.mockResolvedValue({
-      id: 'gift-1',
-      name: 'Sofá original',
-      price: giftEditValues.price,
-      categoryId: 'category-1',
-      giftlistId: null,
-      image: { url: 'https://cdn.example.com/original.jpg' },
-      wishlistGifts: [
-        { id: 'wishlist-gift-1', eventId: 'event-1' },
-        { id: 'wishlist-gift-2', eventId: 'event-2' },
-      ],
-    })
-    mocks.giftCreate
-      .mockResolvedValueOnce({ id: 'private-gift-1' })
-      .mockResolvedValueOnce({ id: 'private-gift-2' })
+  it('blocks removing a type required by a collection containing its gifts', async () => {
+    mocks.giftFindMany.mockResolvedValue([
+      { giftlist: { eventTypeIds: ['event-type-other'] } },
+    ])
 
-    const result = await editAdminGift(giftEditValues, 'gift-1')
+    const result = await editAdminCategory('category-1', values)
 
-    expect(mocks.giftCreate).toHaveBeenCalledTimes(2)
-    expect(mocks.giftCreate).toHaveBeenNthCalledWith(1, {
-      data: {
-        name: 'Sofá original',
-        price: '850000',
-        categoryId: 'category-1',
-        eventId: 'event-1',
-        isDefault: false,
-        image: { create: { url: 'https://cdn.example.com/original.jpg' } },
-      },
+    expect(result).toEqual({
+      error:
+        'Esta categoría tiene regalos en colecciones que requieren tipos de evento que no seleccionaste.',
     })
-    expect(mocks.wishlistGiftUpdate).toHaveBeenNthCalledWith(2, {
-      where: { id: 'wishlist-gift-2' },
-      data: { giftId: 'private-gift-2' },
-    })
-    expect(mocks.giftUpdate).toHaveBeenCalledWith({
-      where: { id: 'gift-1' },
-      data: expect.objectContaining({ categoryId: 'category-2' }),
-    })
-    expect(mocks.transaction).toHaveBeenCalledOnce()
-    expect(result).toEqual({ giftId: 'gift-1' })
-  })
-
-  it('creates one wishlist copy when price and category change together', async () => {
-    mocks.giftFindFirst.mockResolvedValue({
-      id: 'gift-1',
-      name: 'Sofá original',
-      price: '800000',
-      categoryId: 'category-1',
-      giftlistId: null,
-      image: null,
-      wishlistGifts: [{ id: 'wishlist-gift-1', eventId: 'event-1' }],
-    })
-
-    const result = await editAdminGift(giftEditValues, 'gift-1')
-
-    expect(mocks.giftCreate).toHaveBeenCalledOnce()
-    expect(mocks.wishlistGiftUpdate).toHaveBeenCalledOnce()
-    expect(mocks.giftUpdate).toHaveBeenCalledWith({
-      where: { id: 'gift-1' },
-      data: expect.objectContaining({
-        price: '850000',
-        categoryId: 'category-2',
-      }),
-    })
-    expect(result).toEqual({ giftId: 'gift-1' })
+    expect(mocks.categoryUpdate).not.toHaveBeenCalled()
   })
 
   it('blocks deletion when gifts reference the category', async () => {
@@ -218,9 +142,23 @@ describe('admin category management', () => {
     const result = await deleteAdminCategory('category-1')
 
     expect(result).toEqual({
-      error: 'No se puede eliminar una categoría que todavía tiene regalos asociados.',
+      error:
+        'No se puede eliminar una categoría que todavía tiene regalos asociados.',
     })
-    expect(mocks.categoryDeleteMany).not.toHaveBeenCalled()
+    expect(mocks.categoryDelete).not.toHaveBeenCalled()
+  })
+
+  it('disconnects event types before deleting an unused category', async () => {
+    const result = await deleteAdminCategory('category-1')
+
+    expect(mocks.categoryUpdate).toHaveBeenCalledWith({
+      where: { id: 'category-1' },
+      data: { eventTypes: { set: [] } },
+    })
+    expect(mocks.categoryDelete).toHaveBeenCalledWith({
+      where: { id: 'category-1' },
+    })
+    expect(result).toEqual({ success: true })
   })
 
   it('rejects non-admin mutations', async () => {

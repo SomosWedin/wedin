@@ -3,13 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   giftFindFirst: vi.fn(),
+  giftFindMany: vi.fn(),
   giftUpdate: vi.fn(),
   giftCreate: vi.fn(),
   giftDelete: vi.fn(),
   giftCount: vi.fn(),
   giftlistFindFirst: vi.fn(),
   giftlistCreate: vi.fn(),
+  giftlistUpdate: vi.fn(),
   giftlistDelete: vi.fn(),
+  categoryFindUnique: vi.fn(),
   wishlistGiftFindUnique: vi.fn(),
   wishlistGiftUpdate: vi.fn(),
   imageDeleteMany: vi.fn(),
@@ -26,6 +29,7 @@ vi.mock('@/prisma/client', () => ({
   default: {
     gift: {
       findFirst: mocks.giftFindFirst,
+      findMany: mocks.giftFindMany,
       update: mocks.giftUpdate,
       create: mocks.giftCreate,
       delete: mocks.giftDelete,
@@ -34,8 +38,10 @@ vi.mock('@/prisma/client', () => ({
     giftlist: {
       findFirst: mocks.giftlistFindFirst,
       create: mocks.giftlistCreate,
+      update: mocks.giftlistUpdate,
       delete: mocks.giftlistDelete,
     },
+    category: { findUnique: mocks.categoryFindUnique },
     wishlistGift: {
       findUnique: mocks.wishlistGiftFindUnique,
       update: mocks.wishlistGiftUpdate,
@@ -79,12 +85,17 @@ describe('admin creates and edits catalog gifts', () => {
       giftlistId: null,
       wishlistGifts: [],
     })
+    mocks.giftFindMany.mockResolvedValue([])
     mocks.giftUpdate.mockResolvedValue({ id: 'gift-1' })
     mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.giftDelete.mockResolvedValue({ id: 'gift-1' })
     mocks.giftCount.mockResolvedValue(1)
     mocks.giftlistFindFirst.mockResolvedValue(null)
+    mocks.categoryFindUnique.mockResolvedValue({
+      eventTypeIds: ['event-type-wedding'],
+    })
     mocks.giftlistCreate.mockResolvedValue({ id: 'giftlist-new' })
+    mocks.giftlistUpdate.mockResolvedValue({ id: 'giftlist-old' })
     mocks.giftlistDelete.mockResolvedValue({ id: 'giftlist-old' })
     mocks.wishlistGiftFindUnique.mockResolvedValue({
       gift: { price: '800000' },
@@ -99,6 +110,7 @@ describe('admin creates and edits catalog gifts', () => {
         callback({
           gift: {
             findFirst: mocks.giftFindFirst,
+            findMany: mocks.giftFindMany,
             update: mocks.giftUpdate,
             create: mocks.giftCreate,
             delete: mocks.giftDelete,
@@ -107,8 +119,10 @@ describe('admin creates and edits catalog gifts', () => {
           giftlist: {
             findFirst: mocks.giftlistFindFirst,
             create: mocks.giftlistCreate,
+            update: mocks.giftlistUpdate,
             delete: mocks.giftlistDelete,
           },
+          category: { findUnique: mocks.categoryFindUnique },
           wishlistGift: {
             findUnique: mocks.wishlistGiftFindUnique,
             update: mocks.wishlistGiftUpdate,
@@ -134,6 +148,51 @@ describe('admin creates and edits catalog gifts', () => {
 
     expect(result).toEqual({ error: 'No autorizado.' })
     expect(mocks.giftFindFirst).not.toHaveBeenCalled()
+  })
+
+  it('rejects a duplicate catalog gift name in the same category', async () => {
+    mocks.giftFindMany.mockResolvedValue([{ id: 'gift-existing' }])
+
+    const result = await createAdminGift({
+      ...createValues,
+      name: '  SOFÁ LIVING  ',
+      price: '999000',
+    })
+
+    expect(mocks.giftFindMany).toHaveBeenCalledWith({
+      where: {
+        categoryId: 'category-1',
+        isDefault: true,
+        name: { equals: 'SOFÁ LIVING', mode: 'insensitive' },
+      },
+      select: { id: true },
+      take: 1,
+    })
+    expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      error: 'Ya existe un regalo con ese nombre en esta categoría.',
+    })
+  })
+
+  it('rejects renaming a catalog gift to a duplicate in its category', async () => {
+    mocks.giftFindMany.mockResolvedValue([{ id: 'gift-existing' }])
+
+    const result = await editAdminGift(editValues, 'gift-1')
+
+    expect(mocks.giftFindMany).toHaveBeenCalledWith({
+      where: {
+        id: { not: 'gift-1' },
+        categoryId: 'category-1',
+        isDefault: true,
+        name: { equals: 'Sofá living', mode: 'insensitive' },
+      },
+      select: { id: true },
+      take: 1,
+    })
+    expect(mocks.giftUpdate).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      error: 'Ya existe un regalo con ese nombre en esta categoría.',
+    })
   })
 
   it('allows an admin to edit a default catalog gift and its image', async () => {
@@ -170,7 +229,10 @@ describe('admin creates and edits catalog gifts', () => {
   })
 
   it('allows an admin to add a gift to an existing collection from another category', async () => {
-    mocks.giftlistFindFirst.mockResolvedValue({ id: 'giftlist-1' })
+    mocks.giftlistFindFirst.mockResolvedValue({
+      id: 'giftlist-1',
+      eventTypeIds: ['event-type-wedding'],
+    })
     mocks.giftCreate.mockResolvedValue({ id: 'gift-1' })
 
     const result = await createAdminGift({
@@ -180,7 +242,7 @@ describe('admin creates and edits catalog gifts', () => {
 
     expect(mocks.giftlistFindFirst).toHaveBeenCalledWith({
       where: { id: 'giftlist-1' },
-      select: { id: true },
+      select: { id: true, eventTypeIds: true },
     })
     expect(mocks.giftCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -273,14 +335,17 @@ describe('admin creates and edits catalog gifts', () => {
     expect(result).toEqual({ giftId: 'gift-1' })
   })
 
-  it('removes the previous collection when moving its final gift', async () => {
+  it('keeps the previous collection when moving its final gift', async () => {
     mocks.giftFindFirst.mockResolvedValue({
       id: 'gift-1',
       price: editValues.price,
       giftlistId: 'giftlist-old',
       wishlistGifts: [],
     })
-    mocks.giftlistFindFirst.mockResolvedValue({ id: 'giftlist-new' })
+    mocks.giftlistFindFirst.mockResolvedValue({
+      id: 'giftlist-new',
+      eventTypeIds: [],
+    })
     mocks.giftCount.mockResolvedValue(0)
 
     const result = await editAdminGift(
@@ -288,29 +353,26 @@ describe('admin creates and edits catalog gifts', () => {
       'gift-1'
     )
 
-    expect(mocks.giftCount).toHaveBeenCalledWith({
-      where: { giftlistId: 'giftlist-old' },
-    })
-    expect(mocks.giftlistDelete).toHaveBeenCalledWith({
-      where: { id: 'giftlist-old' },
-    })
+    expect(mocks.giftCount).not.toHaveBeenCalled()
+    expect(mocks.giftlistDelete).not.toHaveBeenCalled()
     expect(result).toEqual({ giftId: 'gift-1' })
   })
 
-  it('keeps the previous collection when it still contains gifts', async () => {
+  it('does not inspect the source collection when moving a gift', async () => {
     mocks.giftFindFirst.mockResolvedValue({
       id: 'gift-1',
       price: editValues.price,
       giftlistId: 'giftlist-old',
       wishlistGifts: [],
     })
-    mocks.giftlistFindFirst.mockResolvedValue({ id: 'giftlist-new' })
+    mocks.giftlistFindFirst.mockResolvedValue({
+      id: 'giftlist-new',
+      eventTypeIds: [],
+    })
 
     await editAdminGift({ ...editValues, giftlistId: 'giftlist-new' }, 'gift-1')
 
-    expect(mocks.giftCount).toHaveBeenCalledWith({
-      where: { giftlistId: 'giftlist-old' },
-    })
+    expect(mocks.giftCount).not.toHaveBeenCalled()
     expect(mocks.giftlistDelete).not.toHaveBeenCalled()
   })
 
@@ -414,6 +476,10 @@ describe('admin creates and edits catalog gifts', () => {
     })
     expect(mocks.giftlistDelete).toHaveBeenCalledWith({
       where: { id: 'giftlist-old' },
+    })
+    expect(mocks.giftlistUpdate).toHaveBeenCalledWith({
+      where: { id: 'giftlist-old' },
+      data: { eventTypes: { set: [] } },
     })
     expect(mocks.giftCreate).not.toHaveBeenCalled()
     expect(mocks.wishlistGiftUpdate).not.toHaveBeenCalled()

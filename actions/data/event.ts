@@ -16,9 +16,10 @@ const prismaClient = new PrismaClient()
 
 export const getEvent = async (): Promise<
   | (Event & {
-    images: ImageModel[]
-    users: User[]
-  })
+      images: ImageModel[]
+      users: User[]
+      eventType: { id: string; name: string; key: string } | null
+    })
   | ErrorResponse
 > => {
   const user = await getCurrentUser()
@@ -42,6 +43,7 @@ export const getEvent = async (): Promise<
       include: {
         images: true,
         users: true,
+        eventType: true,
       },
     })
 

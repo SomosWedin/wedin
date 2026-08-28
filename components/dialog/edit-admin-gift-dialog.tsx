@@ -1,6 +1,6 @@
 'use client'
 
-import type { Category } from '@prisma/client'
+import type { Category, EventType } from '@prisma/client'
 import { IoPencilOutline } from 'react-icons/io5'
 import type { GiftlistOption } from '@/actions/data/giftlist'
 import { Button } from '@/components/ui/button'
@@ -15,12 +15,14 @@ type EditAdminGiftDialogProps = {
   gift: EditableAdminGift
   categories: Category[]
   giftlists: GiftlistOption[]
+  eventTypes: EventType[]
 }
 
 export default function EditAdminGiftDialog({
   gift,
   categories,
   giftlists,
+  eventTypes,
 }: EditAdminGiftDialogProps) {
   const controller = useEditAdminGift(gift)
 
@@ -42,6 +44,7 @@ export default function EditAdminGiftDialog({
         title="Editar regalo"
         controller={controller}
         categories={categories}
+        eventTypes={eventTypes}
         giftlists={giftlists}
         uploadInputId={`edit-admin-gift-image-${gift.id}`}
         submitLabel="Guardar"

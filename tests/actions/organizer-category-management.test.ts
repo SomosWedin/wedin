@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   giftCreate: vi.fn(),
+  giftFindMany: vi.fn(),
   giftUpdate: vi.fn(),
   wishlistGiftFindFirst: vi.fn(),
   wishlistGiftUpdateMany: vi.fn(),
@@ -15,6 +16,7 @@ vi.mock('@/prisma/client', () => ({
     $transaction: mocks.transaction,
     gift: {
       create: mocks.giftCreate,
+      findMany: mocks.giftFindMany,
       update: mocks.giftUpdate,
     },
     wishlistGift: {
@@ -80,12 +82,14 @@ function expectFinancialProgressUntouched() {
 describe('organizer category management', () => {
   beforeEach(() => {
     mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
+    mocks.giftFindMany.mockResolvedValue([])
     mocks.giftUpdate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.wishlistGiftUpdateMany.mockResolvedValue({ count: 1 })
     mocks.transaction.mockImplementation(async callback =>
       callback({
         gift: {
           create: mocks.giftCreate,
+          findMany: mocks.giftFindMany,
           update: mocks.giftUpdate,
         },
         wishlistGift: {

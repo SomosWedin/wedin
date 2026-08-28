@@ -1,9 +1,15 @@
 'use client'
 
-import type { Category } from '@prisma/client'
+import type { Category, EventType } from '@prisma/client'
 import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
-import type { BaseSyntheticEvent, ChangeEventHandler, RefObject } from 'react'
+import {
+  type BaseSyntheticEvent,
+  type ChangeEventHandler,
+  type RefObject,
+  useId,
+  useMemo,
+} from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { CiImageOn } from 'react-icons/ci'
 import { IoInformationCircleOutline } from 'react-icons/io5'
@@ -44,6 +50,7 @@ import type { GiftFormValues } from '@/schemas/form'
 export type GiftFormProps = {
   form: UseFormReturn<GiftFormValues>
   categories: Category[]
+  eventTypes?: EventType[]
   giftlists?: GiftlistOption[]
   loading: boolean
   isValid: boolean
@@ -64,6 +71,7 @@ export type GiftFormProps = {
 export default function GiftForm({
   form,
   categories,
+  eventTypes = [],
   giftlists = [],
   loading,
   isValid,
@@ -80,9 +88,32 @@ export default function GiftForm({
   onSubmit,
   onCancel,
 }: GiftFormProps) {
+  const eventTypeInputId = useId()
   const isGroupGift = form.watch('isGroupGift')
   const newGiftlistName = form.watch('newGiftlistName')
+  const selectedGiftlistId = form.watch('giftlistId')
   const isCreatingGiftlist = newGiftlistName !== undefined
+  const availableCategories = useMemo(() => {
+    const selectedGiftlist = giftlists.find(
+      giftlist => giftlist.id === selectedGiftlistId
+    )
+
+    if (!selectedGiftlist || selectedGiftlist.eventTypeIds.length === 0) {
+      return categories
+    }
+
+    return categories.filter(category =>
+      selectedGiftlist.eventTypeIds.every(eventTypeId =>
+        category.eventTypeIds.includes(eventTypeId)
+      )
+    )
+  }, [categories, giftlists, selectedGiftlistId])
+  const selectedCategory = categories.find(
+    category => category.id === form.watch('categoryId')
+  )
+  const selectedEventTypeNames = eventTypes
+    .filter(eventType => selectedCategory?.eventTypeIds.includes(eventType.id))
+    .map(eventType => eventType.name)
 
   return (
     <Form {...form}>
@@ -170,7 +201,7 @@ export default function GiftForm({
                 </FormControl>
 
                 <SelectContent className="bg-white">
-                  {categories.map(category => (
+                  {availableCategories.map(category => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
                     </SelectItem>
@@ -182,6 +213,28 @@ export default function GiftForm({
             </FormItem>
           )}
         />
+
+        {adminMode && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor={eventTypeInputId} className="text-sm font-medium">
+              Tipos de evento
+            </label>
+            <Input
+              id={eventTypeInputId}
+              value={
+                selectedCategory
+                  ? selectedEventTypeNames.join(', ') || 'Sin tipos asignados'
+                  : 'Elegí una categoría'
+              }
+              readOnly
+              aria-readonly="true"
+              className="bg-gray-50 text-textTertiary"
+            />
+            <p className="text-xs text-textTertiary">
+              Se determina por la categoría del regalo.
+            </p>
+          </div>
+        )}
 
         {adminMode && (
           <>
@@ -215,9 +268,31 @@ export default function GiftForm({
                         shouldValidate: true,
                       })
                       form.clearErrors('newGiftlistName')
-                      field.onChange(
+                      const giftlistId =
                         value === '__no_giftlist__' ? undefined : value
+                      const selectedGiftlist = giftlists.find(
+                        giftlist => giftlist.id === giftlistId
                       )
+                      const currentCategory = categories.find(
+                        category => category.id === form.getValues('categoryId')
+                      )
+
+                      if (
+                        selectedGiftlist &&
+                        selectedGiftlist.eventTypeIds.length > 0 &&
+                        currentCategory &&
+                        selectedGiftlist.eventTypeIds.some(
+                          eventTypeId =>
+                            !currentCategory.eventTypeIds.includes(eventTypeId)
+                        )
+                      ) {
+                        form.setValue('categoryId', '', {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        })
+                      }
+
+                      field.onChange(giftlistId)
                     }}
                   >
                     <FormControl>

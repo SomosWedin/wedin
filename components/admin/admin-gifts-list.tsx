@@ -1,6 +1,6 @@
 'use client'
 
-import type { Category, Prisma } from '@prisma/client'
+import type { Category, EventType, Prisma } from '@prisma/client'
 import { endOfDay, format } from 'date-fns'
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
@@ -26,6 +26,7 @@ type AdminGiftsListProps = {
   gifts: GiftWithImage[]
   categories: Category[]
   giftlists: GiftlistOption[]
+  eventTypes: EventType[]
 }
 
 type SortColumn = 'createdAt' | 'price'
@@ -51,6 +52,7 @@ export default function AdminGiftsList({
   gifts,
   categories,
   giftlists,
+  eventTypes,
 }: AdminGiftsListProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -113,13 +115,13 @@ export default function AdminGiftsList({
 
   const sortedGifts = sortColumn
     ? [...filteredGifts].sort((a, b) => {
-      const diff =
-        sortColumn === 'createdAt'
-          ? a.createdAt.getTime() - b.createdAt.getTime()
-          : Number(a.price) - Number(b.price)
+        const diff =
+          sortColumn === 'createdAt'
+            ? a.createdAt.getTime() - b.createdAt.getTime()
+            : Number(a.price) - Number(b.price)
 
-      return sortDirection === 'asc' ? diff : -diff
-    })
+        return sortDirection === 'asc' ? diff : -diff
+      })
     : filteredGifts
 
   return (
@@ -169,6 +171,7 @@ export default function AdminGiftsList({
           mode="admin"
           categories={categories}
           giftlists={giftlists}
+          eventTypes={eventTypes}
         />
       </div>
 
@@ -252,6 +255,7 @@ export default function AdminGiftsList({
                 gift={gift}
                 categories={categories}
                 giftlists={giftlists}
+                eventTypes={eventTypes}
               />
               <DeleteAdminGiftDialog giftId={gift.id} giftName={gift.name} />
             </div>

@@ -1,16 +1,16 @@
-import {
-  type Event,
-  EventType,
-  type Image as ImageModel,
-  type User,
-} from '@prisma/client'
+import { type Event, type Image as ImageModel, type User } from '@prisma/client'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import GuestImageCarousel from '@/components/guest/guest-image-carousel'
 import ViewGiftsButton from '@/components/guest/view-gifts-button'
+import { isWeddingEventType } from '@/lib/event-type'
 
 type GuestHeroProps = {
-  event: Event & { images: Pick<ImageModel, 'id' | 'url'>[]; users: User[] }
+  event: Event & {
+    images: Pick<ImageModel, 'id' | 'url'>[]
+    users: User[]
+    eventType: { key: string } | null
+  }
 }
 
 export default function GuestHero({ event }: GuestHeroProps) {
@@ -18,12 +18,12 @@ export default function GuestHero({ event }: GuestHeroProps) {
   const secondaryUser = event.users.find(user => !user.isPrimary)
 
   const coupleName =
-    event.eventType === EventType.WEDDING && secondaryUser?.name
+    isWeddingEventType(event.eventType) && secondaryUser?.name
       ? `${primaryUser?.name ?? ''} & ${secondaryUser.name}`.trim()
       : (primaryUser?.name ?? event.name ?? 'Nuestro evento')
 
   const dateLabel = event.date
-    ? event.eventType === EventType.WEDDING
+    ? isWeddingEventType(event.eventType)
       ? `Nos casamos el ${format(event.date, "d 'de' MMMM 'de' yyyy", { locale: es })}`
       : `El evento es el ${format(event.date, "d 'de' MMMM 'de' yyyy", { locale: es })}`
     : null

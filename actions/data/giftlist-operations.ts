@@ -1,13 +1,17 @@
 import type { Prisma } from '@prisma/client'
 
-type GiftlistEditor = Pick<Prisma.TransactionClient, 'gift' | 'giftlist'>
+type GiftlistEditor = Pick<
+  Prisma.TransactionClient,
+  'category' | 'gift' | 'giftlist'
+>
 
 type GiftlistSelection = {
+  categoryId: string
   giftlistId?: string
   newGiftlistName?: string
 }
 
-export class GiftlistSelectionError extends Error { }
+export class GiftlistSelectionError extends Error {}
 
 function normalizeGiftlistName(name: string) {
   return name.trim().toLocaleLowerCase('es-PY')
@@ -37,17 +41,33 @@ export async function createGiftlist(
 
 async function findGiftlistId(
   tx: GiftlistEditor,
-  { giftlistId }: GiftlistSelection
+  { categoryId, giftlistId }: GiftlistSelection
 ) {
   if (!giftlistId) return null
 
   const giftlist = await tx.giftlist.findFirst({
     where: { id: giftlistId },
-    select: { id: true },
+    select: { id: true, eventTypeIds: true },
   })
 
   if (!giftlist) {
     throw new GiftlistSelectionError('La colección seleccionada no existe.')
+  }
+
+  const category = await tx.category.findUnique({
+    where: { id: categoryId },
+    select: { eventTypeIds: true },
+  })
+
+  if (
+    !category ||
+    giftlist.eventTypeIds.some(
+      eventTypeId => !category.eventTypeIds.includes(eventTypeId)
+    )
+  ) {
+    throw new GiftlistSelectionError(
+      'La categoría seleccionada no es compatible con los tipos de evento de esta colección.'
+    )
   }
 
   return giftlist.id
@@ -77,6 +97,10 @@ export async function deleteGiftlistIfEmpty(
   const remainingGifts = await tx.gift.count({ where: { giftlistId } })
 
   if (remainingGifts === 0) {
+    await tx.giftlist.update({
+      where: { id: giftlistId },
+      data: { eventTypes: { set: [] } },
+    })
     await tx.giftlist.delete({ where: { id: giftlistId } })
   }
 }

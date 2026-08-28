@@ -8,7 +8,8 @@
     "start": "next start",
     "format": "biome check --write --linter-enabled=false .",
     "format:check": "biome check --linter-enabled=false .",
-    "migrate:giftlists": "ts-node scripts/migrate-giftlist-categories.ts",
+    "migrate:giftlists": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migrate-giftlist-categories.ts",
+    "migrate:event-types": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migrate-event-types.ts",
     "test": "vitest",
     "test:run": "vitest run"
   },

@@ -21,7 +21,11 @@ describe('admin gift list options', () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' })
     mocks.giftlistFindMany.mockResolvedValue([
-      { id: 'giftlist-1', name: 'Hogar' },
+      {
+        id: 'giftlist-1',
+        name: 'Hogar',
+        eventTypeIds: ['event-type-wedding'],
+      },
     ])
   })
 
@@ -29,10 +33,16 @@ describe('admin gift list options', () => {
     const result = await getGiftlistOptionsForAdmin()
 
     expect(mocks.giftlistFindMany).toHaveBeenCalledWith({
-      select: { id: true, name: true },
+      select: { id: true, name: true, eventTypeIds: true },
       orderBy: { name: 'asc' },
     })
-    expect(result).toEqual([{ id: 'giftlist-1', name: 'Hogar' }])
+    expect(result).toEqual([
+      {
+        id: 'giftlist-1',
+        name: 'Hogar',
+        eventTypeIds: ['event-type-wedding'],
+      },
+    ])
   })
 
   it('rejects non-admin callers before querying collections', async () => {

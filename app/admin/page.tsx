@@ -2,13 +2,18 @@ import { redirect } from 'next/navigation'
 import { lazy, Suspense } from 'react'
 import {
   IoCashOutline,
+  IoFolderOpenOutline,
   IoGiftOutline,
   IoPricetagOutline,
   IoSwapHorizontalOutline,
 } from 'react-icons/io5'
 import { getCategories } from '@/actions/data/category'
+import { getEventTypes } from '@/actions/data/event-type'
 import { getGifts } from '@/actions/data/gift'
-import { getGiftlistOptionsForAdmin } from '@/actions/data/giftlist'
+import {
+  getAdminGiftlists,
+  getGiftlistOptionsForAdmin,
+} from '@/actions/data/giftlist'
 import { getAllPayoutsForAdmin } from '@/actions/data/payout'
 import { getAllTransactionsForAdmin } from '@/actions/data/transaction'
 import { getCurrentUser } from '@/actions/get-current-user'
@@ -26,6 +31,9 @@ const AdminGiftsList = lazy(() => import('@/components/admin/admin-gifts-list'))
 const AdminCategoriesList = lazy(
   () => import('@/components/admin/admin-categories-list')
 )
+const AdminGiftlistsList = lazy(
+  () => import('@/components/admin/admin-giftlists-list')
+)
 
 export default async function AdminPage() {
   const currentUser = await getCurrentUser()
@@ -34,14 +42,23 @@ export default async function AdminPage() {
     redirect('/dashboard')
   }
 
-  const [transactions, payouts, gifts, categories, giftlists] =
-    await Promise.all([
-      getAllTransactionsForAdmin(),
-      getAllPayoutsForAdmin(),
-      getGifts({ searchParams: { isDefault: true } }),
-      getCategories(),
-      getGiftlistOptionsForAdmin(),
-    ])
+  const [
+    transactions,
+    payouts,
+    gifts,
+    categories,
+    giftlists,
+    adminGiftlists,
+    eventTypes,
+  ] = await Promise.all([
+    getAllTransactionsForAdmin(),
+    getAllPayoutsForAdmin(),
+    getGifts({ searchParams: { isDefault: true } }),
+    getCategories(),
+    getGiftlistOptionsForAdmin(),
+    getAdminGiftlists(),
+    getEventTypes(),
+  ])
 
   return (
     <div className="container w-full h-full flex items-center flex-col gap-6 p-8">
@@ -75,6 +92,10 @@ export default async function AdminPage() {
           <TabsTrigger value="categorias" className="gap-2 text-xs sm:text-sm">
             <IoPricetagOutline className="text-lg" />
             Categorías
+          </TabsTrigger>
+          <TabsTrigger value="colecciones" className="gap-2 text-xs sm:text-sm">
+            <IoFolderOpenOutline className="text-lg" />
+            Colecciones
           </TabsTrigger>
         </TabsList>
 
@@ -114,13 +135,27 @@ export default async function AdminPage() {
               gifts={gifts}
               categories={categories}
               giftlists={giftlists}
+              eventTypes={eventTypes}
             />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="categorias" className="mt-6">
           <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminCategoriesList categories={categories} />
+            <AdminCategoriesList
+              categories={categories}
+              eventTypes={eventTypes}
+            />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="colecciones" className="mt-6">
+          <Suspense fallback={<DashboardTransactionsSkeleton />}>
+            <AdminGiftlistsList
+              giftlists={adminGiftlists}
+              categories={categories}
+              eventTypes={eventTypes}
+            />
           </Suspense>
         </TabsContent>
       </Tabs>

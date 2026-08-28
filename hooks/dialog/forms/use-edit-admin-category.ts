@@ -8,7 +8,7 @@ import { useCategoryFormController } from './use-category-form-controller'
 export function useEditAdminCategory(category: Category) {
   const defaultValues: AdminCategoryValues = {
     name: category.name,
-    eventType: category.eventType ?? 'WEDDING',
+    eventTypeIds: category.eventTypeIds,
   }
 
   return useCategoryFormController({

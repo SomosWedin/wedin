@@ -416,11 +416,17 @@ export async function editGiftWithWishlistGift(
             current.gift.isDefault || current.gift.wishlistGifts.length > 1
           const gift = mustCreatePrivateCopy
             ? await createGiftRecord(tx, {
-              ...giftValues,
-              isDefault: false,
-              eventId: current.eventId,
-            })
-            : await updateGiftRecord(tx, current.giftId, giftValues)
+                ...giftValues,
+                isDefault: false,
+                eventId: current.eventId,
+              })
+            : await updateGiftRecord(
+                tx,
+                current.giftId,
+                giftValues,
+                undefined,
+                { isDefault: false, eventId: current.eventId }
+              )
 
           giftId = gift.id
         }
@@ -432,27 +438,27 @@ export async function editGiftWithWishlistGift(
         const progress =
           wishlistSettingsChanged || !giftChanged || priceChanged
             ? (() => {
-              const completedAmount = current.transactions.reduce(
-                (sum, transaction) => sum + (Number(transaction.amount) || 0),
-                0
-              )
-              const completedQuantity = current.transactions.reduce(
-                (sum, transaction) => sum + transaction.quantity,
-                0
-              )
+                const completedAmount = current.transactions.reduce(
+                  (sum, transaction) => sum + (Number(transaction.amount) || 0),
+                  0
+                )
+                const completedQuantity = current.transactions.reduce(
+                  (sum, transaction) => sum + transaction.quantity,
+                  0
+                )
 
-              return wishlistGiftValues.isGroupGift
-                ? {
-                  groupGiftParts: String(completedAmount),
-                  isFullyPaid:
-                    Number(giftValues.price) > 0 &&
-                    completedAmount >= Number(giftValues.price),
-                }
-                : {
-                  isFullyPaid:
-                    completedQuantity >= wishlistGiftValues.quantity,
-                }
-            })()
+                return wishlistGiftValues.isGroupGift
+                  ? {
+                      groupGiftParts: String(completedAmount),
+                      isFullyPaid:
+                        Number(giftValues.price) > 0 &&
+                        completedAmount >= Number(giftValues.price),
+                    }
+                  : {
+                      isFullyPaid:
+                        completedQuantity >= wishlistGiftValues.quantity,
+                    }
+              })()
             : {}
 
         await updateWishlistGiftRecord(
