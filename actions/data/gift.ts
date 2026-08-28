@@ -24,7 +24,6 @@ import {
   findOrCreateGiftlistId,
   GiftlistSelectionError,
 } from './giftlist-operations'
-import { recomputeWishlistGiftProgress } from './transaction'
 
 const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.'
 
@@ -158,7 +157,7 @@ export async function editGift(
     if (error instanceof PriceLockedError) {
       return {
         error:
-          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+          'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.',
       }
     }
 
@@ -202,7 +201,7 @@ export async function createGift(
     if (error instanceof PriceLockedError) {
       return {
         error:
-          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+          'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.',
       }
     }
 
@@ -282,9 +281,12 @@ export async function editAdminGift(
         where: { id: giftId, isDefault: true },
         select: {
           id: true,
+          name: true,
           price: true,
+          categoryId: true,
           giftlistId: true,
-          wishlistGifts: { select: { id: true } },
+          image: { select: { url: true } },
+          wishlistGifts: { select: { id: true, eventId: true } },
         },
       })
 
@@ -300,7 +302,23 @@ export async function editAdminGift(
 
       if (priceChanged) {
         for (const wishlistGift of existingGift.wishlistGifts) {
-          await assertPriceEditAllowed(wishlistGift.id, values.price, tx)
+          const privateGift = await tx.gift.create({
+            data: {
+              name: existingGift.name,
+              price: existingGift.price,
+              categoryId: existingGift.categoryId,
+              eventId: wishlistGift.eventId,
+              isDefault: false,
+              ...(existingGift.image?.url
+                ? { image: { create: { url: existingGift.image.url } } }
+                : {}),
+            },
+          })
+
+          await tx.wishlistGift.update({
+            where: { id: wishlistGift.id },
+            data: { giftId: privateGift.id },
+          })
         }
       }
 
@@ -317,17 +335,10 @@ export async function editAdminGift(
 
       return {
         gift,
-        wishlistGiftIds: priceChanged
-          ? existingGift.wishlistGifts.map(wishlistGift => wishlistGift.id)
-          : [],
       }
     })
 
     if (!result) return { error: 'Regalo no encontrado.' }
-
-    for (const wishlistGiftId of result.wishlistGiftIds) {
-      await recomputeWishlistGiftProgress(wishlistGiftId)
-    }
 
     revalidatePath('/admin')
     revalidatePath('/gifts')
@@ -342,7 +353,7 @@ export async function editAdminGift(
     if (error instanceof PriceLockedError) {
       return {
         error:
-          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+          'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.',
       }
     }
 

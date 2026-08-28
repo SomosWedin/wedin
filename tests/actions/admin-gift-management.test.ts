@@ -71,7 +71,7 @@ const editValues = {
 
 const createValues = { ...editValues }
 
-describe('admin gift management', () => {
+describe('admin creates and edits catalog gifts', () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' })
     mocks.giftFindFirst.mockResolvedValue({
@@ -137,16 +137,19 @@ describe('admin gift management', () => {
     expect(mocks.giftFindFirst).not.toHaveBeenCalled()
   })
 
-  it('updates a default catalog gift and its image', async () => {
+  it('allows an admin to edit a default catalog gift and its image', async () => {
     const result = await editAdminGift(editValues, 'gift-1')
 
     expect(mocks.giftFindFirst).toHaveBeenCalledWith({
       where: { id: 'gift-1', isDefault: true },
       select: {
         id: true,
+        name: true,
         price: true,
+        categoryId: true,
         giftlistId: true,
-        wishlistGifts: { select: { id: true } },
+        image: { select: { url: true } },
+        wishlistGifts: { select: { id: true, eventId: true } },
       },
     })
     expect(mocks.giftUpdate).toHaveBeenCalledWith({
@@ -167,7 +170,7 @@ describe('admin gift management', () => {
     expect(result).toEqual({ giftId: 'gift-1' })
   })
 
-  it('creates a default gift in an existing collection from the same category', async () => {
+  it('allows an admin to create a default gift in an existing collection', async () => {
     mocks.giftlistFindFirst.mockResolvedValue({ id: 'giftlist-1' })
     mocks.giftCreate.mockResolvedValue({ id: 'gift-1' })
 
@@ -334,46 +337,39 @@ describe('admin gift management', () => {
     expect(mocks.giftlistDelete).not.toHaveBeenCalled()
   })
 
-  it('blocks a shared price change when a linked individual gift is reserved', async () => {
+  it('copies the old gift once per linked event before changing the catalog price', async () => {
     mocks.giftFindFirst.mockResolvedValue({
       id: 'gift-1',
+      name: 'Sofá original',
       price: '800000',
-      wishlistGifts: [{ id: 'wishlist-gift-1' }],
-    })
-    mocks.wishlistGiftFindUnique.mockResolvedValue({
-      gift: { price: '800000' },
-      isGroupGift: false,
-      reservedQuantity: 1,
+      categoryId: 'category-1',
+      image: { url: 'https://cdn.example.com/original.jpg' },
+      wishlistGifts: [
+        { id: 'wishlist-gift-1', eventId: 'event-1' },
+        { id: 'wishlist-gift-2', eventId: 'event-2' },
+      ],
     })
 
     const result = await editAdminGift(editValues, 'gift-1')
 
-    expect(result).toEqual({
-      error:
-        'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+    expect(mocks.giftCreate).toHaveBeenCalledTimes(2)
+    expect(mocks.wishlistGiftUpdate).toHaveBeenCalledTimes(2)
+    expect(mocks.giftCreate).toHaveBeenNthCalledWith(1, {
+      data: {
+        name: 'Sofá original',
+        price: '800000',
+        categoryId: 'category-1',
+        eventId: 'event-1',
+        isDefault: false,
+        image: { create: { url: 'https://cdn.example.com/original.jpg' } },
+      },
     })
-    expect(mocks.giftUpdate).not.toHaveBeenCalled()
+    expect(mocks.wishlistGiftUpdate).toHaveBeenNthCalledWith(2, {
+      where: { id: 'wishlist-gift-2' },
+      data: { giftId: 'private-gift-1' },
+    })
+    expect(mocks.giftUpdate).toHaveBeenCalled()
     expect(mocks.recomputeWishlistGiftProgress).not.toHaveBeenCalled()
-  })
-
-  it('recomputes every linked wishlist gift after a shared price change', async () => {
-    mocks.giftFindFirst.mockResolvedValue({
-      id: 'gift-1',
-      price: '800000',
-      wishlistGifts: [{ id: 'wishlist-gift-1' }, { id: 'wishlist-gift-2' }],
-    })
-
-    const result = await editAdminGift(editValues, 'gift-1')
-
-    expect(mocks.wishlistGiftFindUnique).toHaveBeenCalledTimes(2)
-    expect(mocks.recomputeWishlistGiftProgress).toHaveBeenNthCalledWith(
-      1,
-      'wishlist-gift-1'
-    )
-    expect(mocks.recomputeWishlistGiftProgress).toHaveBeenNthCalledWith(
-      2,
-      'wishlist-gift-2'
-    )
     expect(result).toEqual({ giftId: 'gift-1' })
   })
 

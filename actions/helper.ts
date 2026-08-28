@@ -40,7 +40,7 @@ export const getErrorMessage = (error: unknown): string => {
   return message
 }
 
-export class PriceLockedError extends Error { }
+export class PriceLockedError extends Error {}
 
 export async function assertPriceEditAllowed(
   wishlistGiftId: string,
@@ -51,22 +51,30 @@ export async function assertPriceEditAllowed(
     where: { id: wishlistGiftId },
     select: {
       gift: { select: { price: true } },
-      isGroupGift: true,
+      isFullyPaid: true,
+      groupGiftParts: true,
       reservedQuantity: true,
+      transactions: {
+        where: { status: 'COMPLETED' },
+        select: { id: true },
+        take: 1,
+      },
     },
   })
 
   if (
     wishlistGift &&
     wishlistGift.gift.price !== newPrice &&
-    !wishlistGift.isGroupGift &&
-    wishlistGift.reservedQuantity > 0
+    (wishlistGift.isFullyPaid ||
+      wishlistGift.reservedQuantity > 0 ||
+      Number(wishlistGift.groupGiftParts) > 0 ||
+      (wishlistGift.transactions?.length ?? 0) > 0)
   ) {
     throw new PriceLockedError()
   }
 }
 
-export class WishlistGiftMutationError extends Error { }
+export class WishlistGiftMutationError extends Error {}
 
 export function revalidateGiftAndWishlistPaths() {
   try {

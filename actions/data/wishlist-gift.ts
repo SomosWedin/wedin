@@ -314,6 +314,8 @@ export async function editGiftWithWishlistGift(
             eventId: true,
             giftId: true,
             isGroupGift: true,
+            isFullyPaid: true,
+            groupGiftParts: true,
             reservedQuantity: true,
             gift: {
               select: {
@@ -345,8 +347,10 @@ export async function editGiftWithWishlistGift(
         if (
           giftChanged &&
           giftValues.price !== current.gift.price &&
-          !current.isGroupGift &&
-          current.reservedQuantity > 0
+          (current.isFullyPaid ||
+            current.reservedQuantity > 0 ||
+            Number(current.groupGiftParts) > 0 ||
+            current.transactions.length > 0)
         ) {
           throw new PriceLockedError()
         }
@@ -405,7 +409,7 @@ export async function editGiftWithWishlistGift(
     if (error instanceof PriceLockedError) {
       return {
         error:
-          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+          'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.',
       }
     }
 
