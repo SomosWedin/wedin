@@ -135,6 +135,17 @@ export const AdminCategorySchema = z.object({
 })
 export type AdminCategoryValues = z.infer<typeof AdminCategorySchema>
 
+export const EventTypeNameSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'Ingresá un nombre para el tipo de evento' })
+  .max(60, { message: 'El nombre del tipo de evento es demasiado largo' })
+
+export const AdminEventTypeSchema = z.object({
+  name: EventTypeNameSchema,
+})
+export type AdminEventTypeValues = z.infer<typeof AdminEventTypeSchema>
+
 export const GiftFormSchema = z.object({
   name: z
     .string()

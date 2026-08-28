@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { lazy, Suspense } from 'react'
 import {
+  IoCalendarOutline,
   IoCashOutline,
   IoFolderOpenOutline,
   IoGiftOutline,
@@ -33,6 +34,9 @@ const AdminCategoriesList = lazy(
 )
 const AdminGiftlistsList = lazy(
   () => import('@/components/admin/admin-giftlists-list')
+)
+const AdminEventTypesList = lazy(
+  () => import('@/components/admin/admin-event-types-list')
 )
 
 export default async function AdminPage() {
@@ -97,6 +101,13 @@ export default async function AdminPage() {
             <IoFolderOpenOutline className="text-lg" />
             Colecciones
           </TabsTrigger>
+          <TabsTrigger
+            value="tipos-de-evento"
+            className="gap-2 text-xs sm:text-sm"
+          >
+            <IoCalendarOutline className="text-lg" />
+            Tipos de evento
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="transacciones" className="mt-6">
@@ -156,6 +167,12 @@ export default async function AdminPage() {
               categories={categories}
               eventTypes={eventTypes}
             />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="tipos-de-evento" className="mt-6">
+          <Suspense fallback={<DashboardTransactionsSkeleton />}>
+            <AdminEventTypesList eventTypes={eventTypes} />
           </Suspense>
         </TabsContent>
       </Tabs>
