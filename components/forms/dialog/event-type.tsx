@@ -20,6 +20,7 @@ type EventTypeFormProps = {
   isValid: boolean
   onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
   onCancel: () => void
+  submitLabel?: string
 }
 
 export default function EventTypeForm({
@@ -28,6 +29,7 @@ export default function EventTypeForm({
   isValid,
   onSubmit,
   onCancel,
+  submitLabel = 'Crear tipo de evento',
 }: EventTypeFormProps) {
   return (
     <Form {...form}>
@@ -54,7 +56,7 @@ export default function EventTypeForm({
             variant="success"
             disabled={loading || !isValid}
           >
-            Crear tipo de evento
+            {submitLabel}
           </Button>
         </div>
       </form>

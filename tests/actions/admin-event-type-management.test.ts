@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   eventTypeFindFirst: vi.fn(),
   eventTypeFindUnique: vi.fn(),
   eventTypeCreate: vi.fn(),
+  eventTypeUpdate: vi.fn(),
+  eventTypeDelete: vi.fn(),
   revalidatePath: vi.fn(),
 }))
 
@@ -18,13 +20,19 @@ vi.mock('@/prisma/client', () => ({
       findFirst: mocks.eventTypeFindFirst,
       findUnique: mocks.eventTypeFindUnique,
       create: mocks.eventTypeCreate,
+      update: mocks.eventTypeUpdate,
+      delete: mocks.eventTypeDelete,
     },
   },
 }))
 
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 
-import { createAdminEventType } from '@/actions/data/event-type'
+import {
+  createAdminEventType,
+  deleteAdminEventType,
+  editAdminEventType,
+} from '@/actions/data/event-type'
 
 describe('admin event type management', () => {
   beforeEach(() => {
@@ -32,6 +40,8 @@ describe('admin event type management', () => {
     mocks.eventTypeFindFirst.mockResolvedValue(null)
     mocks.eventTypeFindUnique.mockResolvedValue(null)
     mocks.eventTypeCreate.mockResolvedValue({ id: 'event-type-1' })
+    mocks.eventTypeUpdate.mockResolvedValue({ id: 'event-type-1' })
+    mocks.eventTypeDelete.mockResolvedValue({ id: 'event-type-1' })
   })
 
   it('rejects creation from a non-admin', async () => {
@@ -98,5 +108,35 @@ describe('admin event type management', () => {
     expect(result).toEqual({ error: 'Datos inválidos.' })
     expect(mocks.eventTypeFindFirst).not.toHaveBeenCalled()
     expect(mocks.eventTypeCreate).not.toHaveBeenCalled()
+  })
+
+  it('edits an event type name without changing its key', async () => {
+    mocks.eventTypeFindUnique.mockResolvedValue({ id: 'event-type-1' })
+
+    const result = await editAdminEventType('event-type-1', {
+      name: 'Fiesta de 15',
+    })
+
+    expect(mocks.eventTypeUpdate).toHaveBeenCalledWith({
+      where: { id: 'event-type-1' },
+      data: { name: 'Fiesta de 15' },
+    })
+    expect(result).toEqual({ eventTypeId: 'event-type-1' })
+  })
+
+  it('rejects an event type deletion while it is in use', async () => {
+    mocks.eventTypeFindUnique.mockResolvedValue({
+      id: 'event-type-1',
+      categoryIds: ['category-1'],
+      giftlistIds: [],
+      events: [],
+    })
+
+    const result = await deleteAdminEventType('event-type-1')
+
+    expect(result).toEqual({
+      error: 'No se puede eliminar un tipo de evento que todavía está en uso.',
+    })
+    expect(mocks.eventTypeDelete).not.toHaveBeenCalled()
   })
 })

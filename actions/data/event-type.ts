@@ -77,3 +77,81 @@ export async function createAdminEventType(formData: AdminEventTypeValues) {
     return { error: getErrorMessage(error) }
   }
 }
+
+export async function editAdminEventType(
+  eventTypeId: string,
+  formData: AdminEventTypeValues
+) {
+  const currentUser = await getCurrentUser()
+  if (currentUser?.role !== 'ADMIN') return { error: 'No autorizado.' }
+
+  const parsed = AdminEventTypeSchema.safeParse(formData)
+  if (!parsed.success) return { error: 'Datos inválidos.' }
+
+  try {
+    const existing = await prismaClient.eventType.findUnique({
+      where: { id: eventTypeId },
+      select: { id: true },
+    })
+    if (!existing) return { error: 'Tipo de evento no encontrado.' }
+
+    const duplicate = await prismaClient.eventType.findFirst({
+      where: {
+        name: { equals: parsed.data.name, mode: 'insensitive' },
+        id: { not: eventTypeId },
+      },
+      select: { id: true },
+    })
+    if (duplicate) {
+      return { error: 'Ya existe un tipo de evento con ese nombre.' }
+    }
+
+    const eventType = await prismaClient.eventType.update({
+      where: { id: eventTypeId },
+      data: { name: parsed.data.name },
+    })
+    revalidatePath('/admin')
+    revalidatePath('/onboarding')
+    return { eventTypeId: eventType.id }
+  } catch (error) {
+    console.error('Error editing admin event type:', error)
+    return { error: getErrorMessage(error) }
+  }
+}
+
+export async function deleteAdminEventType(eventTypeId: string) {
+  const currentUser = await getCurrentUser()
+  if (currentUser?.role !== 'ADMIN') return { error: 'No autorizado.' }
+
+  try {
+    const eventType = await prismaClient.eventType.findUnique({
+      where: { id: eventTypeId },
+      select: {
+        id: true,
+        categoryIds: true,
+        giftlistIds: true,
+        events: { select: { id: true } },
+      },
+    })
+    if (!eventType) return { error: 'Tipo de evento no encontrado.' }
+
+    if (
+      eventType.categoryIds.length > 0 ||
+      eventType.giftlistIds.length > 0 ||
+      eventType.events.length > 0
+    ) {
+      return {
+        error:
+          'No se puede eliminar un tipo de evento que todavía está en uso.',
+      }
+    }
+
+    await prismaClient.eventType.delete({ where: { id: eventTypeId } })
+    revalidatePath('/admin')
+    revalidatePath('/onboarding')
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting admin event type:', error)
+    return { error: getErrorMessage(error) }
+  }
+}
