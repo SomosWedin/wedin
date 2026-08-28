@@ -116,15 +116,12 @@ export async function deleteAdminCategory(categoryId: string) {
   if (!(await ensureAdmin())) return { error: 'No autorizado.' }
 
   try {
-    const [giftCount, giftlistCount] = await Promise.all([
-      prismaClient.gift.count({ where: { categoryId } }),
-      prismaClient.giftlist.count({ where: { categoryId } }),
-    ])
+    const giftCount = await prismaClient.gift.count({ where: { categoryId } })
 
-    if (giftCount > 0 || giftlistCount > 0) {
+    if (giftCount > 0) {
       return {
         error:
-          'No se puede eliminar una categoría que todavía tiene regalos o colecciones asociadas.',
+          'No se puede eliminar una categoría que todavía tiene regalos asociados.',
       }
     }
 

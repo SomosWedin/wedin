@@ -120,7 +120,6 @@ export async function createAdminGift(formData: AdminGiftCreateValues) {
   try {
     const newGift = await prismaClient.$transaction(async tx => {
       const resolvedGiftlistId = await findOrCreateGiftlistId(tx, {
-        categoryId: values.categoryId,
         giftlistId,
         newGiftlistName,
       })
@@ -185,7 +184,6 @@ export async function editAdminGift(
       if (!existingGift) return null
 
       const resolvedGiftlistId = await findOrCreateGiftlistId(tx, {
-        categoryId: values.categoryId,
         giftlistId,
         newGiftlistName,
       })

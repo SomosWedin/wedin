@@ -8,6 +8,7 @@
     "start": "next start",
     "format": "biome check --write --linter-enabled=false .",
     "format:check": "biome check --linter-enabled=false .",
+    "migrate:giftlists": "ts-node scripts/migrate-giftlist-categories.ts",
     "test": "vitest",
     "test:run": "vitest run"
   },

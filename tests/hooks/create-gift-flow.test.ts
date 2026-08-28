@@ -159,7 +159,7 @@ describe('createGiftFlow', () => {
     expect(mocks.giftlistCreate).toHaveBeenCalledWith({
       data: {
         name: 'Esenciales del hogar',
-        categoryId: 'category-1',
+        normalizedName: 'esenciales del hogar',
       },
       select: { id: true },
     })

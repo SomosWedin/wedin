@@ -7,7 +7,7 @@ import prismaClient from '@/prisma/client'
 import type { GetGiftlistsSearchParams } from '@/schemas/params'
 import { getCategories } from './category'
 
-export type GiftlistOption = Pick<Giftlist, 'id' | 'name' | 'categoryId'>
+export type GiftlistOption = Pick<Giftlist, 'id' | 'name'>
 
 export async function getGiftlistOptionsForAdmin(): Promise<GiftlistOption[]> {
   const currentUser = await getCurrentUser()
@@ -16,7 +16,7 @@ export async function getGiftlistOptionsForAdmin(): Promise<GiftlistOption[]> {
 
   try {
     return await prismaClient.giftlist.findMany({
-      select: { id: true, name: true, categoryId: true },
+      select: { id: true, name: true },
       orderBy: { name: 'asc' },
     })
   } catch (error) {
@@ -67,14 +67,18 @@ export async function getGiftlists({
     : []
 
   if (allowedCategoryIds.length) {
-    query.categoryId = {
-      in:
-        category && allowedCategoryIds.includes(category)
-          ? [category]
-          : allowedCategoryIds,
+    query.gifts = {
+      some: {
+        categoryId: {
+          in:
+            category && allowedCategoryIds.includes(category)
+              ? [category]
+              : allowedCategoryIds,
+        },
+      },
     }
   } else if (category) {
-    query.categoryId = category
+    query.gifts = { some: { categoryId: category } }
   }
 
   try {

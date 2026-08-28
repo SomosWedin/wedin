@@ -255,13 +255,11 @@ model Payout {
 }
 
 model Giftlist {
-  id         String @id @default(auto()) @map("_id") @db.ObjectId
-  name       String
-  categoryId String @db.ObjectId
+  id             String @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  normalizedName String @unique
 
   gifts Gift[]
-
-  @@index([categoryId])
 }
 
 model Category {

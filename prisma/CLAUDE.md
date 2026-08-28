@@ -99,10 +99,16 @@ whenever you touch something documented below.
   wedding category; `null` instead means "not assigned yet", which is what
   `getCategoryIdsForEventType` keys on to suppress scoping while a database
   is mid-migration.
-- `Giftlist.categoryId` is the collection's category boundary. Admin gift
-  actions enforce that every attached `Gift.categoryId` matches it, and remove
-  a collection when its final gift is moved or deleted. Counts and total prices
-  are derived from `Giftlist.gifts`; do not add denormalized fields for them.
+- `Giftlist` has no category field: its categories are derived from its
+  `gifts`. Admin actions allow a collection to contain gifts from multiple
+  categories and remove it when its final gift is moved or deleted.
+  `normalizedName` is the trimmed, lowercase Spanish locale form of `name` and
+  enforces case-insensitive global collection-name uniqueness. Counts and total
+  prices are derived from `Giftlist.gifts`; do not add denormalized fields for
+  them. Before `prisma db push` adds its required unique index to an existing
+  database, run `yarn prisma generate` then `yarn migrate:giftlists`; the
+  script detects duplicate names, backfills `normalizedName`, removes the
+  legacy `categoryId`, and drops its obsolete index.
 - `Transaction.bankTransferGroupId` — shared by every transaction created
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a

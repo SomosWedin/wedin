@@ -3,52 +3,51 @@ import type { Prisma } from '@prisma/client'
 type GiftlistEditor = Pick<Prisma.TransactionClient, 'gift' | 'giftlist'>
 
 type GiftlistSelection = {
-  categoryId: string
   giftlistId?: string
   newGiftlistName?: string
 }
 
-export class GiftlistSelectionError extends Error {}
+export class GiftlistSelectionError extends Error { }
+
+function normalizeGiftlistName(name: string) {
+  return name.trim().toLocaleLowerCase('es-PY')
+}
 
 export async function createGiftlist(
   tx: GiftlistEditor,
-  { categoryId, name }: { categoryId: string; name: string }
+  { name }: { name: string }
 ) {
+  const normalizedName = normalizeGiftlistName(name)
   const duplicate = await tx.giftlist.findFirst({
     where: {
-      categoryId,
-      name: { equals: name, mode: 'insensitive' },
+      normalizedName,
     },
     select: { id: true },
   })
 
   if (duplicate) {
-    throw new GiftlistSelectionError(
-      'Ya existe una colección con ese nombre en esta categoría.'
-    )
+    throw new GiftlistSelectionError('Ya existe una colección con ese nombre.')
   }
 
   return tx.giftlist.create({
-    data: { name, categoryId },
+    data: { name, normalizedName },
     select: { id: true },
   })
 }
 
 async function findGiftlistId(
   tx: GiftlistEditor,
-  { categoryId, giftlistId }: GiftlistSelection
+  { giftlistId }: GiftlistSelection
 ) {
   if (!giftlistId) return null
 
   const giftlist = await tx.giftlist.findFirst({
-    where: { id: giftlistId, categoryId },
+    where: { id: giftlistId },
     select: { id: true },
   })
 
   if (!giftlist) {
-    throw new GiftlistSelectionError(
-      'La colección seleccionada no existe o no pertenece a esta categoría.'
-    )
+    throw new GiftlistSelectionError('La colección seleccionada no existe.')
   }
 
   return giftlist.id
@@ -63,7 +62,6 @@ export async function findOrCreateGiftlistId(
   }
 
   const giftlist = await createGiftlist(tx, {
-    categoryId: selection.categoryId,
     name: selection.newGiftlistName,
   })
 

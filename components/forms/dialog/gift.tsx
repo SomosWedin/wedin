@@ -81,12 +81,8 @@ export default function GiftForm({
   onCancel,
 }: GiftFormProps) {
   const isGroupGift = form.watch('isGroupGift')
-  const categoryId = form.watch('categoryId')
   const newGiftlistName = form.watch('newGiftlistName')
   const isCreatingGiftlist = newGiftlistName !== undefined
-  const matchingGiftlists = giftlists.filter(
-    giftlist => giftlist.categoryId === categoryId
-  )
 
   return (
     <Form {...form}>
@@ -166,23 +162,7 @@ export default function GiftForm({
             <FormItem>
               <FormLabel>Categoría</FormLabel>
 
-              <Select
-                value={field.value}
-                onValueChange={value => {
-                  if (adminMode && value !== field.value) {
-                    form.setValue('giftlistId', undefined, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                    form.setValue('newGiftlistName', undefined, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }
-
-                  field.onChange(value)
-                }}
-              >
+              <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Elegí una categoría" />
@@ -213,13 +193,10 @@ export default function GiftForm({
                   <FormLabel>Colección (opcional)</FormLabel>
 
                   <Select
-                    disabled={!categoryId}
                     value={
-                      !categoryId
-                        ? undefined
-                        : isCreatingGiftlist
-                          ? '__create_giftlist__'
-                          : (field.value ?? '__no_giftlist__')
+                      isCreatingGiftlist
+                        ? '__create_giftlist__'
+                        : (field.value ?? '__no_giftlist__')
                     }
                     onValueChange={value => {
                       if (value === '__create_giftlist__') {
@@ -245,13 +222,7 @@ export default function GiftForm({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            categoryId
-                              ? 'Elegí una colección'
-                              : 'Primero elegí una categoría'
-                          }
-                        />
+                        <SelectValue placeholder="Elegí una colección" />
                       </SelectTrigger>
                     </FormControl>
 
@@ -259,7 +230,7 @@ export default function GiftForm({
                       <SelectItem value="__no_giftlist__">
                         Sin colección
                       </SelectItem>
-                      {matchingGiftlists.map(giftlist => (
+                      {giftlists.map(giftlist => (
                         <SelectItem key={giftlist.id} value={giftlist.id}>
                           {giftlist.name}
                         </SelectItem>
@@ -270,10 +241,10 @@ export default function GiftForm({
                     </SelectContent>
                   </Select>
 
-                  {categoryId && matchingGiftlists.length === 0 && (
+                  {giftlists.length === 0 && (
                     <p className="text-xs text-textTertiary">
-                      No hay colecciones en esta categoría. Podés crear una
-                      nueva o dejar el regalo sin colección.
+                      No hay colecciones creadas. Podés crear una nueva o dejar
+                      el regalo sin colección.
                     </p>
                   )}
 

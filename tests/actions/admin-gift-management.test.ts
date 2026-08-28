@@ -169,7 +169,7 @@ describe('admin creates and edits catalog gifts', () => {
     expect(result).toEqual({ giftId: 'gift-1' })
   })
 
-  it('allows an admin to create a default gift in an existing collection', async () => {
+  it('allows an admin to add a gift to an existing collection from another category', async () => {
     mocks.giftlistFindFirst.mockResolvedValue({ id: 'giftlist-1' })
     mocks.giftCreate.mockResolvedValue({ id: 'gift-1' })
 
@@ -179,7 +179,7 @@ describe('admin creates and edits catalog gifts', () => {
     })
 
     expect(mocks.giftlistFindFirst).toHaveBeenCalledWith({
-      where: { id: 'giftlist-1', categoryId: 'category-1' },
+      where: { id: 'giftlist-1' },
       select: { id: true },
     })
     expect(mocks.giftCreate).toHaveBeenCalledWith({
@@ -204,15 +204,14 @@ describe('admin creates and edits catalog gifts', () => {
 
     expect(mocks.giftlistFindFirst).toHaveBeenCalledWith({
       where: {
-        categoryId: 'category-1',
-        name: { equals: 'Esenciales del hogar', mode: 'insensitive' },
+        normalizedName: 'esenciales del hogar',
       },
       select: { id: true },
     })
     expect(mocks.giftlistCreate).toHaveBeenCalledWith({
       data: {
         name: 'Esenciales del hogar',
-        categoryId: 'category-1',
+        normalizedName: 'esenciales del hogar',
       },
       select: { id: true },
     })
@@ -223,20 +222,19 @@ describe('admin creates and edits catalog gifts', () => {
     expect(result).toEqual({ giftId: 'gift-1' })
   })
 
-  it('rejects a collection from a different category', async () => {
+  it('rejects a collection that does not exist', async () => {
     const result = await createAdminGift({
       ...createValues,
       giftlistId: 'giftlist-other-category',
     })
 
     expect(result).toEqual({
-      error:
-        'La colección seleccionada no existe o no pertenece a esta categoría.',
+      error: 'La colección seleccionada no existe.',
     })
     expect(mocks.giftCreate).not.toHaveBeenCalled()
   })
 
-  it('rejects a duplicate collection name within the category', async () => {
+  it('rejects a duplicate collection name globally', async () => {
     mocks.giftlistFindFirst.mockResolvedValue({ id: 'giftlist-existing' })
 
     const result = await createAdminGift({
@@ -245,7 +243,7 @@ describe('admin creates and edits catalog gifts', () => {
     })
 
     expect(result).toEqual({
-      error: 'Ya existe una colección con ese nombre en esta categoría.',
+      error: 'Ya existe una colección con ese nombre.',
     })
     expect(mocks.giftlistCreate).not.toHaveBeenCalled()
     expect(mocks.giftCreate).not.toHaveBeenCalled()
@@ -263,7 +261,7 @@ describe('admin creates and edits catalog gifts', () => {
     expect(mocks.giftlistCreate).toHaveBeenCalledWith({
       data: {
         name: 'Esenciales del hogar',
-        categoryId: 'category-1',
+        normalizedName: 'esenciales del hogar',
       },
       select: { id: true },
     })

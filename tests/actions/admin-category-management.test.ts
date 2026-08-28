@@ -212,14 +212,13 @@ describe('admin category management', () => {
     expect(result).toEqual({ giftId: 'gift-1' })
   })
 
-  it('blocks deletion when gifts or collections reference the category', async () => {
+  it('blocks deletion when gifts reference the category', async () => {
     mocks.giftCount.mockResolvedValue(1)
 
     const result = await deleteAdminCategory('category-1')
 
     expect(result).toEqual({
-      error:
-        'No se puede eliminar una categoría que todavía tiene regalos o colecciones asociadas.',
+      error: 'No se puede eliminar una categoría que todavía tiene regalos asociados.',
     })
     expect(mocks.categoryDeleteMany).not.toHaveBeenCalled()
   })

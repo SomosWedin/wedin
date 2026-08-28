@@ -33,12 +33,16 @@ async function main() {
   // Seed gift lists
   const giftlists = await Promise.all(
     categories.map(async category => {
-      return prismaSeed.giftlist.create({
+      const giftlist = await prismaSeed.giftlist.create({
         data: {
           name: `${category.name} Package`,
-          categoryId: category.id,
+          normalizedName: `${category.name} Package`
+            .trim()
+            .toLocaleLowerCase('es-PY'),
         },
       })
+
+      return { giftlist, categoryId: category.id }
     })
   )
 
@@ -53,7 +57,7 @@ async function main() {
         isDefault: true,
         price: price,
         giftlist: {
-          connect: { id: randomGiftlist.id },
+          connect: { id: randomGiftlist.giftlist.id },
         },
         categoryId: randomGiftlist.categoryId,
         image: {
