@@ -97,8 +97,9 @@ whenever you touch something documented below.
   orphan referenced by a wishlist to protect transaction history.
 - `Giftlist` has no category field: its categories are derived from its
   `gifts`. Its selected types must be compatible with every gift category.
-  A collection with no selected types is intentionally available as a safe
-  migration fallback. Moving a gift does not delete its source collection;
+  New collections require at least one selected event type. Existing legacy
+  collections may still have no types until migrated. Moving a gift does not
+  delete its source collection;
   deleting the final gift does.
   `normalizedName` is the trimmed, lowercase Spanish locale form of `name` and
   enforces case-insensitive global collection-name uniqueness. Counts and total

@@ -66,7 +66,10 @@ const values = {
 describe('createGiftFlow', () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockResolvedValue({ role: 'ADMIN' })
-    mocks.categoryFindUnique.mockResolvedValue({ id: 'category-1' })
+    mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-1',
+      eventTypeIds: ['event-type-wedding'],
+    })
     mocks.giftCreate.mockResolvedValue({ id: 'gift-1' })
     mocks.giftFindMany.mockImplementation(({ where }) =>
       where.name ? [] : [{ id: 'gift-1', isDefault: false, eventId: 'event-1' }]
@@ -164,6 +167,7 @@ describe('createGiftFlow', () => {
       data: {
         name: 'Esenciales del hogar',
         normalizedName: 'esenciales del hogar',
+        eventTypes: { connect: [{ id: 'event-type-wedding' }] },
       },
       select: { id: true },
     })

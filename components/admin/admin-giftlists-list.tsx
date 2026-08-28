@@ -118,8 +118,8 @@ function GiftlistDialogContent({
       </DialogHeader>
       <GiftlistForm
         form={controller.form}
-        eventTypes={compatibleTypes}
-        showEventTypes={Boolean(giftlist)}
+        eventTypes={giftlist ? compatibleTypes : eventTypes}
+        showEventTypes
         loading={controller.loading}
         isValid={controller.isValid}
         submitLabel={giftlist ? 'Guardar cambios' : 'Crear colección'}

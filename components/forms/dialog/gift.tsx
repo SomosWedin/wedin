@@ -9,6 +9,7 @@ import {
   type RefObject,
   useId,
   useMemo,
+  useState,
 } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { CiImageOn } from 'react-icons/ci'
@@ -92,24 +93,47 @@ export default function GiftForm({
   const isGroupGift = form.watch('isGroupGift')
   const newGiftlistName = form.watch('newGiftlistName')
   const selectedGiftlistId = form.watch('giftlistId')
+  const selectedCategoryId = form.watch('categoryId')
   const isCreatingGiftlist = newGiftlistName !== undefined
+  const initialEventTypeId = categories.find(
+    category => category.id === selectedCategoryId
+  )?.eventTypeIds[0]
+  const [selectedEventTypeId, setSelectedEventTypeId] = useState(
+    initialEventTypeId ?? ''
+  )
+  const canChooseEventType = adminMode && allowTypeChange
   const availableCategories = useMemo(() => {
     const selectedGiftlist = giftlists.find(
       giftlist => giftlist.id === selectedGiftlistId
     )
 
-    if (!selectedGiftlist || selectedGiftlist.eventTypeIds.length === 0) {
-      return categories
+    let filteredCategories = categories
+
+    if (canChooseEventType) {
+      if (!selectedEventTypeId) return []
+      filteredCategories = filteredCategories.filter(category =>
+        category.eventTypeIds.includes(selectedEventTypeId)
+      )
     }
 
-    return categories.filter(category =>
+    if (!selectedGiftlist || selectedGiftlist.eventTypeIds.length === 0) {
+      return filteredCategories
+    }
+
+    return filteredCategories.filter(category =>
       selectedGiftlist.eventTypeIds.every(eventTypeId =>
         category.eventTypeIds.includes(eventTypeId)
       )
     )
-  }, [categories, giftlists, selectedGiftlistId])
+  }, [
+    categories,
+    canChooseEventType,
+    giftlists,
+    selectedEventTypeId,
+    selectedGiftlistId,
+  ])
   const selectedCategory = categories.find(
-    category => category.id === form.watch('categoryId')
+    category => category.id === selectedCategoryId
   )
   const selectedEventTypeNames = eventTypes
     .filter(eventType => selectedCategory?.eventTypeIds.includes(eventType.id))
@@ -170,6 +194,42 @@ export default function GiftForm({
           </div>
         </div>
 
+        {canChooseEventType && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor={eventTypeInputId} className="text-sm font-medium">
+              Tipo de evento
+            </label>
+            <Select
+              value={selectedEventTypeId}
+              onValueChange={value => {
+                setSelectedEventTypeId(value)
+                if (
+                  selectedCategoryId &&
+                  !categories
+                    .find(category => category.id === selectedCategoryId)
+                    ?.eventTypeIds.includes(value)
+                ) {
+                  form.setValue('categoryId', '', {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+              }}
+            >
+              <SelectTrigger id={eventTypeInputId}>
+                <SelectValue placeholder="Elegí un tipo de evento" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                {eventTypes.map(eventType => (
+                  <SelectItem key={eventType.id} value={eventType.id}>
+                    {eventType.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <FormField
           control={form.control}
           name="name"
@@ -214,7 +274,7 @@ export default function GiftForm({
           )}
         />
 
-        {adminMode && (
+        {adminMode && !canChooseEventType && (
           <div className="flex flex-col gap-1">
             <label htmlFor={eventTypeInputId} className="text-sm font-medium">
               Tipos de evento

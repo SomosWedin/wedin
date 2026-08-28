@@ -167,14 +167,25 @@ export async function createAdminGiftlist(formData: unknown) {
 
   const parsed = AdminGiftlistSchema.safeParse(formData)
   if (!parsed.success) return { error: 'Datos inválidos.' }
-  if (parsed.data.eventTypeIds.length > 0) {
-    return { error: 'Una colección vacía no puede tener tipos de evento.' }
+  const uniqueEventTypeIds = Array.from(new Set(parsed.data.eventTypeIds))
+  const eventTypes = await prismaClient.eventType.findMany({
+    where: { id: { in: uniqueEventTypeIds } },
+    select: { id: true },
+  })
+  if (eventTypes.length !== uniqueEventTypeIds.length) {
+    return { error: 'El tipo de evento seleccionado no existe.' }
   }
 
   try {
     const normalizedName = parsed.data.name.toLocaleLowerCase('es-PY')
     const giftlist = await prismaClient.giftlist.create({
-      data: { name: parsed.data.name, normalizedName },
+      data: {
+        name: parsed.data.name,
+        normalizedName,
+        eventTypes: {
+          connect: uniqueEventTypeIds.map(id => ({ id })),
+        },
+      },
     })
     revalidateGiftlistPaths()
     return { giftlistId: giftlist.id }

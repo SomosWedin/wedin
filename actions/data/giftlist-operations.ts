@@ -19,7 +19,7 @@ function normalizeGiftlistName(name: string) {
 
 export async function createGiftlist(
   tx: GiftlistEditor,
-  { name }: { name: string }
+  { name, eventTypeIds }: { name: string; eventTypeIds: string[] }
 ) {
   const normalizedName = normalizeGiftlistName(name)
   const duplicate = await tx.giftlist.findFirst({
@@ -34,7 +34,13 @@ export async function createGiftlist(
   }
 
   return tx.giftlist.create({
-    data: { name, normalizedName },
+    data: {
+      name,
+      normalizedName,
+      eventTypes: {
+        connect: eventTypeIds.map(id => ({ id })),
+      },
+    },
     select: { id: true },
   })
 }
@@ -81,8 +87,24 @@ export async function findOrCreateGiftlistId(
     return findGiftlistId(tx, selection)
   }
 
+  const category = await tx.category.findUnique({
+    where: { id: selection.categoryId },
+    select: { eventTypeIds: true },
+  })
+
+  if (!category) {
+    throw new GiftlistSelectionError('La categoría seleccionada no existe.')
+  }
+
+  if (category.eventTypeIds.length === 0) {
+    throw new GiftlistSelectionError(
+      'La categoría seleccionada no tiene tipos de evento asignados.'
+    )
+  }
+
   const giftlist = await createGiftlist(tx, {
     name: selection.newGiftlistName,
+    eventTypeIds: category.eventTypeIds,
   })
 
   return giftlist.id

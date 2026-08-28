@@ -68,16 +68,17 @@ describe('admin collection management', () => {
     )
   })
 
-  it('creates an empty collection without event types', async () => {
+  it('creates a collection with event types', async () => {
     const result = await createAdminGiftlist({
       name: '  Esenciales  ',
-      eventTypeIds: [],
+      eventTypeIds: ['event-type-wedding'],
     })
 
     expect(mocks.giftlistCreate).toHaveBeenCalledWith({
       data: {
         name: 'Esenciales',
         normalizedName: 'esenciales',
+        eventTypes: { connect: [{ id: 'event-type-wedding' }] },
       },
     })
     expect(result).toEqual({ giftlistId: 'giftlist-1' })

@@ -297,6 +297,7 @@ describe('admin creates and edits catalog gifts', () => {
       data: {
         name: 'Esenciales del hogar',
         normalizedName: 'esenciales del hogar',
+        eventTypes: { connect: [{ id: 'event-type-wedding' }] },
       },
       select: { id: true },
     })
@@ -349,6 +350,7 @@ describe('admin creates and edits catalog gifts', () => {
       data: {
         name: 'Esenciales del hogar',
         normalizedName: 'esenciales del hogar',
+        eventTypes: { connect: [{ id: 'event-type-wedding' }] },
       },
       select: { id: true },
     })
