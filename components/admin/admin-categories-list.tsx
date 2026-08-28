@@ -2,7 +2,12 @@
 
 import type { Category, EventType } from '@prisma/client'
 import { useState } from 'react'
-import { IoChevronDown, IoChevronUp, IoSearchOutline } from 'react-icons/io5'
+import {
+  IoChevronDown,
+  IoChevronUp,
+  IoSearchOutline,
+  IoSwapVerticalOutline,
+} from 'react-icons/io5'
 import AdminCategoryDialog from '@/components/dialog/admin-category-dialog'
 import DeleteAdminCategoryDialog from '@/components/dialog/delete-admin-category-dialog'
 import { Input } from '@/components/ui/input'
@@ -23,7 +28,9 @@ export default function AdminCategoriesList({
 }) {
   const [nameFilter, setNameFilter] = useState('')
   const [eventTypeFilter, setEventTypeFilter] = useState('all')
-  const [eventTypeSort, setEventTypeSort] = useState<'asc' | 'desc'>('asc')
+  const [eventTypeSort, setEventTypeSort] = useState<'asc' | 'desc' | null>(
+    null
+  )
   const normalizedNameFilter = nameFilter.trim().toLocaleLowerCase('es-PY')
   const filteredCategories = categories.filter(category => {
     const matchesName = category.name
@@ -35,24 +42,26 @@ export default function AdminCategoriesList({
 
     return matchesName && matchesEventType
   })
-  const sortedCategories = [...filteredCategories].sort((first, second) => {
-    const firstTypes = first.eventTypes
-      .map(eventType => eventType.name)
-      .sort((left, right) => left.localeCompare(right, 'es'))
-      .join(', ')
-    const secondTypes = second.eventTypes
-      .map(eventType => eventType.name)
-      .sort((left, right) => left.localeCompare(right, 'es'))
-      .join(', ')
+  const sortedCategories = eventTypeSort
+    ? [...filteredCategories].sort((first, second) => {
+        const firstTypes = first.eventTypes
+          .map(eventType => eventType.name)
+          .sort((left, right) => left.localeCompare(right, 'es'))
+          .join(', ')
+        const secondTypes = second.eventTypes
+          .map(eventType => eventType.name)
+          .sort((left, right) => left.localeCompare(right, 'es'))
+          .join(', ')
 
-    if (!firstTypes && secondTypes) return 1
-    if (firstTypes && !secondTypes) return -1
+        if (!firstTypes && secondTypes) return 1
+        if (firstTypes && !secondTypes) return -1
 
-    const comparison = firstTypes.localeCompare(secondTypes, 'es', {
-      sensitivity: 'base',
-    })
-    return eventTypeSort === 'asc' ? comparison : -comparison
-  })
+        const comparison = firstTypes.localeCompare(secondTypes, 'es', {
+          sensitivity: 'base',
+        })
+        return eventTypeSort === 'asc' ? comparison : -comparison
+      })
+    : filteredCategories
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -93,16 +102,28 @@ export default function AdminCategoriesList({
             type="button"
             className="col-span-5 flex items-center gap-2 text-left hover:text-textPrimary"
             aria-label={`Ordenar tipos de evento ${
-              eventTypeSort === 'asc' ? 'descendentemente' : 'ascendentemente'
+              eventTypeSort === null
+                ? 'ascendentemente'
+                : eventTypeSort === 'asc'
+                  ? 'descendentemente'
+                  : 'por defecto'
             }`}
             onClick={() =>
-              setEventTypeSort(direction =>
-                direction === 'asc' ? 'desc' : 'asc'
-              )
+              setEventTypeSort(direction => {
+                if (direction === null) return 'asc'
+                if (direction === 'asc') return 'desc'
+                return null
+              })
             }
           >
             Tipo de evento
-            {eventTypeSort === 'asc' ? <IoChevronUp /> : <IoChevronDown />}
+            {eventTypeSort === null ? (
+              <IoSwapVerticalOutline className="text-gray-400" />
+            ) : eventTypeSort === 'asc' ? (
+              <IoChevronUp />
+            ) : (
+              <IoChevronDown />
+            )}
           </button>
           <div className="col-span-2 text-right">Acciones</div>
         </div>
