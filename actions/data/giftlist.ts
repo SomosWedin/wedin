@@ -142,7 +142,7 @@ async function validateGiftlistEventTypes(
 
   if (!giftlist) return undefined
   if (eventTypes.length !== uniqueIds.length) return null
-  if (gifts.length === 0) return uniqueIds.length === 0 ? uniqueIds : false
+  if (gifts.length === 0) return uniqueIds
 
   const categoryIds = Array.from(new Set(gifts.map(gift => gift.categoryId)))
   const categories = await prismaClient.category.findMany({

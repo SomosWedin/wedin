@@ -194,7 +194,7 @@ export default function GiftForm({
           </div>
         </div>
 
-        {canChooseEventType && (
+        {adminMode && (
           <div className="flex flex-col gap-1">
             <label htmlFor={eventTypeInputId} className="text-sm font-medium">
               Tipo de evento
@@ -273,28 +273,6 @@ export default function GiftForm({
             </FormItem>
           )}
         />
-
-        {adminMode && !canChooseEventType && (
-          <div className="flex flex-col gap-1">
-            <label htmlFor={eventTypeInputId} className="text-sm font-medium">
-              Tipos de evento
-            </label>
-            <Input
-              id={eventTypeInputId}
-              value={
-                selectedCategory
-                  ? selectedEventTypeNames.join(', ') || 'Sin tipos asignados'
-                  : 'Elegí una categoría'
-              }
-              readOnly
-              aria-readonly="true"
-              className="bg-gray-50 text-textTertiary"
-            />
-            <p className="text-xs text-textTertiary">
-              Se determina por la categoría del regalo.
-            </p>
-          </div>
-        )}
 
         {adminMode && (
           <>

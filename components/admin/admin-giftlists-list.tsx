@@ -104,6 +104,7 @@ function GiftlistDialogContent({
 }) {
   const compatibleTypes = useMemo(() => {
     if (!giftlist) return []
+    if (giftlist.gifts.length === 0) return eventTypes
 
     const compatibleIds = compatibleEventTypes(giftlist, categories)
     return eventTypes.filter(eventType => compatibleIds.includes(eventType.id))
