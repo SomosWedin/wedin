@@ -39,7 +39,7 @@ export default function AdminCategoriesList({
                   ? EVENT_TYPE_LABEL[category.eventType as EventType]
                   : 'Sin asignar'}
               </div>
-              <div className="flex justify-end gap-2 sm:col-span-2">
+              <div className="flex col-span-2 gap-2 justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                 <AdminCategoryDialog category={category} />
                 <DeleteAdminCategoryDialog
                   categoryId={category.id}
