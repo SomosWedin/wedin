@@ -7,6 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Migration {
+  version    String   @id @map("_id")
+  name       String
+  checksum   String
+  appliedAt  DateTime @default(now())
+  durationMs Int      @default(0)
+}
+
+model MigrationLock {
+  key       String   @id @map("_id")
+  owner     String
+  expiresAt DateTime
+}
+
 enum UserType {
   ADMIN
   ORGANIZER
@@ -141,15 +155,15 @@ model Wishlist {
 }
 
 model Gift {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  name       String
-  price      String
-  isDefault  Boolean  @default(false)
-  categoryId String   @db.ObjectId
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  price       String
+  isDefault   Boolean  @default(false)
+  categoryId  String   @db.ObjectId
   giftlistIds String[] @db.ObjectId
-  eventId    String?  @db.ObjectId
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  eventId     String?  @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   giftlists     Giftlist[]     @relation("GiftGiftlists", fields: [giftlistIds], references: [id])
   category      Category       @relation(fields: [categoryId], references: [id])

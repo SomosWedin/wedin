@@ -6,6 +6,16 @@ whenever you touch something documented below.
 
 ## Mongo/Prisma gotchas
 
+- `Migration` is the application-managed equivalent of Rails'
+  `schema_migrations`: its string `_id` is the complete timestamped filename,
+  and its checksum makes applied files immutable. `MigrationLock` is a leased
+  singleton used only by `yarn migrate` to prevent concurrent deploys from
+  applying the same file. These collections are managed by the scripts in
+  `scripts/migrations/`; they do not replace edits to this schema or
+  `prisma db push`. The initial tracked migrations inspect MongoDB state so
+  they safely recognize databases where the older changes were already
+  applied, partially applied, or not applied yet.
+
 - **Sparse unique indexes**: any `String? @unique` field needs its
   underlying index manually converted to `sparse: true`. Prisma's schema DSL
   has no `sparse` option, and `prisma db push` will not create or repair it —
@@ -91,10 +101,9 @@ whenever you touch something documented below.
 - `Gift.categoryId` is required and backed by the explicit `Gift.category` /
   `Category.gifts` relation. Mongo does not enforce cross-collection foreign
   keys, so supported gift writes validate the category and use a nested
-  relation `connect`. Before applying this relation to an existing database,
-  run `yarn prisma generate` and `yarn migrate:gift-categories`; the script
-  deletes unreferenced orphan gifts and images, but retains and reports any
-  orphan referenced by a wishlist to protect transaction history.
+  relation `connect`. The tracked gift-category migration deletes unreferenced
+  orphan gifts and images, but retains and reports any orphan referenced by a
+  wishlist to protect transaction history.
 - `Giftlist` has no category field: its categories are derived from its
   `gifts`. Its selected types must be compatible with every gift category.
   `Gift.giftlistIds` / `Giftlist.giftIds` form a Mongo many-to-many relation;
@@ -106,14 +115,10 @@ whenever you touch something documented below.
   `normalizedName` is the trimmed, lowercase Spanish locale form of `name` and
   enforces case-insensitive global collection-name uniqueness. Counts and total
   prices are derived from `Giftlist.gifts`; do not add denormalized fields for
-  them. Before `prisma db push` adds its required unique index to an existing
-  database, run `yarn prisma generate` then `yarn migrate:giftlists`; the
-  script detects duplicate names, backfills `normalizedName`, removes the
-  legacy `categoryId`, and drops its obsolete index. Run
-  `yarn migrate:event-types` before `prisma db push` when upgrading from the
-  former enum-based event types.
-  Before applying the many-to-many gift relation, run `yarn prisma generate`
-  and `yarn migrate:gift-collections`, then run `prisma db push`.
+  them. The tracked migrations detect duplicate collection names, backfill
+  `normalizedName`, remove the legacy `categoryId`, migrate the former event
+  type enum, and reconcile both sides of the gift/collection many-to-many
+  relation before `migrate:deploy` runs `prisma db push`.
 - `Transaction.bankTransferGroupId` — shared by every transaction created
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a
