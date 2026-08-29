@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/actions/get-current-user'
 import {
-  deleteStoredImageObject,
+  deleteStoredImageObjects,
   getOwnedStorageKey,
 } from '@/lib/server/image-storage'
 import prismaClient from '@/prisma/client'
@@ -29,7 +29,12 @@ export async function addImages({
     })
     if (!event) return { error: 'No autorizado.' }
 
-    imageUrls.forEach(getOwnedStorageKey)
+    imageUrls.forEach(imageUrl =>
+      getOwnedStorageKey(imageUrl, {
+        userId: currentUser.id,
+        eventId: event.id,
+      })
+    )
 
     const images = await Promise.all(
       imageUrls.map(url =>
@@ -59,15 +64,25 @@ export async function deleteImages({ imageIds }: { imageIds: string[] }) {
         id: { in: uniqueImageIds },
         Event: { users: { some: { id: currentUser.id } } },
       },
-      select: { id: true, url: true },
+      select: { id: true, url: true, eventId: true },
     })
     if (images.length !== uniqueImageIds.length) {
       return { error: 'No autorizado.' }
     }
 
-    for (const image of images) {
-      if (image.url) await deleteStoredImageObject(image.url)
-    }
+    await deleteStoredImageObjects(
+      images.flatMap(image =>
+        image.url && image.eventId
+          ? [
+              {
+                imageUrl: image.url,
+                userId: currentUser.id,
+                eventId: image.eventId,
+              },
+            ]
+          : []
+      )
+    )
 
     await prismaClient.image.deleteMany({
       where: {

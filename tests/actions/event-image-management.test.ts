@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   imageCreate: vi.fn(),
   imageFindMany: vi.fn(),
   imageDeleteMany: vi.fn(),
-  deleteStoredImageObject: vi.fn(),
+  deleteStoredImageObjects: vi.fn(),
   getOwnedStorageKey: vi.fn(),
   revalidatePath: vi.fn(),
 }))
@@ -27,7 +27,7 @@ vi.mock('@/prisma/client', () => ({
 }))
 
 vi.mock('@/lib/server/image-storage', () => ({
-  deleteStoredImageObject: mocks.deleteStoredImageObject,
+  deleteStoredImageObjects: mocks.deleteStoredImageObjects,
   getOwnedStorageKey: mocks.getOwnedStorageKey,
 }))
 
@@ -44,10 +44,11 @@ describe('event image management', () => {
       {
         id: 'image-1',
         url: 'https://bucket.example/image-1.jpg',
+        eventId: 'event-1',
       },
     ])
-    mocks.deleteStoredImageObject.mockResolvedValue(undefined)
-    mocks.getOwnedStorageKey.mockReturnValue('uploads/user/image.jpg')
+    mocks.deleteStoredImageObjects.mockResolvedValue(undefined)
+    mocks.getOwnedStorageKey.mockReturnValue('uploads/user-1/image.jpg')
     mocks.imageDeleteMany.mockResolvedValue({ count: 1 })
   })
 
@@ -61,6 +62,27 @@ describe('event image management', () => {
 
     expect(result).toEqual({ error: 'No autorizado.' })
     expect(mocks.imageCreate).not.toHaveBeenCalled()
+  })
+
+  it('validates new image URLs against the current user and owned event', async () => {
+    const imageUrl = 'https://bucket.example/uploads/user-1/image.jpg'
+
+    const result = await addImages({
+      eventId: 'event-1',
+      imageUrls: [imageUrl],
+    })
+
+    expect(mocks.getOwnedStorageKey).toHaveBeenCalledWith(imageUrl, {
+      userId: 'user-1',
+      eventId: 'event-1',
+    })
+    expect(mocks.imageCreate).toHaveBeenCalledWith({
+      data: { eventId: 'event-1', url: imageUrl },
+    })
+    expect(result).toEqual({
+      success: true,
+      images: [{ id: 'image-1', url: 'url' }],
+    })
   })
 
   it('does not save a URL outside the configured image bucket', async () => {
@@ -83,12 +105,12 @@ describe('event image management', () => {
     })
 
     expect(result).toEqual({ error: 'No autorizado.' })
-    expect(mocks.deleteStoredImageObject).not.toHaveBeenCalled()
+    expect(mocks.deleteStoredImageObjects).not.toHaveBeenCalled()
     expect(mocks.imageDeleteMany).not.toHaveBeenCalled()
   })
 
   it('keeps the database row when storage deletion fails', async () => {
-    mocks.deleteStoredImageObject.mockRejectedValue(new Error('S3 failed'))
+    mocks.deleteStoredImageObjects.mockRejectedValue(new Error('S3 failed'))
 
     const result = await deleteImages({ imageIds: ['image-1'] })
 
@@ -99,9 +121,13 @@ describe('event image management', () => {
   it('deletes an owned object before deleting its database row', async () => {
     const result = await deleteImages({ imageIds: ['image-1'] })
 
-    expect(mocks.deleteStoredImageObject).toHaveBeenCalledWith(
-      'https://bucket.example/image-1.jpg'
-    )
+    expect(mocks.deleteStoredImageObjects).toHaveBeenCalledWith([
+      {
+        imageUrl: 'https://bucket.example/image-1.jpg',
+        userId: 'user-1',
+        eventId: 'event-1',
+      },
+    ])
     expect(mocks.imageDeleteMany).toHaveBeenCalledWith({
       where: {
         id: { in: ['image-1'] },
@@ -109,7 +135,7 @@ describe('event image management', () => {
       },
     })
     expect(
-      mocks.deleteStoredImageObject.mock.invocationCallOrder[0]
+      mocks.deleteStoredImageObjects.mock.invocationCallOrder[0]
     ).toBeLessThan(mocks.imageDeleteMany.mock.invocationCallOrder[0])
     expect(result).toEqual({ success: true })
   })
