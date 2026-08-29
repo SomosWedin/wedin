@@ -68,16 +68,28 @@ const values = {
 
 describe('createGiftFlow', () => {
   beforeEach(() => {
-    mocks.getCurrentUser.mockResolvedValue({ role: 'ADMIN' })
+    mocks.getCurrentUser.mockResolvedValue({ id: 'user-1', role: 'ADMIN' })
     mocks.categoryFindUnique.mockResolvedValue({
       id: 'category-1',
       eventTypeIds: ['event-type-wedding'],
     })
     mocks.giftCreate.mockResolvedValue({ id: 'gift-1' })
     mocks.giftFindMany.mockImplementation(({ where }) =>
-      where.name ? [] : [{ id: 'gift-1', isDefault: false, eventId: 'event-1' }]
+      where.name
+        ? []
+        : [
+            {
+              id: 'gift-1',
+              isDefault: false,
+              eventId: 'event-1',
+              category: { eventTypeIds: ['event-type-wedding'] },
+            },
+          ]
     )
-    mocks.eventFindFirst.mockResolvedValue({ id: 'event-1' })
+    mocks.eventFindFirst.mockResolvedValue({
+      id: 'event-1',
+      eventTypeId: 'event-type-wedding',
+    })
     mocks.giftlistCreate.mockResolvedValue({ id: 'giftlist-1' })
     mocks.wishlistGiftCreate.mockResolvedValue({ id: 'wishlist-gift-1' })
     mocks.wishlistGiftFindFirst.mockResolvedValue(null)

@@ -271,7 +271,9 @@ export default function CheckoutForm({
               ))}
             </div>
             <div className="flex justify-between items-center pt-1">
-              <span className="text-sm text-textTertiary">Cargo por servicio</span>
+              <span className="text-sm text-textTertiary">
+                Cargo por servicio
+              </span>
 
               <span className="text-sm font-semibold">
                 Gs. {serviceFee.toLocaleString('es-PY')}

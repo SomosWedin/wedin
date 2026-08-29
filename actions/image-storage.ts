@@ -1,10 +1,6 @@
 'use server'
 
-import {
-  DeleteObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3'
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getCurrentUser } from '@/actions/get-current-user'
 import {
@@ -84,48 +80,4 @@ export const createImageUploadUrl = async ({
   })
 
   return { uploadUrl: signedUrl }
-}
-
-export const deleteStoredImage = async (imageUrl: string) => {
-  try {
-    const url = new URL(imageUrl)
-    const key = decodeURIComponent(url.pathname.slice(1))
-
-    await s3Client.send(
-      new DeleteObjectCommand({
-        Bucket: process.env.AWS_BUCKET,
-        Key: key,
-      })
-    )
-
-    return { success: true }
-  } catch (error) {
-    console.error('Error deleting S3 image:', error)
-
-    return {
-      error: 'No se pudo eliminar la imagen',
-    }
-  }
-}
-
-export const deleteEventCoverImageFromAws = async (imageUrl: string) => {
-  try {
-    const url = new URL(imageUrl)
-    const key = decodeURIComponent(url.pathname.slice(1))
-
-    await s3Client.send(
-      new DeleteObjectCommand({
-        Bucket: process.env.AWS_BUCKET,
-        Key: key,
-      })
-    )
-
-    return { success: true }
-  } catch (error) {
-    console.error('Error deleting S3 image:', error)
-
-    return {
-      error: 'No se pudo eliminar la imagen',
-    }
-  }
 }

@@ -225,6 +225,7 @@ export const GiftWithWishlistGiftCreateSchema = z.object({
 
 export const WishlistGiftsCreateSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }),
+  giftlistId: z.string().min(1, { message: 'No se encontro una colección' }),
   giftIds: z.array(z.string().min(1, { message: 'No se encontro un gift ID' })),
   eventId: z.string().min(1, { message: 'No se encontro un event ID' }),
 })

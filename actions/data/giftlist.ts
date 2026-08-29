@@ -44,15 +44,16 @@ export async function getAdminGiftlists() {
   }
 }
 
-export async function getGiftlist(giftlistId: string) {
+export async function getGiftlist(giftlistId: string, eventTypeId: string) {
   try {
-    const giftlist = await prismaClient.giftlist.findUnique({
+    const giftlist = await prismaClient.giftlist.findFirst({
       include: {
         gifts: { include: { image: true } },
         eventTypes: { select: { id: true, name: true } },
       },
       where: {
         id: giftlistId,
+        eventTypeIds: { has: eventTypeId },
       },
     })
 
@@ -83,10 +84,7 @@ export async function getGiftlists({
   }
 
   if (eventTypeId) {
-    query.OR = [
-      { eventTypeIds: { has: eventTypeId } },
-      { eventTypeIds: { isEmpty: true } },
-    ]
+    query.eventTypeIds = { has: eventTypeId }
   }
 
   if (category) {

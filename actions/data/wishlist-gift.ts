@@ -3,6 +3,7 @@
 import type { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
+import { getCurrentUser } from '@/actions/get-current-user'
 import prismaClient from '@/prisma/client'
 import {
   GiftWithWishlistGiftCreateSchema,
@@ -29,7 +30,7 @@ const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.
 
 type WishlistGiftWriter = Pick<
   Prisma.TransactionClient,
-  'event' | 'gift' | 'wishlistGift'
+  'category' | 'event' | 'gift' | 'giftlist' | 'wishlistGift'
 >
 type WishlistGiftCreateValues = z.infer<typeof WishlistGiftCreateSchema>
 type WishlistGiftEditValues = z.infer<typeof WishlistGiftEditSchema>
@@ -43,28 +44,74 @@ async function assertWishlistGiftLinksAllowed(
   {
     eventId,
     giftIds,
+    giftlistId,
+    userId,
     wishlistId,
-  }: { eventId: string; giftIds: string[]; wishlistId: string }
+  }: {
+    eventId: string
+    giftIds: string[]
+    giftlistId?: string
+    userId: string
+    wishlistId: string
+  }
 ) {
   const event = await client.event.findFirst({
-    where: { id: eventId, wishlistId },
-    select: { id: true },
+    where: {
+      id: eventId,
+      wishlistId,
+      users: { some: { id: userId } },
+    },
+    select: { id: true, eventTypeId: true },
   })
 
   if (!event) {
-    throw new WishlistGiftMutationError(
-      'El evento y la lista de regalos no coinciden.'
-    )
+    throw new WishlistGiftMutationError('No autorizado.')
   }
 
   const uniqueGiftIds = Array.from(new Set(giftIds))
   const gifts = await client.gift.findMany({
     where: { id: { in: uniqueGiftIds } },
-    select: { id: true, isDefault: true, eventId: true },
+    select: {
+      id: true,
+      isDefault: true,
+      eventId: true,
+      category: { select: { eventTypeIds: true } },
+    },
   })
 
   if (gifts.length !== uniqueGiftIds.length) {
     throw new WishlistGiftMutationError('Uno o más regalos no existen.')
+  }
+
+  if (
+    gifts.some(gift => !gift.category.eventTypeIds.includes(event.eventTypeId))
+  ) {
+    throw new WishlistGiftMutationError(
+      'Uno o más regalos no son compatibles con el tipo de evento.'
+    )
+  }
+
+  if (giftlistId) {
+    const giftlist = await client.giftlist.findFirst({
+      where: {
+        id: giftlistId,
+        eventTypeIds: { has: event.eventTypeId },
+      },
+      select: { giftIds: true },
+    })
+
+    if (!giftlist) {
+      throw new WishlistGiftMutationError(
+        'La colección no es compatible con el tipo de evento.'
+      )
+    }
+
+    const collectionGiftIds = new Set(giftlist.giftIds)
+    if (uniqueGiftIds.some(giftId => !collectionGiftIds.has(giftId))) {
+      throw new WishlistGiftMutationError(
+        'Uno o más regalos no pertenecen a la colección.'
+      )
+    }
   }
 
   const privateGifts = gifts.filter(gift => !gift.isDefault)
@@ -92,11 +139,13 @@ async function assertWishlistGiftLinksAllowed(
 
 async function createWishlistGiftRecord(
   client: WishlistGiftWriter,
-  values: WishlistGiftCreateValues
+  values: WishlistGiftCreateValues,
+  userId: string
 ) {
   await assertWishlistGiftLinksAllowed(client, {
     eventId: values.eventId,
     giftIds: [values.giftId],
+    userId,
     wishlistId: values.wishlistId,
   })
 
@@ -125,14 +174,17 @@ async function updateWishlistGiftRecord(
   client: WishlistGiftWriter,
   values: WishlistGiftEditValues,
   currentIsGroupGift: boolean,
-  progress: WishlistGiftProgressUpdate = {}
+  progress: WishlistGiftProgressUpdate = {},
+  priceChanged = false
 ) {
   const isChangingType = values.isGroupGift !== currentIsGroupGift
   const result = await client.wishlistGift.updateMany({
     where: {
       id: values.wishlistGiftId,
-      reservedQuantity: { lte: values.isGroupGift ? 0 : values.quantity },
-      ...(isChangingType ? { reservedAmount: 0 } : {}),
+      reservedQuantity: priceChanged
+        ? 0
+        : { lte: values.isGroupGift ? 0 : values.quantity },
+      ...(isChangingType || priceChanged ? { reservedAmount: 0 } : {}),
     },
     data: {
       giftId: values.giftId,
@@ -144,6 +196,8 @@ async function updateWishlistGiftRecord(
   })
 
   if (result.count === 0) {
+    if (priceChanged) throw new PriceLockedError()
+
     throw new WishlistGiftMutationError(
       isChangingType
         ? 'No se puede cambiar el tipo de un regalo con contribuciones.'
@@ -220,10 +274,13 @@ export async function createWishlistGift(
     return { error: INVALID_GIFT_DATA_ERROR }
   }
 
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { error: 'No autorizado.' }
+
   try {
     const wishlistGift = await retryOnTransientWriteConflict(() =>
       prismaClient.$transaction(tx =>
-        createWishlistGiftRecord(tx, validatedFields.data)
+        createWishlistGiftRecord(tx, validatedFields.data, currentUser.id)
       )
     )
 
@@ -249,14 +306,21 @@ export async function createGiftWithWishlistGift(
     return { error: INVALID_GIFT_DATA_ERROR }
   }
 
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { error: 'No autorizado.' }
+
   try {
     const result = await retryOnTransientWriteConflict(() =>
       prismaClient.$transaction(async tx => {
         const gift = await createGiftRecord(tx, validatedFields.data.gift)
-        const wishlistGift = await createWishlistGiftRecord(tx, {
-          ...validatedFields.data.wishlistGift,
-          giftId: gift.id,
-        })
+        const wishlistGift = await createWishlistGiftRecord(
+          tx,
+          {
+            ...validatedFields.data.wishlistGift,
+            giftId: gift.id,
+          },
+          currentUser.id
+        )
 
         return { giftId: gift.id, wishlistGiftId: wishlistGift.id }
       })
@@ -283,7 +347,10 @@ export async function createWishlistGifts(
     return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
-  const { wishlistId, giftIds, eventId } = validatedFields.data
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { error: 'No autorizado.' }
+
+  const { wishlistId, giftlistId, giftIds, eventId } = validatedFields.data
 
   try {
     await retryOnTransientWriteConflict(() =>
@@ -291,6 +358,8 @@ export async function createWishlistGifts(
         const uniqueGiftIds = await assertWishlistGiftLinksAllowed(tx, {
           eventId,
           giftIds,
+          giftlistId,
+          userId: currentUser.id,
           wishlistId,
         })
         const existing = await tx.wishlistGift.findMany({
@@ -338,6 +407,9 @@ export async function editGiftWithWishlistGift(
     return { error: INVALID_GIFT_DATA_ERROR }
   }
 
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { error: 'No autorizado.' }
+
   const { gift: giftValues, wishlistGift: wishlistGiftValues } =
     validatedFields.data
 
@@ -348,7 +420,10 @@ export async function editGiftWithWishlistGift(
           where: {
             id: wishlistGiftValues.wishlistGiftId,
             wishlistId: wishlistGiftValues.wishlistId,
-            event: { wishlistId: wishlistGiftValues.wishlistId },
+            event: {
+              wishlistId: wishlistGiftValues.wishlistId,
+              users: { some: { id: currentUser.id } },
+            },
           },
           select: {
             eventId: true,
@@ -359,6 +434,8 @@ export async function editGiftWithWishlistGift(
             isFullyPaid: true,
             groupGiftParts: true,
             reservedQuantity: true,
+            reservedAmount: true,
+            event: { select: { eventTypeId: true } },
             gift: {
               select: {
                 id: true,
@@ -379,7 +456,7 @@ export async function editGiftWithWishlistGift(
         })
 
         if (!current) {
-          throw new WishlistGiftMutationError('Regalo no encontrado.')
+          throw new WishlistGiftMutationError('No autorizado.')
         }
 
         if (
@@ -398,11 +475,27 @@ export async function editGiftWithWishlistGift(
           giftValues.imageUrl !== (current.gift.image?.url ?? '')
         const priceChanged = giftValues.price !== current.gift.price
 
+        const category = await tx.category.findUnique({
+          where: { id: giftValues.categoryId },
+          select: { eventTypeIds: true },
+        })
+        if (!category) {
+          throw new WishlistGiftMutationError(
+            'La categoría seleccionada no existe.'
+          )
+        }
+        if (!category.eventTypeIds.includes(current.event.eventTypeId)) {
+          throw new WishlistGiftMutationError(
+            'La categoría no es compatible con el tipo de evento.'
+          )
+        }
+
         if (
           giftChanged &&
           giftValues.price !== current.gift.price &&
           (current.isFullyPaid ||
             current.reservedQuantity > 0 ||
+            current.reservedAmount > 0 ||
             Number(current.groupGiftParts) > 0 ||
             current.transactions.length > 0)
         ) {
@@ -465,7 +558,8 @@ export async function editGiftWithWishlistGift(
           tx,
           { ...wishlistGiftValues, giftId },
           current.isGroupGift,
-          progress
+          progress,
+          priceChanged
         )
 
         return { giftId }
@@ -500,13 +594,21 @@ export async function setWishlistGiftManuallyReceived(
     return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { error: 'No autorizado.' }
+
   const { wishlistGiftId, isManuallyReceived } = validatedFields.data
 
   try {
-    await prismaClient.wishlistGift.update({
-      where: { id: wishlistGiftId },
+    const updated = await prismaClient.wishlistGift.updateMany({
+      where: {
+        id: wishlistGiftId,
+        event: { users: { some: { id: currentUser.id } } },
+      },
       data: { isManuallyReceived },
     })
+
+    if (updated.count === 0) return { error: 'No autorizado.' }
 
     revalidatePath('/wishlist')
     return { success: true }
@@ -525,21 +627,41 @@ export async function deleteWishlistGift(
     return { error: 'Datos inválidos, por favor verifica tus datos.' }
   }
 
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { error: 'No autorizado.' }
+
   const { wishlistId, giftId } = validatedFields.data
 
   try {
+    const ownedGift = await prismaClient.wishlistGift.findFirst({
+      where: {
+        wishlistId,
+        giftId,
+        event: { users: { some: { id: currentUser.id } } },
+      },
+      select: { id: true },
+    })
+    if (!ownedGift) return { error: 'No autorizado.' }
+
     // Transaction.wishlistGiftId is a required relation, so a hard delete
     // fails (P2014) the moment any transaction of any status still
     // references this gift — archive instead of deleting whenever one
     // exists, and only hard-delete when none do.
     const archived = await prismaClient.wishlistGift.updateMany({
-      where: { wishlistId, giftId, transactions: { some: {} } },
+      where: {
+        id: ownedGift.id,
+        event: { users: { some: { id: currentUser.id } } },
+        transactions: { some: {} },
+      },
       data: { isReceived: true },
     })
 
     if (archived.count === 0) {
       await prismaClient.wishlistGift.deleteMany({
-        where: { wishlistId, giftId },
+        where: {
+          id: ownedGift.id,
+          event: { users: { some: { id: currentUser.id } } },
+        },
       })
     }
 

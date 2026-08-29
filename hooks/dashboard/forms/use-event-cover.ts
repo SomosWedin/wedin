@@ -10,7 +10,6 @@ import type { z } from 'zod'
 import { suggestCoverMessage } from '@/actions/ai/suggest-cover-message'
 import { updateEvent } from '@/actions/data/event'
 import { addImages, deleteImages } from '@/actions/data/images'
-import { deleteStoredImage } from '@/actions/image-storage'
 import { useToast } from '@/hooks/use-toast'
 import { prepareImageForUpload } from '@/lib/image-upload'
 import { uploadImages } from '@/lib/image-uploader'
@@ -230,19 +229,6 @@ export function useEventCover({
             variant: 'destructive',
           })
           return
-        }
-
-        for (const image of imagesToDelete) {
-          if (!image.url) continue
-
-          void deleteStoredImage(image.url).then(response => {
-            if (response.error) {
-              toast({
-                title: response.error,
-                variant: 'destructive',
-              })
-            }
-          })
         }
       }
 

@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   wishlistGiftCreate: vi.fn(),
   wishlistGiftUpdateMany: vi.fn(),
   revalidatePath: vi.fn(),
+  getCurrentUser: vi.fn(),
 }))
 
 vi.mock('@/prisma/client', () => ({
@@ -21,6 +22,10 @@ vi.mock('@/prisma/client', () => ({
 
 vi.mock('next/cache', () => ({
   revalidatePath: mocks.revalidatePath,
+}))
+
+vi.mock('@/actions/get-current-user', () => ({
+  getCurrentUser: mocks.getCurrentUser,
 }))
 
 vi.mock('@/actions/data/transaction', () => ({
@@ -52,7 +57,13 @@ function currentWishlistGift(isDefault: boolean) {
     eventId: 'event-1',
     giftId: isDefault ? 'default-gift-1' : 'private-gift-1',
     isGroupGift: false,
+    isFavoriteGift: false,
+    quantity: 1,
+    isFullyPaid: false,
+    groupGiftParts: '0',
     reservedQuantity: 0,
+    reservedAmount: 0,
+    event: { eventTypeId: 'event-type-wedding' },
     gift: {
       id: isDefault ? 'default-gift-1' : 'private-gift-1',
       name: 'Silla original',
@@ -72,15 +83,29 @@ describe('atomic gift and wishlist gift mutations', () => {
 
   beforeEach(() => {
     transactionCompleted = false
+    mocks.getCurrentUser.mockResolvedValue({ id: 'user-1' })
     mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.giftUpdate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.giftFindMany.mockImplementation(({ where }) =>
       where.id?.in
-        ? [{ id: 'private-gift-1', isDefault: false, eventId: 'event-1' }]
+        ? [
+            {
+              id: 'private-gift-1',
+              isDefault: false,
+              eventId: 'event-1',
+              category: { eventTypeIds: ['event-type-wedding'] },
+            },
+          ]
         : []
     )
-    mocks.categoryFindUnique.mockResolvedValue({ id: 'category-1' })
-    mocks.eventFindFirst.mockResolvedValue({ id: 'event-1' })
+    mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-1',
+      eventTypeIds: ['event-type-wedding'],
+    })
+    mocks.eventFindFirst.mockResolvedValue({
+      id: 'event-1',
+      eventTypeId: 'event-type-wedding',
+    })
     mocks.wishlistGiftFindFirst.mockResolvedValue(null)
     mocks.wishlistGiftCreate.mockResolvedValue({ id: 'wishlist-gift-1' })
     mocks.wishlistGiftUpdateMany.mockResolvedValue({ count: 1 })

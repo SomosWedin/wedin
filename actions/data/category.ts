@@ -19,10 +19,8 @@ export async function getCategories(eventTypeId?: string) {
 
     if (!eventTypeId) return categories
 
-    return categories.filter(
-      category =>
-        category.eventTypeIds.length === 0 ||
-        category.eventTypeIds.includes(eventTypeId)
+    return categories.filter(category =>
+      category.eventTypeIds.includes(eventTypeId)
     )
   } catch (error) {
     console.error('Error retrieving categories:', error)

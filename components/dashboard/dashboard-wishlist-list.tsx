@@ -327,8 +327,9 @@ export default function DashboardWishlistList({
                     quantity={wishlistGift.quantity}
                     minQuantity={wishlistGift.reservedQuantity}
                     lockPrice={
-                      !wishlistGift.isGroupGift &&
-                      wishlistGift.reservedQuantity > 0
+                      wishlistGift.isGroupGift
+                        ? wishlistGift.reservedAmount > 0
+                        : wishlistGift.reservedQuantity > 0
                     }
                     allowTypeChange={
                       wishlistGift.reservedQuantity === 0 &&

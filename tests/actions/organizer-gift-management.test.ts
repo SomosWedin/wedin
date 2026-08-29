@@ -81,6 +81,8 @@ function currentWishlistGift(isDefault: boolean) {
     isFullyPaid: false,
     groupGiftParts: '0',
     reservedQuantity: 0,
+    reservedAmount: 0,
+    event: { eventTypeId: 'event-type-wedding' },
     gift: {
       id: isDefault ? 'default-gift-1' : 'private-gift-1',
       name: 'Silla original',
@@ -100,15 +102,29 @@ describe('organizer wishlist gift price and copy policy', () => {
 
   beforeEach(() => {
     transactionCompleted = false
+    mocks.getCurrentUser.mockResolvedValue({ id: 'user-1' })
     mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.giftUpdate.mockResolvedValue({ id: 'private-gift-1' })
-    mocks.eventFindFirst.mockResolvedValue({ id: 'event-1' })
-    mocks.categoryFindUnique.mockResolvedValue({ id: 'category-1' })
+    mocks.eventFindFirst.mockResolvedValue({
+      id: 'event-1',
+      eventTypeId: 'event-type-wedding',
+    })
+    mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-1',
+      eventTypeIds: ['event-type-wedding'],
+    })
     mocks.giftFindFirst.mockResolvedValue(null)
     mocks.giftFindMany.mockImplementation(({ where }) =>
       where.name
         ? []
-        : [{ id: 'private-gift-1', isDefault: false, eventId: 'event-1' }]
+        : [
+            {
+              id: 'private-gift-1',
+              isDefault: false,
+              eventId: 'event-1',
+              category: { eventTypeIds: ['event-type-wedding'] },
+            },
+          ]
     )
     mocks.wishlistGiftFindFirst.mockResolvedValue(null)
     mocks.wishlistGiftCreate.mockResolvedValue({ id: 'wishlist-gift-1' })
@@ -150,7 +166,17 @@ describe('organizer wishlist gift price and copy policy', () => {
       wishlistGift: wishlistGiftValues,
     })
 
-    expect(result).toEqual({ error: 'Regalo no encontrado.' })
+    expect(result).toEqual({ error: 'No autorizado.' })
+    expect(mocks.wishlistGiftFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          event: {
+            wishlistId: 'wishlist-1',
+            users: { some: { id: 'user-1' } },
+          },
+        }),
+      })
+    )
     expect(mocks.wishlistGiftUpdateMany).not.toHaveBeenCalled()
   })
 
@@ -497,7 +523,8 @@ describe('organizer wishlist gift price and copy policy', () => {
     expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
       where: {
         id: 'wishlist-gift-1',
-        reservedQuantity: { lte: 1 },
+        reservedQuantity: 0,
+        reservedAmount: 0,
       },
       data: expect.objectContaining({ isFullyPaid: false }),
     })
@@ -519,6 +546,47 @@ describe('organizer wishlist gift price and copy policy', () => {
 
     expect(result).toEqual({ error: PRICE_LOCKED_ERROR })
     expect(mocks.giftUpdate).not.toHaveBeenCalled()
+  })
+
+  it('blocks a group gift price change while a contribution is reserved', async () => {
+    mocks.wishlistGiftFindFirst.mockResolvedValue({
+      ...currentWishlistGift(false),
+      isGroupGift: true,
+      reservedAmount: 25000,
+      gift: { ...currentWishlistGift(false).gift, price: '100000' },
+    })
+
+    const result = await editGiftWithWishlistGift({
+      gift: giftValues,
+      wishlistGift: { ...wishlistGiftValues, isGroupGift: true },
+    })
+
+    expect(result).toEqual({ error: PRICE_LOCKED_ERROR })
+    expect(mocks.giftUpdate).not.toHaveBeenCalled()
+  })
+
+  it('rejects a price write if checkout reserves the gift concurrently', async () => {
+    mocks.wishlistGiftFindFirst.mockResolvedValue({
+      ...currentWishlistGift(false),
+      gift: { ...currentWishlistGift(false).gift, price: '100000' },
+    })
+    mocks.wishlistGiftUpdateMany.mockResolvedValue({ count: 0 })
+
+    const result = await editGiftWithWishlistGift({
+      gift: giftValues,
+      wishlistGift: wishlistGiftValues,
+    })
+
+    expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'wishlist-gift-1',
+        reservedQuantity: 0,
+        reservedAmount: 0,
+      },
+      data: expect.any(Object),
+    })
+    expect(transactionCompleted).toBe(false)
+    expect(result).toEqual({ error: PRICE_LOCKED_ERROR })
   })
 
   it('blocks a price change when persisted group contributions are present', async () => {

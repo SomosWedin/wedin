@@ -23,7 +23,7 @@ export default async function GiftlistDetailPage({
   }
 
   const [giftlist, wishlistGifts, categories] = await Promise.all([
-    getGiftlist(params.giftlistId),
+    getGiftlist(params.giftlistId, event.eventTypeId),
     getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
     getCategories(),
   ])
@@ -68,6 +68,7 @@ export default async function GiftlistDetailPage({
             </p>
           </div>
           <AddGiftlistToWishlistButton
+            giftlistId={giftlist.id}
             eventId={event.id}
             wishlistId={event.wishlistId}
             giftIds={giftIds}

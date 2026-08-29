@@ -115,13 +115,13 @@ export default function AdminGiftsList({
 
   const sortedGifts = sortColumn
     ? [...filteredGifts].sort((a, b) => {
-      const diff =
-        sortColumn === 'createdAt'
-          ? a.createdAt.getTime() - b.createdAt.getTime()
-          : Number(a.price) - Number(b.price)
+        const diff =
+          sortColumn === 'createdAt'
+            ? a.createdAt.getTime() - b.createdAt.getTime()
+            : Number(a.price) - Number(b.price)
 
-      return sortDirection === 'asc' ? diff : -diff
-    })
+        return sortDirection === 'asc' ? diff : -diff
+      })
     : filteredGifts
 
   return (
@@ -236,12 +236,12 @@ export default function AdminGiftsList({
                 <p className="truncate text-xs text-textTertiary">
                   {gift.giftlistIds.length
                     ? gift.giftlistIds
-                      .map(
-                        giftlistId =>
-                          giftlistNameById.get(giftlistId) ??
-                          'Colección no encontrada'
-                      )
-                      .join(', ')
+                        .map(
+                          giftlistId =>
+                            giftlistNameById.get(giftlistId) ??
+                            'Colección no encontrada'
+                        )
+                        .join(', ')
                     : 'Sin colección'}
                 </p>
               </div>

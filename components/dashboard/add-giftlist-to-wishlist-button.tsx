@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift'
 
 type AddGiftlistToWishlistButtonProps = {
+  giftlistId: string
   eventId: string
   wishlistId: string
   giftIds: string[]
@@ -13,6 +14,7 @@ type AddGiftlistToWishlistButtonProps = {
 }
 
 export default function AddGiftlistToWishlistButton({
+  giftlistId,
   eventId,
   wishlistId,
   giftIds,
@@ -34,7 +36,9 @@ export default function AddGiftlistToWishlistButton({
       variant="success"
       className="gap-2"
       disabled={loading || giftIds.length === 0}
-      onClick={() => addAllToWishlist({ wishlistId, eventId, giftIds })}
+      onClick={() =>
+        addAllToWishlist({ wishlistId, giftlistId, eventId, giftIds })
+      }
     >
       Agregar paquete completo
       {loading && <Loader2 className="w-4 h-4 animate-spin" />}

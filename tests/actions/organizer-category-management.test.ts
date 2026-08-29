@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   wishlistGiftUpdateMany: vi.fn(),
   recomputeWishlistGiftProgress: vi.fn(),
   revalidatePath: vi.fn(),
+  getCurrentUser: vi.fn(),
 }))
 
 vi.mock('@/prisma/client', () => ({
@@ -29,6 +30,10 @@ vi.mock('@/prisma/client', () => ({
 }))
 
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
+
+vi.mock('@/actions/get-current-user', () => ({
+  getCurrentUser: mocks.getCurrentUser,
+}))
 
 vi.mock('@/actions/data/transaction', () => ({
   recomputeWishlistGiftProgress: mocks.recomputeWishlistGiftProgress,
@@ -61,6 +66,8 @@ function currentWishlistGift(isDefault: boolean) {
     isFullyPaid: false,
     groupGiftParts: '0',
     reservedQuantity: 0,
+    reservedAmount: 0,
+    event: { eventTypeId: 'event-type-wedding' },
     gift: {
       id: isDefault ? 'default-gift-1' : 'private-gift-1',
       name: 'Silla original',
@@ -83,8 +90,12 @@ function expectFinancialProgressUntouched() {
 
 describe('organizer category management', () => {
   beforeEach(() => {
+    mocks.getCurrentUser.mockResolvedValue({ id: 'user-1' })
     mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
-    mocks.categoryFindUnique.mockResolvedValue({ id: 'category-2' })
+    mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-2',
+      eventTypeIds: ['event-type-wedding'],
+    })
     mocks.giftFindMany.mockResolvedValue([])
     mocks.giftUpdate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.wishlistGiftUpdateMany.mockResolvedValue({ count: 1 })

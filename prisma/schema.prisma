@@ -109,11 +109,11 @@ model Event {
   updatedAt    DateTime  @updatedAt
   country      String?
   city         String?
-  eventTypeId  String?   @db.ObjectId
+  eventTypeId  String    @db.ObjectId
   isPublished  Boolean   @default(true)
 
-  wishlist  Wishlist   @relation(fields: [wishlistId], references: [id])
-  eventType EventType? @relation(fields: [eventTypeId], references: [id])
+  wishlist  Wishlist  @relation(fields: [wishlistId], references: [id])
+  eventType EventType @relation(fields: [eventTypeId], references: [id])
 
   bankDetails BankDetails?
 

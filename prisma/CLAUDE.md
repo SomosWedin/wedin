@@ -93,7 +93,8 @@ whenever you touch something documented below.
   > 1 for an individual-gift purchase.
 - `EventType` is a seeded model, not an enum. Its stable `key` (`wedding`,
   `other`) is for application checks; its editable display `name` is for the
-  UI. `Event.eventTypeId` is optional while existing events are migrated.
+  UI. `Event.eventTypeId` is required; the 20260829 backfill assigns legacy
+  events without one to `wedding` before `prisma db push` enforces the schema.
 - `Category.eventTypeIds` and `Giftlist.eventTypeIds` are Mongo many-to-many
   relations to `EventType`. A category may have several types. Repeating a
   category name is allowed only when its event-type sets do not overlap;

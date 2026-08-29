@@ -18,7 +18,7 @@ export const getEvent = async (): Promise<
   | (Event & {
       images: ImageModel[]
       users: User[]
-      eventType: { id: string; name: string; key: string } | null
+      eventType: { id: string; name: string; key: string }
     })
   | ErrorResponse
 > => {
