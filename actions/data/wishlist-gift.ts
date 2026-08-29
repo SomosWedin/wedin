@@ -4,6 +4,10 @@ import type { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
+import {
+  getWishlistGiftEditLockReason,
+  WISHLIST_GIFT_EDIT_LOCK_MESSAGES,
+} from '@/lib/wishlist-gift-edit-lock'
 import prismaClient from '@/prisma/client'
 import {
   GiftWithWishlistGiftCreateSchema,
@@ -17,11 +21,11 @@ import {
 import { GetwishlistGiftsParams } from '@/schemas/params'
 import {
   getErrorMessage,
-  PriceLockedError,
   retryOnTransientWriteConflict,
   revalidateGiftAndWishlistPaths,
   WishlistGiftMutationError,
 } from '../helper'
+import { catalogGiftContentChanged } from './catalog-gift-copy'
 import { createGiftRecord, updateGiftRecord } from './gift-operations'
 import { releaseExpiredHolds } from './reservation'
 
@@ -173,18 +177,16 @@ async function createWishlistGiftRecord(
 async function updateWishlistGiftRecord(
   client: WishlistGiftWriter,
   values: WishlistGiftEditValues,
-  currentIsGroupGift: boolean,
-  progress: WishlistGiftProgressUpdate = {},
-  priceChanged = false
+  progress: WishlistGiftProgressUpdate = {}
 ) {
-  const isChangingType = values.isGroupGift !== currentIsGroupGift
   const result = await client.wishlistGift.updateMany({
     where: {
       id: values.wishlistGiftId,
-      reservedQuantity: priceChanged
-        ? 0
-        : { lte: values.isGroupGift ? 0 : values.quantity },
-      ...(isChangingType || priceChanged ? { reservedAmount: 0 } : {}),
+      isFullyPaid: false,
+      isManuallyReceived: false,
+      groupGiftParts: '0',
+      reservedQuantity: 0,
+      reservedAmount: 0,
     },
     data: {
       giftId: values.giftId,
@@ -196,12 +198,8 @@ async function updateWishlistGiftRecord(
   })
 
   if (result.count === 0) {
-    if (priceChanged) throw new PriceLockedError()
-
     throw new WishlistGiftMutationError(
-      isChangingType
-        ? 'No se puede cambiar el tipo de un regalo con contribuciones.'
-        : 'La cantidad no puede ser menor a las unidades ya reservadas o vendidas.'
+      WISHLIST_GIFT_EDIT_LOCK_MESSAGES.reservation
     )
   }
 
@@ -432,6 +430,7 @@ export async function editGiftWithWishlistGift(
             isGroupGift: true,
             quantity: true,
             isFullyPaid: true,
+            isManuallyReceived: true,
             groupGiftParts: true,
             reservedQuantity: true,
             reservedAmount: true,
@@ -468,11 +467,24 @@ export async function editGiftWithWishlistGift(
           )
         }
 
-        const giftChanged =
-          giftValues.name !== current.gift.name ||
-          giftValues.categoryId !== current.gift.categoryId ||
-          giftValues.price !== current.gift.price ||
-          giftValues.imageUrl !== (current.gift.image?.url ?? '')
+        const editLockReason = getWishlistGiftEditLockReason({
+          isFullyPaid: current.isFullyPaid,
+          isManuallyReceived: current.isManuallyReceived,
+          groupGiftParts: current.groupGiftParts,
+          reservedQuantity: current.reservedQuantity,
+          reservedAmount: current.reservedAmount,
+          hasCompletedTransaction: current.transactions.length > 0,
+        })
+        if (editLockReason) {
+          throw new WishlistGiftMutationError(
+            WISHLIST_GIFT_EDIT_LOCK_MESSAGES[editLockReason]
+          )
+        }
+
+        const giftChanged = catalogGiftContentChanged(
+          current.gift,
+          giftValues
+        )
         const priceChanged = giftValues.price !== current.gift.price
 
         const category = await tx.category.findUnique({
@@ -488,18 +500,6 @@ export async function editGiftWithWishlistGift(
           throw new WishlistGiftMutationError(
             'La categoría no es compatible con el tipo de evento.'
           )
-        }
-
-        if (
-          giftChanged &&
-          giftValues.price !== current.gift.price &&
-          (current.isFullyPaid ||
-            current.reservedQuantity > 0 ||
-            current.reservedAmount > 0 ||
-            Number(current.groupGiftParts) > 0 ||
-            current.transactions.length > 0)
-        ) {
-          throw new PriceLockedError()
         }
 
         let giftId = current.giftId
@@ -557,9 +557,7 @@ export async function editGiftWithWishlistGift(
         await updateWishlistGiftRecord(
           tx,
           { ...wishlistGiftValues, giftId },
-          current.isGroupGift,
-          progress,
-          priceChanged
+          progress
         )
 
         return { giftId }
@@ -571,13 +569,6 @@ export async function editGiftWithWishlistGift(
   } catch (error) {
     if (error instanceof WishlistGiftMutationError) {
       return { error: error.message }
-    }
-
-    if (error instanceof PriceLockedError) {
-      return {
-        error:
-          'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.',
-      }
     }
 
     console.error('Error editing gift and wishlist gift:', error)

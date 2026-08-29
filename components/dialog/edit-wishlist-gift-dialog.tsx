@@ -8,6 +8,10 @@ import {
   type EditableGift,
   useEditWishlistGift,
 } from '@/hooks/dialog/forms/use-edit-wishlist-gift'
+import {
+  WISHLIST_GIFT_EDIT_LOCK_MESSAGES,
+  type WishlistGiftEditLockReason,
+} from '@/lib/wishlist-gift-edit-lock'
 import GiftFormDialogContent from './gift-form-dialog-content'
 
 type EditWishlistGiftDialogProps = {
@@ -22,6 +26,7 @@ type EditWishlistGiftDialogProps = {
   minQuantity: number
   lockPrice: boolean
   allowTypeChange: boolean
+  editLockReason?: WishlistGiftEditLockReason | null
 }
 
 export default function EditWishlistGiftDialog({
@@ -36,6 +41,7 @@ export default function EditWishlistGiftDialog({
   minQuantity,
   lockPrice,
   allowTypeChange,
+  editLockReason,
 }: EditWishlistGiftDialogProps) {
   const controller = useEditWishlistGift({
     wishlistGiftId,
@@ -64,6 +70,11 @@ export default function EditWishlistGiftDialog({
         minQuantity={minQuantity}
         lockPrice={lockPrice}
         allowTypeChange={allowTypeChange}
+        readOnlyReason={
+          editLockReason
+            ? WISHLIST_GIFT_EDIT_LOCK_MESSAGES[editLockReason]
+            : undefined
+        }
       />
     </Dialog>
   )

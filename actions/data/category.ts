@@ -1,11 +1,13 @@
 'use server'
 
+import type { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
 import prismaClient from '@/prisma/client'
 import { AdminCategorySchema } from '@/schemas/form'
 import { getErrorMessage } from '../helper'
+import { copyCatalogGiftForWishlistLinks } from './catalog-gift-copy'
 
 const INVALID_CATEGORY_DATA_ERROR =
   'Datos inválidos, por favor verifica los datos de la categoría.'
@@ -81,6 +83,95 @@ async function validateGiftlistTypeCompatibility(
   return !incompatible
 }
 
+async function preserveWishlistCategoryBeforeEdit(
+  tx: Prisma.TransactionClient,
+  existing: { id: string; name: string; eventTypeIds: string[] },
+  values: AdminCategoryValues
+) {
+  const nameChanged =
+    existing.name.toLocaleLowerCase('es-PY') !==
+    values.name.toLocaleLowerCase('es-PY')
+  const removedEventTypeIds = existing.eventTypeIds.filter(
+    eventTypeId => !values.eventTypeIds.includes(eventTypeId)
+  )
+  if (!nameChanged && removedEventTypeIds.length === 0) return
+
+  const gifts = await tx.gift.findMany({
+    where: {
+      categoryId: existing.id,
+      wishlistGifts: { some: {} },
+    },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      categoryId: true,
+      isDefault: true,
+      image: { select: { url: true } },
+      wishlistGifts: {
+        select: {
+          id: true,
+          eventId: true,
+          event: { select: { eventTypeId: true } },
+        },
+      },
+    },
+  })
+
+  const affectedGifts = gifts
+    .map(gift => ({
+      gift,
+      wishlistGifts: gift.wishlistGifts.filter(
+        wishlistGift =>
+          nameChanged ||
+          removedEventTypeIds.includes(wishlistGift.event.eventTypeId)
+      ),
+    }))
+    .filter(({ wishlistGifts }) => wishlistGifts.length > 0)
+
+  if (affectedGifts.length === 0) return
+
+  const preservedEventTypeIds = nameChanged
+    ? existing.eventTypeIds
+    : removedEventTypeIds
+  const reusableCategory = await tx.category.findFirst({
+    where: {
+      id: { not: existing.id },
+      name: { equals: existing.name, mode: 'insensitive' },
+      eventTypeIds: { hasEvery: preservedEventTypeIds },
+    },
+    select: { id: true },
+  })
+  const preservedCategory =
+    reusableCategory ??
+    (await tx.category.create({
+      data: {
+        name: existing.name,
+        eventTypes: {
+          connect: preservedEventTypeIds.map(id => ({ id })),
+        },
+      },
+      select: { id: true },
+    }))
+
+  for (const { gift, wishlistGifts } of affectedGifts) {
+    if (gift.isDefault || wishlistGifts.length < gift.wishlistGifts.length) {
+      await copyCatalogGiftForWishlistLinks(
+        tx,
+        gift,
+        preservedCategory.id,
+        wishlistGifts
+      )
+      continue
+    }
+
+    await tx.gift.update({
+      where: { id: gift.id },
+      data: { category: { connect: { id: preservedCategory.id } } },
+    })
+  }
+}
+
 export async function createAdminCategory(formData: unknown) {
   if (!(await ensureAdmin())) return { error: 'No autorizado.' }
 
@@ -127,7 +218,7 @@ export async function editAdminCategory(categoryId: string, formData: unknown) {
   try {
     const existing = await prismaClient.category.findUnique({
       where: { id: categoryId },
-      select: { id: true },
+      select: { id: true, name: true, eventTypeIds: true },
     })
     if (!existing) return { error: 'Categoría no encontrada.' }
 
@@ -151,14 +242,18 @@ export async function editAdminCategory(categoryId: string, formData: unknown) {
       }
     }
 
-    const category = await prismaClient.category.update({
-      where: { id: categoryId },
-      data: {
-        name: values.name,
-        eventTypes: {
-          set: eventTypeIds.map(id => ({ id })),
+    const category = await prismaClient.$transaction(async tx => {
+      await preserveWishlistCategoryBeforeEdit(tx, existing, values)
+
+      return tx.category.update({
+        where: { id: categoryId },
+        data: {
+          name: values.name,
+          eventTypes: {
+            set: eventTypeIds.map(id => ({ id })),
+          },
         },
-      },
+      })
     })
     revalidatePath('/admin')
     revalidatePath('/gifts')

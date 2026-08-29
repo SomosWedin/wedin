@@ -4,15 +4,26 @@ import {
   type Event,
   type Image as ImageModel,
   Prisma,
-  PrismaClient,
   type User,
 } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/actions/get-current-user'
 import type { ErrorResponse } from '@/auth'
+import prismaClient from '@/prisma/client'
 import { EventUrlFormSchema } from '@/schemas/form'
 
-const prismaClient = new PrismaClient()
+async function getOwnedEvent(eventId: string) {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return null
+
+  return prismaClient.event.findFirst({
+    where: {
+      id: eventId,
+      users: { some: { id: currentUser.id } },
+    },
+    select: { id: true },
+  })
+}
 
 export const getEvent = async (): Promise<
   | (Event & {
@@ -71,6 +82,9 @@ export const updateEvent = async (
   }
 ) => {
   try {
+    const ownedEvent = await getOwnedEvent(eventId)
+    if (!ownedEvent) return { error: 'No autorizado.' }
+
     const updateData: Partial<Event> = {}
 
     if (data.coverMessage) {
@@ -86,7 +100,7 @@ export const updateEvent = async (
     }
 
     const updatedEvent = await prismaClient.event.update({
-      where: { id: eventId },
+      where: { id: ownedEvent.id },
       data: updateData,
     })
 
@@ -129,18 +143,21 @@ export const updateEventUrl = async (eventId: string, url: string) => {
   const normalizedUrl = validatedFields.data.eventUrl
 
   try {
+    const ownedEvent = await getOwnedEvent(eventId)
+    if (!ownedEvent) return { error: 'No autorizado.' }
+
     const existingEvent = await prismaClient.event.findUnique({
       where: { url: normalizedUrl },
     })
 
-    if (existingEvent && existingEvent.id !== eventId) {
+    if (existingEvent && existingEvent.id !== ownedEvent.id) {
       return {
         error: 'Esa dirección ya está en uso, elegí otra.',
       }
     }
 
     const updatedEvent = await prismaClient.event.update({
-      where: { id: eventId },
+      where: { id: ownedEvent.id },
       data: { url: normalizedUrl },
     })
 
@@ -158,8 +175,11 @@ export const setEventPublished = async (
   isPublished: boolean
 ) => {
   try {
+    const ownedEvent = await getOwnedEvent(eventId)
+    if (!ownedEvent) return { error: 'No autorizado.' }
+
     const updatedEvent = await prismaClient.event.update({
-      where: { id: eventId },
+      where: { id: ownedEvent.id },
       data: { isPublished },
     })
 

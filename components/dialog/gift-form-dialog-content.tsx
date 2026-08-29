@@ -22,6 +22,7 @@ type GiftFormDialogContentProps = {
   lockPrice?: boolean
   allowTypeChange?: boolean
   adminMode?: boolean
+  readOnlyReason?: string
 }
 
 export default function GiftFormDialogContent({
@@ -36,6 +37,7 @@ export default function GiftFormDialogContent({
   lockPrice,
   allowTypeChange,
   adminMode,
+  readOnlyReason,
 }: GiftFormDialogContentProps) {
   return (
     <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
@@ -59,6 +61,7 @@ export default function GiftFormDialogContent({
         lockPrice={lockPrice}
         allowTypeChange={allowTypeChange}
         adminMode={adminMode}
+        readOnlyReason={readOnlyReason}
         onFileChange={controller.handleFileChange}
         onSubmit={controller.handleSubmit}
         onCancel={() => controller.handleOpenChange(false)}

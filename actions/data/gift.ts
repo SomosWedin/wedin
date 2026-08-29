@@ -8,6 +8,10 @@ import prismaClient from '@/prisma/client'
 import { AdminGiftCreateSchema, AdminGiftEditSchema } from '@/schemas/form'
 import { GetGiftsParams } from '@/schemas/params'
 import { getErrorMessage } from '../helper'
+import {
+  catalogGiftContentChanged,
+  copyCatalogGiftForWishlistLinks,
+} from './catalog-gift-copy'
 import { getCategories } from './category'
 import { createGiftRecord, updateGiftRecord } from './gift-operations'
 import {
@@ -186,31 +190,13 @@ export async function editAdminGift(
         giftlistIds,
       })
 
-      const catalogFieldsChanged =
-        existingGift.price !== values.price ||
-        existingGift.categoryId !== values.categoryId
+      const catalogFieldsChanged = catalogGiftContentChanged(
+        existingGift,
+        values
+      )
 
       if (catalogFieldsChanged) {
-        for (const wishlistGift of existingGift.wishlistGifts) {
-          const privateGift = await tx.gift.create({
-            data: {
-              name: existingGift.name,
-              price: existingGift.price,
-              category: { connect: { id: existingGift.categoryId } },
-              event: { connect: { id: wishlistGift.eventId } },
-              giftlists: { connect: [] },
-              isDefault: false,
-              ...(existingGift.image?.url
-                ? { image: { create: { url: existingGift.image.url } } }
-                : {}),
-            },
-          })
-
-          await tx.wishlistGift.update({
-            where: { id: wishlistGift.id },
-            data: { giftId: privateGift.id },
-          })
-        }
+        await copyCatalogGiftForWishlistLinks(tx, existingGift)
       }
 
       const gift = await updateGiftRecord(
@@ -266,26 +252,7 @@ export async function deleteDefaultGiftAsAdmin(giftId: string) {
 
       if (!gift) return false
 
-      for (const wishlistGift of gift.wishlistGifts) {
-        const privateGift = await tx.gift.create({
-          data: {
-            name: gift.name,
-            price: gift.price,
-            category: { connect: { id: gift.categoryId } },
-            event: { connect: { id: wishlistGift.eventId } },
-            giftlists: { connect: [] },
-            isDefault: false,
-            ...(gift.image?.url
-              ? { image: { create: { url: gift.image.url } } }
-              : {}),
-          },
-        })
-
-        await tx.wishlistGift.update({
-          where: { id: wishlistGift.id },
-          data: { giftId: privateGift.id },
-        })
-      }
+      await copyCatalogGiftForWishlistLinks(tx, gift)
 
       await tx.image.deleteMany({ where: { giftId } })
       await tx.gift.delete({ where: { id: giftId } })

@@ -52,6 +52,17 @@ const wishlistGiftValues = {
   quantity: 1,
 }
 
+const RESERVATION_LOCK_ERROR =
+  'Este regalo está reservado en un checkout. Podrás editarlo si la reserva vence o el pago falla.'
+const unlockedWishlistGiftWhere = {
+  id: 'wishlist-gift-1',
+  isFullyPaid: false,
+  isManuallyReceived: false,
+  groupGiftParts: '0',
+  reservedQuantity: 0,
+  reservedAmount: 0,
+}
+
 function currentWishlistGift(isDefault: boolean) {
   return {
     eventId: 'event-1',
@@ -60,6 +71,7 @@ function currentWishlistGift(isDefault: boolean) {
     isFavoriteGift: false,
     quantity: 1,
     isFullyPaid: false,
+    isManuallyReceived: false,
     groupGiftParts: '0',
     reservedQuantity: 0,
     reservedAmount: 0,
@@ -194,10 +206,7 @@ describe('atomic gift and wishlist gift mutations', () => {
       }),
     })
     expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
-      where: {
-        id: 'wishlist-gift-1',
-        reservedQuantity: { lte: 1 },
-      },
+      where: unlockedWishlistGiftWhere,
       data: expect.objectContaining({ giftId: 'private-gift-1' }),
     })
     expect(transactionCompleted).toBe(true)
@@ -216,8 +225,7 @@ describe('atomic gift and wishlist gift mutations', () => {
     expect(mocks.giftCreate).toHaveBeenCalledOnce()
     expect(transactionCompleted).toBe(false)
     expect(result).toEqual({
-      error:
-        'La cantidad no puede ser menor a las unidades ya reservadas o vendidas.',
+      error: RESERVATION_LOCK_ERROR,
     })
   })
 
@@ -238,10 +246,7 @@ describe('atomic gift and wishlist gift mutations', () => {
     expect(mocks.giftCreate).not.toHaveBeenCalled()
     expect(mocks.giftUpdate).not.toHaveBeenCalled()
     expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
-      where: {
-        id: 'wishlist-gift-1',
-        reservedQuantity: { lte: 1 },
-      },
+      where: unlockedWishlistGiftWhere,
       data: expect.objectContaining({
         giftId: 'default-gift-1',
         isFavoriteGift: true,
@@ -269,8 +274,7 @@ describe('atomic gift and wishlist gift mutations', () => {
     expect(mocks.wishlistGiftUpdateMany).not.toHaveBeenCalled()
     expect(transactionCompleted).toBe(false)
     expect(result).toEqual({
-      error:
-        'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.',
+      error: RESERVATION_LOCK_ERROR,
     })
   })
 

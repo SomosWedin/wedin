@@ -390,6 +390,80 @@ describe('admin creates and edits catalog gifts', () => {
     expect(result).toEqual({ giftId: 'gift-1' })
   })
 
+  it.each([
+    {
+      field: 'name',
+      existing: {
+        name: 'Sofá original',
+        price: editValues.price,
+        categoryId: editValues.categoryId,
+        image: { url: editValues.imageUrl },
+      },
+    },
+    {
+      field: 'image',
+      existing: {
+        name: editValues.name,
+        price: editValues.price,
+        categoryId: editValues.categoryId,
+        image: { url: 'https://cdn.example.com/original.jpg' },
+      },
+    },
+  ])(
+    'copies and relinks the old gift before an admin changes only its $field',
+    async ({ existing }) => {
+      mocks.giftFindFirst.mockResolvedValue({
+        id: 'gift-1',
+        giftlistIds: [],
+        wishlistGifts: [{ id: 'wishlist-gift-1', eventId: 'event-1' }],
+        ...existing,
+      })
+
+      const result = await editAdminGift(editValues, 'gift-1')
+
+      expect(mocks.giftCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          name: existing.name,
+          price: existing.price,
+          category: { connect: { id: existing.categoryId } },
+          ...(existing.image
+            ? { image: { create: { url: existing.image.url } } }
+            : {}),
+        }),
+      })
+      expect(mocks.wishlistGiftUpdate).toHaveBeenCalledWith({
+        where: { id: 'wishlist-gift-1' },
+        data: { giftId: 'private-gift-1' },
+      })
+      expect(mocks.giftUpdate).toHaveBeenCalledOnce()
+      expect(result).toEqual({ giftId: 'gift-1' })
+    }
+  )
+
+  it('does not create wishlist copies when only collections change', async () => {
+    mocks.giftFindFirst.mockResolvedValue({
+      id: 'gift-1',
+      name: editValues.name,
+      price: editValues.price,
+      categoryId: editValues.categoryId,
+      giftlistIds: [],
+      image: { url: editValues.imageUrl },
+      wishlistGifts: [{ id: 'wishlist-gift-1', eventId: 'event-1' }],
+    })
+    mocks.giftlistFindMany.mockResolvedValue([
+      { id: 'giftlist-1', eventTypeIds: ['event-type-wedding'] },
+    ])
+
+    const result = await editAdminGift(
+      { ...editValues, giftlistIds: ['giftlist-1'] },
+      'gift-1'
+    )
+
+    expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(mocks.wishlistGiftUpdate).not.toHaveBeenCalled()
+    expect(result).toEqual({ giftId: 'gift-1' })
+  })
+
   it('skips price checks and progress updates when the price is unchanged', async () => {
     const result = await editAdminGift(editValues, 'gift-1')
 

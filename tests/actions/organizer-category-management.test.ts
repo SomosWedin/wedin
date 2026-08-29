@@ -56,6 +56,19 @@ const wishlistGiftValues = {
   quantity: 1,
 }
 
+const RESERVATION_LOCK_ERROR =
+  'Este regalo está reservado en un checkout. Podrás editarlo si la reserva vence o el pago falla.'
+const RECEIVED_LOCK_ERROR =
+  'Este regalo ya recibió contribuciones o pagos y no se puede editar.'
+const unlockedWishlistGiftWhere = {
+  id: 'wishlist-gift-1',
+  isFullyPaid: false,
+  isManuallyReceived: false,
+  groupGiftParts: '0',
+  reservedQuantity: 0,
+  reservedAmount: 0,
+}
+
 function currentWishlistGift(isDefault: boolean) {
   return {
     eventId: 'event-1',
@@ -64,6 +77,7 @@ function currentWishlistGift(isDefault: boolean) {
     isGroupGift: false,
     quantity: 1,
     isFullyPaid: false,
+    isManuallyReceived: false,
     groupGiftParts: '0',
     reservedQuantity: 0,
     reservedAmount: 0,
@@ -115,7 +129,7 @@ describe('organizer category management', () => {
     )
   })
 
-  it('copies a catalog gift when changing its category after individual activity', async () => {
+  it('blocks changing a category after individual activity', async () => {
     mocks.wishlistGiftFindFirst.mockResolvedValue({
       ...currentWishlistGift(true),
       reservedQuantity: 1,
@@ -128,22 +142,12 @@ describe('organizer category management', () => {
       wishlistGift: wishlistGiftValues,
     })
 
-    expect(mocks.giftCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        isDefault: false,
-        category: { connect: { id: 'category-2' } },
-        event: { connect: { id: 'event-1' } },
-      }),
-    })
-    expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
-      where: { id: 'wishlist-gift-1', reservedQuantity: { lte: 1 } },
-      data: expect.objectContaining({ giftId: 'private-gift-1' }),
-    })
-    expectFinancialProgressUntouched()
-    expect(result).toEqual({ giftId: 'private-gift-1' })
+    expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(mocks.wishlistGiftUpdateMany).not.toHaveBeenCalled()
+    expect(result).toEqual({ error: RECEIVED_LOCK_ERROR })
   })
 
-  it('allows a category change after group contributions without recalculating progress', async () => {
+  it('blocks a category change after group contributions', async () => {
     mocks.wishlistGiftFindFirst.mockResolvedValue({
       ...currentWishlistGift(true),
       isGroupGift: true,
@@ -156,9 +160,9 @@ describe('organizer category management', () => {
       wishlistGift: { ...wishlistGiftValues, isGroupGift: true },
     })
 
-    expect(mocks.giftCreate).toHaveBeenCalledOnce()
-    expectFinancialProgressUntouched()
-    expect(result).toEqual({ giftId: 'private-gift-1' })
+    expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(mocks.wishlistGiftUpdateMany).not.toHaveBeenCalled()
+    expect(result).toEqual({ error: RECEIVED_LOCK_ERROR })
   })
 
   it('updates an existing private gift in place when only its category changes', async () => {
@@ -198,9 +202,24 @@ describe('organizer category management', () => {
     expect(mocks.giftCreate).toHaveBeenCalledOnce()
     expect(mocks.giftUpdate).not.toHaveBeenCalled()
     expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
-      where: { id: 'wishlist-gift-1', reservedQuantity: { lte: 1 } },
+      where: unlockedWishlistGiftWhere,
       data: expect.objectContaining({ giftId: 'isolated-gift-1' }),
     })
     expect(result).toEqual({ giftId: 'isolated-gift-1' })
+  })
+
+  it('blocks a category change while checkout has a reservation', async () => {
+    mocks.wishlistGiftFindFirst.mockResolvedValue({
+      ...currentWishlistGift(false),
+      reservedQuantity: 1,
+    })
+
+    const result = await editGiftWithWishlistGift({
+      gift: giftValues,
+      wishlistGift: wishlistGiftValues,
+    })
+
+    expect(mocks.giftUpdate).not.toHaveBeenCalled()
+    expect(result).toEqual({ error: RESERVATION_LOCK_ERROR })
   })
 })

@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift'
+import { getWishlistGiftEditLockReason } from '@/lib/wishlist-gift-edit-lock'
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
   include: {
@@ -226,6 +227,14 @@ export default function DashboardWishlistList({
 
         {filteredWishlistGifts.map(wishlistGift => {
           const estado = getEstado(wishlistGift)
+          const editLockReason = getWishlistGiftEditLockReason({
+            isFullyPaid: wishlistGift.isFullyPaid,
+            isManuallyReceived: wishlistGift.isManuallyReceived,
+            groupGiftParts: wishlistGift.groupGiftParts,
+            reservedQuantity: wishlistGift.reservedQuantity,
+            reservedAmount: wishlistGift.reservedAmount,
+            hasCompletedTransaction: wishlistGift.transactions.length > 0,
+          })
 
           return (
             <div
@@ -326,15 +335,9 @@ export default function DashboardWishlistList({
                     isGroupGift={wishlistGift.isGroupGift}
                     quantity={wishlistGift.quantity}
                     minQuantity={wishlistGift.reservedQuantity}
-                    lockPrice={
-                      wishlistGift.isGroupGift
-                        ? wishlistGift.reservedAmount > 0
-                        : wishlistGift.reservedQuantity > 0
-                    }
-                    allowTypeChange={
-                      wishlistGift.reservedQuantity === 0 &&
-                      wishlistGift.reservedAmount === 0
-                    }
+                    lockPrice={editLockReason !== null}
+                    allowTypeChange={editLockReason === null}
+                    editLockReason={editLockReason}
                   />
                   <DeleteWishlistGiftDialog
                     wishlistId={wishlistId}

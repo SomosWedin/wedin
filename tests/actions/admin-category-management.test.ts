@@ -9,7 +9,10 @@ const mocks = vi.hoisted(() => ({
   categoryDelete: vi.fn(),
   eventTypeFindMany: vi.fn(),
   giftFindMany: vi.fn(),
+  giftCreate: vi.fn(),
+  giftUpdate: vi.fn(),
   giftCount: vi.fn(),
+  wishlistGiftUpdate: vi.fn(),
   revalidatePath: vi.fn(),
   transaction: vi.fn(),
 }))
@@ -31,8 +34,11 @@ vi.mock('@/prisma/client', () => ({
     eventType: { findMany: mocks.eventTypeFindMany },
     gift: {
       findMany: mocks.giftFindMany,
+      create: mocks.giftCreate,
+      update: mocks.giftUpdate,
       count: mocks.giftCount,
     },
+    wishlistGift: { update: mocks.wishlistGiftUpdate },
   },
 }))
 
@@ -50,21 +56,36 @@ describe('admin category management', () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' })
     mocks.categoryFindFirst.mockResolvedValue(null)
-    mocks.categoryFindUnique.mockResolvedValue({ id: 'category-1' })
+    mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-1',
+      name: 'Hogar',
+      eventTypeIds: ['event-type-wedding'],
+    })
     mocks.categoryCreate.mockResolvedValue({ id: 'category-1' })
     mocks.categoryUpdate.mockResolvedValue({ id: 'category-1' })
     mocks.categoryDelete.mockResolvedValue({ id: 'category-1' })
     mocks.eventTypeFindMany.mockResolvedValue([{ id: 'event-type-wedding' }])
     mocks.giftFindMany.mockResolvedValue([])
+    mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
+    mocks.giftUpdate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.giftCount.mockResolvedValue(0)
+    mocks.wishlistGiftUpdate.mockResolvedValue({ id: 'wishlist-gift-1' })
     mocks.transaction.mockImplementation(async callback =>
       callback({
         category: {
+          findFirst: mocks.categoryFindFirst,
           findUnique: mocks.categoryFindUnique,
+          create: mocks.categoryCreate,
           update: mocks.categoryUpdate,
           delete: mocks.categoryDelete,
         },
-        gift: { count: mocks.giftCount },
+        gift: {
+          findMany: mocks.giftFindMany,
+          create: mocks.giftCreate,
+          update: mocks.giftUpdate,
+          count: mocks.giftCount,
+        },
+        wishlistGift: { update: mocks.wishlistGiftUpdate },
       })
     )
   })
@@ -118,6 +139,152 @@ describe('admin category management', () => {
         name: 'Hogar',
         eventTypes: { set: [{ id: 'event-type-wedding' }] },
       },
+    })
+    expect(result).toEqual({ categoryId: 'category-1' })
+  })
+
+  it('preserves the old category and gift values for linked wishlists before renaming it', async () => {
+    mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-1',
+      name: 'Living',
+      eventTypeIds: ['event-type-wedding'],
+    })
+    mocks.categoryCreate.mockResolvedValue({ id: 'category-preserved' })
+    mocks.giftFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: 'gift-1',
+        name: 'Sofá',
+        price: '850000',
+        categoryId: 'category-1',
+        isDefault: true,
+        image: { url: 'https://cdn.example.com/sofa.jpg' },
+        wishlistGifts: [
+          {
+            id: 'wishlist-gift-1',
+            eventId: 'event-1',
+            event: { eventTypeId: 'event-type-wedding' },
+          },
+        ],
+      },
+    ])
+
+    const result = await editAdminCategory('category-1', values)
+
+    expect(mocks.categoryCreate).toHaveBeenCalledWith({
+      data: {
+        name: 'Living',
+        eventTypes: { connect: [{ id: 'event-type-wedding' }] },
+      },
+      select: { id: true },
+    })
+    expect(mocks.giftCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        name: 'Sofá',
+        price: '850000',
+        category: { connect: { id: 'category-preserved' } },
+        isDefault: false,
+      }),
+    })
+    expect(mocks.wishlistGiftUpdate).toHaveBeenCalledWith({
+      where: { id: 'wishlist-gift-1' },
+      data: { giftId: 'private-gift-1' },
+    })
+    expect(mocks.categoryUpdate).toHaveBeenCalledWith({
+      where: { id: 'category-1' },
+      data: {
+        name: 'Hogar',
+        eventTypes: { set: [{ id: 'event-type-wedding' }] },
+      },
+    })
+    expect(result).toEqual({ categoryId: 'category-1' })
+  })
+
+  it('preserves only wishlists whose event type is removed from a category', async () => {
+    mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-1',
+      name: 'Hogar',
+      eventTypeIds: ['event-type-wedding', 'event-type-birthday'],
+    })
+    mocks.categoryCreate.mockResolvedValue({ id: 'category-preserved' })
+    mocks.giftFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: 'gift-1',
+        name: 'Sofá',
+        price: '850000',
+        categoryId: 'category-1',
+        isDefault: true,
+        image: null,
+        wishlistGifts: [
+          {
+            id: 'wishlist-wedding',
+            eventId: 'event-wedding',
+            event: { eventTypeId: 'event-type-wedding' },
+          },
+          {
+            id: 'wishlist-birthday',
+            eventId: 'event-birthday',
+            event: { eventTypeId: 'event-type-birthday' },
+          },
+        ],
+      },
+    ])
+
+    const result = await editAdminCategory('category-1', values)
+
+    expect(mocks.categoryCreate).toHaveBeenCalledWith({
+      data: {
+        name: 'Hogar',
+        eventTypes: { connect: [{ id: 'event-type-birthday' }] },
+      },
+      select: { id: true },
+    })
+    expect(mocks.giftCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        event: { connect: { id: 'event-birthday' } },
+      }),
+    })
+    expect(mocks.wishlistGiftUpdate).toHaveBeenCalledWith({
+      where: { id: 'wishlist-birthday' },
+      data: { giftId: 'private-gift-1' },
+    })
+    expect(mocks.wishlistGiftUpdate).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'wishlist-wedding' } })
+    )
+    expect(result).toEqual({ categoryId: 'category-1' })
+  })
+
+  it('moves an existing private gift to the preserved category without copying it again', async () => {
+    mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-1',
+      name: 'Living',
+      eventTypeIds: ['event-type-wedding'],
+    })
+    mocks.categoryCreate.mockResolvedValue({ id: 'category-preserved' })
+    mocks.giftFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: 'private-gift-1',
+        name: 'Sofá personalizado',
+        price: '850000',
+        categoryId: 'category-1',
+        isDefault: false,
+        image: null,
+        wishlistGifts: [
+          {
+            id: 'wishlist-gift-1',
+            eventId: 'event-1',
+            event: { eventTypeId: 'event-type-wedding' },
+          },
+        ],
+      },
+    ])
+
+    const result = await editAdminCategory('category-1', values)
+
+    expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(mocks.wishlistGiftUpdate).not.toHaveBeenCalled()
+    expect(mocks.giftUpdate).toHaveBeenCalledWith({
+      where: { id: 'private-gift-1' },
+      data: { category: { connect: { id: 'category-preserved' } } },
     })
     expect(result).toEqual({ categoryId: 'category-1' })
   })

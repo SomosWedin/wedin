@@ -39,8 +39,6 @@ export const getErrorMessage = (error: unknown): string => {
   return message
 }
 
-export class PriceLockedError extends Error {}
-
 export class WishlistGiftMutationError extends Error {}
 
 export function revalidateGiftAndWishlistPaths() {
