@@ -4,6 +4,9 @@ const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   giftCreate: vi.fn(),
   giftUpdate: vi.fn(),
+  giftFindMany: vi.fn(),
+  categoryFindUnique: vi.fn(),
+  eventFindFirst: vi.fn(),
   wishlistGiftFindFirst: vi.fn(),
   wishlistGiftCreate: vi.fn(),
   wishlistGiftUpdateMany: vi.fn(),
@@ -56,7 +59,9 @@ function currentWishlistGift(isDefault: boolean) {
       categoryId: 'category-1',
       price: '150000',
       isDefault,
+      eventId: 'event-1',
       image: null,
+      wishlistGifts: [],
     },
     transactions: [],
   }
@@ -69,6 +74,13 @@ describe('atomic gift and wishlist gift mutations', () => {
     transactionCompleted = false
     mocks.giftCreate.mockResolvedValue({ id: 'private-gift-1' })
     mocks.giftUpdate.mockResolvedValue({ id: 'private-gift-1' })
+    mocks.giftFindMany.mockImplementation(({ where }) =>
+      where.id?.in
+        ? [{ id: 'private-gift-1', isDefault: false, eventId: 'event-1' }]
+        : []
+    )
+    mocks.categoryFindUnique.mockResolvedValue({ id: 'category-1' })
+    mocks.eventFindFirst.mockResolvedValue({ id: 'event-1' })
     mocks.wishlistGiftFindFirst.mockResolvedValue(null)
     mocks.wishlistGiftCreate.mockResolvedValue({ id: 'wishlist-gift-1' })
     mocks.wishlistGiftUpdateMany.mockResolvedValue({ count: 1 })
@@ -77,7 +89,10 @@ describe('atomic gift and wishlist gift mutations', () => {
         gift: {
           create: mocks.giftCreate,
           update: mocks.giftUpdate,
+          findMany: mocks.giftFindMany,
         },
+        category: { findUnique: mocks.categoryFindUnique },
+        event: { findFirst: mocks.eventFindFirst },
         wishlistGift: {
           findFirst: mocks.wishlistGiftFindFirst,
           create: mocks.wishlistGiftCreate,
@@ -150,7 +165,7 @@ describe('atomic gift and wishlist gift mutations', () => {
     expect(mocks.giftCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         isDefault: false,
-        eventId: 'event-1',
+        event: { connect: { id: 'event-1' } },
       }),
     })
     expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
@@ -230,7 +245,7 @@ describe('atomic gift and wishlist gift mutations', () => {
     expect(transactionCompleted).toBe(false)
     expect(result).toEqual({
       error:
-        'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
+        'No se puede cambiar el precio de un regalo que ya tiene contribuciones o pagos.',
     })
   })
 
