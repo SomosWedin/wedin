@@ -163,8 +163,7 @@ export const GiftFormSchema = z.object({
     }),
   isDefault: z.boolean().default(false),
   eventId: z.string().optional(),
-  giftlistId: z.string().min(1).optional(),
-  newGiftlistName: GiftlistNameSchema.optional(),
+  giftlistIds: z.array(z.string().min(1)).default([]),
 
   image: z.custom<File>().optional(),
   imageUrl: z.string(),
@@ -203,25 +202,9 @@ export const GiftCreateSchema = GiftPostSchema.pick({
   imageUrl: true,
 })
 
-const AdminGiftlistSelectionSchema = z.object({
-  giftlistId: GiftPostSchema.shape.giftlistId,
-  newGiftlistName: GiftPostSchema.shape.newGiftlistName,
-})
-
-function hasOnlyOneGiftlistSelection(values: {
-  giftlistId?: string
-  newGiftlistName?: string
-}) {
-  return !(values.giftlistId && values.newGiftlistName)
-}
-
-const AdminGiftMutationSchema = GiftEditSchema.merge(
-  AdminGiftlistSelectionSchema
-)
-  .strict()
-  .refine(hasOnlyOneGiftlistSelection, {
-    message: 'Elegí una colección existente o creá una nueva, no ambas.',
-  })
+const AdminGiftMutationSchema = GiftEditSchema.extend({
+  giftlistIds: GiftPostSchema.shape.giftlistIds,
+}).strict()
 
 export const AdminGiftCreateSchema = AdminGiftMutationSchema
 export const AdminGiftEditSchema = AdminGiftMutationSchema

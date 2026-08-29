@@ -68,13 +68,15 @@ async function validateGiftlistTypeCompatibility(
   eventTypeIds: string[]
 ) {
   const gifts = await prismaClient.gift.findMany({
-    where: { categoryId, giftlistId: { not: null } },
-    select: { giftlist: { select: { eventTypeIds: true } } },
+    where: { categoryId, giftlistIds: { isEmpty: false } },
+    select: { giftlists: { select: { eventTypeIds: true } } },
   })
 
   const incompatible = gifts.some(gift =>
-    gift.giftlist?.eventTypeIds.some(
-      eventTypeId => !eventTypeIds.includes(eventTypeId)
+    gift.giftlists.some(giftlist =>
+      giftlist.eventTypeIds.some(
+        eventTypeId => !eventTypeIds.includes(eventTypeId)
+      )
     )
   )
 

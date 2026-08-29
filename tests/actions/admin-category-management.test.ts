@@ -124,7 +124,7 @@ describe('admin category management', () => {
 
   it('blocks removing a type required by a collection containing its gifts', async () => {
     mocks.giftFindMany.mockResolvedValue([
-      { giftlist: { eventTypeIds: ['event-type-other'] } },
+      { giftlists: [{ eventTypeIds: ['event-type-other'] }] },
     ])
 
     const result = await editAdminCategory('category-1', values)

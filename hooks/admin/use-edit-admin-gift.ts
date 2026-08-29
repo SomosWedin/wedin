@@ -10,7 +10,7 @@ import type { GiftFormValues } from '@/schemas/form'
 export type EditableAdminGift = GiftWithImage
 
 export function useEditAdminGift(gift: EditableAdminGift) {
-  const { name, categoryId, price, giftlistId, image, id: giftId } = gift
+  const { name, categoryId, price, giftlistIds, image, id: giftId } = gift
 
   const defaultValues: GiftFormValues = {
     name: name,
@@ -18,8 +18,7 @@ export function useEditAdminGift(gift: EditableAdminGift) {
     price: price,
     isDefault: true,
     eventId: undefined,
-    giftlistId: giftlistId ?? undefined,
-    newGiftlistName: undefined,
+    giftlistIds,
     imageUrl: image?.url ?? '',
     wishlistId: undefined,
     isFavoriteGift: false,
@@ -37,8 +36,7 @@ export function useEditAdminGift(gift: EditableAdminGift) {
           categoryId: values.categoryId,
           price: values.price,
           imageUrl,
-          giftlistId: values.giftlistId,
-          newGiftlistName: values.newGiftlistName,
+          giftlistIds: values.giftlistIds,
         },
         giftId
       )

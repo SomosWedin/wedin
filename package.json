@@ -11,6 +11,7 @@
     "migrate:giftlists": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migrate-giftlist-categories.ts",
     "migrate:event-types": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migrate-event-types.ts",
     "migrate:gift-categories": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migrate-gift-categories.ts",
+    "migrate:gift-collections": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migrate-gift-collections.ts",
     "test": "vitest",
     "test:run": "vitest run"
   },

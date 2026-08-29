@@ -135,7 +135,7 @@ async function validateGiftlistEventTypes(
       select: { id: true },
     }),
     prismaClient.gift.findMany({
-      where: { giftlistId },
+      where: { giftlistIds: { has: giftlistId } },
       select: { categoryId: true },
     }),
   ])
@@ -239,13 +239,9 @@ export async function deleteAdminGiftlist(giftlistId: string) {
 
   try {
     await prismaClient.$transaction(async tx => {
-      await tx.gift.updateMany({
-        where: { giftlistId },
-        data: { giftlistId: null },
-      })
       await tx.giftlist.update({
         where: { id: giftlistId },
-        data: { eventTypes: { set: [] } },
+        data: { eventTypes: { set: [] }, gifts: { set: [] } },
       })
       await tx.giftlist.delete({ where: { id: giftlistId } })
     })

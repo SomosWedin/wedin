@@ -33,6 +33,7 @@ export function useAddExistingGift({
   const defaultValues: GiftFormValues = {
     name: gift.name,
     categoryId: gift.categoryId,
+    giftlistIds: [],
     price: gift.price,
     isDefault: false,
     eventId,

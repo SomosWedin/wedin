@@ -11,9 +11,8 @@ import { getErrorMessage } from '../helper'
 import { getCategories } from './category'
 import { createGiftRecord, updateGiftRecord } from './gift-operations'
 import {
-  deleteGiftlistIfEmpty,
-  findOrCreateGiftlistId,
   GiftlistSelectionError,
+  validateGiftlistIds,
 } from './giftlist-operations'
 
 const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.'
@@ -59,7 +58,7 @@ export async function getGifts({
   }
 
   if (giftlistId) {
-    query.giftlistId = giftlistId
+    query.giftlistIds = { has: giftlistId }
   }
 
   const skip =
@@ -115,20 +114,19 @@ export async function createAdminGift(formData: AdminGiftCreateValues) {
     return { error: INVALID_GIFT_DATA_ERROR }
   }
 
-  const { giftlistId, newGiftlistName, ...values } = validatedFields.data
+  const { giftlistIds, ...values } = validatedFields.data
 
   try {
     const newGift = await prismaClient.$transaction(async tx => {
-      const resolvedGiftlistId = await findOrCreateGiftlistId(tx, {
+      const validatedGiftlistIds = await validateGiftlistIds(tx, {
         categoryId: values.categoryId,
-        giftlistId,
-        newGiftlistName,
+        giftlistIds,
       })
 
       return createGiftRecord(
         tx,
         { ...values, isDefault: true, eventId: undefined },
-        resolvedGiftlistId
+        validatedGiftlistIds
       )
     })
 
@@ -164,7 +162,7 @@ export async function editAdminGift(
     return { error: INVALID_GIFT_DATA_ERROR }
   }
 
-  const { giftlistId, newGiftlistName, ...values } = validatedFields.data
+  const { giftlistIds, ...values } = validatedFields.data
 
   try {
     const result = await prismaClient.$transaction(async tx => {
@@ -175,7 +173,7 @@ export async function editAdminGift(
           name: true,
           price: true,
           categoryId: true,
-          giftlistId: true,
+          giftlistIds: true,
           image: { select: { url: true } },
           wishlistGifts: { select: { id: true, eventId: true } },
         },
@@ -183,10 +181,9 @@ export async function editAdminGift(
 
       if (!existingGift) return null
 
-      const resolvedGiftlistId = await findOrCreateGiftlistId(tx, {
+      const validatedGiftlistIds = await validateGiftlistIds(tx, {
         categoryId: values.categoryId,
-        giftlistId,
-        newGiftlistName,
+        giftlistIds,
       })
 
       const catalogFieldsChanged =
@@ -201,6 +198,7 @@ export async function editAdminGift(
               price: existingGift.price,
               category: { connect: { id: existingGift.categoryId } },
               event: { connect: { id: wishlistGift.eventId } },
+              giftlists: { connect: [] },
               isDefault: false,
               ...(existingGift.image?.url
                 ? { image: { create: { url: existingGift.image.url } } }
@@ -219,7 +217,7 @@ export async function editAdminGift(
         tx,
         giftId,
         values,
-        resolvedGiftlistId
+        validatedGiftlistIds
       )
 
       return {
@@ -260,7 +258,7 @@ export async function deleteDefaultGiftAsAdmin(giftId: string) {
           name: true,
           price: true,
           categoryId: true,
-          giftlistId: true,
+          giftlistIds: true,
           image: { select: { url: true } },
           wishlistGifts: { select: { id: true, eventId: true } },
         },
@@ -275,6 +273,7 @@ export async function deleteDefaultGiftAsAdmin(giftId: string) {
             price: gift.price,
             category: { connect: { id: gift.categoryId } },
             event: { connect: { id: wishlistGift.eventId } },
+            giftlists: { connect: [] },
             isDefault: false,
             ...(gift.image?.url
               ? { image: { create: { url: gift.image.url } } }
@@ -290,7 +289,6 @@ export async function deleteDefaultGiftAsAdmin(giftId: string) {
 
       await tx.image.deleteMany({ where: { giftId } })
       await tx.gift.delete({ where: { id: giftId } })
-      await deleteGiftlistIfEmpty(tx, gift.giftlistId)
       return true
     })
 

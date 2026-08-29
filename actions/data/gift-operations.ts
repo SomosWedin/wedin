@@ -61,7 +61,7 @@ async function assertCategoryExists(client: GiftWriter, categoryId: string) {
 export async function createGiftRecord(
   client: GiftWriter,
   { imageUrl, categoryId, eventId, ...giftData }: GiftCreateValues,
-  giftlistId?: string | null
+  giftlistIds: string[] = []
 ) {
   await assertCategoryExists(client, categoryId)
   await assertGiftNameAvailable(
@@ -78,7 +78,7 @@ export async function createGiftRecord(
       ...giftData,
       category: { connect: { id: categoryId } },
       ...(eventId ? { event: { connect: { id: eventId } } } : {}),
-      ...(giftlistId ? { giftlist: { connect: { id: giftlistId } } } : {}),
+      giftlists: { connect: giftlistIds.map(id => ({ id })) },
       ...(imageUrl ? { image: { create: { url: imageUrl } } } : {}),
     },
   })
@@ -88,7 +88,7 @@ export async function updateGiftRecord(
   client: GiftWriter,
   giftId: string,
   { imageUrl, categoryId, ...giftData }: GiftEditValues,
-  giftlistId?: string | null,
+  giftlistIds?: string[],
   scope: GiftNameScope = { isDefault: true }
 ) {
   await assertCategoryExists(client, categoryId)
@@ -104,12 +104,8 @@ export async function updateGiftRecord(
     data: {
       ...giftData,
       category: { connect: { id: categoryId } },
-      ...(giftlistId !== undefined
-        ? {
-            giftlist: giftlistId
-              ? { connect: { id: giftlistId } }
-              : { disconnect: true },
-          }
+      ...(giftlistIds !== undefined
+        ? { giftlists: { set: giftlistIds.map(id => ({ id })) } }
         : {}),
       ...(imageUrl
         ? {

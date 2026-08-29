@@ -118,19 +118,16 @@ describe('admin collection management', () => {
     expect(mocks.giftlistUpdate).not.toHaveBeenCalled()
   })
 
-  it('unassigns gifts before deleting a collection', async () => {
+  it('disconnects gifts before deleting a collection', async () => {
     const result = await deleteAdminGiftlist('giftlist-1')
 
-    expect(mocks.giftUpdateMany).toHaveBeenCalledWith({
-      where: { giftlistId: 'giftlist-1' },
-      data: { giftlistId: null },
-    })
+    expect(mocks.giftUpdateMany).not.toHaveBeenCalled()
     expect(mocks.giftlistDelete).toHaveBeenCalledWith({
       where: { id: 'giftlist-1' },
     })
     expect(mocks.giftlistUpdate).toHaveBeenCalledWith({
       where: { id: 'giftlist-1' },
-      data: { eventTypes: { set: [] } },
+      data: { eventTypes: { set: [] }, gifts: { set: [] } },
     })
     expect(mocks.transaction).toHaveBeenCalledOnce()
     expect(result).toEqual({ success: true })

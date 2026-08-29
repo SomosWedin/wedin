@@ -26,8 +26,7 @@ export async function createGiftFlow(
       categoryId: params.values.categoryId,
       price: params.values.price,
       imageUrl: params.imageUrl,
-      giftlistId: params.values.giftlistId,
-      newGiftlistName: params.values.newGiftlistName,
+      giftlistIds: params.values.giftlistIds,
     })
 
     if (giftResponse.error || !giftResponse.giftId) {

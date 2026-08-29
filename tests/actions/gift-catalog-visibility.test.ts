@@ -50,4 +50,17 @@ describe('gift catalog visibility', () => {
     expect(result).toEqual([])
     expect(mocks.findMany).not.toHaveBeenCalled()
   })
+
+  it('filters gifts that belong to the requested collection', async () => {
+    await getGifts({ searchParams: { giftlistId: 'giftlist-1' } })
+
+    expect(mocks.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          isDefault: true,
+          giftlistIds: { has: 'giftlist-1' },
+        },
+      })
+    )
+  })
 })

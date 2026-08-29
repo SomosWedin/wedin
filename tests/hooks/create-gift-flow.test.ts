@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   wishlistGiftCreate: vi.fn(),
   wishlistGiftFindFirst: vi.fn(),
   giftlistFindFirst: vi.fn(),
+  giftlistFindMany: vi.fn(),
   giftlistCreate: vi.fn(),
   transaction: vi.fn(),
   revalidatePath: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('@/prisma/client', () => ({
     },
     event: { findFirst: mocks.eventFindFirst },
     giftlist: {
+      findMany: mocks.giftlistFindMany,
       findFirst: mocks.giftlistFindFirst,
       create: mocks.giftlistCreate,
     },
@@ -61,6 +63,7 @@ const values = {
   isFavoriteGift: true,
   isGroupGift: false,
   quantity: 2,
+  giftlistIds: [],
 }
 
 describe('createGiftFlow', () => {
@@ -88,6 +91,7 @@ describe('createGiftFlow', () => {
           },
           event: { findFirst: mocks.eventFindFirst },
           giftlist: {
+            findMany: mocks.giftlistFindMany,
             findFirst: mocks.giftlistFindFirst,
             create: mocks.giftlistCreate,
           },
@@ -151,34 +155,28 @@ describe('createGiftFlow', () => {
     expect(result).toEqual({ giftId: 'gift-1' })
   })
 
-  it('creates a new collection and its admin gift in one server transaction', async () => {
-    mocks.giftlistFindFirst.mockResolvedValue(null)
+  it('creates an admin gift in multiple collections in one transaction', async () => {
+    mocks.giftlistFindMany.mockResolvedValue([
+      { id: 'giftlist-1', eventTypeIds: ['event-type-wedding'] },
+      { id: 'giftlist-2', eventTypeIds: ['event-type-wedding'] },
+    ])
 
     const result = await createGiftFlow({
       mode: 'admin',
       values: {
         ...values,
-        newGiftlistName: 'Esenciales del hogar',
+        giftlistIds: ['giftlist-1', 'giftlist-2'],
       },
       imageUrl: '',
     })
 
-    expect(mocks.giftlistCreate).toHaveBeenCalledWith({
-      data: {
-        name: 'Esenciales del hogar',
-        normalizedName: 'esenciales del hogar',
-        eventTypes: { connect: [{ id: 'event-type-wedding' }] },
-      },
-      select: { id: true },
-    })
     expect(mocks.giftCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        giftlist: { connect: { id: 'giftlist-1' } },
+        giftlists: {
+          connect: [{ id: 'giftlist-1' }, { id: 'giftlist-2' }],
+        },
       }),
     })
-    expect(mocks.giftlistCreate.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.giftCreate.mock.invocationCallOrder[0]
-    )
     expect(mocks.transaction).toHaveBeenCalledOnce()
     expect(result).toEqual({ giftId: 'gift-1' })
   })

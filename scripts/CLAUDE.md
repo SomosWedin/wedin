@@ -10,3 +10,7 @@
   of the staff-only `/admin` page, which calls the real
   `applyTransactionStatusChange` action directly instead of a duplicated
   copy.)
+
+- `migrate-gift-collections.ts` backfills the Mongo many-to-many relation from
+  legacy `Gift.giftlistId` values. Run it after `prisma generate` and before
+  `prisma db push`.

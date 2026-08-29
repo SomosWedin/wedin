@@ -146,12 +146,12 @@ model Gift {
   price      String
   isDefault  Boolean  @default(false)
   categoryId String   @db.ObjectId
-  giftlistId String?  @db.ObjectId
+  giftlistIds String[] @db.ObjectId
   eventId    String?  @db.ObjectId
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  giftlist      Giftlist?      @relation(fields: [giftlistId], references: [id])
+  giftlists     Giftlist[]     @relation("GiftGiftlists", fields: [giftlistIds], references: [id])
   category      Category       @relation(fields: [categoryId], references: [id])
   event         Event?         @relation(fields: [eventId], references: [id])
   wishlistGifts WishlistGift[]
@@ -256,8 +256,9 @@ model Giftlist {
   name           String
   normalizedName String   @unique
   eventTypeIds   String[] @db.ObjectId
+  giftIds        String[] @db.ObjectId
 
-  gifts      Gift[]
+  gifts      Gift[]      @relation("GiftGiftlists", fields: [giftIds], references: [id])
   eventTypes EventType[] @relation("GiftlistEventTypes", fields: [eventTypeIds], references: [id])
 }
 

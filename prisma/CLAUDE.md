@@ -97,10 +97,12 @@ whenever you touch something documented below.
   orphan referenced by a wishlist to protect transaction history.
 - `Giftlist` has no category field: its categories are derived from its
   `gifts`. Its selected types must be compatible with every gift category.
+  `Gift.giftlistIds` / `Giftlist.giftIds` form a Mongo many-to-many relation;
+  a gift may belong to zero or more collections, including collections for
+  different event types when its category supports every required type.
   New collections require at least one selected event type. Existing legacy
-  collections may still have no types until migrated. Moving a gift does not
-  delete its source collection;
-  deleting the final gift does.
+  collections may still have no types until migrated. Removing or deleting a
+  gift never deletes an empty collection.
   `normalizedName` is the trimmed, lowercase Spanish locale form of `name` and
   enforces case-insensitive global collection-name uniqueness. Counts and total
   prices are derived from `Giftlist.gifts`; do not add denormalized fields for
@@ -110,6 +112,8 @@ whenever you touch something documented below.
   legacy `categoryId`, and drops its obsolete index. Run
   `yarn migrate:event-types` before `prisma db push` when upgrading from the
   former enum-based event types.
+  Before applying the many-to-many gift relation, run `yarn prisma generate`
+  and `yarn migrate:gift-collections`, then run `prisma db push`.
 - `Transaction.bankTransferGroupId` — shared by every transaction created
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a

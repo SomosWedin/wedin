@@ -98,8 +98,8 @@ async function main() {
         name: faker.commerce.productName(),
         isDefault: true,
         price: price,
-        giftlist: {
-          connect: { id: randomGiftlist.giftlist.id },
+        giftlists: {
+          connect: [{ id: randomGiftlist.giftlist.id }],
         },
         category: {
           connect: { id: randomGiftlist.categoryId },

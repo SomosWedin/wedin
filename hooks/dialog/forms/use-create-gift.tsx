@@ -16,8 +16,7 @@ export function useCreateGift(mode: GiftCreationMode) {
     price: '',
     isDefault: isAdmin,
     eventId: isAdmin ? undefined : mode.eventId,
-    giftlistId: undefined,
-    newGiftlistName: undefined,
+    giftlistIds: [],
     imageUrl: '',
     wishlistId: isAdmin ? undefined : mode.wishlistId,
     isFavoriteGift: false,
@@ -49,16 +48,16 @@ export function useCreateGift(mode: GiftCreationMode) {
         feedback:
           mode.mode === 'wishlist'
             ? {
-              title: 'Regalo agregado a tu lista. 🎁',
-              action: (
-                <ToastAction
-                  altText="Ver lista"
-                  onClick={() => router.push('/wishlist')}
-                >
-                  Ver lista
-                </ToastAction>
-              ),
-            }
+                title: 'Regalo agregado a tu lista. 🎁',
+                action: (
+                  <ToastAction
+                    altText="Ver lista"
+                    onClick={() => router.push('/wishlist')}
+                  >
+                    Ver lista
+                  </ToastAction>
+                ),
+              }
             : undefined,
       }
     },

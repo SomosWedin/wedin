@@ -95,15 +95,15 @@ export default function AdminGiftsList({
   const filteredGifts = gifts.filter(gift => {
     const categoryName =
       categoryNameById.get(gift.categoryId) ?? 'Sin categoría'
-    const giftlistName = gift.giftlistId
-      ? giftlistNameById.get(gift.giftlistId)
-      : undefined
+    const giftlistNames = gift.giftlistIds
+      .map(giftlistId => giftlistNameById.get(giftlistId))
+      .filter((name): name is string => Boolean(name))
     const normalizedSearch = search.trim().toLowerCase()
     const matchesSearch =
       !normalizedSearch ||
       gift.name.toLowerCase().includes(normalizedSearch) ||
       categoryName.toLowerCase().includes(normalizedSearch) ||
-      Boolean(giftlistName?.toLowerCase().includes(normalizedSearch))
+      giftlistNames.some(name => name.toLowerCase().includes(normalizedSearch))
     const matchesCategory =
       !categoryFilter || gift.categoryId === categoryFilter
     const matchesDateRange =
@@ -115,13 +115,13 @@ export default function AdminGiftsList({
 
   const sortedGifts = sortColumn
     ? [...filteredGifts].sort((a, b) => {
-        const diff =
-          sortColumn === 'createdAt'
-            ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.price) - Number(b.price)
+      const diff =
+        sortColumn === 'createdAt'
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : Number(a.price) - Number(b.price)
 
-        return sortDirection === 'asc' ? diff : -diff
-      })
+      return sortDirection === 'asc' ? diff : -diff
+    })
     : filteredGifts
 
   return (
@@ -234,9 +234,14 @@ export default function AdminGiftsList({
               <div className="min-w-0">
                 <p className="truncate font-medium">{gift.name}</p>
                 <p className="truncate text-xs text-textTertiary">
-                  {gift.giftlistId
-                    ? (giftlistNameById.get(gift.giftlistId) ??
-                      'Colección no encontrada')
+                  {gift.giftlistIds.length
+                    ? gift.giftlistIds
+                      .map(
+                        giftlistId =>
+                          giftlistNameById.get(giftlistId) ??
+                          'Colección no encontrada'
+                      )
+                      .join(', ')
                     : 'Sin colección'}
                 </p>
               </div>
