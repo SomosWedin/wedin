@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import type { z } from 'zod'
+import { buildGiftNameScopeKey } from '@/lib/gift-name'
 import type { GiftCreateSchema, GiftEditSchema } from '@/schemas/form'
 
 type GiftWriter = Pick<Prisma.TransactionClient, 'category' | 'gift'>
@@ -13,6 +14,15 @@ export class GiftNameConflictError extends Error {
   constructor() {
     super(DUPLICATE_GIFT_NAME_ERROR)
   }
+}
+
+export function isGiftNameUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  )
 }
 
 export const CATEGORY_NOT_FOUND_ERROR = 'La categoría seleccionada no existe.'
@@ -76,6 +86,12 @@ export async function createGiftRecord(
   return client.gift.create({
     data: {
       ...giftData,
+      nameScopeKey: buildGiftNameScopeKey({
+        name: giftData.name,
+        categoryId,
+        isDefault: giftData.isDefault,
+        eventId,
+      }),
       category: { connect: { id: categoryId } },
       ...(eventId ? { event: { connect: { id: eventId } } } : {}),
       giftlists: { connect: giftlistIds.map(id => ({ id })) },
@@ -103,6 +119,12 @@ export async function updateGiftRecord(
     where: { id: giftId },
     data: {
       ...giftData,
+      nameScopeKey: buildGiftNameScopeKey({
+        name: giftData.name,
+        categoryId,
+        isDefault: scope.isDefault,
+        eventId: scope.eventId,
+      }),
       category: { connect: { id: categoryId } },
       ...(giftlistIds !== undefined
         ? { giftlists: { set: giftlistIds.map(id => ({ id })) } }

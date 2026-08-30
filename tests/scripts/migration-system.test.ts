@@ -39,6 +39,7 @@ afterEach(() => {
     rmSync(directory, { recursive: true, force: true })
   }
   vi.restoreAllMocks()
+  vi.useRealTimers()
 })
 
 describe('migration generator and discovery', () => {
@@ -192,6 +193,40 @@ describe('migration history', () => {
 })
 
 describe('migration locking', () => {
+  it('keeps renewing after a transient renewal failure', async () => {
+    vi.useFakeTimers()
+
+    const lockedError = Object.assign(new Error('duplicate'), { code: 'P2002' })
+    const updateMany = vi
+      .fn()
+      .mockResolvedValueOnce({ count: 1 })
+      .mockRejectedValueOnce(new Error('temporary database failure'))
+      .mockResolvedValue({ count: 1 })
+    const deleteMany = vi.fn().mockResolvedValue({ count: 1 })
+    const prisma = {
+      migrationLock: {
+        create: vi.fn().mockRejectedValue(lockedError),
+        updateMany,
+        deleteMany,
+      },
+    }
+
+    let release!: () => void
+    const callback = new Promise<void>(resolve => {
+      release = resolve
+    })
+    const running = withMigrationLock(prisma as never, () => callback)
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(updateMany).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(updateMany).toHaveBeenCalledTimes(3)
+
+    release()
+    await expect(running).resolves.toBeUndefined()
+  })
+
   it('rejects a second runner while an active migration lock exists', async () => {
     const lockedError = Object.assign(new Error('duplicate'), { code: 'P2002' })
     const callback = vi.fn()

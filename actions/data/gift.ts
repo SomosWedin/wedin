@@ -13,7 +13,12 @@ import {
   copyCatalogGiftForWishlistLinks,
 } from './catalog-gift-copy'
 import { getCategories } from './category'
-import { createGiftRecord, updateGiftRecord } from './gift-operations'
+import {
+  createGiftRecord,
+  GiftNameConflictError,
+  isGiftNameUniqueConstraintError,
+  updateGiftRecord,
+} from './gift-operations'
 import {
   GiftlistSelectionError,
   validateGiftlistIds,
@@ -144,6 +149,12 @@ export async function createAdminGift(formData: AdminGiftCreateValues) {
     if (error instanceof GiftlistSelectionError) {
       return { error: error.message }
     }
+    if (
+      error instanceof GiftNameConflictError ||
+      isGiftNameUniqueConstraintError(error)
+    ) {
+      return { error: 'Ya existe un regalo con ese nombre en esta categoría.' }
+    }
 
     console.error('Error creating default gift:', error)
     return { error: getErrorMessage(error) }
@@ -221,6 +232,12 @@ export async function editAdminGift(
   } catch (error) {
     if (error instanceof GiftlistSelectionError) {
       return { error: error.message }
+    }
+    if (
+      error instanceof GiftNameConflictError ||
+      isGiftNameUniqueConstraintError(error)
+    ) {
+      return { error: 'Ya existe un regalo con ese nombre en esta categoría.' }
     }
 
     console.error('Error editing default gift:', error)

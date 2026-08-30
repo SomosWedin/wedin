@@ -230,7 +230,7 @@ export async function withMigrationLock<T>(
   let renewalRunning = false
 
   const renewal = setInterval(async () => {
-    if (renewalRunning || renewalError) return
+    if (renewalRunning) return
     renewalRunning = true
     try {
       const result = await prisma.migrationLock.updateMany({
@@ -241,8 +241,12 @@ export async function withMigrationLock<T>(
         renewalError = new Error(
           'The migration lock was lost during execution.'
         )
+      } else {
+        renewalError = undefined
       }
     } catch (error) {
+      // Keep the interval alive. A transient database error must not disable
+      // future renewals and allow the lease to expire during a migration.
       renewalError = error
     } finally {
       renewalRunning = false

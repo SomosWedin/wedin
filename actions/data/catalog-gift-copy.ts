@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client'
+import { buildGiftNameScopeKey } from '@/lib/gift-name'
 
 type CatalogGiftCopyWriter = Pick<
   Prisma.TransactionClient,
@@ -44,6 +45,12 @@ export async function copyCatalogGiftForWishlistLinks(
     const privateGift = await client.gift.create({
       data: {
         name: gift.name,
+        nameScopeKey: buildGiftNameScopeKey({
+          name: gift.name,
+          categoryId,
+          isDefault: false,
+          eventId: wishlistGift.eventId,
+        }),
         price: gift.price,
         category: { connect: { id: categoryId } },
         event: { connect: { id: wishlistGift.eventId } },

@@ -157,6 +157,7 @@ model Wishlist {
 model Gift {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
+  nameScopeKey String   @unique
   price       String
   isDefault   Boolean  @default(false)
   categoryId  String   @db.ObjectId

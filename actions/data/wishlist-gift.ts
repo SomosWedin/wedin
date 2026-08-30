@@ -26,7 +26,12 @@ import {
   WishlistGiftMutationError,
 } from '../helper'
 import { catalogGiftContentChanged } from './catalog-gift-copy'
-import { createGiftRecord, updateGiftRecord } from './gift-operations'
+import {
+  createGiftRecord,
+  GiftNameConflictError,
+  isGiftNameUniqueConstraintError,
+  updateGiftRecord,
+} from './gift-operations'
 import { releaseExpiredHolds } from './reservation'
 
 const MAX_HOLDS_PER_RENDER = 25
@@ -289,6 +294,12 @@ export async function createWishlistGift(
     if (error instanceof WishlistGiftMutationError) {
       return { error: error.message }
     }
+    if (
+      error instanceof GiftNameConflictError ||
+      isGiftNameUniqueConstraintError(error)
+    ) {
+      return { error: 'Ya existe un regalo con ese nombre en esta categoría.' }
+    }
 
     console.error('Error creating wishlist gift:', error)
     return { error: getErrorMessage(error) }
@@ -329,6 +340,12 @@ export async function createGiftWithWishlistGift(
   } catch (error) {
     if (error instanceof WishlistGiftMutationError) {
       return { error: error.message }
+    }
+    if (
+      error instanceof GiftNameConflictError ||
+      isGiftNameUniqueConstraintError(error)
+    ) {
+      return { error: 'Ya existe un regalo con ese nombre en esta categoría.' }
     }
 
     console.error('Error creating gift and wishlist gift:', error)
@@ -481,10 +498,7 @@ export async function editGiftWithWishlistGift(
           )
         }
 
-        const giftChanged = catalogGiftContentChanged(
-          current.gift,
-          giftValues
-        )
+        const giftChanged = catalogGiftContentChanged(current.gift, giftValues)
         const priceChanged = giftValues.price !== current.gift.price
 
         const category = await tx.category.findUnique({
@@ -569,6 +583,12 @@ export async function editGiftWithWishlistGift(
   } catch (error) {
     if (error instanceof WishlistGiftMutationError) {
       return { error: error.message }
+    }
+    if (
+      error instanceof GiftNameConflictError ||
+      isGiftNameUniqueConstraintError(error)
+    ) {
+      return { error: 'Ya existe un regalo con ese nombre en esta categoría.' }
     }
 
     console.error('Error editing gift and wishlist gift:', error)

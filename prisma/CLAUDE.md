@@ -105,6 +105,9 @@ whenever you touch something documented below.
   relation `connect`. The tracked gift-category migration deletes unreferenced
   orphan gifts and images, but retains and reports any orphan referenced by a
   wishlist to protect transaction history.
+- `Gift.nameScopeKey` is a JSON-encoded unique key that normalizes the name
+  and scopes catalog names by category and private organizer names by event
+  plus category.
 - `Giftlist` has no category field: its categories are derived from its
   `gifts`. Its selected types must be compatible with every gift category.
   `Gift.giftlistIds` / `Giftlist.giftIds` form a Mongo many-to-many relation;

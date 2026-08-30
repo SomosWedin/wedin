@@ -19,12 +19,17 @@ Useful commands:
 yarn migration:status
 yarn migrate
 yarn migrate:deploy
+yarn deploy:build
 ```
 
 `migrate:deploy` runs `prisma generate`, applies pending data migrations, and
 then runs `prisma db push`. A failure exits non-zero and must stop the release.
 Applied migration files must never be edited or deleted; add another migration
 to correct them.
+
+`deploy:build` is the production deployment entrypoint. On Vercel production
+it runs `migrate:deploy` before `build`; preview builds run only `build`. Set
+`RUN_MIGRATIONS=true` when using the command on another deployment platform.
 
 On the first `yarn migrate` run, an old database safely completes any missing
 historical work, while a fresh or already updated database records each file

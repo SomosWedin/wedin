@@ -48,6 +48,7 @@ export default function EditAdminGiftDialog({
         giftlists={giftlists}
         uploadInputId={`edit-admin-gift-image-${gift.id}`}
         submitLabel="Guardar"
+        allowTypeChange
         adminMode
       />
     </Dialog>

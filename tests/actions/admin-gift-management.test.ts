@@ -240,7 +240,7 @@ describe('admin creates and edits catalog gifts', () => {
     })
     expect(mocks.giftUpdate).toHaveBeenCalledWith({
       where: { id: 'gift-1' },
-      data: {
+      data: expect.objectContaining({
         name: editValues.name,
         price: editValues.price,
         category: { connect: { id: editValues.categoryId } },
@@ -251,7 +251,7 @@ describe('admin creates and edits catalog gifts', () => {
             update: { url: editValues.imageUrl },
           },
         },
-      },
+      }),
     })
     expect(result).toEqual({ giftId: 'gift-1' })
   })
@@ -371,7 +371,7 @@ describe('admin creates and edits catalog gifts', () => {
     expect(mocks.giftCreate).toHaveBeenCalledTimes(2)
     expect(mocks.wishlistGiftUpdate).toHaveBeenCalledTimes(2)
     expect(mocks.giftCreate).toHaveBeenNthCalledWith(1, {
-      data: {
+      data: expect.objectContaining({
         name: 'Sofá original',
         price: '800000',
         category: { connect: { id: 'category-1' } },
@@ -379,7 +379,7 @@ describe('admin creates and edits catalog gifts', () => {
         giftlists: { connect: [] },
         isDefault: false,
         image: { create: { url: 'https://cdn.example.com/original.jpg' } },
-      },
+      }),
     })
     expect(mocks.wishlistGiftUpdate).toHaveBeenNthCalledWith(2, {
       where: { id: 'wishlist-gift-2' },
@@ -485,7 +485,7 @@ describe('admin creates and edits catalog gifts', () => {
     const result = await deleteDefaultGiftAsAdmin('gift-1')
 
     expect(mocks.giftCreate).toHaveBeenCalledWith({
-      data: {
+      data: expect.objectContaining({
         name: 'Sofá living',
         price: '850000',
         category: { connect: { id: 'category-1' } },
@@ -495,7 +495,7 @@ describe('admin creates and edits catalog gifts', () => {
         image: {
           create: { url: 'https://cdn.example.com/sofa.jpg' },
         },
-      },
+      }),
     })
     expect(mocks.wishlistGiftUpdate).toHaveBeenCalledWith({
       where: { id: 'wishlist-gift-1' },

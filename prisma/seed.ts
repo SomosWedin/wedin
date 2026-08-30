@@ -5,6 +5,16 @@ const {
 }: {
   SYSTEM_EVENT_TYPES: Record<'WEDDING' | 'OTHER', { key: string; name: string }>
 } = require('../lib/event-type')
+const {
+  buildGiftNameScopeKey,
+}: {
+  buildGiftNameScopeKey: (values: {
+    name: string
+    categoryId: string
+    isDefault: boolean
+    eventId?: string
+  }) => string
+} = require('../lib/gift-name')
 
 const prismaSeed = new PrismaClient()
 
@@ -93,9 +103,15 @@ async function main() {
     const randomGiftlist = faker.helpers.arrayElement(giftlists)
     const price = faker.number.int({ min: 89000, max: 1820000 }).toString()
 
+    const name = `${faker.commerce.productName()} ${i + 1}`
     await prismaSeed.gift.create({
       data: {
-        name: faker.commerce.productName(),
+        name,
+        nameScopeKey: buildGiftNameScopeKey({
+          name,
+          categoryId: randomGiftlist.categoryId,
+          isDefault: true,
+        }),
         isDefault: true,
         price: price,
         giftlists: {

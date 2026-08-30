@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "yarn test:run && prisma generate && next build",
+    "deploy:build": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/deploy-build.ts",
     "start": "next start",
     "format": "biome check --write --linter-enabled=false .",
     "format:check": "biome check --linter-enabled=false .",
