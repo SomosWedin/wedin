@@ -332,7 +332,7 @@ export default function CheckoutForm({
           />
         </div>
 
-        <div className="order-3 flex flex-col gap-3 md:col-span-2 mt-6">
+        <div className="order-3 flex flex-col gap-3 md:col-span-2 mt-3">
           <p className="text-sm text-center text-textTertiary">
             Al confirmar tu compra aceptás las{' '}
             <a
