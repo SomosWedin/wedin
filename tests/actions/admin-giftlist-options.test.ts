@@ -66,7 +66,7 @@ describe('admin gift list options', () => {
     expect(mocks.giftlistFindMany).not.toHaveBeenCalled()
   })
 
-  it('derives collection event types shared by every gift category', async () => {
+  it('derives all event types assigned to collection gift categories', async () => {
     mocks.giftlistFindMany.mockResolvedValue([
       {
         id: 'giftlist-1',
@@ -109,8 +109,11 @@ describe('admin gift list options', () => {
           { id: 'gift-1', categoryId: 'category-1' },
           { id: 'gift-2', categoryId: 'category-2' },
         ],
-        eventTypeIds: ['wedding'],
-        eventTypes: [{ id: 'wedding', name: 'Casamiento' }],
+        eventTypeIds: ['wedding', 'birthday'],
+        eventTypes: [
+          { id: 'wedding', name: 'Casamiento' },
+          { id: 'birthday', name: 'Cumpleaños' },
+        ],
       },
     ])
   })

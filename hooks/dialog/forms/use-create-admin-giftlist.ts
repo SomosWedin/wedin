@@ -4,7 +4,7 @@ import { createAdminGiftlist } from '@/actions/data/giftlist'
 import type { AdminGiftlistValues } from '@/schemas/form'
 import { useGiftlistFormController } from './use-giftlist-form-controller'
 
-const defaultValues: AdminGiftlistValues = { name: '' }
+const defaultValues: AdminGiftlistValues = { name: '', giftIds: [] }
 
 export function useCreateAdminGiftlist() {
   return useGiftlistFormController({

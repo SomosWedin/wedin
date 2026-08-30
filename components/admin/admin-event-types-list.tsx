@@ -92,11 +92,11 @@ export default function AdminEventTypesList({
           sortedEventTypes.map(eventType => (
             <div
               key={eventType.id}
-              className="border-b border-gray-100 px-4 py-4 hover:bg-gray-50"
+              className="group border-b border-gray-100 px-4 py-4 hover:bg-gray-50"
             >
               <div className="flex items-center justify-between gap-4">
                 <p className="font-medium">{eventType.name}</p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                   <AdminEventTypeDialog eventType={eventType} />
                   <DeleteAdminEventTypeDialog
                     eventTypeId={eventType.id}

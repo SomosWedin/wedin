@@ -1,13 +1,14 @@
 'use client'
 
-import type { Giftlist } from '@prisma/client'
+import type { AdminGiftlist } from '@/actions/data/giftlist'
 import { editAdminGiftlist } from '@/actions/data/giftlist'
 import type { AdminGiftlistValues } from '@/schemas/form'
 import { useGiftlistFormController } from './use-giftlist-form-controller'
 
-export function useEditAdminGiftlist(giftlist: Giftlist) {
+export function useEditAdminGiftlist(giftlist: AdminGiftlist) {
   const defaultValues: AdminGiftlistValues = {
     name: giftlist.name,
+    giftIds: giftlist.giftIds,
   }
 
   return useGiftlistFormController({

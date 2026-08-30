@@ -93,13 +93,13 @@ export default async function AdminPage() {
             <IoGiftOutline className="text-lg" />
             Regalos
           </TabsTrigger>
-          <TabsTrigger value="categorias" className="gap-2 text-xs sm:text-sm">
-            <IoPricetagOutline className="text-lg" />
-            Categorías
-          </TabsTrigger>
           <TabsTrigger value="colecciones" className="gap-2 text-xs sm:text-sm">
             <IoFolderOpenOutline className="text-lg" />
             Colecciones
+          </TabsTrigger>
+          <TabsTrigger value="categorias" className="gap-2 text-xs sm:text-sm">
+            <IoPricetagOutline className="text-lg" />
+            Categorías
           </TabsTrigger>
           <TabsTrigger
             value="tipos-de-evento"
@@ -151,19 +151,20 @@ export default async function AdminPage() {
           </Suspense>
         </TabsContent>
 
-        <TabsContent value="categorias" className="mt-6">
+        <TabsContent value="colecciones" className="mt-6">
           <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminCategoriesList
+            <AdminGiftlistsList
+              giftlists={adminGiftlists}
+              gifts={gifts}
               categories={categories}
               eventTypes={eventTypes}
             />
           </Suspense>
         </TabsContent>
 
-        <TabsContent value="colecciones" className="mt-6">
+        <TabsContent value="categorias" className="mt-6">
           <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminGiftlistsList
-              giftlists={adminGiftlists}
+            <AdminCategoriesList
               categories={categories}
               eventTypes={eventTypes}
             />

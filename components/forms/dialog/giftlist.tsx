@@ -2,6 +2,9 @@
 
 import type { BaseSyntheticEvent } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
+import GiftMultiSelect, {
+  type GiftMultiSelectOption,
+} from '@/components/forms/common/gift-multi-select'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -16,6 +19,7 @@ import type { AdminGiftlistValues } from '@/schemas/form'
 
 type GiftlistFormProps = {
   form: UseFormReturn<AdminGiftlistValues>
+  gifts: GiftMultiSelectOption[]
   loading: boolean
   isValid: boolean
   submitLabel: string
@@ -25,6 +29,7 @@ type GiftlistFormProps = {
 
 export default function GiftlistForm({
   form,
+  gifts,
   loading,
   isValid,
   submitLabel,
@@ -42,6 +47,23 @@ export default function GiftlistForm({
               <FormLabel>Nombre</FormLabel>
               <FormControl>
                 <Input {...field} placeholder="Esenciales del hogar" />
+              </FormControl>
+              <FormMessage className="font-normal text-red-600" />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="giftIds"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Regalos</FormLabel>
+              <FormControl>
+                <GiftMultiSelect
+                  gifts={gifts}
+                  selectedIds={field.value}
+                  onChange={field.onChange}
+                />
               </FormControl>
               <FormMessage className="font-normal text-red-600" />
             </FormItem>

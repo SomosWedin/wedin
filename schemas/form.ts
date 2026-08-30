@@ -117,6 +117,7 @@ export const GiftlistNameSchema = z
 
 export const AdminGiftlistSchema = z.object({
   name: GiftlistNameSchema,
+  giftIds: z.array(z.string()),
 })
 export type AdminGiftlistValues = z.infer<typeof AdminGiftlistSchema>
 

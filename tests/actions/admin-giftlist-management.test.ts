@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
+  giftFindMany: vi.fn(),
   giftUpdateMany: vi.fn(),
   giftlistCreate: vi.fn(),
   giftlistFindUnique: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 vi.mock('@/prisma/client', () => ({
   default: {
     gift: {
+      findMany: mocks.giftFindMany,
       updateMany: mocks.giftUpdateMany,
     },
     giftlist: {
@@ -42,14 +44,20 @@ describe('admin collection management', () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' })
     mocks.giftlistCreate.mockResolvedValue({ id: 'giftlist-1' })
+    mocks.giftFindMany.mockResolvedValue([])
     mocks.giftlistFindUnique.mockResolvedValue({ id: 'giftlist-1' })
     mocks.giftlistUpdate.mockResolvedValue({ id: 'giftlist-1' })
     mocks.giftlistDelete.mockResolvedValue({ id: 'giftlist-1' })
     mocks.giftUpdateMany.mockResolvedValue({ count: 2 })
     mocks.transaction.mockImplementation(async callback =>
       callback({
-        gift: { updateMany: mocks.giftUpdateMany },
+        gift: {
+          findMany: mocks.giftFindMany,
+          updateMany: mocks.giftUpdateMany,
+        },
         giftlist: {
+          findUnique: mocks.giftlistFindUnique,
+          create: mocks.giftlistCreate,
           update: mocks.giftlistUpdate,
           delete: mocks.giftlistDelete,
         },
@@ -60,20 +68,49 @@ describe('admin collection management', () => {
   it('creates an empty collection without manually assigned event types', async () => {
     const result = await createAdminGiftlist({
       name: '  Esenciales  ',
+      giftIds: [],
     })
 
     expect(mocks.giftlistCreate).toHaveBeenCalledWith({
       data: {
         name: 'Esenciales',
         normalizedName: 'esenciales',
+        gifts: { connect: [] },
       },
+    })
+    expect(mocks.transaction).toHaveBeenCalledOnce()
+    expect(result).toEqual({ giftlistId: 'giftlist-1' })
+  })
+
+  it('creates a collection with selected catalog gifts', async () => {
+    mocks.giftFindMany.mockResolvedValue([{ id: 'gift-1' }, { id: 'gift-2' }])
+
+    const result = await createAdminGiftlist({
+      name: 'Esenciales',
+      giftIds: ['gift-1', 'gift-2', 'gift-1'],
+    })
+
+    expect(mocks.giftFindMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['gift-1', 'gift-2'] },
+        isDefault: true,
+      },
+      select: { id: true },
+    })
+    expect(mocks.giftlistCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        gifts: { connect: [{ id: 'gift-1' }, { id: 'gift-2' }] },
+      }),
     })
     expect(result).toEqual({ giftlistId: 'giftlist-1' })
   })
 
-  it('edits only the collection name', async () => {
+  it('edits the collection name and selected gifts', async () => {
+    mocks.giftFindMany.mockResolvedValue([{ id: 'gift-2' }])
+
     const result = await editAdminGiftlist('giftlist-1', {
       name: 'Esenciales',
+      giftIds: ['gift-2'],
     })
 
     expect(mocks.giftlistUpdate).toHaveBeenCalledWith({
@@ -81,6 +118,7 @@ describe('admin collection management', () => {
       data: {
         name: 'Esenciales',
         normalizedName: 'esenciales',
+        gifts: { set: [{ id: 'gift-2' }] },
       },
     })
     expect(result).toEqual({ giftlistId: 'giftlist-1' })
@@ -91,10 +129,23 @@ describe('admin collection management', () => {
 
     const result = await editAdminGiftlist('giftlist-missing', {
       name: 'Esenciales',
+      giftIds: [],
     })
 
     expect(result).toEqual({ error: 'Colección no encontrada.' })
     expect(mocks.giftlistUpdate).not.toHaveBeenCalled()
+  })
+
+  it('rejects gifts that are missing or are not catalog gifts', async () => {
+    const result = await createAdminGiftlist({
+      name: 'Esenciales',
+      giftIds: ['private-or-missing-gift'],
+    })
+
+    expect(result).toEqual({
+      error: 'Uno o más regalos seleccionados no existen en el catálogo.',
+    })
+    expect(mocks.giftlistCreate).not.toHaveBeenCalled()
   })
 
   it('disconnects gifts before deleting a collection', async () => {

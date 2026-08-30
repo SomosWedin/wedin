@@ -9,6 +9,10 @@ import prismaClient from '@/prisma/client'
 import { AdminGiftlistSchema } from '@/schemas/form'
 import type { GetGiftlistsSearchParams } from '@/schemas/params'
 import { getErrorMessage } from '../helper'
+import {
+  GiftlistGiftSelectionError,
+  validateCatalogGiftIds,
+} from './giftlist-operations'
 
 export type GiftlistOption = Pick<Giftlist, 'id' | 'name'> & {
   eventTypeIds: string[]
@@ -195,16 +199,23 @@ export async function createAdminGiftlist(formData: unknown) {
   const parsed = AdminGiftlistSchema.safeParse(formData)
   if (!parsed.success) return { error: 'Datos inválidos.' }
   try {
-    const normalizedName = parsed.data.name.toLocaleLowerCase('es-PY')
-    const giftlist = await prismaClient.giftlist.create({
-      data: {
-        name: parsed.data.name,
-        normalizedName,
-      },
+    const giftlist = await prismaClient.$transaction(async tx => {
+      const giftIds = await validateCatalogGiftIds(tx, parsed.data.giftIds)
+
+      return tx.giftlist.create({
+        data: {
+          name: parsed.data.name,
+          normalizedName: parsed.data.name.toLocaleLowerCase('es-PY'),
+          gifts: { connect: giftIds.map(id => ({ id })) },
+        },
+      })
     })
     revalidateGiftlistPaths()
     return { giftlistId: giftlist.id }
   } catch (error) {
+    if (error instanceof GiftlistGiftSelectionError) {
+      return { error: error.message }
+    }
     return { error: getErrorMessage(error) }
   }
 }
@@ -216,22 +227,31 @@ export async function editAdminGiftlist(giftlistId: string, formData: unknown) {
   if (!parsed.success) return { error: 'Datos inválidos.' }
 
   try {
-    const existing = await prismaClient.giftlist.findUnique({
-      where: { id: giftlistId },
-      select: { id: true },
-    })
-    if (!existing) return { error: 'Colección no encontrada.' }
+    const giftlist = await prismaClient.$transaction(async tx => {
+      const existing = await tx.giftlist.findUnique({
+        where: { id: giftlistId },
+        select: { id: true },
+      })
+      if (!existing) return null
 
-    const giftlist = await prismaClient.giftlist.update({
-      where: { id: giftlistId },
-      data: {
-        name: parsed.data.name,
-        normalizedName: parsed.data.name.toLocaleLowerCase('es-PY'),
-      },
+      const giftIds = await validateCatalogGiftIds(tx, parsed.data.giftIds)
+
+      return tx.giftlist.update({
+        where: { id: giftlistId },
+        data: {
+          name: parsed.data.name,
+          normalizedName: parsed.data.name.toLocaleLowerCase('es-PY'),
+          gifts: { set: giftIds.map(id => ({ id })) },
+        },
+      })
     })
+    if (!giftlist) return { error: 'Colección no encontrada.' }
     revalidateGiftlistPaths()
     return { giftlistId: giftlist.id }
   } catch (error) {
+    if (error instanceof GiftlistGiftSelectionError) {
+      return { error: error.message }
+    }
     return { error: getErrorMessage(error) }
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import type { Category, EventType } from '@prisma/client'
+import type { Category, EventType, Gift } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import {
@@ -16,6 +16,7 @@ import {
   type AdminGiftlist,
   deleteAdminGiftlist,
 } from '@/actions/data/giftlist'
+import type { GiftMultiSelectOption } from '@/components/forms/common/gift-multi-select'
 import GiftlistForm from '@/components/forms/dialog/giftlist'
 import {
   AlertDialog,
@@ -70,9 +71,11 @@ function SortIcon({
 
 function GiftlistDialogContent({
   giftlist,
+  gifts,
   controller,
 }: {
   giftlist?: AdminGiftlist
+  gifts: GiftMultiSelectOption[]
   controller: GiftlistFormController
 }) {
   return (
@@ -84,6 +87,7 @@ function GiftlistDialogContent({
       </DialogHeader>
       <GiftlistForm
         form={controller.form}
+        gifts={gifts}
         loading={controller.loading}
         isValid={controller.isValid}
         submitLabel={giftlist ? 'Guardar cambios' : 'Crear colección'}
@@ -94,7 +98,7 @@ function GiftlistDialogContent({
   )
 }
 
-function CreateGiftlistDialog() {
+function CreateGiftlistDialog({ gifts }: { gifts: GiftMultiSelectOption[] }) {
   const controller = useCreateAdminGiftlist()
 
   return (
@@ -104,12 +108,18 @@ function CreateGiftlistDialog() {
           Crear colección <IoAdd className="text-xl" />
         </Button>
       </DialogTrigger>
-      <GiftlistDialogContent controller={controller} />
+      <GiftlistDialogContent gifts={gifts} controller={controller} />
     </Dialog>
   )
 }
 
-function EditGiftlistDialog({ giftlist }: { giftlist: AdminGiftlist }) {
+function EditGiftlistDialog({
+  giftlist,
+  gifts,
+}: {
+  giftlist: AdminGiftlist
+  gifts: GiftMultiSelectOption[]
+}) {
   const controller = useEditAdminGiftlist(giftlist)
 
   return (
@@ -125,17 +135,23 @@ function EditGiftlistDialog({ giftlist }: { giftlist: AdminGiftlist }) {
           <IoPencilOutline />
         </Button>
       </DialogTrigger>
-      <GiftlistDialogContent giftlist={giftlist} controller={controller} />
+      <GiftlistDialogContent
+        giftlist={giftlist}
+        gifts={gifts}
+        controller={controller}
+      />
     </Dialog>
   )
 }
 
 export default function AdminGiftlistsList({
   giftlists,
+  gifts,
   categories,
   eventTypes,
 }: {
   giftlists: AdminGiftlist[]
+  gifts: Pick<Gift, 'id' | 'name' | 'categoryId'>[]
   categories: Category[]
   eventTypes: EventType[]
 }) {
@@ -151,6 +167,16 @@ export default function AdminGiftlistsList({
   const categoriesById = useMemo(
     () => new Map(categories.map(category => [category.id, category.name])),
     [categories]
+  )
+  const giftOptions = useMemo(
+    () =>
+      gifts.map(gift => ({
+        id: gift.id,
+        name: gift.name,
+        categoryName:
+          categoriesById.get(gift.categoryId) ?? 'Categoría no encontrada',
+      })),
+    [categoriesById, gifts]
   )
 
   const getCategoryNames = (giftlist: AdminGiftlist) =>
@@ -274,7 +300,7 @@ export default function AdminGiftlistsList({
             ))}
           </SelectContent>
         </Select>
-        <CreateGiftlistDialog />
+        <CreateGiftlistDialog gifts={giftOptions} />
       </div>
       <div className="overflow-hidden rounded-lg bg-white">
         <div className="hidden grid-cols-12 gap-4 rounded-t-lg bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600 sm:grid">
@@ -355,7 +381,7 @@ export default function AdminGiftlistsList({
                 {getCategoryNames(giftlist).join(', ') || 'Sin categorías'}
               </div>
               <div className="col-span-2 flex justify-end gap-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-                <EditGiftlistDialog giftlist={giftlist} />
+                <EditGiftlistDialog giftlist={giftlist} gifts={giftOptions} />
                 <Button
                   type="button"
                   size="icon"
