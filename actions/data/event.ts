@@ -10,6 +10,7 @@ import {
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/actions/get-current-user'
 import type { ErrorResponse } from '@/auth'
+import { ORGANIZER_TERMS } from '@/lib/terms'
 import { EventUrlFormSchema } from '@/schemas/form'
 
 const prismaClient = new PrismaClient()
@@ -178,10 +179,33 @@ export const setEventPublished = async (
   eventId: string,
   isPublished: boolean
 ) => {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return { error: 'Error obteniendo tu sesión' }
+  }
+
   try {
+    const event = await prismaClient.event.findFirst({
+      where: { id: eventId, users: { some: { id: user.id } } },
+      select: { termsAcceptedAt: true },
+    })
+
+    if (!event) {
+      return { error: 'Evento no encontrado' }
+    }
+
+    const acceptsTermsNow = isPublished && !event.termsAcceptedAt
+
     const updatedEvent = await prismaClient.event.update({
       where: { id: eventId },
-      data: { isPublished },
+      data: {
+        isPublished,
+        ...(acceptsTermsNow && {
+          termsAcceptedAt: new Date(),
+          termsVersion: ORGANIZER_TERMS.version,
+        }),
+      },
     })
 
     revalidatePath('/dashboard')

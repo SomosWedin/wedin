@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { IoLinkOutline } from 'react-icons/io5'
@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch'
 import { useToggleEventPublished } from '@/hooks/dashboard/use-toggle-event-published'
 import { useToast } from '@/hooks/use-toast'
 import { getPublicEventUrl } from '@/lib/event-domain'
+import { TERMS_PATHS } from '@/lib/terms'
 import type { CompletedEvent } from './dashboard-home'
 
 type DashboardHomeSiteLinkCardProps = {
@@ -26,11 +27,13 @@ export default function DashboardHomeSiteLinkCard({
 
   const {
     isPublished,
+    hasAcceptedTerms,
     loading: publishLoading,
     toggle,
   } = useToggleEventPublished({
     eventId: event.id,
     isPublished: event.isPublished,
+    hasAcceptedTerms: event.termsAcceptedAt !== null || event.isPublished,
   })
 
   const guestUrl = getPublicEventUrl(currentUrl)
@@ -69,46 +72,79 @@ export default function DashboardHomeSiteLinkCard({
         />
       </div>
 
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-3">
-          <Switch
-            checked={isPublished}
-            disabled={publishLoading}
-            onCheckedChange={toggle}
-          />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          {hasAcceptedTerms ? (
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={isPublished}
+                disabled={publishLoading}
+                onCheckedChange={toggle}
+              />
 
-          <span className="font-medium">Web visible</span>
+              <span className="font-medium">Web visible</span>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="success"
+              disabled={publishLoading}
+              onClick={() => toggle(true)}
+            >
+              {publishLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                'Activar lista'
+              )}
+            </Button>
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            <DownloadQrButton
+              url={guestUrl}
+              fileName={`wedin-${currentUrl ?? 'sitio'}-qr`}
+            />
+
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2"
+              onClick={handleShare}
+            >
+              <span className="sm:hidden">Copiar</span>
+
+              <span className="hidden sm:inline">Copiar link de tu sitio</span>
+
+              <IoLinkOutline className="text-lg" />
+            </Button>
+
+            <Button variant="success" className="gap-2" asChild>
+              <Link href={guestUrl} target="_blank" rel="noopener noreferrer">
+                <span className="sm:hidden">Ver sitio</span>
+
+                <span className="hidden sm:inline">Ver sitio web</span>
+
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <DownloadQrButton
-            url={guestUrl}
-            fileName={`wedin-${currentUrl ?? 'sitio'}-qr`}
-          />
-
-          <Button
-            type="button"
-            variant="outline"
-            className="gap-2"
-            onClick={handleShare}
-          >
-            <span className="sm:hidden">Copiar</span>
-
-            <span className="hidden sm:inline">Copiar link de tu sitio</span>
-
-            <IoLinkOutline className="text-lg" />
-          </Button>
-
-          <Button variant="success" className="gap-2" asChild>
-            <Link href={guestUrl} target="_blank" rel="noopener noreferrer">
-              <span className="sm:hidden">Ver sitio</span>
-
-              <span className="hidden sm:inline">Ver sitio web</span>
-
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
+        {!hasAcceptedTerms && (
+          <p className="text-sm text-textTertiary">
+            Al activar tu lista de regalos aceptás las{' '}
+            <Link
+              href={TERMS_PATHS.organizers}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline"
+            >
+              bases y condiciones
+            </Link>{' '}
+            y que wedin descuente el valor de la comisión al recibir tus
+            regalos.
+          </p>
+        )}
       </div>
     </div>
   )

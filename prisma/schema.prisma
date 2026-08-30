@@ -105,7 +105,9 @@ model Event {
   eventType        EventType @default(WEDDING)
   guests           String?
   hasPYbankAccount Boolean   @default(false)
-  isPublished      Boolean   @default(true)
+  isPublished      Boolean   @default(false)
+  termsAcceptedAt  DateTime?
+  termsVersion     String?
 
   wishlist Wishlist @relation(fields: [wishlistId], references: [id])
 

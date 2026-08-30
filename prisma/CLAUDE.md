@@ -103,3 +103,24 @@ whenever you touch something documented below.
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a
   Pagopar-issued hash to group by.
+- `Event.isPublished` — default flipped `true` → `false` (2026-08-30) so a
+  new event starts hidden and the organizer has to press "Activar lista",
+  which is what makes their acceptance of the bases y condiciones an actual
+  deliberate act. **No backfill:** `db push` doesn't touch existing
+  documents, so events already live in an environment keep the `true` they
+  were written with, which is what we want — nobody's site goes dark on
+  deploy.
+- `Event.termsAcceptedAt` / `termsVersion` — stamped by `setEventPublished`
+  the first time an event is published, never overwritten afterwards
+  (deactivating and reactivating does not re-stamp). Optional scalars with
+  no index, so none of the sparse-unique traps above apply. `termsVersion`
+  copies `ORGANIZER_TERMS.version` from `lib/terms.ts` at acceptance time —
+  it records *which* document was accepted, so bump that version whenever
+  the organizer terms change materially. Grandfathered events (published
+  before this existed) have both `null` while being live, so the dashboard
+  treats `termsAcceptedAt != null || isPublished` as "already accepted" —
+  otherwise they'd be shown an "Activar lista" button for a site that is
+  already on. The consequence is that those events carry no acceptance
+  record until the next time they are published from a fresh page load,
+  which is deliberate: stamping one on deploy would assert an acceptance
+  that never happened.
