@@ -114,7 +114,7 @@ whenever you touch something documented below.
   the first time an event is published, never overwritten afterwards
   (deactivating and reactivating does not re-stamp). Optional scalars with
   no index, so none of the sparse-unique traps above apply. `termsVersion`
-  copies `ORGANIZER_TERMS.version` from `lib/terms.ts` at acceptance time —
+  copies `ORGANIZER_TERMS.version` from `lib/terms/` at acceptance time —
   it records *which* document was accepted, so bump that version whenever
   the organizer terms change materially. Grandfathered events (published
   before this existed) have both `null` while being live, so the dashboard
