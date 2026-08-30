@@ -1,7 +1,7 @@
 'use client'
 
 import type { Category, EventType, Prisma } from '@prisma/client'
-import { endOfDay, format } from 'date-fns'
+import { format } from 'date-fns'
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import {
@@ -56,8 +56,7 @@ export default function AdminGiftsList({
 }: AdminGiftsListProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [giftlistFilter, setGiftlistFilter] = useState('')
   const [sortColumn, setSortColumn] = useState<SortColumn | null>('createdAt')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
@@ -78,6 +77,14 @@ export default function AdminGiftsList({
       })),
     [categories]
   )
+  const giftlistOptions = useMemo(
+    () =>
+      giftlists.map(giftlist => ({
+        value: giftlist.id,
+        label: giftlist.name,
+      })),
+    [giftlists]
+  )
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn !== column) {
@@ -88,9 +95,6 @@ export default function AdminGiftsList({
 
     setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'))
   }
-
-  const fromDate = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null
-  const toDate = dateTo ? endOfDay(new Date(`${dateTo}T00:00:00`)) : null
 
   const filteredGifts = gifts.filter(gift => {
     const categoryName =
@@ -106,11 +110,10 @@ export default function AdminGiftsList({
       giftlistNames.some(name => name.toLowerCase().includes(normalizedSearch))
     const matchesCategory =
       !categoryFilter || gift.categoryId === categoryFilter
-    const matchesDateRange =
-      (!fromDate || gift.createdAt >= fromDate) &&
-      (!toDate || gift.createdAt <= toDate)
+    const matchesGiftlist =
+      !giftlistFilter || gift.giftlistIds.includes(giftlistFilter)
 
-    return matchesSearch && matchesCategory && matchesDateRange
+    return matchesSearch && matchesCategory && matchesGiftlist
   })
 
   const sortedGifts = sortColumn
@@ -131,7 +134,7 @@ export default function AdminGiftsList({
           <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input
             type="text"
-            placeholder="Nombre o categoría"
+            placeholder="Nombre, categoría o colección"
             className="pl-10"
             value={search}
             onChange={event => setSearch(event.target.value)}
@@ -145,28 +148,18 @@ export default function AdminGiftsList({
           className="sm:w-56"
           width="w-56"
           clearable
+          selectionMode="value"
         />
-        <div className="flex items-center gap-2">
-          <Input
-            type="date"
-            aria-label="Desde"
-            className="h-10 w-[9.5rem] cursor-pointer"
-            value={dateFrom}
-            max={dateTo || undefined}
-            onChange={event => setDateFrom(event.target.value)}
-            onClick={event => event.currentTarget.showPicker?.()}
-          />
-          <span className="text-gray-400">–</span>
-          <Input
-            type="date"
-            aria-label="Hasta"
-            className="h-10 w-[9.5rem] cursor-pointer"
-            value={dateTo}
-            min={dateFrom || undefined}
-            onChange={event => setDateTo(event.target.value)}
-            onClick={event => event.currentTarget.showPicker?.()}
-          />
-        </div>
+        <Combobox
+          options={giftlistOptions}
+          selected={giftlistFilter}
+          onChange={value => setGiftlistFilter(value as string)}
+          placeholder="Buscar colección"
+          className="sm:w-56"
+          width="w-56"
+          clearable
+          selectionMode="value"
+        />
         <CreateGiftDialog
           mode="admin"
           categories={categories}

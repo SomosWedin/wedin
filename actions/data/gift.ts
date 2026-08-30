@@ -265,6 +265,10 @@ export async function deleteDefaultGiftAsAdmin(giftId: string) {
 
       await copyCatalogGiftForWishlistLinks(tx, gift)
 
+      await tx.gift.update({
+        where: { id: giftId },
+        data: { giftlists: { set: [] } },
+      })
       await tx.image.deleteMany({ where: { giftId } })
       await tx.gift.delete({ where: { id: giftId } })
       return true

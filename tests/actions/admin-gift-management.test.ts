@@ -499,6 +499,10 @@ describe('admin creates and edits catalog gifts', () => {
       where: { id: 'wishlist-gift-1' },
       data: { giftId: 'private-gift-1' },
     })
+    expect(mocks.giftUpdate).toHaveBeenCalledWith({
+      where: { id: 'gift-1' },
+      data: { giftlists: { set: [] } },
+    })
     expect(mocks.giftDelete).toHaveBeenCalledWith({
       where: { id: 'gift-1' },
     })
@@ -524,6 +528,10 @@ describe('admin creates and edits catalog gifts', () => {
     })
     expect(mocks.giftDelete).toHaveBeenCalledWith({
       where: { id: 'gift-1' },
+    })
+    expect(mocks.giftUpdate).toHaveBeenCalledWith({
+      where: { id: 'gift-1' },
+      data: { giftlists: { set: [] } },
     })
     expect(mocks.giftlistDelete).not.toHaveBeenCalled()
     expect(mocks.giftlistUpdate).not.toHaveBeenCalled()
