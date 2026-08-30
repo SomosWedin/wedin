@@ -66,7 +66,6 @@ export async function createAdminEventType(formData: AdminEventTypeValues) {
         name: parsed.data.name,
         key,
         categoryIds: [],
-        giftlistIds: [],
       },
     })
     revalidatePath('/admin')
@@ -129,17 +128,12 @@ export async function deleteAdminEventType(eventTypeId: string) {
       select: {
         id: true,
         categoryIds: true,
-        giftlistIds: true,
         events: { select: { id: true } },
       },
     })
     if (!eventType) return { error: 'Tipo de evento no encontrado.' }
 
-    if (
-      eventType.categoryIds.length > 0 ||
-      eventType.giftlistIds.length > 0 ||
-      eventType.events.length > 0
-    ) {
+    if (eventType.categoryIds.length > 0 || eventType.events.length > 0) {
       return {
         error:
           'No se puede eliminar un tipo de evento que todavía está en uso.',

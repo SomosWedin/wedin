@@ -15,7 +15,6 @@ const {
     eventId?: string
   }) => string
 } = require('../lib/gift-name')
-
 const prismaSeed = new PrismaClient()
 
 const categorySeeds: {
@@ -88,9 +87,6 @@ async function main() {
           normalizedName: `${category.name} Package`
             .trim()
             .toLocaleLowerCase('es-PY'),
-          eventTypes: {
-            connect: category.eventTypeIds.map((id: string) => ({ id })),
-          },
         },
       })
 

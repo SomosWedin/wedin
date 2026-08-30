@@ -71,7 +71,6 @@ describe('admin event type management', () => {
         name: 'Quince Años',
         key: 'quince-anos',
         categoryIds: [],
-        giftlistIds: [],
       },
     })
     expect(result).toEqual({ eventTypeId: 'event-type-1' })
@@ -128,7 +127,6 @@ describe('admin event type management', () => {
     mocks.eventTypeFindUnique.mockResolvedValue({
       id: 'event-type-1',
       categoryIds: ['category-1'],
-      giftlistIds: [],
       events: [],
     })
 

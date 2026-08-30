@@ -2,10 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
-  eventTypeFindMany: vi.fn(),
-  giftFindMany: vi.fn(),
   giftUpdateMany: vi.fn(),
-  categoryFindMany: vi.fn(),
   giftlistCreate: vi.fn(),
   giftlistFindUnique: vi.fn(),
   giftlistUpdate: vi.fn(),
@@ -22,12 +19,9 @@ vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 
 vi.mock('@/prisma/client', () => ({
   default: {
-    eventType: { findMany: mocks.eventTypeFindMany },
     gift: {
-      findMany: mocks.giftFindMany,
       updateMany: mocks.giftUpdateMany,
     },
-    category: { findMany: mocks.categoryFindMany },
     giftlist: {
       findUnique: mocks.giftlistFindUnique,
       create: mocks.giftlistCreate,
@@ -47,11 +41,6 @@ import {
 describe('admin collection management', () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' })
-    mocks.eventTypeFindMany.mockResolvedValue([{ id: 'event-type-wedding' }])
-    mocks.giftFindMany.mockResolvedValue([{ categoryId: 'category-1' }])
-    mocks.categoryFindMany.mockResolvedValue([
-      { eventTypeIds: ['event-type-wedding', 'event-type-other'] },
-    ])
     mocks.giftlistCreate.mockResolvedValue({ id: 'giftlist-1' })
     mocks.giftlistFindUnique.mockResolvedValue({ id: 'giftlist-1' })
     mocks.giftlistUpdate.mockResolvedValue({ id: 'giftlist-1' })
@@ -68,26 +57,23 @@ describe('admin collection management', () => {
     )
   })
 
-  it('creates a collection with event types', async () => {
+  it('creates an empty collection without manually assigned event types', async () => {
     const result = await createAdminGiftlist({
       name: '  Esenciales  ',
-      eventTypeIds: ['event-type-wedding'],
     })
 
     expect(mocks.giftlistCreate).toHaveBeenCalledWith({
       data: {
         name: 'Esenciales',
         normalizedName: 'esenciales',
-        eventTypes: { connect: [{ id: 'event-type-wedding' }] },
       },
     })
     expect(result).toEqual({ giftlistId: 'giftlist-1' })
   })
 
-  it('assigns only event types supported by every gift category', async () => {
+  it('edits only the collection name', async () => {
     const result = await editAdminGiftlist('giftlist-1', {
       name: 'Esenciales',
-      eventTypeIds: ['event-type-wedding'],
     })
 
     expect(mocks.giftlistUpdate).toHaveBeenCalledWith({
@@ -95,26 +81,19 @@ describe('admin collection management', () => {
       data: {
         name: 'Esenciales',
         normalizedName: 'esenciales',
-        eventTypes: { set: [{ id: 'event-type-wedding' }] },
       },
     })
     expect(result).toEqual({ giftlistId: 'giftlist-1' })
   })
 
-  it('rejects an event type missing from one gift category', async () => {
-    mocks.categoryFindMany.mockResolvedValue([
-      { eventTypeIds: ['event-type-other'] },
-    ])
+  it('rejects editing a collection that does not exist', async () => {
+    mocks.giftlistFindUnique.mockResolvedValue(null)
 
-    const result = await editAdminGiftlist('giftlist-1', {
+    const result = await editAdminGiftlist('giftlist-missing', {
       name: 'Esenciales',
-      eventTypeIds: ['event-type-wedding'],
     })
 
-    expect(result).toEqual({
-      error:
-        'Los tipos de evento elegidos no son compatibles con las categorías de todos los regalos de esta colección.',
-    })
+    expect(result).toEqual({ error: 'Colección no encontrada.' })
     expect(mocks.giftlistUpdate).not.toHaveBeenCalled()
   })
 
@@ -127,7 +106,7 @@ describe('admin collection management', () => {
     })
     expect(mocks.giftlistUpdate).toHaveBeenCalledWith({
       where: { id: 'giftlist-1' },
-      data: { eventTypes: { set: [] }, gifts: { set: [] } },
+      data: { gifts: { set: [] } },
     })
     expect(mocks.transaction).toHaveBeenCalledOnce()
     expect(result).toEqual({ success: true })

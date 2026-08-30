@@ -1,9 +1,7 @@
 'use client'
 
-import type { EventType } from '@prisma/client'
 import type { BaseSyntheticEvent } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
-import EventTypeMultiSelect from '@/components/forms/common/event-type-multi-select'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -18,8 +16,6 @@ import type { AdminGiftlistValues } from '@/schemas/form'
 
 type GiftlistFormProps = {
   form: UseFormReturn<AdminGiftlistValues>
-  eventTypes: EventType[]
-  showEventTypes: boolean
   loading: boolean
   isValid: boolean
   submitLabel: string
@@ -29,8 +25,6 @@ type GiftlistFormProps = {
 
 export default function GiftlistForm({
   form,
-  eventTypes,
-  showEventTypes,
   loading,
   isValid,
   submitLabel,
@@ -53,29 +47,6 @@ export default function GiftlistForm({
             </FormItem>
           )}
         />
-        {showEventTypes &&
-          (eventTypes.length === 0 ? (
-            <p className="text-sm text-textTertiary">
-              Agregá regalos con categorías asignadas para habilitar tipos de
-              evento.
-            </p>
-          ) : (
-            <FormField
-              control={form.control}
-              name="eventTypeIds"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipos de evento</FormLabel>
-                  <EventTypeMultiSelect
-                    eventTypes={eventTypes}
-                    selectedIds={field.value}
-                    onChange={field.onChange}
-                  />
-                  <FormMessage className="font-normal text-red-600" />
-                </FormItem>
-              )}
-            />
-          ))}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar

@@ -150,7 +150,7 @@ describe('admin category management', () => {
       eventTypeIds: ['event-type-wedding'],
     })
     mocks.categoryCreate.mockResolvedValue({ id: 'category-preserved' })
-    mocks.giftFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+    mocks.giftFindMany.mockResolvedValueOnce([
       {
         id: 'gift-1',
         name: 'Sofá',
@@ -206,7 +206,7 @@ describe('admin category management', () => {
       eventTypeIds: ['event-type-wedding', 'event-type-birthday'],
     })
     mocks.categoryCreate.mockResolvedValue({ id: 'category-preserved' })
-    mocks.giftFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+    mocks.giftFindMany.mockResolvedValueOnce([
       {
         id: 'gift-1',
         name: 'Sofá',
@@ -260,13 +260,14 @@ describe('admin category management', () => {
       eventTypeIds: ['event-type-wedding'],
     })
     mocks.categoryCreate.mockResolvedValue({ id: 'category-preserved' })
-    mocks.giftFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+    mocks.giftFindMany.mockResolvedValueOnce([
       {
         id: 'private-gift-1',
         name: 'Sofá personalizado',
         price: '850000',
         categoryId: 'category-1',
         isDefault: false,
+        eventId: 'event-1',
         image: null,
         wishlistGifts: [
           {
@@ -284,23 +285,11 @@ describe('admin category management', () => {
     expect(mocks.wishlistGiftUpdate).not.toHaveBeenCalled()
     expect(mocks.giftUpdate).toHaveBeenCalledWith({
       where: { id: 'private-gift-1' },
-      data: { category: { connect: { id: 'category-preserved' } } },
+      data: expect.objectContaining({
+        category: { connect: { id: 'category-preserved' } },
+      }),
     })
     expect(result).toEqual({ categoryId: 'category-1' })
-  })
-
-  it('blocks removing a type required by a collection containing its gifts', async () => {
-    mocks.giftFindMany.mockResolvedValue([
-      { giftlists: [{ eventTypeIds: ['event-type-other'] }] },
-    ])
-
-    const result = await editAdminCategory('category-1', values)
-
-    expect(result).toEqual({
-      error:
-        'Esta categoría tiene regalos en colecciones que requieren tipos de evento que no seleccionaste.',
-    })
-    expect(mocks.categoryUpdate).not.toHaveBeenCalled()
   })
 
   it('blocks deletion when gifts reference the category', async () => {

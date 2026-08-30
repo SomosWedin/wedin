@@ -8,7 +8,6 @@ import { useGiftlistFormController } from './use-giftlist-form-controller'
 export function useEditAdminGiftlist(giftlist: Giftlist) {
   const defaultValues: AdminGiftlistValues = {
     name: giftlist.name,
-    eventTypeIds: giftlist.eventTypeIds,
   }
 
   return useGiftlistFormController({

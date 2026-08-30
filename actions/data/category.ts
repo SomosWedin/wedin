@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
+import { buildGiftNameScopeKey } from '@/lib/gift-name'
 import prismaClient from '@/prisma/client'
 import { AdminCategorySchema } from '@/schemas/form'
 import { getErrorMessage } from '../helper'
@@ -63,26 +64,6 @@ async function validateEventTypeIds(eventTypeIds: string[]) {
   return eventTypes.length === uniqueIds.length ? uniqueIds : null
 }
 
-async function validateGiftlistTypeCompatibility(
-  categoryId: string,
-  eventTypeIds: string[]
-) {
-  const gifts = await prismaClient.gift.findMany({
-    where: { categoryId, giftlistIds: { isEmpty: false } },
-    select: { giftlists: { select: { eventTypeIds: true } } },
-  })
-
-  const incompatible = gifts.some(gift =>
-    gift.giftlists.some(giftlist =>
-      giftlist.eventTypeIds.some(
-        eventTypeId => !eventTypeIds.includes(eventTypeId)
-      )
-    )
-  )
-
-  return !incompatible
-}
-
 async function preserveWishlistCategoryBeforeEdit(
   tx: Prisma.TransactionClient,
   existing: { id: string; name: string; eventTypeIds: string[] },
@@ -107,6 +88,7 @@ async function preserveWishlistCategoryBeforeEdit(
       price: true,
       categoryId: true,
       isDefault: true,
+      eventId: true,
       image: { select: { url: true } },
       wishlistGifts: {
         select: {
@@ -167,7 +149,15 @@ async function preserveWishlistCategoryBeforeEdit(
 
     await tx.gift.update({
       where: { id: gift.id },
-      data: { category: { connect: { id: preservedCategory.id } } },
+      data: {
+        category: { connect: { id: preservedCategory.id } },
+        nameScopeKey: buildGiftNameScopeKey({
+          name: gift.name,
+          categoryId: preservedCategory.id,
+          isDefault: gift.isDefault,
+          eventId: gift.eventId ?? undefined,
+        }),
+      },
     })
   }
 }
@@ -235,17 +225,10 @@ export async function editAdminCategory(categoryId: string, formData: unknown) {
       }
     }
 
-    if (!(await validateGiftlistTypeCompatibility(categoryId, eventTypeIds))) {
-      return {
-        error:
-          'Esta categoría tiene regalos en colecciones que requieren tipos de evento que no seleccionaste.',
-      }
-    }
-
     const category = await prismaClient.$transaction(async tx => {
       await preserveWishlistCategoryBeforeEdit(tx, existing, values)
 
-      return tx.category.update({
+      const updatedCategory = await tx.category.update({
         where: { id: categoryId },
         data: {
           name: values.name,
@@ -254,6 +237,7 @@ export async function editAdminCategory(categoryId: string, formData: unknown) {
           },
         },
       })
+      return updatedCategory
     })
     revalidatePath('/admin')
     revalidatePath('/gifts')

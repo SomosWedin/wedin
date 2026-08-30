@@ -33,40 +33,73 @@ describe('giftlist catalog visibility', () => {
         gifts: { some: { categoryId: 'category-1' } },
       },
       include: {
-        gifts: { include: { image: true } },
-        eventTypes: { select: { id: true, name: true } },
+        gifts: {
+          include: {
+            image: true,
+            category: { select: { eventTypeIds: true } },
+          },
+        },
       },
     })
   })
 
-  it('includes only collections assigned to the event type', async () => {
-    await getGiftlists({ eventTypeId: 'event-type-wedding' })
+  it('includes only collections whose gift categories all support the event type', async () => {
+    mocks.findMany.mockResolvedValue([
+      {
+        id: 'compatible',
+        gifts: [
+          { category: { eventTypeIds: ['event-type-wedding'] } },
+          {
+            category: {
+              eventTypeIds: ['event-type-wedding', 'event-type-birthday'],
+            },
+          },
+        ],
+      },
+      {
+        id: 'incompatible',
+        gifts: [{ category: { eventTypeIds: ['event-type-birthday'] } }],
+      },
+      { id: 'empty', gifts: [] },
+    ])
+
+    const result = await getGiftlists({
+      eventTypeId: 'event-type-wedding',
+    })
 
     expect(mocks.findMany).toHaveBeenCalledWith({
-      where: {
-        eventTypeIds: { has: 'event-type-wedding' },
-      },
+      where: {},
       include: {
-        gifts: { include: { image: true } },
-        eventTypes: { select: { id: true, name: true } },
+        gifts: {
+          include: {
+            image: true,
+            category: { select: { eventTypeIds: true } },
+          },
+        },
       },
     })
+    expect(result.map(giftlist => giftlist.id)).toEqual(['compatible'])
   })
 
   it('scopes direct collection URLs to the organizer event type', async () => {
-    mocks.findFirst.mockResolvedValue(null)
+    mocks.findFirst.mockResolvedValue({
+      id: 'giftlist-1',
+      gifts: [{ category: { eventTypeIds: ['event-type-birthday'] } }],
+    })
 
-    await getGiftlist('giftlist-1', 'event-type-wedding')
+    const result = await getGiftlist('giftlist-1', 'event-type-wedding')
 
     expect(mocks.findFirst).toHaveBeenCalledWith({
       include: {
-        gifts: { include: { image: true } },
-        eventTypes: { select: { id: true, name: true } },
+        gifts: {
+          include: {
+            image: true,
+            category: { select: { eventTypeIds: true } },
+          },
+        },
       },
-      where: {
-        id: 'giftlist-1',
-        eventTypeIds: { has: 'event-type-wedding' },
-      },
+      where: { id: 'giftlist-1' },
     })
+    expect(result).toBeNull()
   })
 })

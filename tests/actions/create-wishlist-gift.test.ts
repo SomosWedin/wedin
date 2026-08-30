@@ -67,7 +67,10 @@ describe('createWishlistGift quantity normalization', () => {
         category: { eventTypeIds: ['event-type-wedding'] },
       },
     ])
-    mocks.giftlistFindFirst.mockResolvedValue({ giftIds: ['g1'] })
+    mocks.giftlistFindFirst.mockResolvedValue({
+      giftIds: ['g1'],
+      gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
+    })
     mocks.findFirst.mockResolvedValue(null)
     mocks.findMany.mockResolvedValue([])
     mocks.create.mockResolvedValue({ id: 'wg1' })
@@ -254,7 +257,10 @@ describe('createWishlistGifts ownership constraints', () => {
         category: { eventTypeIds: ['event-type-wedding'] },
       },
     ])
-    mocks.giftlistFindFirst.mockResolvedValue({ giftIds: ['g1'] })
+    mocks.giftlistFindFirst.mockResolvedValue({
+      giftIds: ['g1'],
+      gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
+    })
     mocks.findFirst.mockResolvedValue(null)
     mocks.findMany.mockResolvedValue([])
     mocks.createMany.mockResolvedValue({ count: 1 })
@@ -296,7 +302,10 @@ describe('createWishlistGifts ownership constraints', () => {
   })
 
   it('rejects a collection that does not support the event type', async () => {
-    mocks.giftlistFindFirst.mockResolvedValue(null)
+    mocks.giftlistFindFirst.mockResolvedValue({
+      giftIds: ['g1'],
+      gifts: [{ category: { eventTypeIds: ['event-type-birthday'] } }],
+    })
 
     const result = await createWishlistGifts({
       wishlistId: 'w1',
@@ -306,11 +315,13 @@ describe('createWishlistGifts ownership constraints', () => {
     })
 
     expect(mocks.giftlistFindFirst).toHaveBeenCalledWith({
-      where: {
-        id: 'list-1',
-        eventTypeIds: { has: 'event-type-wedding' },
+      where: { id: 'list-1' },
+      select: {
+        giftIds: true,
+        gifts: {
+          select: { category: { select: { eventTypeIds: true } } },
+        },
       },
-      select: { giftIds: true },
     })
     expect(result).toEqual({
       error: 'La colección no es compatible con el tipo de evento.',
@@ -319,7 +330,10 @@ describe('createWishlistGifts ownership constraints', () => {
   })
 
   it('rejects submitted gifts that do not belong to the collection', async () => {
-    mocks.giftlistFindFirst.mockResolvedValue({ giftIds: [] })
+    mocks.giftlistFindFirst.mockResolvedValue({
+      giftIds: [],
+      gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
+    })
 
     const result = await createWishlistGifts({
       wishlistId: 'w1',

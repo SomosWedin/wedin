@@ -15,7 +15,10 @@ vi.mock('@/prisma/client', () => ({
   },
 }))
 
-import { getGiftlistOptionsForAdmin } from '@/actions/data/giftlist'
+import {
+  getAdminGiftlists,
+  getGiftlistOptionsForAdmin,
+} from '@/actions/data/giftlist'
 
 describe('admin gift list options', () => {
   beforeEach(() => {
@@ -24,7 +27,7 @@ describe('admin gift list options', () => {
       {
         id: 'giftlist-1',
         name: 'Hogar',
-        eventTypeIds: ['event-type-wedding'],
+        gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
       },
     ])
   })
@@ -33,7 +36,13 @@ describe('admin gift list options', () => {
     const result = await getGiftlistOptionsForAdmin()
 
     expect(mocks.giftlistFindMany).toHaveBeenCalledWith({
-      select: { id: true, name: true, eventTypeIds: true },
+      select: {
+        id: true,
+        name: true,
+        gifts: {
+          select: { category: { select: { eventTypeIds: true } } },
+        },
+      },
       orderBy: { name: 'asc' },
     })
     expect(result).toEqual([
@@ -55,5 +64,54 @@ describe('admin gift list options', () => {
 
     expect(result).toEqual([])
     expect(mocks.giftlistFindMany).not.toHaveBeenCalled()
+  })
+
+  it('derives collection event types shared by every gift category', async () => {
+    mocks.giftlistFindMany.mockResolvedValue([
+      {
+        id: 'giftlist-1',
+        name: 'Hogar',
+        normalizedName: 'hogar',
+        giftIds: ['gift-1', 'gift-2'],
+        gifts: [
+          {
+            id: 'gift-1',
+            categoryId: 'category-1',
+            category: {
+              eventTypeIds: ['wedding', 'birthday'],
+              eventTypes: [
+                { id: 'wedding', name: 'Casamiento' },
+                { id: 'birthday', name: 'Cumpleaños' },
+              ],
+            },
+          },
+          {
+            id: 'gift-2',
+            categoryId: 'category-2',
+            category: {
+              eventTypeIds: ['wedding'],
+              eventTypes: [{ id: 'wedding', name: 'Casamiento' }],
+            },
+          },
+        ],
+      },
+    ])
+
+    const result = await getAdminGiftlists()
+
+    expect(result).toEqual([
+      {
+        id: 'giftlist-1',
+        name: 'Hogar',
+        normalizedName: 'hogar',
+        giftIds: ['gift-1', 'gift-2'],
+        gifts: [
+          { id: 'gift-1', categoryId: 'category-1' },
+          { id: 'gift-2', categoryId: 'category-2' },
+        ],
+        eventTypeIds: ['wedding'],
+        eventTypes: [{ id: 'wedding', name: 'Casamiento' }],
+      },
+    ])
   })
 })

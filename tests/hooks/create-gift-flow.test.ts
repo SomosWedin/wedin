@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   giftlistFindFirst: vi.fn(),
   giftlistFindMany: vi.fn(),
   giftlistCreate: vi.fn(),
+  giftlistUpdate: vi.fn(),
   transaction: vi.fn(),
   revalidatePath: vi.fn(),
   getCurrentUser: vi.fn(),
@@ -29,6 +30,7 @@ vi.mock('@/prisma/client', () => ({
       findMany: mocks.giftlistFindMany,
       findFirst: mocks.giftlistFindFirst,
       create: mocks.giftlistCreate,
+      update: mocks.giftlistUpdate,
     },
     wishlistGift: {
       create: mocks.wishlistGiftCreate,
@@ -82,6 +84,7 @@ describe('createGiftFlow', () => {
               id: 'gift-1',
               isDefault: false,
               eventId: 'event-1',
+              giftlistIds: ['giftlist-1', 'giftlist-2'],
               category: { eventTypeIds: ['event-type-wedding'] },
             },
           ]
@@ -91,6 +94,7 @@ describe('createGiftFlow', () => {
       eventTypeId: 'event-type-wedding',
     })
     mocks.giftlistCreate.mockResolvedValue({ id: 'giftlist-1' })
+    mocks.giftlistUpdate.mockResolvedValue({ id: 'giftlist-1' })
     mocks.wishlistGiftCreate.mockResolvedValue({ id: 'wishlist-gift-1' })
     mocks.wishlistGiftFindFirst.mockResolvedValue(null)
     mocks.transaction.mockImplementation(
@@ -106,6 +110,7 @@ describe('createGiftFlow', () => {
             findMany: mocks.giftlistFindMany,
             findFirst: mocks.giftlistFindFirst,
             create: mocks.giftlistCreate,
+            update: mocks.giftlistUpdate,
           },
           wishlistGift: {
             findFirst: mocks.wishlistGiftFindFirst,

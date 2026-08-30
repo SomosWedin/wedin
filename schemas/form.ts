@@ -117,9 +117,6 @@ export const GiftlistNameSchema = z
 
 export const AdminGiftlistSchema = z.object({
   name: GiftlistNameSchema,
-  eventTypeIds: z
-    .array(z.string())
-    .min(1, { message: 'Seleccioná al menos un tipo de evento' }),
 })
 export type AdminGiftlistValues = z.infer<typeof AdminGiftlistSchema>
 

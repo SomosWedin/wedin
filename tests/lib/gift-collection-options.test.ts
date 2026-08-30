@@ -12,6 +12,7 @@ const category = {
 } as Category
 
 const giftlists = [
+  { id: 'empty-list', name: 'Vacía', eventTypeIds: [] },
   { id: 'wedding-list', name: 'Boda', eventTypeIds: ['wedding'] },
   { id: 'birthday-list', name: 'Cumpleaños', eventTypeIds: ['birthday'] },
   {
@@ -24,6 +25,7 @@ const giftlists = [
 describe('admin gift collection options', () => {
   it('filters dropdown options without removing compatible selections from other event types', () => {
     expect(getGiftlistOptionIds(giftlists, category, 'birthday')).toEqual([
+      'empty-list',
       'birthday-list',
     ])
     expect(
@@ -35,7 +37,7 @@ describe('admin gift collection options', () => {
     ).toEqual(['wedding-list', 'birthday-list'])
   })
 
-  it('removes selected collections that a new category cannot support', () => {
+  it('retains existing selections because event types are recalculated', () => {
     const weddingOnlyCategory = {
       ...category,
       id: 'category-wedding',
@@ -48,6 +50,6 @@ describe('admin gift collection options', () => {
         giftlists,
         weddingOnlyCategory
       )
-    ).toEqual(['wedding-list'])
+    ).toEqual(['wedding-list', 'birthday-list'])
   })
 })

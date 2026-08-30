@@ -155,16 +155,16 @@ model Wishlist {
 }
 
 model Gift {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
   nameScopeKey String   @unique
-  price       String
-  isDefault   Boolean  @default(false)
-  categoryId  String   @db.ObjectId
-  giftlistIds String[] @db.ObjectId
-  eventId     String?  @db.ObjectId
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  price        String
+  isDefault    Boolean  @default(false)
+  categoryId   String   @db.ObjectId
+  giftlistIds  String[] @db.ObjectId
+  eventId      String?  @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   giftlists     Giftlist[]     @relation("GiftGiftlists", fields: [giftlistIds], references: [id])
   category      Category       @relation(fields: [categoryId], references: [id])
@@ -270,11 +270,9 @@ model Giftlist {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
   name           String
   normalizedName String   @unique
-  eventTypeIds   String[] @db.ObjectId
   giftIds        String[] @db.ObjectId
 
-  gifts      Gift[]      @relation("GiftGiftlists", fields: [giftIds], references: [id])
-  eventTypes EventType[] @relation("GiftlistEventTypes", fields: [eventTypeIds], references: [id])
+  gifts Gift[] @relation("GiftGiftlists", fields: [giftIds], references: [id])
 }
 
 model Category {
@@ -291,11 +289,9 @@ model EventType {
   name        String   @unique
   key         String   @unique
   categoryIds String[] @db.ObjectId
-  giftlistIds String[] @db.ObjectId
 
   events     Event[]
   categories Category[] @relation("CategoryEventTypes", fields: [categoryIds], references: [id])
-  giftlists  Giftlist[] @relation("GiftlistEventTypes", fields: [giftlistIds], references: [id])
 }
 
 model VerificationToken {

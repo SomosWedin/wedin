@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
+import { deriveGiftlistEventTypeIds } from '@/lib/giftlist-event-types'
 import {
   getWishlistGiftEditLockReason,
   WISHLIST_GIFT_EDIT_LOCK_MESSAGES,
@@ -102,14 +103,20 @@ async function assertWishlistGiftLinksAllowed(
 
   if (giftlistId) {
     const giftlist = await client.giftlist.findFirst({
-      where: {
-        id: giftlistId,
-        eventTypeIds: { has: event.eventTypeId },
+      where: { id: giftlistId },
+      select: {
+        giftIds: true,
+        gifts: {
+          select: { category: { select: { eventTypeIds: true } } },
+        },
       },
-      select: { giftIds: true },
     })
 
-    if (!giftlist) {
+    if (
+      !giftlist ||
+      giftlist.gifts.length === 0 ||
+      !deriveGiftlistEventTypeIds(giftlist.gifts).includes(event.eventTypeId)
+    ) {
       throw new WishlistGiftMutationError(
         'La colección no es compatible con el tipo de evento.'
       )

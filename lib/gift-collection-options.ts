@@ -11,10 +11,8 @@ export function getGiftlistOptionIds(
   return giftlists
     .filter(
       giftlist =>
-        giftlist.eventTypeIds.includes(eventTypeId) &&
-        giftlist.eventTypeIds.every(requiredTypeId =>
-          category.eventTypeIds.includes(requiredTypeId)
-        )
+        giftlist.eventTypeIds.length === 0 ||
+        giftlist.eventTypeIds.includes(eventTypeId)
     )
     .map(giftlist => giftlist.id)
 }
@@ -26,10 +24,6 @@ export function retainCategoryCompatibleGiftlistIds(
 ) {
   if (!category) return []
 
-  return selectedIds.filter(id => {
-    const giftlist = giftlists.find(item => item.id === id)
-    return giftlist?.eventTypeIds.every(requiredTypeId =>
-      category.eventTypeIds.includes(requiredTypeId)
-    )
-  })
+  const existingIds = new Set(giftlists.map(giftlist => giftlist.id))
+  return selectedIds.filter(id => existingIds.has(id))
 }

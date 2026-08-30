@@ -95,8 +95,11 @@ whenever you touch something documented below.
   `other`) is for application checks; its editable display `name` is for the
   UI. `Event.eventTypeId` is required; the 20260829 backfill assigns legacy
   events without one to `wedding` before `prisma db push` enforces the schema.
-- `Category.eventTypeIds` and `Giftlist.eventTypeIds` are Mongo many-to-many
-  relations to `EventType`. A category may have several types. Repeating a
+- `Category.eventTypeIds` is a Mongo many-to-many relation to `EventType`. A
+  category may have several types. A collection's types are calculated at read
+  time as the intersection of the event types on all categories represented by
+  its gifts; an empty collection has no event types. Admins do not select
+  collection types directly. Repeating a
   category name is allowed only when its event-type sets do not overlap;
   enforce that in the admin action because Mongo cannot express that index.
 - `Gift.categoryId` is required and backed by the explicit `Gift.category` /
@@ -108,11 +111,11 @@ whenever you touch something documented below.
 - `Gift.nameScopeKey` is a JSON-encoded unique key that normalizes the name
   and scopes catalog names by category and private organizer names by event
   plus category.
-- `Giftlist` has no category field: its categories are derived from its
-  `gifts`. Its selected types must be compatible with every gift category.
+- `Giftlist` has no category or event-type fields: both are derived from its
+  `gifts`. Do not persist or synchronize collection event types.
   `Gift.giftlistIds` / `Giftlist.giftIds` form a Mongo many-to-many relation;
-  a gift may belong to zero or more collections, including collections for
-  different event types when its category supports every required type.
+  a gift may belong to zero or more collections. Adding, moving, or removing
+  a gift recalculates each affected collection independently.
   New collections require at least one selected event type. Existing legacy
   collections may still have no types until migrated. Removing or deleting a
   gift never deletes an empty collection.

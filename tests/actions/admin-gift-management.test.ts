@@ -269,7 +269,7 @@ describe('admin creates and edits catalog gifts', () => {
 
     expect(mocks.giftlistFindMany).toHaveBeenCalledWith({
       where: { id: { in: ['giftlist-1'] } },
-      select: { id: true, eventTypeIds: true },
+      select: { id: true },
     })
     expect(mocks.giftCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -336,7 +336,7 @@ describe('admin creates and edits catalog gifts', () => {
     })
   })
 
-  it('rejects collections incompatible with the gift category', async () => {
+  it('allows adding a gift from another category without synchronizing collection types', async () => {
     mocks.giftlistFindMany.mockResolvedValue([
       { id: 'giftlist-birthday', eventTypeIds: ['event-type-birthday'] },
     ])
@@ -346,11 +346,9 @@ describe('admin creates and edits catalog gifts', () => {
       giftlistIds: ['giftlist-birthday'],
     })
 
-    expect(result).toEqual({
-      error:
-        'La categoría seleccionada no es compatible con los tipos de evento de una o más colecciones.',
-    })
-    expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(mocks.giftCreate).toHaveBeenCalled()
+    expect(mocks.giftlistUpdate).not.toHaveBeenCalled()
+    expect(result).toEqual({ giftId: 'private-gift-1' })
   })
 
   it('copies the old gift once per linked event before changing the catalog price', async () => {

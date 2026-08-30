@@ -4,12 +4,24 @@ import type { Giftlist, Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
+import { deriveGiftlistEventTypeIds } from '@/lib/giftlist-event-types'
 import prismaClient from '@/prisma/client'
 import { AdminGiftlistSchema } from '@/schemas/form'
 import type { GetGiftlistsSearchParams } from '@/schemas/params'
 import { getErrorMessage } from '../helper'
 
-export type GiftlistOption = Pick<Giftlist, 'id' | 'name' | 'eventTypeIds'>
+export type GiftlistOption = Pick<Giftlist, 'id' | 'name'> & {
+  eventTypeIds: string[]
+}
+
+export type AdminGiftlist = Pick<
+  Giftlist,
+  'id' | 'name' | 'normalizedName' | 'giftIds'
+> & {
+  gifts: { id: string; categoryId: string }[]
+  eventTypeIds: string[]
+  eventTypes: { id: string; name: string }[]
+}
 
 export async function getGiftlistOptionsForAdmin(): Promise<GiftlistOption[]> {
   const currentUser = await getCurrentUser()
@@ -17,10 +29,21 @@ export async function getGiftlistOptionsForAdmin(): Promise<GiftlistOption[]> {
   if (currentUser?.role !== 'ADMIN') return []
 
   try {
-    return await prismaClient.giftlist.findMany({
-      select: { id: true, name: true, eventTypeIds: true },
+    const giftlists = await prismaClient.giftlist.findMany({
+      select: {
+        id: true,
+        name: true,
+        gifts: {
+          select: { category: { select: { eventTypeIds: true } } },
+        },
+      },
       orderBy: { name: 'asc' },
     })
+
+    return giftlists.map(({ gifts, ...giftlist }) => ({
+      ...giftlist,
+      eventTypeIds: deriveGiftlistEventTypeIds(gifts),
+    }))
   } catch (error) {
     console.error('Error retrieving gift list options:', error)
     return []
@@ -31,12 +54,48 @@ export async function getAdminGiftlists() {
   if (!(await ensureAdmin())) return []
 
   try {
-    return await prismaClient.giftlist.findMany({
-      include: {
-        gifts: { select: { id: true, categoryId: true } },
-        eventTypes: { select: { id: true, name: true } },
+    const giftlists = await prismaClient.giftlist.findMany({
+      select: {
+        id: true,
+        name: true,
+        normalizedName: true,
+        giftIds: true,
+        gifts: {
+          select: {
+            id: true,
+            categoryId: true,
+            category: {
+              select: {
+                eventTypeIds: true,
+                eventTypes: { select: { id: true, name: true } },
+              },
+            },
+          },
+        },
       },
       orderBy: { name: 'asc' },
+    })
+
+    return giftlists.map(giftlist => {
+      const eventTypeIds = deriveGiftlistEventTypeIds(giftlist.gifts)
+      const eventTypesById = new Map(
+        giftlist.gifts.flatMap(gift =>
+          gift.category.eventTypes.map(eventType => [eventType.id, eventType])
+        )
+      )
+
+      return {
+        id: giftlist.id,
+        name: giftlist.name,
+        normalizedName: giftlist.normalizedName,
+        giftIds: giftlist.giftIds,
+        gifts: giftlist.gifts.map(({ id, categoryId }) => ({ id, categoryId })),
+        eventTypeIds,
+        eventTypes: eventTypeIds.flatMap(id => {
+          const eventType = eventTypesById.get(id)
+          return eventType ? [eventType] : []
+        }),
+      } satisfies AdminGiftlist
     })
   } catch (error) {
     console.error('Error retrieving admin gift lists:', error)
@@ -48,16 +107,22 @@ export async function getGiftlist(giftlistId: string, eventTypeId: string) {
   try {
     const giftlist = await prismaClient.giftlist.findFirst({
       include: {
-        gifts: { include: { image: true } },
-        eventTypes: { select: { id: true, name: true } },
+        gifts: {
+          include: {
+            image: true,
+            category: { select: { eventTypeIds: true } },
+          },
+        },
       },
-      where: {
-        id: giftlistId,
-        eventTypeIds: { has: eventTypeId },
-      },
+      where: { id: giftlistId },
     })
 
-    if (!giftlist) return null
+    if (
+      !giftlist ||
+      giftlist.gifts.length === 0 ||
+      !deriveGiftlistEventTypeIds(giftlist.gifts).includes(eventTypeId)
+    )
+      return null
 
     return giftlist
   } catch (error) {
@@ -83,10 +148,6 @@ export async function getGiftlists({
     }
   }
 
-  if (eventTypeId) {
-    query.eventTypeIds = { has: eventTypeId }
-  }
-
   if (category) {
     query.gifts = { some: { categoryId: category } }
   }
@@ -95,12 +156,22 @@ export async function getGiftlists({
     const giftlists = await prismaClient.giftlist.findMany({
       where: query,
       include: {
-        gifts: { include: { image: true } },
-        eventTypes: { select: { id: true, name: true } },
+        gifts: {
+          include: {
+            image: true,
+            category: { select: { eventTypeIds: true } },
+          },
+        },
       },
     })
 
-    return giftlists
+    if (!eventTypeId) return giftlists
+
+    return giftlists.filter(
+      giftlist =>
+        giftlist.gifts.length > 0 &&
+        deriveGiftlistEventTypeIds(giftlist.gifts).includes(eventTypeId)
+    )
   } catch (error) {
     console.error('Error retrieving gift lists:', error)
     throw new Error('Failed to retrieve gift lists')
@@ -118,71 +189,17 @@ function revalidateGiftlistPaths() {
   revalidatePath('/wishlist')
 }
 
-async function validateGiftlistEventTypes(
-  giftlistId: string,
-  eventTypeIds: string[]
-) {
-  const uniqueIds = Array.from(new Set(eventTypeIds))
-  const [giftlist, eventTypes, gifts] = await Promise.all([
-    prismaClient.giftlist.findUnique({
-      where: { id: giftlistId },
-      select: { id: true },
-    }),
-    prismaClient.eventType.findMany({
-      where: { id: { in: uniqueIds } },
-      select: { id: true },
-    }),
-    prismaClient.gift.findMany({
-      where: { giftlistIds: { has: giftlistId } },
-      select: { categoryId: true },
-    }),
-  ])
-
-  if (!giftlist) return undefined
-  if (eventTypes.length !== uniqueIds.length) return null
-  if (gifts.length === 0) return uniqueIds
-
-  const categoryIds = Array.from(new Set(gifts.map(gift => gift.categoryId)))
-  const categories = await prismaClient.category.findMany({
-    where: {
-      id: { in: categoryIds },
-    },
-    select: { eventTypeIds: true },
-  })
-
-  return (
-    categories.length === categoryIds.length &&
-    categories.every(category =>
-      uniqueIds.every(eventTypeId =>
-        category.eventTypeIds.includes(eventTypeId)
-      )
-    )
-  )
-}
-
 export async function createAdminGiftlist(formData: unknown) {
   if (!(await ensureAdmin())) return { error: 'No autorizado.' }
 
   const parsed = AdminGiftlistSchema.safeParse(formData)
   if (!parsed.success) return { error: 'Datos inválidos.' }
-  const uniqueEventTypeIds = Array.from(new Set(parsed.data.eventTypeIds))
-  const eventTypes = await prismaClient.eventType.findMany({
-    where: { id: { in: uniqueEventTypeIds } },
-    select: { id: true },
-  })
-  if (eventTypes.length !== uniqueEventTypeIds.length) {
-    return { error: 'El tipo de evento seleccionado no existe.' }
-  }
-
   try {
     const normalizedName = parsed.data.name.toLocaleLowerCase('es-PY')
     const giftlist = await prismaClient.giftlist.create({
       data: {
         name: parsed.data.name,
         normalizedName,
-        eventTypes: {
-          connect: uniqueEventTypeIds.map(id => ({ id })),
-        },
       },
     })
     revalidateGiftlistPaths()
@@ -198,31 +215,18 @@ export async function editAdminGiftlist(giftlistId: string, formData: unknown) {
   const parsed = AdminGiftlistSchema.safeParse(formData)
   if (!parsed.success) return { error: 'Datos inválidos.' }
 
-  const compatible = await validateGiftlistEventTypes(
-    giftlistId,
-    parsed.data.eventTypeIds
-  )
-  if (compatible === undefined) return { error: 'Colección no encontrada.' }
-  if (compatible === null)
-    return { error: 'El tipo de evento seleccionado no existe.' }
-  if (!compatible) {
-    return {
-      error:
-        'Los tipos de evento elegidos no son compatibles con las categorías de todos los regalos de esta colección.',
-    }
-  }
-
   try {
+    const existing = await prismaClient.giftlist.findUnique({
+      where: { id: giftlistId },
+      select: { id: true },
+    })
+    if (!existing) return { error: 'Colección no encontrada.' }
+
     const giftlist = await prismaClient.giftlist.update({
       where: { id: giftlistId },
       data: {
         name: parsed.data.name,
         normalizedName: parsed.data.name.toLocaleLowerCase('es-PY'),
-        eventTypes: {
-          set: Array.from(new Set(parsed.data.eventTypeIds)).map(id => ({
-            id,
-          })),
-        },
       },
     })
     revalidateGiftlistPaths()
@@ -239,7 +243,7 @@ export async function deleteAdminGiftlist(giftlistId: string) {
     await prismaClient.$transaction(async tx => {
       await tx.giftlist.update({
         where: { id: giftlistId },
-        data: { eventTypes: { set: [] }, gifts: { set: [] } },
+        data: { gifts: { set: [] } },
       })
       await tx.giftlist.delete({ where: { id: giftlistId } })
     })
