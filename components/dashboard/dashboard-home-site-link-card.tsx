@@ -60,9 +60,11 @@ export default function DashboardHomeSiteLinkCard({
         <div className="flex flex-col gap-1">
           <h2 className="text-xl font-medium">Link de tu sitio web wedin</h2>
 
-          <p className="text-sm text-textTertiary">
-            Compartí este link con tus invitados
-          </p>
+          {hasAcceptedTerms && (
+            <p className="text-sm text-textTertiary">
+              Compartí este link con tus invitados
+            </p>
+          )}
         </div>
 
         <EventUrlForm
@@ -72,32 +74,17 @@ export default function DashboardHomeSiteLinkCard({
         />
       </div>
 
-      <div className="flex flex-col gap-3">
+      {hasAcceptedTerms ? (
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          {hasAcceptedTerms ? (
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={isPublished}
-                disabled={publishLoading}
-                onCheckedChange={toggle}
-              />
-
-              <span className="font-medium">Web visible</span>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              variant="success"
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={isPublished}
               disabled={publishLoading}
-              onClick={() => toggle(true)}
-            >
-              {publishLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                'Activar lista'
-              )}
-            </Button>
-          )}
+              onCheckedChange={toggle}
+            />
+
+            <span className="font-medium">Web visible</span>
+          </div>
 
           <div className="flex flex-wrap gap-3">
             <DownloadQrButton
@@ -129,8 +116,22 @@ export default function DashboardHomeSiteLinkCard({
             </Button>
           </div>
         </div>
+      ) : (
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <Button
+            type="button"
+            variant="success"
+            className="shrink-0"
+            disabled={publishLoading}
+            onClick={() => toggle(true)}
+          >
+            {publishLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              'Activar lista'
+            )}
+          </Button>
 
-        {!hasAcceptedTerms && (
           <p className="text-sm text-textTertiary">
             Al activar tu lista de regalos aceptás las{' '}
             <Link
@@ -144,8 +145,8 @@ export default function DashboardHomeSiteLinkCard({
             y que wedin descuente el valor de la comisión al recibir tus
             regalos.
           </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
