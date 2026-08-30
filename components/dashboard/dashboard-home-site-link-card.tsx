@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch'
 import { useToggleEventPublished } from '@/hooks/dashboard/use-toggle-event-published'
 import { useToast } from '@/hooks/use-toast'
 import { getPublicEventUrl } from '@/lib/event-domain'
-import { TERMS_PATHS } from '@/lib/terms'
+import { hasAcceptedOrganizerTerms, TERMS_PATHS } from '@/lib/terms'
 import type { CompletedEvent } from './dashboard-home'
 
 type DashboardHomeSiteLinkCardProps = {
@@ -33,7 +33,7 @@ export default function DashboardHomeSiteLinkCard({
   } = useToggleEventPublished({
     eventId: event.id,
     isPublished: event.isPublished,
-    hasAcceptedTerms: event.termsAcceptedAt !== null || event.isPublished,
+    hasAcceptedTerms: hasAcceptedOrganizerTerms(event),
   })
 
   const guestUrl = getPublicEventUrl(currentUrl)

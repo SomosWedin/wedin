@@ -16,6 +16,13 @@ export type TermsDocument = {
   sections: TermsSection[]
 }
 
+export function hasAcceptedOrganizerTerms(event: {
+  termsAcceptedAt: Date | null
+  isPublished: boolean
+}) {
+  return event.termsAcceptedAt !== null || event.isPublished
+}
+
 const PENDING = 'PENDIENTE: falta la redacción legal de esta sección.'
 
 export const ORGANIZER_TERMS: TermsDocument = {
