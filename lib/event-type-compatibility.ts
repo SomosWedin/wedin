@@ -18,3 +18,13 @@ export function includesEveryEventType(
     availableEventTypeIds.includes(eventTypeId)
   )
 }
+
+export function filterByEventTypeIds<T extends { eventTypeIds: string[] }>(
+  values: T[],
+  eventTypeIds: string[]
+) {
+  if (eventTypeIds.length === 0) return []
+  return values.filter(value =>
+    includesEveryEventType(value.eventTypeIds, eventTypeIds)
+  )
+}

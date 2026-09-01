@@ -72,10 +72,12 @@ function SortIcon({
 function GiftlistDialogContent({
   giftlist,
   gifts,
+  eventTypes,
   controller,
 }: {
   giftlist?: AdminGiftlist
   gifts: GiftMultiSelectOption[]
+  eventTypes?: EventType[]
   controller: GiftlistFormController
 }) {
   return (
@@ -91,6 +93,9 @@ function GiftlistDialogContent({
         loading={controller.loading}
         isValid={controller.isValid}
         submitLabel={giftlist ? 'Guardar cambios' : 'Crear colección'}
+        eventTypes={eventTypes}
+        filterGiftsByEventType
+        initialEventTypeIds={giftlist?.eventTypeIds}
         onSubmit={controller.handleSubmit}
         onCancel={() => controller.handleOpenChange(false)}
       />
@@ -98,7 +103,13 @@ function GiftlistDialogContent({
   )
 }
 
-function CreateGiftlistDialog({ gifts }: { gifts: GiftMultiSelectOption[] }) {
+function CreateGiftlistDialog({
+  gifts,
+  eventTypes,
+}: {
+  gifts: GiftMultiSelectOption[]
+  eventTypes: EventType[]
+}) {
   const controller = useCreateAdminGiftlist()
 
   return (
@@ -108,7 +119,11 @@ function CreateGiftlistDialog({ gifts }: { gifts: GiftMultiSelectOption[] }) {
           Crear colección <IoAdd className="text-xl" />
         </Button>
       </DialogTrigger>
-      <GiftlistDialogContent gifts={gifts} controller={controller} />
+      <GiftlistDialogContent
+        gifts={gifts}
+        eventTypes={eventTypes}
+        controller={controller}
+      />
     </Dialog>
   )
 }
@@ -116,9 +131,11 @@ function CreateGiftlistDialog({ gifts }: { gifts: GiftMultiSelectOption[] }) {
 function EditGiftlistDialog({
   giftlist,
   gifts,
+  eventTypes,
 }: {
   giftlist: AdminGiftlist
   gifts: GiftMultiSelectOption[]
+  eventTypes: EventType[]
 }) {
   const controller = useEditAdminGiftlist(giftlist)
 
@@ -138,6 +155,7 @@ function EditGiftlistDialog({
       <GiftlistDialogContent
         giftlist={giftlist}
         gifts={gifts}
+        eventTypes={eventTypes}
         controller={controller}
       />
     </Dialog>
@@ -168,6 +186,11 @@ export default function AdminGiftlistsList({
     () => new Map(categories.map(category => [category.id, category.name])),
     [categories]
   )
+  const categoryEventTypeIdsById = useMemo(
+    () =>
+      new Map(categories.map(category => [category.id, category.eventTypeIds])),
+    [categories]
+  )
   const giftOptions = useMemo(
     () =>
       gifts.map(gift => ({
@@ -175,8 +198,9 @@ export default function AdminGiftlistsList({
         name: gift.name,
         categoryName:
           categoriesById.get(gift.categoryId) ?? 'Categoría no encontrada',
+        eventTypeIds: categoryEventTypeIdsById.get(gift.categoryId) ?? [],
       })),
-    [categoriesById, gifts]
+    [categoriesById, categoryEventTypeIdsById, gifts]
   )
 
   const getCategoryNames = (giftlist: AdminGiftlist) =>
@@ -300,7 +324,7 @@ export default function AdminGiftlistsList({
             ))}
           </SelectContent>
         </Select>
-        <CreateGiftlistDialog gifts={giftOptions} />
+        <CreateGiftlistDialog gifts={giftOptions} eventTypes={eventTypes} />
       </div>
       <div className="overflow-hidden rounded-lg bg-white">
         <div className="hidden grid-cols-12 gap-4 rounded-t-lg bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600 sm:grid">
@@ -381,7 +405,11 @@ export default function AdminGiftlistsList({
                 {getCategoryNames(giftlist).join(', ') || 'Sin categorías'}
               </div>
               <div className="col-span-2 flex justify-end gap-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-                <EditGiftlistDialog giftlist={giftlist} gifts={giftOptions} />
+                <EditGiftlistDialog
+                  giftlist={giftlist}
+                  gifts={giftOptions}
+                  eventTypes={eventTypes}
+                />
                 <Button
                   type="button"
                   size="icon"

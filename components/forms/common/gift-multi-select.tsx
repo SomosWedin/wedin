@@ -23,18 +23,21 @@ export type GiftMultiSelectOption = {
   id: string
   name: string
   categoryName: string
+  eventTypeIds: string[]
 }
 
 type GiftMultiSelectProps = {
   gifts: GiftMultiSelectOption[]
   selectedIds: string[]
   onChange: (giftIds: string[]) => void
+  disabled?: boolean
 }
 
 export default function GiftMultiSelect({
   gifts,
   selectedIds,
   onChange,
+  disabled = false,
 }: GiftMultiSelectProps) {
   const [open, setOpen] = useState(false)
   const selectedGifts = gifts.filter(gift => selectedIds.includes(gift.id))
@@ -77,6 +80,7 @@ export default function GiftMultiSelect({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            disabled={disabled}
             className="w-full justify-between font-normal"
           >
             {selectedGifts.length
