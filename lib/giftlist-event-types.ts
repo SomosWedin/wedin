@@ -1,3 +1,5 @@
+import { intersectEventTypeIds } from '@/lib/event-type-compatibility'
+
 type GiftCategoryEventTypes = {
   category: { eventTypeIds: string[] }
 }
@@ -5,5 +7,5 @@ type GiftCategoryEventTypes = {
 export function deriveGiftlistEventTypeIds(
   gifts: GiftCategoryEventTypes[]
 ): string[] {
-  return Array.from(new Set(gifts.flatMap(gift => gift.category.eventTypeIds)))
+  return intersectEventTypeIds(gifts.map(gift => gift.category.eventTypeIds))
 }

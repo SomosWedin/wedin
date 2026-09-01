@@ -258,7 +258,11 @@ describe('admin creates and edits catalog gifts', () => {
 
   it('allows an admin to add a gift to an existing collection from another category', async () => {
     mocks.giftlistFindMany.mockResolvedValue([
-      { id: 'giftlist-1', eventTypeIds: ['event-type-wedding'] },
+      {
+        id: 'giftlist-1',
+        name: 'Casamiento',
+        gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
+      },
     ])
     mocks.giftCreate.mockResolvedValue({ id: 'gift-1' })
 
@@ -269,7 +273,13 @@ describe('admin creates and edits catalog gifts', () => {
 
     expect(mocks.giftlistFindMany).toHaveBeenCalledWith({
       where: { id: { in: ['giftlist-1'] } },
-      select: { id: true },
+      select: {
+        id: true,
+        name: true,
+        gifts: {
+          select: { category: { select: { eventTypeIds: true } } },
+        },
+      },
     })
     expect(mocks.giftCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -284,8 +294,16 @@ describe('admin creates and edits catalog gifts', () => {
 
   it('creates a gift in multiple compatible collections', async () => {
     mocks.giftlistFindMany.mockResolvedValue([
-      { id: 'giftlist-wedding', eventTypeIds: ['event-type-wedding'] },
-      { id: 'giftlist-birthday', eventTypeIds: ['event-type-birthday'] },
+      {
+        id: 'giftlist-wedding',
+        name: 'Casamiento',
+        gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
+      },
+      {
+        id: 'giftlist-birthday',
+        name: 'Cumpleaños',
+        gifts: [{ category: { eventTypeIds: ['event-type-birthday'] } }],
+      },
     ])
     mocks.categoryFindUnique.mockResolvedValue({
       id: 'category-1',
@@ -321,7 +339,11 @@ describe('admin creates and edits catalog gifts', () => {
 
   it('deduplicates selected collection ids before creating the gift', async () => {
     mocks.giftlistFindMany.mockResolvedValue([
-      { id: 'giftlist-1', eventTypeIds: ['event-type-wedding'] },
+      {
+        id: 'giftlist-1',
+        name: 'Casamiento',
+        gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
+      },
     ])
 
     await createAdminGift({
@@ -336,9 +358,13 @@ describe('admin creates and edits catalog gifts', () => {
     })
   })
 
-  it('allows adding a gift from another category without synchronizing collection types', async () => {
+  it('rejects adding a gift that shares no event type with the collection', async () => {
     mocks.giftlistFindMany.mockResolvedValue([
-      { id: 'giftlist-birthday', eventTypeIds: ['event-type-birthday'] },
+      {
+        id: 'giftlist-birthday',
+        name: 'Cumpleaños',
+        gifts: [{ category: { eventTypeIds: ['event-type-birthday'] } }],
+      },
     ])
 
     const result = await createAdminGift({
@@ -346,9 +372,12 @@ describe('admin creates and edits catalog gifts', () => {
       giftlistIds: ['giftlist-birthday'],
     })
 
-    expect(mocks.giftCreate).toHaveBeenCalled()
+    expect(mocks.giftCreate).not.toHaveBeenCalled()
     expect(mocks.giftlistUpdate).not.toHaveBeenCalled()
-    expect(result).toEqual({ giftId: 'private-gift-1' })
+    expect(result).toEqual({
+      error:
+        'Uno o más regalos no comparten un tipo de evento con la colección seleccionada.',
+    })
   })
 
   it('copies the old gift once per linked event before changing the catalog price', async () => {
@@ -449,7 +478,11 @@ describe('admin creates and edits catalog gifts', () => {
       wishlistGifts: [{ id: 'wishlist-gift-1', eventId: 'event-1' }],
     })
     mocks.giftlistFindMany.mockResolvedValue([
-      { id: 'giftlist-1', eventTypeIds: ['event-type-wedding'] },
+      {
+        id: 'giftlist-1',
+        name: 'Casamiento',
+        gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
+      },
     ])
 
     const result = await editAdminGift(
@@ -460,6 +493,39 @@ describe('admin creates and edits catalog gifts', () => {
     expect(mocks.giftCreate).not.toHaveBeenCalled()
     expect(mocks.wishlistGiftUpdate).not.toHaveBeenCalled()
     expect(result).toEqual({ giftId: 'gift-1' })
+  })
+
+  it('removes an existing collection membership made incompatible by a category edit', async () => {
+    mocks.giftFindFirst.mockResolvedValue({
+      id: 'gift-1',
+      name: editValues.name,
+      price: editValues.price,
+      categoryId: 'category-before',
+      giftlistIds: ['giftlist-1'],
+      image: { url: editValues.imageUrl },
+      wishlistGifts: [],
+    })
+    mocks.giftlistFindMany.mockResolvedValue([
+      {
+        id: 'giftlist-1',
+        name: 'Baby Shower',
+        gifts: [{ category: { eventTypeIds: ['event-type-baby'] } }],
+      },
+    ])
+
+    const result = await editAdminGift(
+      { ...editValues, giftlistIds: ['giftlist-1'] },
+      'gift-1'
+    )
+
+    expect(mocks.giftUpdate).toHaveBeenCalledWith({
+      where: { id: 'gift-1' },
+      data: expect.objectContaining({ giftlists: { set: [] } }),
+    })
+    expect(result).toEqual({
+      giftId: 'gift-1',
+      removedGiftlists: [{ id: 'giftlist-1', name: 'Baby Shower' }],
+    })
   })
 
   it('skips price checks and progress updates when the price is unchanged', async () => {

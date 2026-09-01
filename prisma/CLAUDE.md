@@ -96,12 +96,14 @@ whenever you touch something documented below.
   UI. `Event.eventTypeId` is required; the 20260829 backfill assigns legacy
   events without one to `wedding` before `prisma db push` enforces the schema.
 - `Category.eventTypeIds` is a Mongo many-to-many relation to `EventType`. A
-  category may have several types. A collection's types are calculated at read
+  category may have several types. Category names are globally unique after
+  normalization. In the admin gift form, a category is available only when it
+  contains every selected event type. Editing a category updates the shared
+  category seen by all of its gifts, including gifts linked to wishlists; do
+  not create category snapshots. A collection's types are calculated at read
   time as the intersection of the event types on all categories represented by
   its gifts; an empty collection has no event types. Admins do not select
-  collection types directly. Repeating a
-  category name is allowed only when its event-type sets do not overlap;
-  enforce that in the admin action because Mongo cannot express that index.
+  collection types directly.
 - `Gift.categoryId` is required and backed by the explicit `Gift.category` /
   `Category.gifts` relation. Mongo does not enforce cross-collection foreign
   keys, so supported gift writes validate the category and use a nested

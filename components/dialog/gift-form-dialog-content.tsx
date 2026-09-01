@@ -2,7 +2,7 @@
 
 import type { Category, EventType } from '@prisma/client'
 import type { GiftlistOption } from '@/actions/data/giftlist'
-import GiftForm from '@/components/forms/dialog/gift'
+import GiftForm, { type GiftFormProps } from '@/components/forms/dialog/gift'
 import {
   DialogContent,
   DialogHeader,
@@ -22,7 +22,9 @@ type GiftFormDialogContentProps = {
   lockPrice?: boolean
   allowTypeChange?: boolean
   adminMode?: boolean
+  preserveGiftlistSelectionsOnCategoryChange?: boolean
   readOnlyReason?: string
+  onSubmit?: GiftFormProps['onSubmit']
 }
 
 export default function GiftFormDialogContent({
@@ -37,7 +39,9 @@ export default function GiftFormDialogContent({
   lockPrice,
   allowTypeChange,
   adminMode,
+  preserveGiftlistSelectionsOnCategoryChange,
   readOnlyReason,
+  onSubmit,
 }: GiftFormDialogContentProps) {
   return (
     <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
@@ -61,9 +65,12 @@ export default function GiftFormDialogContent({
         lockPrice={lockPrice}
         allowTypeChange={allowTypeChange}
         adminMode={adminMode}
+        preserveGiftlistSelectionsOnCategoryChange={
+          preserveGiftlistSelectionsOnCategoryChange
+        }
         readOnlyReason={readOnlyReason}
         onFileChange={controller.handleFileChange}
-        onSubmit={controller.handleSubmit}
+        onSubmit={onSubmit ?? controller.handleSubmit}
         onCancel={() => controller.handleOpenChange(false)}
       />
     </DialogContent>

@@ -276,9 +276,10 @@ model Giftlist {
 }
 
 model Category {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  name         String
-  eventTypeIds String[] @db.ObjectId
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  normalizedName String   @unique
+  eventTypeIds   String[] @db.ObjectId
 
   eventTypes EventType[] @relation("CategoryEventTypes", fields: [eventTypeIds], references: [id])
   gifts      Gift[]

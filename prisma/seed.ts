@@ -15,6 +15,11 @@ const {
     eventId?: string
   }) => string
 } = require('../lib/gift-name')
+const {
+  normalizeCategoryName,
+}: {
+  normalizeCategoryName: (name: string) => string
+} = require('../lib/category-name')
 const prismaSeed = new PrismaClient()
 
 const categorySeeds: {
@@ -51,7 +56,7 @@ async function main() {
     eventTypes.map(eventType => [eventType.key, eventType.id])
   )
 
-  // Seed categories. Categories sharing a name must have disjoint event types.
+  // Seed one catalog category per normalized name and attach all applicable types.
   const categories = await Promise.all(
     categorySeeds.map(async ({ name, eventType }) => {
       const eventTypeId = eventTypeIdByKey.get(systemEventTypes[eventType].key)
@@ -59,8 +64,7 @@ async function main() {
 
       const existing = await prismaSeed.category.findFirst({
         where: {
-          name,
-          eventTypeIds: { has: eventTypeId },
+          normalizedName: normalizeCategoryName(name),
         },
       })
 
@@ -72,6 +76,7 @@ async function main() {
         : prismaSeed.category.create({
             data: {
               name,
+              normalizedName: normalizeCategoryName(name),
               eventTypes: { connect: { id: eventTypeId } },
             },
           })

@@ -52,9 +52,23 @@ export function useEditAdminGift(gift: EditableAdminGift) {
         }
       }
 
+      const removedGiftlists =
+        'removedGiftlists' in response ? response.removedGiftlists : undefined
+
       return {
         success: true,
-        feedback: { title: 'Regalo actualizado. ✅' },
+        feedback: {
+          title: 'Regalo actualizado. ✅',
+          ...(removedGiftlists?.length
+            ? {
+                description: `Se quitó de ${removedGiftlists
+                  .map(giftlist => giftlist.name)
+                  .join(
+                    ', '
+                  )} porque ya no compartiría un tipo de evento con todos sus regalos.`,
+              }
+            : {}),
+        },
       }
     },
     unexpectedErrorTitle: 'No pudimos editar el regalo',

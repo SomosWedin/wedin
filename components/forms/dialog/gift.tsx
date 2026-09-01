@@ -7,7 +7,6 @@ import {
   type BaseSyntheticEvent,
   type ChangeEventHandler,
   type RefObject,
-  useId,
   useMemo,
   useState,
 } from 'react'
@@ -16,6 +15,7 @@ import { CiImageOn } from 'react-icons/ci'
 import { IoInformationCircleOutline } from 'react-icons/io5'
 import { MdOutlineFileUpload } from 'react-icons/md'
 import type { GiftlistOption } from '@/actions/data/giftlist'
+import EventTypeMultiSelect from '@/components/forms/common/event-type-multi-select'
 import GiftlistMultiSelect from '@/components/forms/common/giftlist-multi-select'
 import PriceInput from '@/components/forms/common/price-input'
 import { Button } from '@/components/ui/button'
@@ -42,6 +42,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { includesEveryEventType } from '@/lib/event-type-compatibility'
 import {
   getGiftlistOptionIds,
   retainCategoryCompatibleGiftlistIds,
@@ -69,6 +70,7 @@ export type GiftFormProps = {
   lockPrice?: boolean
   allowTypeChange?: boolean
   adminMode?: boolean
+  preserveGiftlistSelectionsOnCategoryChange?: boolean
   readOnlyReason?: string
   onFileChange: ChangeEventHandler<HTMLInputElement>
   onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
@@ -91,41 +93,37 @@ export default function GiftForm({
   lockPrice = false,
   allowTypeChange = false,
   adminMode = false,
+  preserveGiftlistSelectionsOnCategoryChange = false,
   readOnlyReason,
   onFileChange,
   onSubmit,
   onCancel,
 }: GiftFormProps) {
-  const eventTypeInputId = useId()
   const isGroupGift = form.watch('isGroupGift')
   const selectedGiftlistIds = form.watch('giftlistIds')
   const selectedCategoryId = form.watch('categoryId')
-  const initialEventTypeId = categories.find(
+  const initialEventTypeIds = categories.find(
     category => category.id === selectedCategoryId
-  )?.eventTypeIds[0]
-  const [selectedEventTypeId, setSelectedEventTypeId] = useState(
-    initialEventTypeId ?? ''
+  )?.eventTypeIds
+  const [selectedEventTypeIds, setSelectedEventTypeIds] = useState(
+    initialEventTypeIds ?? []
   )
   const canChooseEventType = adminMode && allowTypeChange
   const availableCategories = useMemo(() => {
     if (canChooseEventType) {
-      if (!selectedEventTypeId) return []
+      if (selectedEventTypeIds.length === 0) return []
       return categories.filter(category =>
-        category.eventTypeIds.includes(selectedEventTypeId)
+        includesEveryEventType(category.eventTypeIds, selectedEventTypeIds)
       )
     }
     return categories
-  }, [categories, canChooseEventType, selectedEventTypeId])
+  }, [categories, canChooseEventType, selectedEventTypeIds])
   const selectedCategory = categories.find(
     category => category.id === selectedCategoryId
   )
   const availableGiftlistIds = useMemo(() => {
-    return getGiftlistOptionIds(
-      giftlists,
-      selectedCategory,
-      selectedEventTypeId
-    )
-  }, [giftlists, selectedCategory, selectedEventTypeId])
+    return getGiftlistOptionIds(giftlists, selectedCategory)
+  }, [giftlists, selectedCategory])
 
   return (
     <Form {...form}>
@@ -215,41 +213,35 @@ export default function GiftForm({
 
           {adminMode && (
             <div className="flex flex-col gap-1">
-              <label htmlFor={eventTypeInputId} className="text-sm font-medium">
-                Tipo de evento
-              </label>
-              <Select
-                value={selectedEventTypeId}
-                onValueChange={value => {
-                  setSelectedEventTypeId(value)
+              <span className="text-sm font-medium">Tipos de evento</span>
+              <EventTypeMultiSelect
+                eventTypes={eventTypes}
+                selectedIds={selectedEventTypeIds}
+                onChange={eventTypeIds => {
+                  setSelectedEventTypeIds(eventTypeIds)
                   if (
                     selectedCategoryId &&
-                    !categories
-                      .find(category => category.id === selectedCategoryId)
-                      ?.eventTypeIds.includes(value)
+                    (eventTypeIds.length === 0 ||
+                      !includesEveryEventType(
+                        categories.find(
+                          category => category.id === selectedCategoryId
+                        )?.eventTypeIds ?? [],
+                        eventTypeIds
+                      ))
                   ) {
                     form.setValue('categoryId', '', {
                       shouldDirty: true,
                       shouldValidate: true,
                     })
-                    form.setValue('giftlistIds', [], {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
+                    if (!preserveGiftlistSelectionsOnCategoryChange) {
+                      form.setValue('giftlistIds', [], {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
                   }
                 }}
-              >
-                <SelectTrigger id={eventTypeInputId}>
-                  <SelectValue placeholder="Elegí un tipo de evento" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {eventTypes.map(eventType => (
-                    <SelectItem key={eventType.id} value={eventType.id}>
-                      {eventType.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
           )}
 
@@ -262,8 +254,15 @@ export default function GiftForm({
 
                 <Select
                   value={field.value}
+                  disabled={
+                    canChooseEventType && selectedEventTypeIds.length === 0
+                  }
                   onValueChange={value => {
-                    if (adminMode && value !== field.value) {
+                    if (
+                      adminMode &&
+                      value !== field.value &&
+                      !preserveGiftlistSelectionsOnCategoryChange
+                    ) {
                       const nextCategory = categories.find(
                         category => category.id === value
                       )
@@ -313,7 +312,9 @@ export default function GiftForm({
                     availableIds={availableGiftlistIds}
                     selectedIds={field.value}
                     onChange={field.onChange}
-                    disabled={!selectedCategory || !selectedEventTypeId}
+                    disabled={
+                      !selectedCategory || selectedEventTypeIds.length === 0
+                    }
                   />
                   {giftlists.length === 0 && (
                     <p className="text-xs text-textTertiary">

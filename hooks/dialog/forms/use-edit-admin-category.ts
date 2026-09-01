@@ -15,6 +15,8 @@ export function useEditAdminCategory(category: Category) {
     defaultValues,
     submit: async values => {
       const response = await editAdminCategory(category.id, values)
+      const removedGiftlists =
+        'removedGiftlists' in response ? response.removedGiftlists : undefined
       return response.error
         ? {
             success: false,
@@ -24,7 +26,21 @@ export function useEditAdminCategory(category: Category) {
               variant: 'destructive',
             },
           }
-        : { success: true, feedback: { title: 'Categoría actualizada.' } }
+        : {
+            success: true,
+            feedback: {
+              title: 'Categoría actualizada.',
+              ...(removedGiftlists?.length
+                ? {
+                    description: `Sus regalos se quitaron de ${removedGiftlists
+                      .map(giftlist => giftlist.name)
+                      .join(
+                        ', '
+                      )} porque la colección ya no tendría un tipo de evento común.`,
+                  }
+                : {}),
+            },
+          }
     },
     unexpectedErrorTitle: 'No pudimos editar la categoría',
     errorContext: 'Error editing admin category:',

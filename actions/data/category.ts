@@ -4,14 +4,24 @@ import type { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
-import { buildGiftNameScopeKey } from '@/lib/gift-name'
+import { normalizeCategoryName } from '@/lib/category-name'
+import { deriveGiftlistEventTypeIds } from '@/lib/giftlist-event-types'
 import prismaClient from '@/prisma/client'
 import { AdminCategorySchema } from '@/schemas/form'
 import { getErrorMessage } from '../helper'
-import { copyCatalogGiftForWishlistLinks } from './catalog-gift-copy'
 
 const INVALID_CATEGORY_DATA_ERROR =
   'Datos inválidos, por favor verifica los datos de la categoría.'
+const DUPLICATE_CATEGORY_ERROR = 'Ya existe una categoría con ese nombre.'
+
+function isUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  )
+}
 
 export async function getCategories(eventTypeId?: string) {
   try {
@@ -46,8 +56,7 @@ async function findDuplicateCategory(
 
   return prismaClient.category.findFirst({
     where: {
-      name: { equals: values.name, mode: 'insensitive' },
-      eventTypeIds: { hasSome: values.eventTypeIds },
+      normalizedName: normalizeCategoryName(values.name),
       ...(categoryId ? { id: { not: categoryId } } : {}),
     },
     select: { id: true },
@@ -64,102 +73,55 @@ async function validateEventTypeIds(eventTypeIds: string[]) {
   return eventTypes.length === uniqueIds.length ? uniqueIds : null
 }
 
-async function preserveWishlistCategoryBeforeEdit(
+async function disconnectCategoryGiftsFromIncompatibleGiftlists(
   tx: Prisma.TransactionClient,
-  existing: { id: string; name: string; eventTypeIds: string[] },
-  values: AdminCategoryValues
+  categoryId: string,
+  nextEventTypeIds: string[]
 ) {
-  const nameChanged =
-    existing.name.toLocaleLowerCase('es-PY') !==
-    values.name.toLocaleLowerCase('es-PY')
-  const removedEventTypeIds = existing.eventTypeIds.filter(
-    eventTypeId => !values.eventTypeIds.includes(eventTypeId)
-  )
-  if (!nameChanged && removedEventTypeIds.length === 0) return
-
-  const gifts = await tx.gift.findMany({
-    where: {
-      categoryId: existing.id,
-      wishlistGifts: { some: {} },
-    },
+  const giftlists = await tx.giftlist.findMany({
+    where: { gifts: { some: { categoryId } } },
     select: {
       id: true,
       name: true,
-      price: true,
-      categoryId: true,
-      isDefault: true,
-      eventId: true,
-      image: { select: { url: true } },
-      wishlistGifts: {
+      gifts: {
         select: {
           id: true,
-          eventId: true,
-          event: { select: { eventTypeId: true } },
+          categoryId: true,
+          category: { select: { eventTypeIds: true } },
         },
       },
     },
   })
-
-  const affectedGifts = gifts
-    .map(gift => ({
-      gift,
-      wishlistGifts: gift.wishlistGifts.filter(
-        wishlistGift =>
-          nameChanged ||
-          removedEventTypeIds.includes(wishlistGift.event.eventTypeId)
-      ),
-    }))
-    .filter(({ wishlistGifts }) => wishlistGifts.length > 0)
-
-  if (affectedGifts.length === 0) return
-
-  const preservedEventTypeIds = nameChanged
-    ? existing.eventTypeIds
-    : removedEventTypeIds
-  const reusableCategory = await tx.category.findFirst({
-    where: {
-      id: { not: existing.id },
-      name: { equals: existing.name, mode: 'insensitive' },
-      eventTypeIds: { hasEvery: preservedEventTypeIds },
-    },
-    select: { id: true },
-  })
-  const preservedCategory =
-    reusableCategory ??
-    (await tx.category.create({
-      data: {
-        name: existing.name,
-        eventTypes: {
-          connect: preservedEventTypeIds.map(id => ({ id })),
-        },
+  const incompatibleGiftlists = giftlists.filter(giftlist => {
+    const prospectiveGifts = giftlist.gifts.map(gift => ({
+      category: {
+        eventTypeIds:
+          gift.categoryId === categoryId
+            ? nextEventTypeIds
+            : gift.category.eventTypeIds,
       },
-      select: { id: true },
     }))
 
-  for (const { gift, wishlistGifts } of affectedGifts) {
-    if (gift.isDefault || wishlistGifts.length < gift.wishlistGifts.length) {
-      await copyCatalogGiftForWishlistLinks(
-        tx,
-        gift,
-        preservedCategory.id,
-        wishlistGifts
-      )
-      continue
+    return deriveGiftlistEventTypeIds(prospectiveGifts).length === 0
+  })
+
+  for (const giftlist of incompatibleGiftlists) {
+    const affectedGiftIds = giftlist.gifts
+      .filter(gift => gift.categoryId === categoryId)
+      .map(gift => gift.id)
+
+    for (const giftId of affectedGiftIds) {
+      await tx.gift.update({
+        where: { id: giftId },
+        data: { giftlists: { disconnect: [{ id: giftlist.id }] } },
+      })
     }
-
-    await tx.gift.update({
-      where: { id: gift.id },
-      data: {
-        category: { connect: { id: preservedCategory.id } },
-        nameScopeKey: buildGiftNameScopeKey({
-          name: gift.name,
-          categoryId: preservedCategory.id,
-          isDefault: gift.isDefault,
-          eventId: gift.eventId ?? undefined,
-        }),
-      },
-    })
   }
+
+  return incompatibleGiftlists.map(giftlist => ({
+    id: giftlist.id,
+    name: giftlist.name,
+  }))
 }
 
 export async function createAdminCategory(formData: unknown) {
@@ -176,15 +138,13 @@ export async function createAdminCategory(formData: unknown) {
     const values = { ...parsed.data, eventTypeIds }
 
     if (await findDuplicateCategory(values)) {
-      return {
-        error:
-          'Ya existe una categoría con ese nombre para ese tipo de evento.',
-      }
+      return { error: DUPLICATE_CATEGORY_ERROR }
     }
 
     const category = await prismaClient.category.create({
       data: {
         name: values.name,
+        normalizedName: normalizeCategoryName(values.name),
         eventTypes: {
           connect: eventTypeIds.map(id => ({ id })),
         },
@@ -194,6 +154,9 @@ export async function createAdminCategory(formData: unknown) {
     revalidatePath('/gifts')
     return { categoryId: category.id }
   } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return { error: DUPLICATE_CATEGORY_ERROR }
+    }
     console.error('Error creating admin category:', error)
     return { error: getErrorMessage(error) }
   }
@@ -219,32 +182,47 @@ export async function editAdminCategory(categoryId: string, formData: unknown) {
     const values = { ...parsed.data, eventTypeIds }
 
     if (await findDuplicateCategory(values, categoryId)) {
-      return {
-        error:
-          'Ya existe una categoría con ese nombre para ese tipo de evento.',
-      }
+      return { error: DUPLICATE_CATEGORY_ERROR }
     }
+    const eventTypesChanged =
+      [...existing.eventTypeIds].sort().join(',') !==
+      [...eventTypeIds].sort().join(',')
 
-    const category = await prismaClient.$transaction(async tx => {
-      await preserveWishlistCategoryBeforeEdit(tx, existing, values)
+    const result = await prismaClient.$transaction(async tx => {
+      const removedGiftlists = eventTypesChanged
+        ? await disconnectCategoryGiftsFromIncompatibleGiftlists(
+            tx,
+            categoryId,
+            eventTypeIds
+          )
+        : []
 
       const updatedCategory = await tx.category.update({
         where: { id: categoryId },
         data: {
           name: values.name,
+          normalizedName: normalizeCategoryName(values.name),
           eventTypes: {
             set: eventTypeIds.map(id => ({ id })),
           },
         },
       })
-      return updatedCategory
+      return { category: updatedCategory, removedGiftlists }
     })
     revalidatePath('/admin')
     revalidatePath('/gifts')
     revalidatePath('/wishlist')
     revalidatePath('/dashboard')
-    return { categoryId: category.id }
+    return {
+      categoryId: result.category.id,
+      ...(result.removedGiftlists.length > 0
+        ? { removedGiftlists: result.removedGiftlists }
+        : {}),
+    }
   } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return { error: DUPLICATE_CATEGORY_ERROR }
+    }
     console.error('Error editing admin category:', error)
     return { error: getErrorMessage(error) }
   }

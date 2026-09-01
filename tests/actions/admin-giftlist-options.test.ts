@@ -27,7 +27,12 @@ describe('admin gift list options', () => {
       {
         id: 'giftlist-1',
         name: 'Hogar',
-        gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
+        gifts: [
+          {
+            id: 'gift-1',
+            category: { eventTypeIds: ['event-type-wedding'] },
+          },
+        ],
       },
     ])
   })
@@ -40,7 +45,10 @@ describe('admin gift list options', () => {
         id: true,
         name: true,
         gifts: {
-          select: { category: { select: { eventTypeIds: true } } },
+          select: {
+            id: true,
+            category: { select: { eventTypeIds: true } },
+          },
         },
       },
       orderBy: { name: 'asc' },
@@ -50,6 +58,7 @@ describe('admin gift list options', () => {
         id: 'giftlist-1',
         name: 'Hogar',
         eventTypeIds: ['event-type-wedding'],
+        gifts: [{ id: 'gift-1', eventTypeIds: ['event-type-wedding'] }],
       },
     ])
   })
@@ -66,7 +75,7 @@ describe('admin gift list options', () => {
     expect(mocks.giftlistFindMany).not.toHaveBeenCalled()
   })
 
-  it('derives all event types assigned to collection gift categories', async () => {
+  it('derives the event types shared by every collection gift category', async () => {
     mocks.giftlistFindMany.mockResolvedValue([
       {
         id: 'giftlist-1',
@@ -109,11 +118,8 @@ describe('admin gift list options', () => {
           { id: 'gift-1', categoryId: 'category-1' },
           { id: 'gift-2', categoryId: 'category-2' },
         ],
-        eventTypeIds: ['wedding', 'birthday'],
-        eventTypes: [
-          { id: 'wedding', name: 'Casamiento' },
-          { id: 'birthday', name: 'Cumpleaños' },
-        ],
+        eventTypeIds: ['wedding'],
+        eventTypes: [{ id: 'wedding', name: 'Casamiento' }],
       },
     ])
   })

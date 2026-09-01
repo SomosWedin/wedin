@@ -38,11 +38,14 @@ function CategoryDialogContent({
   eventTypes: EventType[]
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const name = controller.form.watch('name')
   const eventTypeIds = controller.form.watch('eventTypeIds')
+  const nameChanged = Boolean(category) && category?.name !== name.trim()
   const eventTypeChanged =
     Boolean(category) &&
     [...(category?.eventTypeIds ?? [])].sort().join(',') !==
       [...eventTypeIds].sort().join(',')
+  const categoryChanged = nameChanged || eventTypeChanged
 
   return (
     <>
@@ -59,7 +62,7 @@ function CategoryDialogContent({
           isValid={controller.isValid}
           submitLabel={category ? 'Guardar cambios' : 'Crear categoría'}
           onSubmit={event => {
-            if (eventTypeChanged) {
+            if (categoryChanged) {
               event?.preventDefault()
               setConfirmOpen(true)
               return Promise.resolve()
@@ -73,12 +76,14 @@ function CategoryDialogContent({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Cambiar los tipos de evento?</AlertDialogTitle>
+            <AlertDialogTitle>¿Guardar los cambios?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esto cambia en qué catálogos aparecen todos los regalos de la
-              categoría. Los regalos que ya están en listas de deseos seguirán
-              allí; sus precios, pagos, contribuciones y reservas no cambiarán.
-              No podrás quitar un tipo requerido por una colección asociada.
+              El nombre y los tipos de evento de esta categoría se actualizarán
+              en todos sus regalos, incluidos los regalos privados y los que ya
+              están en listas de deseos. Sus precios, pagos, contribuciones y
+              reservas no cambiarán. Si una colección deja de tener un tipo de
+              evento común, los regalos de esta categoría se quitarán de esa
+              colección al continuar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

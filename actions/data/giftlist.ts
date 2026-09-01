@@ -16,6 +16,7 @@ import {
 
 export type GiftlistOption = Pick<Giftlist, 'id' | 'name'> & {
   eventTypeIds: string[]
+  gifts: { id: string; eventTypeIds: string[] }[]
 }
 
 export type AdminGiftlist = Pick<
@@ -38,7 +39,10 @@ export async function getGiftlistOptionsForAdmin(): Promise<GiftlistOption[]> {
         id: true,
         name: true,
         gifts: {
-          select: { category: { select: { eventTypeIds: true } } },
+          select: {
+            id: true,
+            category: { select: { eventTypeIds: true } },
+          },
         },
       },
       orderBy: { name: 'asc' },
@@ -47,6 +51,10 @@ export async function getGiftlistOptionsForAdmin(): Promise<GiftlistOption[]> {
     return giftlists.map(({ gifts, ...giftlist }) => ({
       ...giftlist,
       eventTypeIds: deriveGiftlistEventTypeIds(gifts),
+      gifts: gifts.map(gift => ({
+        id: gift.id,
+        eventTypeIds: gift.category.eventTypeIds,
+      })),
     }))
   } catch (error) {
     console.error('Error retrieving gift list options:', error)

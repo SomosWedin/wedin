@@ -89,24 +89,24 @@ export default async function AdminPage() {
             <IoCashOutline className="text-lg" />
             Solicitudes de retiro
           </TabsTrigger>
-          <TabsTrigger value="regalos" className="gap-2 text-xs sm:text-sm">
-            <IoGiftOutline className="text-lg" />
-            Regalos
-          </TabsTrigger>
-          <TabsTrigger value="colecciones" className="gap-2 text-xs sm:text-sm">
-            <IoFolderOpenOutline className="text-lg" />
-            Colecciones
-          </TabsTrigger>
-          <TabsTrigger value="categorias" className="gap-2 text-xs sm:text-sm">
-            <IoPricetagOutline className="text-lg" />
-            Categorías
-          </TabsTrigger>
           <TabsTrigger
             value="tipos-de-evento"
             className="gap-2 text-xs sm:text-sm"
           >
             <IoCalendarOutline className="text-lg" />
             Tipos de evento
+          </TabsTrigger>
+          <TabsTrigger value="categorias" className="gap-2 text-xs sm:text-sm">
+            <IoPricetagOutline className="text-lg" />
+            Categorías
+          </TabsTrigger>
+          <TabsTrigger value="colecciones" className="gap-2 text-xs sm:text-sm">
+            <IoFolderOpenOutline className="text-lg" />
+            Colecciones
+          </TabsTrigger>
+          <TabsTrigger value="regalos" className="gap-2 text-xs sm:text-sm">
+            <IoGiftOutline className="text-lg" />
+            Regalos
           </TabsTrigger>
         </TabsList>
 
@@ -140,12 +140,16 @@ export default async function AdminPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="regalos" className="mt-6">
+        <TabsContent value="tipos-de-evento" className="mt-6">
           <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminGiftsList
-              gifts={gifts}
+            <AdminEventTypesList eventTypes={eventTypes} />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="categorias" className="mt-6">
+          <Suspense fallback={<DashboardTransactionsSkeleton />}>
+            <AdminCategoriesList
               categories={categories}
-              giftlists={giftlists}
               eventTypes={eventTypes}
             />
           </Suspense>
@@ -162,18 +166,14 @@ export default async function AdminPage() {
           </Suspense>
         </TabsContent>
 
-        <TabsContent value="categorias" className="mt-6">
+        <TabsContent value="regalos" className="mt-6">
           <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminCategoriesList
+            <AdminGiftsList
+              gifts={gifts}
               categories={categories}
+              giftlists={giftlists}
               eventTypes={eventTypes}
             />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="tipos-de-evento" className="mt-6">
-          <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminEventTypesList eventTypes={eventTypes} />
           </Suspense>
         </TabsContent>
       </Tabs>

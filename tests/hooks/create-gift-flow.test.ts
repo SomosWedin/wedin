@@ -174,8 +174,16 @@ describe('createGiftFlow', () => {
 
   it('creates an admin gift in multiple collections in one transaction', async () => {
     mocks.giftlistFindMany.mockResolvedValue([
-      { id: 'giftlist-1', eventTypeIds: ['event-type-wedding'] },
-      { id: 'giftlist-2', eventTypeIds: ['event-type-wedding'] },
+      {
+        id: 'giftlist-1',
+        name: 'Hogar',
+        gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
+      },
+      {
+        id: 'giftlist-2',
+        name: 'Cocina',
+        gifts: [{ category: { eventTypeIds: ['event-type-wedding'] } }],
+      },
     ])
 
     const result = await createGiftFlow({

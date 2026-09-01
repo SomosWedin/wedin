@@ -83,7 +83,13 @@ describe('admin collection management', () => {
   })
 
   it('creates a collection with selected catalog gifts', async () => {
-    mocks.giftFindMany.mockResolvedValue([{ id: 'gift-1' }, { id: 'gift-2' }])
+    mocks.giftFindMany.mockResolvedValue([
+      { id: 'gift-1', category: { eventTypeIds: ['wedding'] } },
+      {
+        id: 'gift-2',
+        category: { eventTypeIds: ['wedding', 'birthday'] },
+      },
+    ])
 
     const result = await createAdminGiftlist({
       name: 'Esenciales',
@@ -95,7 +101,10 @@ describe('admin collection management', () => {
         id: { in: ['gift-1', 'gift-2'] },
         isDefault: true,
       },
-      select: { id: true },
+      select: {
+        id: true,
+        category: { select: { eventTypeIds: true } },
+      },
     })
     expect(mocks.giftlistCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -106,7 +115,9 @@ describe('admin collection management', () => {
   })
 
   it('edits the collection name and selected gifts', async () => {
-    mocks.giftFindMany.mockResolvedValue([{ id: 'gift-2' }])
+    mocks.giftFindMany.mockResolvedValue([
+      { id: 'gift-2', category: { eventTypeIds: ['wedding'] } },
+    ])
 
     const result = await editAdminGiftlist('giftlist-1', {
       name: 'Esenciales',
@@ -144,6 +155,40 @@ describe('admin collection management', () => {
 
     expect(result).toEqual({
       error: 'Uno o más regalos seleccionados no existen en el catálogo.',
+    })
+    expect(mocks.giftlistCreate).not.toHaveBeenCalled()
+  })
+
+  it('rejects catalog gifts whose category has no event types', async () => {
+    mocks.giftFindMany.mockResolvedValue([
+      { id: 'gift-with-broken-category', category: { eventTypeIds: [] } },
+    ])
+
+    const result = await createAdminGiftlist({
+      name: 'Esenciales',
+      giftIds: ['gift-with-broken-category'],
+    })
+
+    expect(result).toEqual({
+      error:
+        'No se pueden guardar regalos cuya categoría no tiene tipos de evento asignados.',
+    })
+    expect(mocks.giftlistCreate).not.toHaveBeenCalled()
+  })
+
+  it('rejects gifts whose categories share no event type', async () => {
+    mocks.giftFindMany.mockResolvedValue([
+      { id: 'gift-wedding', category: { eventTypeIds: ['wedding'] } },
+      { id: 'gift-baby', category: { eventTypeIds: ['baby-shower'] } },
+    ])
+
+    const result = await createAdminGiftlist({
+      name: 'Incompatible',
+      giftIds: ['gift-wedding', 'gift-baby'],
+    })
+
+    expect(result).toEqual({
+      error: 'Los regalos seleccionados no comparten ningún tipo de evento.',
     })
     expect(mocks.giftlistCreate).not.toHaveBeenCalled()
   })

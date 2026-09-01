@@ -21,7 +21,8 @@ import {
 } from './gift-operations'
 import {
   GiftlistSelectionError,
-  validateGiftlistIds,
+  validateGiftlistIdsForCreate,
+  validateGiftlistIdsForEdit,
 } from './giftlist-operations'
 
 const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.'
@@ -127,7 +128,11 @@ export async function createAdminGift(formData: AdminGiftCreateValues) {
 
   try {
     const newGift = await prismaClient.$transaction(async tx => {
-      const validatedGiftlistIds = await validateGiftlistIds(tx, giftlistIds)
+      const validatedGiftlistIds = await validateGiftlistIdsForCreate(
+        tx,
+        giftlistIds,
+        values.categoryId
+      )
 
       return createGiftRecord(
         tx,
@@ -193,7 +198,14 @@ export async function editAdminGift(
 
       if (!existingGift) return null
 
-      const validatedGiftlistIds = await validateGiftlistIds(tx, giftlistIds)
+      const { giftlistIds: validatedGiftlistIds, removedGiftlists } =
+        await validateGiftlistIdsForEdit(
+          tx,
+          giftlistIds,
+          values.categoryId,
+          giftId,
+          existingGift.giftlistIds
+        )
 
       const catalogFieldsChanged = catalogGiftContentChanged(
         existingGift,
@@ -213,6 +225,7 @@ export async function editAdminGift(
 
       return {
         gift,
+        removedGiftlists,
       }
     })
 
@@ -222,7 +235,12 @@ export async function editAdminGift(
     revalidatePath('/gifts')
     revalidatePath('/wishlist')
     revalidatePath('/dashboard')
-    return { giftId: result.gift.id }
+    return {
+      giftId: result.gift.id,
+      ...(result.removedGiftlists.length > 0
+        ? { removedGiftlists: result.removedGiftlists }
+        : {}),
+    }
   } catch (error) {
     if (error instanceof GiftlistSelectionError) {
       return { error: error.message }
