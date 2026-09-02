@@ -5,11 +5,9 @@ export function hasAcceptedOrganizerTerms(event: {
   return event.termsAcceptedAt !== null || event.isPublished
 }
 
-export type { TermsAudienceKey, TermsDocument } from './documents'
+export type { TermsDocument } from './documents'
 export {
   findTermsDocumentBySlug,
-  getTermsPath,
-  TERMS_BASE_PATH,
   TERMS_DOCUMENT_LIST,
   TERMS_DOCUMENTS,
   TERMS_PATHS,
