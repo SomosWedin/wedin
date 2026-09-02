@@ -1,58 +1,34 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { EventType } from '@prisma/client'
-import { useEffect } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import type { z } from 'zod'
-import { StepTwoSchema } from '@/schemas/onboarding'
+import { createStepTwoSchema, StepTwoSchema } from '@/schemas/onboarding'
 
 export type StepTwoValues = z.infer<typeof StepTwoSchema>
 
 type UseStepTwoProps = {
+  isWedding: boolean
   onSubmit: (values: StepTwoValues) => Promise<void> | void
 }
 
-export function useStepTwo({ onSubmit }: UseStepTwoProps) {
+export function useStepTwo({ isWedding, onSubmit }: UseStepTwoProps) {
   const form = useForm<StepTwoValues>({
-    resolver: zodResolver(StepTwoSchema),
+    resolver: zodResolver(createStepTwoSchema(isWedding)),
     mode: 'all',
     defaultValues: {
       name: '',
       lastName: '',
       partnerName: '',
       partnerLastName: '',
-      eventType: EventType.WEDDING,
     },
   })
-
-  const eventType =
-    useWatch({
-      control: form.control,
-      name: 'eventType',
-    }) ?? EventType.WEDDING
-
-  const { setValue } = form
-
-  useEffect(() => {
-    const storedEventType = localStorage.getItem('eventType')
-
-    if (
-      storedEventType &&
-      Object.values(EventType).includes(storedEventType as EventType)
-    ) {
-      setValue('eventType', storedEventType as EventType, {
-        shouldDirty: false,
-        shouldValidate: true,
-      })
-    }
-  }, [setValue])
 
   const handleSubmit = form.handleSubmit(onSubmit)
 
   return {
     form,
-    eventType,
+    isWedding,
     isValid: form.formState.isValid,
     handleSubmit,
   }

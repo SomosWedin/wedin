@@ -7,16 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Migration {
+  version    String   @id @map("_id")
+  name       String
+  checksum   String
+  appliedAt  DateTime @default(now())
+  durationMs Int      @default(0)
+}
+
+model MigrationLock {
+  key       String   @id @map("_id")
+  owner     String
+  expiresAt DateTime
+}
+
 enum UserType {
   ADMIN
   ORGANIZER
   COUPLE
   INVITEE
-}
-
-enum EventType {
-  WEDDING
-  OTHER
 }
 
 enum TransactionStatus {
@@ -70,17 +79,16 @@ model Session {
 }
 
 model User {
-  id               String    @id @default(auto()) @map("_id") @db.ObjectId
-  name             String?
-  lastName         String?
-  email            String?   @unique
-  emailVerified    DateTime?
-  image            String?
-  isPrimary        Boolean   @default(true)
-  role             UserType  @default(ORGANIZER)
-  isOnboarded      Boolean   @default(false)
-  isMagicLinkLogin Boolean   @default(false)
-  onboardingStep   Int       @default(1)
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  name           String?
+  lastName       String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  isPrimary      Boolean   @default(true)
+  role           UserType  @default(ORGANIZER)
+  isOnboarded    Boolean   @default(false)
+  onboardingStep Int       @default(1)
 
   accounts             Account[]
   sessions             Session[]
@@ -91,25 +99,23 @@ model User {
 }
 
 model Event {
-  id               String    @id @default(auto()) @map("_id") @db.ObjectId
-  name             String?
-  date             DateTime?
-  coverMessage     String?
-  url              String?   @unique
-  wishlistId       String    @db.ObjectId
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  country          String?
-  city             String?
-  partnerName      String?
-  eventType        EventType @default(WEDDING)
-  guests           String?
-  hasPYbankAccount Boolean   @default(false)
-  isPublished      Boolean   @default(false)
-  termsAcceptedAt  DateTime?
-  termsVersion     String?
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  name            String?
+  date            DateTime?
+  coverMessage    String?
+  url             String?   @unique
+  wishlistId      String    @db.ObjectId
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  country         String?
+  city            String?
+  eventTypeId     String    @db.ObjectId
+  isPublished     Boolean   @default(false)
+  termsAcceptedAt DateTime?
+  termsVersion    String?
 
-  wishlist Wishlist @relation(fields: [wishlistId], references: [id])
+  wishlist  Wishlist  @relation(fields: [wishlistId], references: [id])
+  eventType EventType @relation(fields: [eventTypeId], references: [id])
 
   bankDetails BankDetails?
 
@@ -117,7 +123,6 @@ model Event {
   transactions  Transaction[]
   users         User[]
   gifts         Gift[]
-  giftAmounts   String[]
   images        Image[]
   payouts       Payout[]
 
@@ -149,23 +154,22 @@ model Wishlist {
 
   event         Event?
   wishlistGifts WishlistGift[]
-  transactions  Transaction[]
 }
 
 model Gift {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  name            String
-  price           String
-  isDefault       Boolean  @default(false)
-  isEditedVersion Boolean  @default(false)
-  categoryId      String   @db.ObjectId
-  giftlistId      String?  @db.ObjectId
-  eventId         String?  @db.ObjectId
-  sourceGiftId    String?  @db.ObjectId
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  nameScopeKey String   @unique
+  price        String
+  isDefault    Boolean  @default(false)
+  categoryId   String   @db.ObjectId
+  giftlistIds  String[] @db.ObjectId
+  eventId      String?  @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  giftlist      Giftlist?      @relation(fields: [giftlistId], references: [id])
+  giftlists     Giftlist[]     @relation("GiftGiftlists", fields: [giftlistIds], references: [id])
+  category      Category       @relation(fields: [categoryId], references: [id])
   event         Event?         @relation(fields: [eventId], references: [id])
   wishlistGifts WishlistGift[]
   image         Image?
@@ -202,7 +206,6 @@ model WishlistGift {
 model Transaction {
   id                  String            @id @default(auto()) @map("_id") @db.ObjectId
   wishlistGiftId      String            @db.ObjectId
-  wishlistId          String?           @db.ObjectId
   eventId             String            @db.ObjectId
   amount              String
   quantity            Int               @default(1)
@@ -223,13 +226,10 @@ model Transaction {
 
   wishlistGift          WishlistGift           @relation(fields: [wishlistGiftId], references: [id])
   event                 Event                  @relation(fields: [eventId], references: [id])
-  wishlist              Wishlist?              @relation(fields: [wishlistId], references: [id])
   transactionStatusLogs TransactionStatusLog[]
-  images                Image[]
 
   @@index([wishlistGiftId])
   @@index([eventId])
-  @@index([wishlistId])
   @@index([pagoparHash])
   @@index([bankTransferGroupId])
 }
@@ -269,23 +269,32 @@ model Payout {
 }
 
 model Giftlist {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  name       String
-  quantity   String?
-  categoryId String  @db.ObjectId
-  totalPrice String?
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  normalizedName String   @unique
+  giftIds        String[] @db.ObjectId
 
-  gifts Gift[]
-
-  @@index([categoryId])
+  gifts Gift[] @relation("GiftGiftlists", fields: [giftIds], references: [id])
 }
 
 model Category {
-  id        String     @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  eventType EventType?
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  normalizedName String   @unique
+  eventTypeIds   String[] @db.ObjectId
 
-  @@unique([name, eventType])
+  eventTypes EventType[] @relation("CategoryEventTypes", fields: [eventTypeIds], references: [id])
+  gifts      Gift[]
+}
+
+model EventType {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  key         String   @unique
+  categoryIds String[] @db.ObjectId
+
+  events     Event[]
+  categories Category[] @relation("CategoryEventTypes", fields: [categoryIds], references: [id])
 }
 
 model VerificationToken {
@@ -298,15 +307,13 @@ model VerificationToken {
 }
 
 model Image {
-  id            String       @id @default(auto()) @map("_id") @db.ObjectId
-  url           String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  transactionId String?      @db.ObjectId
-  eventId       String?      @db.ObjectId
-  giftId        String?      @unique @db.ObjectId
-  giftlistId    String?      @db.ObjectId
-  Transaction   Transaction? @relation(fields: [transactionId], references: [id])
-  Event         Event?       @relation(fields: [eventId], references: [id])
-  Gift          Gift?        @relation(fields: [giftId], references: [id])
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  url       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  eventId   String?  @db.ObjectId
+  giftId    String?  @unique @db.ObjectId
+
+  Event Event? @relation(fields: [eventId], references: [id])
+  Gift  Gift?  @relation(fields: [giftId], references: [id])
 }

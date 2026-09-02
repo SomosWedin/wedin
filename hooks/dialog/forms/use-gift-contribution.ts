@@ -21,8 +21,7 @@ const createContributionSchema = (remaining: number) =>
           MIN_CONTRIBUTION_AMOUNT.toLocaleString('es-PY'),
       })
       .refine(value => Number(value) <= remaining, {
-        message:
-          `El monto no puede superar Gs. ` + remaining.toLocaleString('es-PY'),
+        message: `El monto no puede superar Gs. ${remaining.toLocaleString('es-PY')}`,
       }),
     completeRemaining: z.boolean().default(false),
   })
@@ -98,7 +97,7 @@ export function useGiftContribution({
     if (open) {
       void form.trigger('amount')
     }
-  }, [remaining, open, form])
+  }, [open, form])
 
   const handleSuggestedAmount = (suggestedAmount: number) => {
     form.setValue('completeRemaining', false, {

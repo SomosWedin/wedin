@@ -6,6 +6,16 @@ whenever you touch something documented below.
 
 ## Mongo/Prisma gotchas
 
+- `Migration` is the application-managed equivalent of Rails'
+  `schema_migrations`: its string `_id` is the complete timestamped filename,
+  and its checksum makes applied files immutable. `MigrationLock` is a leased
+  singleton used only by `yarn migrate` to prevent concurrent deploys from
+  applying the same file. These collections are managed by the scripts in
+  `scripts/migrations/`; they do not replace edits to this schema or
+  `prisma db push`. The initial tracked migrations inspect MongoDB state so
+  they safely recognize databases where the older changes were already
+  applied, partially applied, or not applied yet.
+
 - **Sparse unique indexes**: any `String? @unique` field needs its
   underlying index manually converted to `sparse: true`. Prisma's schema DSL
   has no `sparse` option, and `prisma db push` will not create or repair it —
@@ -81,24 +91,43 @@ whenever you touch something documented below.
   behavior for existing gifts.
 - `Transaction.quantity` — always `1` for group-gift contributions; can be
   > 1 for an individual-gift purchase.
-- `Category.eventType` — which `EventType` a category is offered for; drives
-  `getCategories(eventType)` and the catalog scoping in `getGifts` /
-  `getGiftlists`. Deliberately a scalar, not a list: a category wanted for
-  both event types gets **two rows with the same name** (team decision,
-  2026-08-26). That is why `name` is no longer `@unique` on its own and
-  `@@unique([name, eventType])` replaces it — dropping that compound index
-  makes the duplicate-name model impossible, so don't.
-  The open cost: `Gift.categoryId` points at one row, so duplicating a
-  category splits the gifts beneath it. Two rows named "Aniversarios" do not
-  share a catalog — a gift tagged to the `WEDDING` one is invisible to an
-  `OTHER` event. Nothing needs this yet (every category has exactly one event
-  type), but whoever first duplicates a name has to decide where the gifts
-  live.
-- `Category.eventType` is **optional on purpose**. A required scalar with
-  `@default(WEDDING)` would silently tag every not-yet-migrated document as a
-  wedding category; `null` instead means "not assigned yet", which is what
-  `getCategoryIdsForEventType` keys on to suppress scoping while a database
-  is mid-migration.
+- `EventType` is a seeded model, not an enum. Its stable `key` (`wedding`,
+  `other`) is for application checks; its editable display `name` is for the
+  UI. `Event.eventTypeId` is required; the 20260829 backfill assigns legacy
+  events without one to `wedding` before `prisma db push` enforces the schema.
+- `Category.eventTypeIds` is a Mongo many-to-many relation to `EventType`. A
+  category may have several types. Category names are globally unique after
+  normalization. In the admin gift form, a category is available only when it
+  contains every selected event type. Editing a category updates the shared
+  category seen by all of its gifts, including gifts linked to wishlists; do
+  not create category snapshots. A collection's types are calculated at read
+  time as the intersection of the event types on all categories represented by
+  its gifts; an empty collection has no event types. Admins do not select
+  collection types directly.
+- `Gift.categoryId` is required and backed by the explicit `Gift.category` /
+  `Category.gifts` relation. Mongo does not enforce cross-collection foreign
+  keys, so supported gift writes validate the category and use a nested
+  relation `connect`. The tracked gift-category migration deletes unreferenced
+  orphan gifts and images, but retains and reports any orphan referenced by a
+  wishlist to protect transaction history.
+- `Gift.nameScopeKey` is a JSON-encoded unique key that normalizes the name
+  and scopes catalog names by category and private organizer names by event
+  plus category.
+- `Giftlist` has no category or event-type fields: both are derived from its
+  `gifts`. Do not persist or synchronize collection event types.
+  `Gift.giftlistIds` / `Giftlist.giftIds` form a Mongo many-to-many relation;
+  a gift may belong to zero or more collections. Adding, moving, or removing
+  a gift recalculates each affected collection independently.
+  New collections require at least one selected event type. Existing legacy
+  collections may still have no types until migrated. Removing or deleting a
+  gift never deletes an empty collection.
+  `normalizedName` is the trimmed, lowercase Spanish locale form of `name` and
+  enforces case-insensitive global collection-name uniqueness. Counts and total
+  prices are derived from `Giftlist.gifts`; do not add denormalized fields for
+  them. The tracked migrations detect duplicate collection names, backfill
+  `normalizedName`, remove the legacy `categoryId`, migrate the former event
+  type enum, and reconcile both sides of the gift/collection many-to-many
+  relation before `migrate:deploy` runs `prisma db push`.
 - `Transaction.bankTransferGroupId` — shared by every transaction created
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a

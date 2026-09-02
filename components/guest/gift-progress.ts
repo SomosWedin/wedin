@@ -32,7 +32,7 @@ export function getQuantityProgress(
   return { completedQuantity, remainingStock }
 }
 
-type CompletableWishlistGift = {
+export type CompletableWishlistGift = {
   isFullyPaid: boolean
   isManuallyReceived: boolean
   isGroupGift: boolean

@@ -1,27 +1,24 @@
 'use client'
 
-import { zodResolver } from '@hookform/resolvers/zod'
-import type { Gift, Image as ImageModel } from '@prisma/client'
 import { useRouter } from 'next/navigation'
-import { type ChangeEvent, useEffect, useRef, useState } from 'react'
-import { type SubmitHandler, useForm } from 'react-hook-form'
-import { createGift } from '@/actions/data/gift'
-import { createWishlistGift } from '@/actions/data/wishlist-gift'
-import type { GiftFormValues } from '@/components/forms/dialog/gift'
+import {
+  createGiftWithWishlistGift,
+  createWishlistGift,
+} from '@/actions/data/wishlist-gift'
 import { ToastAction } from '@/components/ui/toast'
-import { useToast } from '@/hooks/use-toast'
-import { prepareImageForUpload } from '@/lib/image-upload'
-import { uploadGiftImageToAws } from '@/lib/s3'
-import { GiftFormSchema } from '@/schemas/form'
+import type { GiftFormValues } from '@/schemas/form'
+import {
+  type GiftWithImage,
+  useGiftFormController,
+} from './use-gift-form-controller'
 
-export type ExistingGift = Gift & {
-  image: ImageModel | null
-}
+export type ExistingGift = GiftWithImage
 
 type UseAddExistingGiftProps = {
   gift: ExistingGift
   eventId: string
   wishlistId: string
+  open: boolean
   onOpenChange: (open: boolean) => void
 }
 
@@ -29,194 +26,103 @@ export function useAddExistingGift({
   gift,
   eventId,
   wishlistId,
+  open,
   onOpenChange,
 }: UseAddExistingGiftProps) {
-  const [loading, setLoading] = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(
-    gift.image?.url ?? null
-  )
-  const [preparingImage, setPreparingImage] = useState(false)
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const { toast } = useToast()
   const router = useRouter()
-
-  const form = useForm<GiftFormValues>({
-    resolver: zodResolver(GiftFormSchema),
-    mode: 'all',
-    defaultValues: {
-      name: gift.name,
-      categoryId: gift.categoryId,
-      price: gift.price,
-      isDefault: false,
-      isEditedVersion: false,
-      sourceGiftId: gift.id,
-      eventId,
-      imageUrl: gift.image?.url ?? '',
-      wishlistId,
-      isFavoriteGift: false,
-      isGroupGift: false,
-      quantity: 1,
-    },
-  })
-
-  useEffect(() => {
-    return () => {
-      if (imagePreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(imagePreview)
-      }
-    }
-  }, [imagePreview])
-
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-
-    if (!file) return
-
-    setPreparingImage(true)
-    const prepared = await prepareImageForUpload(file)
-    setPreparingImage(false)
-
-    if (!prepared.ok) {
-      toast({
-        title: 'No pudimos usar esa imagen',
-        description: `${file.name}: ${prepared.message}`,
-        variant: 'destructive',
-      })
-      return
-    }
-
-    setImageFile(prepared.file)
-    setImagePreview(URL.createObjectURL(prepared.file))
+  const defaultValues: GiftFormValues = {
+    name: gift.name,
+    categoryId: gift.categoryId,
+    giftlistIds: [],
+    price: gift.price,
+    isDefault: false,
+    eventId,
+    imageUrl: gift.image?.url ?? '',
+    wishlistId,
+    isFavoriteGift: false,
+    isGroupGift: false,
+    quantity: 1,
   }
 
-  const resetDialog = () => {
-    form.reset()
-    setImageFile(null)
-    setImagePreview(gift.image?.url ?? null)
-  }
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    onOpenChange(nextOpen)
-
-    if (!nextOpen) {
-      resetDialog()
-    }
-  }
-
-  const onSubmit: SubmitHandler<GiftFormValues> = async values => {
-    setLoading(true)
-
-    try {
+  return useGiftFormController({
+    defaultValues,
+    initialImageUrl: gift.image?.url,
+    open,
+    onOpenChange,
+    submit: async ({ values, imageUrl, hasNewImage }) => {
       const hasChanges =
         values.name !== gift.name ||
         values.categoryId !== gift.categoryId ||
         values.price !== gift.price ||
-        imageFile !== null
-
-      let giftId = gift.id
+        hasNewImage
 
       if (hasChanges) {
-        let imageUrl = gift.image?.url ?? ''
-
-        if (imageFile) {
-          const uploadResponse = await uploadGiftImageToAws({
-            file: imageFile,
+        const response = await createGiftWithWishlistGift({
+          gift: {
+            name: values.name,
+            categoryId: values.categoryId,
+            price: values.price,
+            isDefault: false,
             eventId,
-          })
+            imageUrl,
+          },
+          wishlistGift: {
+            wishlistId,
+            eventId,
+            isFavoriteGift: values.isFavoriteGift,
+            isGroupGift: values.isGroupGift,
+            quantity: values.quantity,
+          },
+        })
 
-          if (uploadResponse.error || !uploadResponse.url) {
-            toast({
-              title: 'Error al subir la imagen',
-              description: uploadResponse.error,
+        if ('error' in response) {
+          return {
+            success: false,
+            feedback: {
+              title: 'Error al agregar el regalo a tu lista',
+              description: response.error,
               variant: 'destructive',
-            })
-
-            return
+            },
           }
-
-          imageUrl = uploadResponse.url
         }
-
-        const giftResponse = await createGift({
-          ...values,
-          isDefault: false,
-          isEditedVersion: true,
-          sourceGiftId: gift.id,
-          imageUrl,
+      } else {
+        const response = await createWishlistGift({
+          wishlistId,
+          eventId,
+          giftId: gift.id,
+          isFavoriteGift: values.isFavoriteGift,
+          isGroupGift: values.isGroupGift,
+          quantity: values.quantity,
         })
 
-        if (giftResponse.error || !giftResponse.giftId) {
-          toast({
-            title: 'Error al guardar los cambios del regalo',
-            description: giftResponse.error,
-            variant: 'destructive',
-          })
-
-          return
+        if ('error' in response) {
+          return {
+            success: false,
+            feedback: {
+              title: 'Error al agregar el regalo a tu lista',
+              description: response.error,
+              variant: 'destructive',
+            },
+          }
         }
-
-        giftId = giftResponse.giftId
       }
 
-      const linkResponse = await createWishlistGift({
-        wishlistId,
-        eventId,
-        giftId,
-        isFavoriteGift: values.isFavoriteGift,
-        isGroupGift: values.isGroupGift,
-        quantity: values.quantity,
-      })
-
-      if (linkResponse.error) {
-        toast({
-          title: 'Error al agregar el regalo a tu lista',
-          description: linkResponse.error,
-          variant: 'destructive',
-        })
-
-        return
+      return {
+        success: true,
+        feedback: {
+          title: 'Regalo agregado a tu lista. 🎁',
+          action: (
+            <ToastAction
+              altText="Ver lista"
+              onClick={() => router.push('/wishlist')}
+            >
+              Ver lista
+            </ToastAction>
+          ),
+        },
       }
-
-      toast({
-        title: 'Regalo agregado a tu lista. 🎁',
-        action: (
-          <ToastAction
-            altText="Ver lista"
-            onClick={() => router.push('/wishlist')}
-          >
-            Ver lista
-          </ToastAction>
-        ),
-      })
-
-      handleOpenChange(false)
-      router.refresh()
-    } catch (error) {
-      console.error('Error adding existing gift:', error)
-
-      toast({
-        title: 'No pudimos agregar el regalo',
-        description: 'Intentá nuevamente.',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return {
-    form,
-    loading,
-    imagePreview,
-    preparingImage,
-    fileInputRef,
-    isValid: form.formState.isValid,
-    handleFileChange,
-    handleOpenChange,
-    handleSubmit: form.handleSubmit(onSubmit),
-  }
+    },
+    unexpectedErrorTitle: 'No pudimos agregar el regalo',
+    errorContext: 'Error adding existing gift:',
+  })
 }

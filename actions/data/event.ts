@@ -4,21 +4,33 @@ import {
   type Event,
   type Image as ImageModel,
   Prisma,
-  PrismaClient,
   type User,
 } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/actions/get-current-user'
 import type { ErrorResponse } from '@/auth'
+import prismaClient from '@/prisma/client'
 import { ORGANIZER_TERMS } from '@/lib/terms'
 import { EventUrlFormSchema } from '@/schemas/form'
 
-const prismaClient = new PrismaClient()
+async function getOwnedEvent(eventId: string) {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return null
+
+  return prismaClient.event.findFirst({
+    where: {
+      id: eventId,
+      users: { some: { id: currentUser.id } },
+    },
+    select: { id: true, termsAcceptedAt: true },
+  })
+}
 
 export const getEvent = async (): Promise<
   | (Event & {
       images: ImageModel[]
       users: User[]
+      eventType: { id: string; name: string; key: string }
     })
   | ErrorResponse
 > => {
@@ -43,6 +55,7 @@ export const getEvent = async (): Promise<
       include: {
         images: true,
         users: true,
+        eventType: true,
       },
     })
 
@@ -61,29 +74,6 @@ export const getEvent = async (): Promise<
   }
 }
 
-export const getEventById = async (
-  eventId: string
-): Promise<Event | ErrorResponse> => {
-  try {
-    const event = await prismaClient.event.findUnique({
-      where: { id: eventId },
-    })
-
-    if (!event) {
-      return {
-        error: 'Event not found',
-      }
-    }
-
-    return event
-  } catch (error) {
-    console.error('Error getting event by ID:', error)
-    return {
-      error: 'Error getting event by ID',
-    }
-  }
-}
-
 export const updateEvent = async (
   eventId: string,
   data: {
@@ -93,6 +83,9 @@ export const updateEvent = async (
   }
 ) => {
   try {
+    const ownedEvent = await getOwnedEvent(eventId)
+    if (!ownedEvent) return { error: 'No autorizado.' }
+
     const updateData: Partial<Event> = {}
 
     if (data.coverMessage) {
@@ -108,7 +101,7 @@ export const updateEvent = async (
     }
 
     const updatedEvent = await prismaClient.event.update({
-      where: { id: eventId },
+      where: { id: ownedEvent.id },
       data: updateData,
     })
 
@@ -151,18 +144,21 @@ export const updateEventUrl = async (eventId: string, url: string) => {
   const normalizedUrl = validatedFields.data.eventUrl
 
   try {
+    const ownedEvent = await getOwnedEvent(eventId)
+    if (!ownedEvent) return { error: 'No autorizado.' }
+
     const existingEvent = await prismaClient.event.findUnique({
       where: { url: normalizedUrl },
     })
 
-    if (existingEvent && existingEvent.id !== eventId) {
+    if (existingEvent && existingEvent.id !== ownedEvent.id) {
       return {
         error: 'Esa dirección ya está en uso, elegí otra.',
       }
     }
 
     const updatedEvent = await prismaClient.event.update({
-      where: { id: eventId },
+      where: { id: ownedEvent.id },
       data: { url: normalizedUrl },
     })
 
@@ -186,19 +182,13 @@ export const setEventPublished = async (
   }
 
   try {
-    const event = await prismaClient.event.findFirst({
-      where: { id: eventId, users: { some: { id: user.id } } },
-      select: { termsAcceptedAt: true },
-    })
+    const ownedEvent = await getOwnedEvent(eventId)
+    if (!ownedEvent) return { error: 'No autorizado.' }
 
-    if (!event) {
-      return { error: 'Evento no encontrado' }
-    }
-
-    const acceptsTermsNow = isPublished && !event.termsAcceptedAt
+    const acceptsTermsNow = isPublished && !ownedEvent.termsAcceptedAt
 
     const updatedEvent = await prismaClient.event.update({
-      where: { id: eventId },
+      where: { id: ownedEvent.id },
       data: {
         isPublished,
         ...(acceptsTermsNow && {
@@ -217,18 +207,5 @@ export const setEventPublished = async (
   } catch (error) {
     console.error('Error updating event published status:', error)
     return { error: 'Error actualizando la visibilidad de tu sitio' }
-  }
-}
-
-export const getAllEvents = async (): Promise<Event[] | ErrorResponse> => {
-  try {
-    const events = await prismaClient.event.findMany()
-
-    return events
-  } catch (error) {
-    console.error('Error getting all events:', error)
-    return {
-      error: 'Error getting all events',
-    }
   }
 }

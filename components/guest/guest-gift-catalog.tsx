@@ -12,9 +12,13 @@ import CartStickyBar from '@/components/cart/cart-sticky-bar'
 import GiftContributionDialog from '@/components/dialog/gift-contribution-dialog'
 import GiftDetailDialog from '@/components/dialog/gift-detail-dialog'
 import {
+  type GiftSortOption,
+  type GiftTypeFilter,
+  getVisibleWishlistGifts,
+} from '@/components/guest/gift-catalog-order'
+import {
   getGiftProgress,
   getQuantityProgress,
-  isGiftComplete,
 } from '@/components/guest/gift-progress'
 import GuestGiftCard, {
   type WishlistGiftWithGift,
@@ -26,16 +30,13 @@ import { useStore } from '@/hooks/use-store'
 import { useToast } from '@/hooks/use-toast'
 import { getPreviewCartKey } from '@/lib/site-preview'
 
-type TypeFilter = 'todos' | 'disponibles' | 'regalados'
-type SortOption = 'recent' | 'price-asc' | 'price-desc'
-
 type GuestGiftCatalogProps = {
   eventId: string
   wishlistGifts: WishlistGiftWithGift[]
 }
 
 const TYPE_FILTERS: {
-  value: TypeFilter
+  value: GiftTypeFilter
   label: string
   icon: React.ReactNode
 }[] = [
@@ -62,9 +63,9 @@ export default function GuestGiftCatalog({
     isPreviewMode ? getPreviewCartKey(eventId) : eventId
   )
   const cartItems = useStore(cartStore, state => state.items) ?? []
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('todos')
+  const [typeFilter, setTypeFilter] = useState<GiftTypeFilter>('todos')
   const [search, setSearch] = useState('')
-  const [sort, setSort] = useState<SortOption>('recent')
+  const [sort, setSort] = useState<GiftSortOption>('recent')
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedWishlistGift, setSelectedWishlistGift] =
     useState<WishlistGiftWithGift | null>(null)
@@ -182,25 +183,11 @@ export default function GuestGiftCatalog({
     if (cartItems.length === 1) setIsCartOpen(false)
   }
 
-  const filteredWishlistGifts = wishlistGifts
-    .filter(wishlistGift => {
-      const isComplete = isGiftComplete(wishlistGift)
-      const matchesType =
-        typeFilter === 'todos' ||
-        (typeFilter === 'regalados' ? isComplete : !isComplete)
-      const matchesSearch = wishlistGift.gift.name
-        .toLowerCase()
-        .includes(search.trim().toLowerCase())
-
-      return matchesType && matchesSearch
-    })
-    .sort((a, b) => {
-      if (sort === 'price-asc')
-        return Number(a.gift.price) - Number(b.gift.price)
-      if (sort === 'price-desc')
-        return Number(b.gift.price) - Number(a.gift.price)
-      return 0
-    })
+  const filteredWishlistGifts = getVisibleWishlistGifts(wishlistGifts, {
+    typeFilter,
+    search,
+    sort,
+  })
 
   const selectedProgress = selectedWishlistGift
     ? getGiftProgress(
@@ -258,7 +245,7 @@ export default function GuestGiftCatalog({
           <select
             className="px-3 py-2 h-10 text-sm bg-white rounded-md border border-input"
             value={sort}
-            onChange={event => setSort(event.target.value as SortOption)}
+            onChange={event => setSort(event.target.value as GiftSortOption)}
           >
             <option value="recent">Ordenar por</option>
             <option value="price-asc">Precio: menor a mayor</option>
