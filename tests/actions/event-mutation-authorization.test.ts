@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
+  getTermsFileVersion: vi.fn(),
   eventFindFirst: vi.fn(),
   eventFindUnique: vi.fn(),
   eventUpdate: vi.fn(),
@@ -24,6 +25,10 @@ vi.mock('@/prisma/client', () => ({
 
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 
+vi.mock('@/lib/server/terms-storage', () => ({
+  getTermsFileVersion: mocks.getTermsFileVersion,
+}))
+
 import {
   setEventPublished,
   updateEvent,
@@ -33,6 +38,7 @@ import {
 describe('event mutation authorization', () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockResolvedValue({ id: 'user-1' })
+    mocks.getTermsFileVersion.mockResolvedValue('etag-organizers')
     mocks.eventFindFirst.mockResolvedValue(null)
     mocks.eventFindUnique.mockResolvedValue(null)
     mocks.eventUpdate.mockResolvedValue({

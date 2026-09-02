@@ -1,130 +1,51 @@
-import type { TermsBlock, TermsDocument } from '@/lib/terms'
+import { FiExternalLink } from 'react-icons/fi'
+import { buttonVariants } from '@/components/ui/button'
+import type { TermsDocument } from '@/lib/terms'
 
 type TermsDocumentViewProps = {
   terms: TermsDocument
+  fileUrl: string
 }
 
-type RichTextPart = {
-  id: string
-  text: string
-  bold: boolean
-}
-
-function parseRichText(text: string): RichTextPart[] {
-  const parts: RichTextPart[] = []
-  let offset = 0
-
-  for (const chunk of text.split(/(\*\*[^*]+\*\*)/g)) {
-    if (chunk) {
-      const bold = chunk.startsWith('**') && chunk.endsWith('**')
-
-      parts.push({
-        id: `${offset}`,
-        text: bold ? chunk.slice(2, -2) : chunk,
-        bold,
-      })
-    }
-
-    offset += chunk.length
-  }
-
-  return parts
-}
-
-function RichText({ text }: { text: string }) {
+export default function TermsDocumentView({
+  terms,
+  fileUrl,
+}: TermsDocumentViewProps) {
   return (
-    <>
-      {parseRichText(text).map(part =>
-        part.bold ? (
-          <strong key={part.id} className="font-semibold text-textPrimary">
-            {part.text}
-          </strong>
-        ) : (
-          <span key={part.id}>{part.text}</span>
-        )
-      )}
-    </>
-  )
-}
-
-function blockKey(block: TermsBlock) {
-  if (block.type === 'paragraph') return block.text
-  if (block.type === 'list') return block.items[0]
-  return block.rows[0][0]
-}
-
-function Block({ block }: { block: TermsBlock }) {
-  if (block.type === 'paragraph') {
-    return (
-      <p className="leading-relaxed text-textTertiary">
-        <RichText text={block.text} />
-      </p>
-    )
-  }
-
-  if (block.type === 'list') {
-    return (
-      <ul className="flex flex-col gap-2 pl-4">
-        {block.items.map(item => (
-          <li key={item} className="leading-relaxed text-textTertiary">
-            <RichText text={item} />
-          </li>
-        ))}
-      </ul>
-    )
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b border-gray-200">
-            <th className="py-2 pr-4 font-medium text-left">{block.head[0]}</th>
-            <th className="py-2 pl-4 font-medium text-right">
-              {block.head[1]}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {block.rows.map(row => (
-            <tr key={row[0]} className="border-b border-gray-100">
-              <td className="py-2 pr-4 text-textTertiary">{row[0]}</td>
-              <td className="py-2 pl-4 text-right whitespace-nowrap">
-                {row[1]}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-export default function TermsDocumentView({ terms }: TermsDocumentViewProps) {
-  return (
-    <article className="px-4 py-10 mx-auto max-w-3xl sm:px-6 sm:py-16">
-      <header className="pb-8 border-b border-gray-200">
+    <article className="px-4 py-10 mx-auto max-w-4xl sm:px-6 sm:py-16">
+      <header className="pb-8 md:border-b md:border-gray-200">
         <p className="text-sm font-medium tracking-wide uppercase text-primary400">
           {terms.audience}
         </p>
 
         <h1 className="mt-2 text-3xl font-black">{terms.title}</h1>
 
-        <p className="mt-3 text-sm text-textTertiary">
-          Última actualización: {terms.updatedAt} · {terms.effectiveFrom}
+        <p className="mt-3 text-sm text-textTertiary">{terms.summary}</p>
+
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonVariants({ variant: 'outline', className: 'mt-6' })}
+        >
+          <FiExternalLink className="mr-2 w-4 h-4" />
+          Abrir el PDF
+        </a>
+
+        <p className="mt-3 text-sm md:hidden text-textTertiary">
+          Se abre en una pestaña nueva, así no perdés lo que ya cargaste en
+          esta.
         </p>
       </header>
 
-      <div className="flex flex-col gap-10 mt-10">
-        {terms.sections.map(section => (
-          <section key={section.heading} className="flex flex-col gap-4">
-            <h2 className="text-lg font-semibold">{section.heading}</h2>
-
-            {section.blocks.map(block => (
-              <Block key={blockKey(block)} block={block} />
-            ))}
-          </section>
-        ))}
+      {/* iOS renders a framed PDF as a single unscrollable page, so small
+          screens get the link above instead of a viewer they cannot read. */}
+      <div className="hidden mt-8 md:block">
+        <iframe
+          src={fileUrl}
+          title={`${terms.title} — ${terms.audience}`}
+          className="w-full rounded-lg border border-gray-200 h-[80vh]"
+        />
       </div>
     </article>
   )

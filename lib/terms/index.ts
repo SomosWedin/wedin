@@ -1,8 +1,3 @@
-export const TERMS_PATHS = {
-  organizers: '/bases-y-condiciones/organizadores',
-  guests: '/bases-y-condiciones/invitados',
-} as const
-
 export function hasAcceptedOrganizerTerms(event: {
   termsAcceptedAt: Date | null
   isPublished: boolean
@@ -10,6 +5,12 @@ export function hasAcceptedOrganizerTerms(event: {
   return event.termsAcceptedAt !== null || event.isPublished
 }
 
-export { GUEST_TERMS } from './guest-terms'
-export { ORGANIZER_TERMS } from './organizer-terms'
-export type { TermsBlock, TermsDocument, TermsSection } from './types'
+export type { TermsAudienceKey, TermsDocument } from './documents'
+export {
+  findTermsDocumentBySlug,
+  getTermsPath,
+  TERMS_BASE_PATH,
+  TERMS_DOCUMENT_LIST,
+  TERMS_DOCUMENTS,
+  TERMS_PATHS,
+} from './documents'

@@ -143,9 +143,13 @@ whenever you touch something documented below.
   the first time an event is published, never overwritten afterwards
   (deactivating and reactivating does not re-stamp). Optional scalars with
   no index, so none of the sparse-unique traps above apply. `termsVersion`
-  copies `ORGANIZER_TERMS.version` from `lib/terms/` at acceptance time —
-  it records *which* document was accepted, so bump that version whenever
-  the organizer terms change materially. Grandfathered events (published
+  is the S3 ETag of `terms/wedin-terminos-organizadores.pdf`, read at
+  acceptance time by `getTermsFileVersion` (`lib/server/terms-storage.ts`)
+  — a fingerprint of the exact bytes the organizer was shown, so replacing
+  the PDF in the bucket does not retroactively change what past acceptances
+  point at. Nothing to bump by hand. It is `null` when S3 could not be
+  reached, because a metadata lookup must never block an activation the
+  organizer asked for. Grandfathered events (published
   before this existed) have both `null` while being live, so the dashboard
   treats `termsAcceptedAt != null || isPublished` as "already accepted" —
   otherwise they'd be shown an "Activar lista" button for a site that is
