@@ -1,8 +1,7 @@
 export function hasAcceptedOrganizerTerms(event: {
   termsAcceptedAt: Date | null
-  isPublished: boolean
 }) {
-  return event.termsAcceptedAt !== null || event.isPublished
+  return event.termsAcceptedAt !== null
 }
 
 export type { TermsDocument } from './documents'

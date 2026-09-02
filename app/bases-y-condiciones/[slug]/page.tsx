@@ -5,18 +5,15 @@ import { getTermsFileUrl } from '@/lib/server/terms-storage'
 import { findTermsDocumentBySlug, TERMS_DOCUMENT_LIST } from '@/lib/terms'
 
 type TermsPageProps = {
-  params: Promise<{ slug: string }>
+  params: { slug: string }
 }
 
 export function generateStaticParams() {
   return TERMS_DOCUMENT_LIST.map(({ slug }) => ({ slug }))
 }
 
-export async function generateMetadata({
-  params,
-}: TermsPageProps): Promise<Metadata> {
-  const { slug } = await params
-  const terms = findTermsDocumentBySlug(slug)
+export function generateMetadata({ params }: TermsPageProps): Metadata {
+  const terms = findTermsDocumentBySlug(params.slug)
 
   if (!terms) return {}
 
@@ -26,9 +23,8 @@ export async function generateMetadata({
   }
 }
 
-export default async function TermsPage({ params }: TermsPageProps) {
-  const { slug } = await params
-  const terms = findTermsDocumentBySlug(slug)
+export default function TermsPage({ params }: TermsPageProps) {
+  const terms = findTermsDocumentBySlug(params.slug)
 
   if (!terms) notFound()
 

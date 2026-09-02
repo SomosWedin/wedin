@@ -150,11 +150,15 @@ whenever you touch something documented below.
   `termsAcceptedAt < LastModified` of the S3 object answers "did they accept
   an outdated document". If the accepted bytes ever need to be recoverable,
   enable bucket versioning and store `x-amz-version-id` — that is a storage
-  decision, not a schema one. Grandfathered events (published before this
-  existed) have `termsAcceptedAt` `null` while being live, so the dashboard
-  treats `termsAcceptedAt != null || isPublished` as "already accepted" —
-  otherwise they'd be shown an "Activar lista" button for a site that is
-  already on. The consequence is that those events carry no acceptance
-  record until the next time they are published from a fresh page load,
-  which is deliberate: stamping one on deploy would assert an acceptance
-  that never happened.
+  decision, not a schema one.
+
+  `hasAcceptedOrganizerTerms` reads `termsAcceptedAt` and nothing else.
+  It used to OR in `isPublished` to cover events that were already live
+  before the documents existed, but `isPublished` is mutable: hiding a site
+  revoked its acceptance, which both regressed an established organizer to
+  the "Activar lista" card and made the next activation stamp a consent
+  record for a document that card never showed. Those events are stamped by
+  `20260902231318_backfill_event_terms_acceptance` instead, so acceptance is
+  one immutable field. That migration also sets `isPublished: true` on
+  documents predating the field, which would otherwise pick up the new
+  `false` default and take live sites down.

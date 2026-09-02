@@ -174,12 +174,6 @@ export const setEventPublished = async (
   eventId: string,
   isPublished: boolean
 ) => {
-  const user = await getCurrentUser()
-
-  if (!user) {
-    return { error: 'Error obteniendo tu sesión' }
-  }
-
   try {
     const ownedEvent = await getOwnedEvent(eventId)
     if (!ownedEvent) return { error: 'No autorizado.' }

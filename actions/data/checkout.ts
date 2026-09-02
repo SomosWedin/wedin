@@ -34,6 +34,15 @@ export async function createTransactionsForCart(
     return { error: 'Tu carrito está vacío.' }
   }
 
+  const event = await prismaClient.event.findUnique({
+    where: { id: eventId },
+    select: { isPublished: true },
+  })
+
+  if (!event?.isPublished) {
+    return { error: 'Esta lista de regalos no está disponible.' }
+  }
+
   const {
     payerName,
     payerEmail,

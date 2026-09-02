@@ -94,4 +94,23 @@ describe('organizer terms acceptance', () => {
       isPublished: false,
     })
   })
+
+  it('does not re-stamp an event that is hidden and activated again', async () => {
+    const acceptedAt = new Date('2026-08-30T00:00:00Z')
+
+    mocks.eventFindFirst.mockResolvedValue({
+      id: 'event-1',
+      termsAcceptedAt: acceptedAt,
+    })
+
+    await setEventPublished('event-1', false)
+    await setEventPublished('event-1', true)
+
+    expect(mocks.eventUpdate.mock.calls[0][0].data).toEqual({
+      isPublished: false,
+    })
+    expect(mocks.eventUpdate.mock.calls[1][0].data).toEqual({
+      isPublished: true,
+    })
+  })
 })

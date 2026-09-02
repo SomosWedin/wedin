@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('server-only', () => ({}))
 
 import { getTermsFileUrl } from '@/lib/server/terms-storage'
-import { findTermsDocumentBySlug, TERMS_DOCUMENTS } from '@/lib/terms'
+import {
+  findTermsDocumentBySlug,
+  hasAcceptedOrganizerTerms,
+  TERMS_DOCUMENTS,
+} from '@/lib/terms'
 
 describe('terms document registry', () => {
   it('resolves every published slug back to its document', () => {
@@ -39,5 +43,16 @@ describe('terms file URL', () => {
     expect(() => getTermsFileUrl(TERMS_DOCUMENTS.guests)).toThrow(
       'Terms storage is not configured.'
     )
+  })
+})
+
+describe('organizer terms acceptance state', () => {
+  it('is driven only by the recorded acceptance, not by visibility', () => {
+    const acceptedAt = new Date('2026-08-30T00:00:00Z')
+
+    expect(hasAcceptedOrganizerTerms({ termsAcceptedAt: acceptedAt })).toBe(
+      true
+    )
+    expect(hasAcceptedOrganizerTerms({ termsAcceptedAt: null })).toBe(false)
   })
 })
