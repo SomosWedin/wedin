@@ -245,6 +245,11 @@ export async function createPagoparCheckoutSession(
     return { error: 'Evento no encontrado.' }
   }
 
+  if (!event.isPublished) {
+    await markTransactionsFailed(transactionIds)
+    return { error: 'Esta lista de regalos no está disponible.' }
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const orderId = transactionIds[0]
 
