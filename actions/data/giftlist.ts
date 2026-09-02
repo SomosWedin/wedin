@@ -122,7 +122,7 @@ export async function getGiftlist(giftlistId: string, eventTypeId: string) {
         gifts: {
           include: {
             image: true,
-            category: { select: { eventTypeIds: true } },
+            category: { select: { eventTypeIds: true, name: true } },
           },
         },
       },

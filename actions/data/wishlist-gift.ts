@@ -248,7 +248,9 @@ export async function getWishlistGifts({
     return await prismaClient.wishlistGift.findMany({
       where: query,
       include: {
-        gift: { include: { image: true } },
+        gift: {
+          include: { image: true, category: true },
+        },
         transactions: {
           where: { status: 'COMPLETED' },
           select: { quantity: true },
@@ -517,7 +519,12 @@ export async function editGiftWithWishlistGift(
             'La categoría seleccionada no existe.'
           )
         }
-        if (!category.eventTypeIds.includes(current.event.eventTypeId)) {
+        const categoryChanged =
+          giftValues.categoryId !== current.gift.categoryId
+        if (
+          categoryChanged &&
+          !category.eventTypeIds.includes(current.event.eventTypeId)
+        ) {
           throw new WishlistGiftMutationError(
             'La categoría no es compatible con el tipo de evento.'
           )

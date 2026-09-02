@@ -94,7 +94,7 @@ describe('giftlist catalog visibility', () => {
         gifts: {
           include: {
             image: true,
-            category: { select: { eventTypeIds: true } },
+            category: { select: { eventTypeIds: true, name: true } },
           },
         },
       },
