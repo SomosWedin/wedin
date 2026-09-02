@@ -21,7 +21,7 @@ export default async function DashboardWishlist() {
 
   const [wishlistGifts, categories] = await Promise.all([
     getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
-    getCategories(),
+    getCategories(event.eventTypeId),
   ])
 
   return (
