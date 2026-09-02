@@ -248,7 +248,9 @@ export async function getWishlistGifts({
     return await prismaClient.wishlistGift.findMany({
       where: query,
       include: {
-        gift: { include: { image: true } },
+        gift: {
+          include: { image: true, category: { select: { name: true } } },
+        },
         transactions: {
           where: { status: 'COMPLETED' },
           select: { quantity: true },
