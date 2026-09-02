@@ -28,7 +28,7 @@ export default async function DashboardWallet() {
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-black">Mi billetera</h1>
           <p className="text-textTertiary">
-            El monto que envíes a tu cuenta te llegará dentro de las 48 horas
+            El monto que envíes a tu cuenta te llegará dentro de las 72 horas
             hábiles.
           </p>
         </div>
