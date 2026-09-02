@@ -38,8 +38,6 @@ export default function TermsDocumentView({
         </p>
       </header>
 
-      {/* iOS renders a framed PDF as a single unscrollable page, so small
-          screens get the link above instead of a viewer they cannot read. */}
       <div className="hidden mt-8 md:block">
         <iframe
           src={fileUrl}
