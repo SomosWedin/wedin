@@ -1,14 +1,10 @@
 'use server'
 
-import {
-  type Event,
-  type EventType,
-  UserType,
-  type Wishlist,
-} from '@prisma/client'
+import { type Event, UserType, type Wishlist } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type * as z from 'zod'
 import { auth } from '@/auth'
+import { isWeddingEventType } from '@/lib/event-type'
 import prismaClient from '@/prisma/client'
 import {
   StepFourSchema,
@@ -16,13 +12,19 @@ import {
   StepTwoSchema,
 } from '@/schemas/onboarding'
 
-export const updateEventTypeStepOne = async (values: EventType) => {
+export const updateEventTypeStepOne = async (eventTypeId: string) => {
   const session = await auth()
 
   let wishlist: Wishlist
   let event: Event
 
   if (!session?.user?.id) return { error: 'Error obteniendo tu sesión' }
+
+  const eventType = await prismaClient.eventType.findUnique({
+    where: { id: eventTypeId },
+    select: { id: true },
+  })
+  if (!eventType) return { error: 'El tipo de evento seleccionado no existe.' }
 
   // Create wishlist and event
   try {
@@ -32,7 +34,7 @@ export const updateEventTypeStepOne = async (values: EventType) => {
 
     event = await prismaClient.event.create({
       data: {
-        eventType: values,
+        eventTypeId,
         wishlistId: wishlist.id,
       },
     })
@@ -83,6 +85,24 @@ export const updateProfileStepTwo = async (
     return { error: 'Error obteniendo tu sesión' }
   }
 
+  const event = await prismaClient.event.findFirst({
+    where: { users: { some: { id: session.user.id } } },
+    include: { eventType: true },
+  })
+  if (!event) return { error: 'Evento no encontrado.' }
+
+  if (
+    isWeddingEventType(event.eventType) &&
+    (!partnerName ||
+      partnerName.length < 2 ||
+      !partnerLastName ||
+      partnerLastName.length < 2)
+  ) {
+    return {
+      error: 'Los datos de tu pareja son obligatorios para un casamiento.',
+    }
+  }
+
   if (!name || !lastName) {
     return { error: 'Nombre y apellido son obligatorios.' }
   }
@@ -102,14 +122,17 @@ export const updateProfileStepTwo = async (
       })
 
       // Optionally create a partner's profile if event type is WEDDING
-      if (partnerName && partnerLastName) {
+      if (
+        isWeddingEventType(event.eventType) &&
+        partnerName &&
+        partnerLastName
+      ) {
         await tx.user.create({
           data: {
             name: partnerName,
             lastName: partnerLastName,
             isOnboarded: true,
             isPrimary: false,
-            isMagicLinkLogin: true,
             eventId: session.user.eventId,
             onboardingStep: 5,
             role: UserType.COUPLE,

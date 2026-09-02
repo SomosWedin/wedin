@@ -1,17 +1,12 @@
 'use client'
 
 import type { Category } from '@prisma/client'
-import GiftForm from '@/components/forms/dialog/gift'
+import { Dialog } from '@/components/ui/dialog'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  ExistingGift,
+  type ExistingGift,
   useAddExistingGift,
 } from '@/hooks/dialog/forms/use-add-existing-gift'
+import GiftFormDialogContent from './gift-form-dialog-content'
 
 type AddExistingGiftDialogProps = {
   open: boolean
@@ -30,46 +25,24 @@ export default function AddExistingGiftDialog({
   wishlistId,
   categories,
 }: AddExistingGiftDialogProps) {
-  const {
-    form,
-    loading,
-    imagePreview,
-    preparingImage,
-    fileInputRef,
-    isValid,
-    handleFileChange,
-    handleOpenChange,
-    handleSubmit,
-  } = useAddExistingGift({
+  const controller = useAddExistingGift({
     gift,
     eventId,
     wishlistId,
+    open,
     onOpenChange,
   })
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Agregar regalo</DialogTitle>
-        </DialogHeader>
-
-        <GiftForm
-          form={form}
-          categories={categories}
-          loading={loading}
-          isValid={isValid}
-          imagePreview={imagePreview}
-          preparingImage={preparingImage}
-          fileInputRef={fileInputRef}
-          uploadInputId={`existing-gift-image-${gift.id}`}
-          submitLabel="Agregar a la lista"
-          allowTypeChange
-          onFileChange={handleFileChange}
-          onSubmit={handleSubmit}
-          onCancel={() => handleOpenChange(false)}
-        />
-      </DialogContent>
+    <Dialog open={controller.open} onOpenChange={controller.handleOpenChange}>
+      <GiftFormDialogContent
+        title="Agregar regalo"
+        controller={controller}
+        categories={categories}
+        uploadInputId={`existing-gift-image-${gift.id}`}
+        submitLabel="Agregar a la lista"
+        allowTypeChange
+      />
     </Dialog>
   )
 }

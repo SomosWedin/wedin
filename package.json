@@ -5,9 +5,14 @@
   "scripts": {
     "dev": "next dev",
     "build": "yarn test:run && prisma generate && next build",
+    "deploy:build": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/deploy-build.ts",
     "start": "next start",
     "format": "biome check --write --linter-enabled=false .",
     "format:check": "biome check --linter-enabled=false .",
+    "migrate": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/run-migrations.ts",
+    "migrate:deploy": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/deploy-migrations.ts",
+    "migration:create": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/create-migration.ts",
+    "migration:status": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migration-status.ts",
     "test": "vitest",
     "test:run": "vitest run"
   },

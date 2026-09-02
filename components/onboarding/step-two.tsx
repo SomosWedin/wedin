@@ -1,6 +1,5 @@
 'use client'
 
-import { EventType } from '@prisma/client'
 import Image from 'next/image'
 import StepTwoForm from '@/components/forms/onboarding/step-two'
 import { useStepTwo } from '@/hooks/onboarding/use-step-two'
@@ -8,10 +7,15 @@ import { useOnboarding } from '@/hooks/use-onboarding'
 import wedinIcon from '@/public/assets/w-icon.svg'
 import OnboardingStepper from './stepper'
 
-export default function OnboardingStepTwo() {
+export default function OnboardingStepTwo({
+  isWedding,
+}: {
+  isWedding: boolean
+}) {
   const { handleProfileUpdate, loading } = useOnboarding()
 
-  const { form, eventType, isValid, handleSubmit } = useStepTwo({
+  const { form, isValid, handleSubmit } = useStepTwo({
+    isWedding,
     onSubmit: handleProfileUpdate,
   })
 
@@ -21,7 +25,7 @@ export default function OnboardingStepTwo() {
 
       <div className="flex flex-col gap-4 text-center">
         <h1 className="text-2xl font-medium text-textSecondary">
-          {eventType === EventType.WEDDING
+          {isWedding
             ? '¿Cómo se llaman los protagonistas del evento?'
             : '¿Cómo te llamas?'}
         </h1>
@@ -33,7 +37,7 @@ export default function OnboardingStepTwo() {
 
       <StepTwoForm
         form={form}
-        eventType={eventType}
+        isWedding={isWedding}
         isValid={isValid}
         loading={loading}
         onSubmit={handleSubmit}

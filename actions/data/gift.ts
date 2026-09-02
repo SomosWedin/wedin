@@ -1,35 +1,41 @@
 'use server'
 
-import type { EventType, Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
+import { getCurrentUser } from '@/actions/get-current-user'
 import prismaClient from '@/prisma/client'
-import {
-  GiftCreateSchema,
-  GiftEditSchema,
-  type GiftPostSchema,
-} from '@/schemas/form'
+import { AdminGiftCreateSchema, AdminGiftEditSchema } from '@/schemas/form'
 import { GetGiftsParams } from '@/schemas/params'
 import { getErrorMessage } from '../helper'
+import {
+  catalogGiftContentChanged,
+  copyCatalogGiftForWishlistLinks,
+} from './catalog-gift-copy'
 import { getCategories } from './category'
+import {
+  createGiftRecord,
+  GiftNameConflictError,
+  isGiftNameUniqueConstraintError,
+  updateGiftRecord,
+} from './gift-operations'
+import {
+  GiftlistSelectionError,
+  validateGiftlistIdsForCreate,
+  validateGiftlistIdsForEdit,
+} from './giftlist-operations'
 
-export async function getGift(giftId: string) {
-  try {
-    return await prismaClient.gift.findUnique({
-      where: { id: giftId },
-    })
-  } catch (error) {
-    console.error('Error retrieving gift:', error)
-    return null
-  }
-}
+const INVALID_GIFT_DATA_ERROR = 'Datos inválidos, por favor verifica tus datos.'
+
+type AdminGiftCreateValues = z.infer<typeof AdminGiftCreateSchema>
+type AdminGiftEditValues = z.infer<typeof AdminGiftEditSchema>
 
 export async function getGifts({
   searchParams,
-  eventType,
+  eventTypeId,
 }: {
   searchParams?: z.infer<typeof GetGiftsParams>
-  eventType?: EventType
+  eventTypeId?: string
 }) {
   const validatedParams = GetGiftsParams.safeParse(searchParams)
 
@@ -46,23 +52,23 @@ export async function getGifts({
     }
   }
 
-  const allowedCategoryIds = eventType
-    ? (await getCategories(eventType)).map(allowed => allowed.id)
+  const allowedCategoryIds = eventTypeId
+    ? (await getCategories(eventTypeId)).map(allowed => allowed.id)
     : []
 
-  if (allowedCategoryIds.length) {
-    query.categoryId = {
-      in:
-        category && allowedCategoryIds.includes(category)
-          ? [category]
-          : allowedCategoryIds,
-    }
+  if (eventTypeId && allowedCategoryIds.length === 0) return []
+  if (eventTypeId && category && !allowedCategoryIds.includes(category)) {
+    return []
+  }
+
+  if (eventTypeId) {
+    query.categoryId = category ? category : { in: allowedCategoryIds }
   } else if (category) {
     query.categoryId = category
   }
 
   if (giftlistId) {
-    query.giftlistId = giftlistId
+    query.giftlistIds = { has: giftlistId }
   }
 
   const skip =
@@ -105,152 +111,194 @@ export async function getGifts({
   }
 }
 
-// export async function updateGiftImageUrl(
-//   url: string | null | undefined,
-//   giftId: string
-// ) {
-//   try {
-//     await prismaClient.gift.update({
-//       where: { id: giftId },
-//       data: { imageUrl: url },
-//     });
+export async function createAdminGift(formData: AdminGiftCreateValues) {
+  const currentUser = await getCurrentUser()
 
-//     revalidatePath('/dashboard');
-//   } catch (error) {
-//     console.error('Error updating gift image URL:', error);
-//     return { error: 'Error al agregar la imagen' };
-//   }
-// }
-
-class PriceLockedError extends Error {}
-
-async function assertPriceEditAllowed(
-  wishlistGiftId: string,
-  tx: Prisma.TransactionClient | typeof prismaClient
-) {
-  const wishlistGift = await tx.wishlistGift.findUnique({
-    where: { id: wishlistGiftId },
-    select: { isGroupGift: true, reservedQuantity: true },
-  })
-
-  if (
-    wishlistGift &&
-    !wishlistGift.isGroupGift &&
-    wishlistGift.reservedQuantity > 0
-  ) {
-    throw new PriceLockedError()
+  if (currentUser?.role !== 'ADMIN') {
+    return { error: 'No autorizado.' }
   }
-}
 
-export async function editGift(
-  formData: z.infer<typeof GiftPostSchema>,
-  giftId: string,
-  wishlistGiftId: string
-) {
-  const validatedFields = GiftEditSchema.safeParse(formData)
+  const validatedFields = AdminGiftCreateSchema.safeParse(formData)
 
   if (!validatedFields.success) {
-    return { error: 'Datos inválidos, por favor verifica tus datos.' }
+    return { error: INVALID_GIFT_DATA_ERROR }
   }
 
-  const { imageUrl, ...giftData } = validatedFields.data
+  const { giftlistIds, ...values } = validatedFields.data
 
   try {
-    const gift = await prismaClient.$transaction(async tx => {
-      const currentGift = await tx.gift.findUnique({
-        where: { id: giftId },
-        select: { price: true },
-      })
+    const newGift = await prismaClient.$transaction(async tx => {
+      const validatedGiftlistIds = await validateGiftlistIdsForCreate(
+        tx,
+        giftlistIds,
+        values.categoryId
+      )
 
-      if (currentGift && giftData.price !== currentGift.price) {
-        await assertPriceEditAllowed(wishlistGiftId, tx)
-      }
-
-      return tx.gift.update({
-        where: { id: giftId },
-        data: {
-          ...giftData,
-          ...(imageUrl
-            ? {
-                image: {
-                  upsert: {
-                    create: { url: imageUrl },
-                    update: { url: imageUrl },
-                  },
-                },
-              }
-            : {}),
-        },
-      })
-    })
-
-    if (!gift) {
-      return { error: 'Error al editar el regalo' }
-    }
-
-    revalidatePath('/dashboard')
-    revalidatePath('/wishlist')
-    return { giftId: gift.id }
-  } catch (error) {
-    if (error instanceof PriceLockedError) {
-      return {
-        error:
-          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
-      }
-    }
-
-    console.error('Error editing gift:', error)
-    return { error: getErrorMessage(error) }
-  }
-}
-
-export async function createGift(
-  formData: z.infer<typeof GiftPostSchema>,
-  wishlistGiftId?: string
-) {
-  const validatedFields = GiftCreateSchema.safeParse(formData)
-
-  if (!validatedFields.success) {
-    return { error: 'Datos inválidos, por favor verifica tus datos.' }
-  }
-
-  const { imageUrl, sourceGiftId, ...giftData } = validatedFields.data
-
-  try {
-    if (sourceGiftId && wishlistGiftId) {
-      const sourceGift = await prismaClient.gift.findUnique({
-        where: { id: sourceGiftId },
-        select: { price: true },
-      })
-
-      if (sourceGift && giftData.price !== sourceGift.price) {
-        await assertPriceEditAllowed(wishlistGiftId, prismaClient)
-      }
-    }
-
-    const newGift = await prismaClient.gift.create({
-      data: {
-        ...giftData,
-        ...(sourceGiftId ? { sourceGiftId } : {}),
-        ...(imageUrl ? { image: { create: { url: imageUrl } } } : {}),
-      },
+      return createGiftRecord(
+        tx,
+        { ...values, isDefault: true, eventId: undefined },
+        validatedGiftlistIds
+      )
     })
 
     if (!newGift) {
       return { error: 'Error al crear regalo' }
     }
 
-    revalidatePath('/dashboard')
+    revalidatePath('/gifts')
     return { giftId: newGift.id }
   } catch (error) {
-    if (error instanceof PriceLockedError) {
-      return {
-        error:
-          'No se puede cambiar el precio de un regalo individual con unidades reservadas o vendidas.',
-      }
+    if (error instanceof GiftlistSelectionError) {
+      return { error: error.message }
+    }
+    if (
+      error instanceof GiftNameConflictError ||
+      isGiftNameUniqueConstraintError(error)
+    ) {
+      return { error: 'Ya existe un regalo con ese nombre en esta categoría.' }
     }
 
-    console.error('Error creating gift:', error)
+    console.error('Error creating default gift:', error)
+    return { error: getErrorMessage(error) }
+  }
+}
+
+export async function editAdminGift(
+  formData: AdminGiftEditValues,
+  giftId: string
+) {
+  const currentUser = await getCurrentUser()
+
+  if (currentUser?.role !== 'ADMIN') {
+    return { error: 'No autorizado.' }
+  }
+
+  const validatedFields = AdminGiftEditSchema.safeParse(formData)
+
+  if (!validatedFields.success) {
+    return { error: INVALID_GIFT_DATA_ERROR }
+  }
+
+  const { giftlistIds, ...values } = validatedFields.data
+
+  try {
+    const result = await prismaClient.$transaction(async tx => {
+      const existingGift = await tx.gift.findFirst({
+        where: { id: giftId, isDefault: true },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          categoryId: true,
+          giftlistIds: true,
+          image: { select: { url: true } },
+          wishlistGifts: { select: { id: true, eventId: true } },
+        },
+      })
+
+      if (!existingGift) return null
+
+      const { giftlistIds: validatedGiftlistIds, removedGiftlists } =
+        await validateGiftlistIdsForEdit(
+          tx,
+          giftlistIds,
+          values.categoryId,
+          giftId,
+          existingGift.giftlistIds
+        )
+
+      const catalogFieldsChanged = catalogGiftContentChanged(
+        existingGift,
+        values
+      )
+
+      if (catalogFieldsChanged) {
+        await copyCatalogGiftForWishlistLinks(tx, existingGift)
+      }
+
+      const gift = await updateGiftRecord(
+        tx,
+        giftId,
+        values,
+        validatedGiftlistIds
+      )
+
+      return {
+        gift,
+        removedGiftlists,
+      }
+    })
+
+    if (!result) return { error: 'Regalo no encontrado.' }
+
+    revalidatePath('/admin')
+    revalidatePath('/gifts')
+    revalidatePath('/wishlist')
+    revalidatePath('/dashboard')
+    return {
+      giftId: result.gift.id,
+      ...(result.removedGiftlists.length > 0
+        ? { removedGiftlists: result.removedGiftlists }
+        : {}),
+    }
+  } catch (error) {
+    if (error instanceof GiftlistSelectionError) {
+      return { error: error.message }
+    }
+    if (
+      error instanceof GiftNameConflictError ||
+      isGiftNameUniqueConstraintError(error)
+    ) {
+      return { error: 'Ya existe un regalo con ese nombre en esta categoría.' }
+    }
+
+    console.error('Error editing default gift:', error)
+    return { error: getErrorMessage(error) }
+  }
+}
+
+export async function deleteDefaultGiftAsAdmin(giftId: string) {
+  const currentUser = await getCurrentUser()
+
+  if (currentUser?.role !== 'ADMIN') {
+    return { error: 'No autorizado.' }
+  }
+
+  try {
+    const deleted = await prismaClient.$transaction(async tx => {
+      const gift = await tx.gift.findFirst({
+        where: { id: giftId, isDefault: true },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          categoryId: true,
+          giftlistIds: true,
+          image: { select: { url: true } },
+          wishlistGifts: { select: { id: true, eventId: true } },
+        },
+      })
+
+      if (!gift) return false
+
+      await copyCatalogGiftForWishlistLinks(tx, gift)
+
+      await tx.gift.update({
+        where: { id: giftId },
+        data: { giftlists: { set: [] } },
+      })
+      await tx.image.deleteMany({ where: { giftId } })
+      await tx.gift.delete({ where: { id: giftId } })
+      return true
+    })
+
+    if (!deleted) return { error: 'Regalo no encontrado.' }
+
+    revalidatePath('/admin')
+    revalidatePath('/gifts')
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting default gift:', error)
     return { error: getErrorMessage(error) }
   }
 }

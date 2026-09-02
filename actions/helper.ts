@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client'
+import { revalidatePath } from 'next/cache'
 
 // Retries Mongo's transient write-conflict error (P2034) under real
 // concurrency — expected, not a genuine failure.
@@ -36,4 +37,18 @@ export const getErrorMessage = (error: unknown): string => {
   }
 
   return message
+}
+
+export class WishlistGiftMutationError extends Error {}
+
+export function revalidateGiftAndWishlistPaths() {
+  try {
+    revalidatePath('/wishlist')
+    revalidatePath('/gifts')
+    revalidatePath('/dashboard')
+  } catch (error) {
+    // The database transaction has already committed. A cache invalidation
+    // failure must not tell the form to retry and create another mutation.
+    console.error('Error revalidating gift paths:', error)
+  }
 }

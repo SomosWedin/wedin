@@ -1,6 +1,20 @@
 import { redirect } from 'next/navigation'
 import { lazy, Suspense } from 'react'
-import { IoCashOutline, IoGiftOutline } from 'react-icons/io5'
+import {
+  IoCalendarOutline,
+  IoCashOutline,
+  IoFolderOpenOutline,
+  IoGiftOutline,
+  IoPricetagOutline,
+  IoSwapHorizontalOutline,
+} from 'react-icons/io5'
+import { getCategories } from '@/actions/data/category'
+import { getEventTypes } from '@/actions/data/event-type'
+import { getGifts } from '@/actions/data/gift'
+import {
+  getAdminGiftlists,
+  getGiftlistOptionsForAdmin,
+} from '@/actions/data/giftlist'
 import { getAllPayoutsForAdmin } from '@/actions/data/payout'
 import { getAllTransactionsForAdmin } from '@/actions/data/transaction'
 import { getCurrentUser } from '@/actions/get-current-user'
@@ -14,6 +28,16 @@ const AdminTransactionsList = lazy(
 const AdminPayoutsList = lazy(
   () => import('@/components/admin/admin-payouts-list')
 )
+const AdminGiftsList = lazy(() => import('@/components/admin/admin-gifts-list'))
+const AdminCategoriesList = lazy(
+  () => import('@/components/admin/admin-categories-list')
+)
+const AdminGiftlistsList = lazy(
+  () => import('@/components/admin/admin-giftlists-list')
+)
+const AdminEventTypesList = lazy(
+  () => import('@/components/admin/admin-event-types-list')
+)
 
 export default async function AdminPage() {
   const currentUser = await getCurrentUser()
@@ -22,9 +46,22 @@ export default async function AdminPage() {
     redirect('/dashboard')
   }
 
-  const [transactions, payouts] = await Promise.all([
+  const [
+    transactions,
+    payouts,
+    gifts,
+    categories,
+    giftlists,
+    adminGiftlists,
+    eventTypes,
+  ] = await Promise.all([
     getAllTransactionsForAdmin(),
     getAllPayoutsForAdmin(),
+    getGifts({ searchParams: { isDefault: true } }),
+    getCategories(),
+    getGiftlistOptionsForAdmin(),
+    getAdminGiftlists(),
+    getEventTypes(),
   ])
 
   return (
@@ -45,19 +82,40 @@ export default async function AdminPage() {
             value="transacciones"
             className="gap-2 text-xs sm:text-sm"
           >
-            <IoGiftOutline className="text-lg" />
+            <IoSwapHorizontalOutline className="text-lg" />
             Transacciones
           </TabsTrigger>
           <TabsTrigger value="retiros" className="gap-2 text-xs sm:text-sm">
             <IoCashOutline className="text-lg" />
             Solicitudes de retiro
           </TabsTrigger>
+          <TabsTrigger
+            value="tipos-de-evento"
+            className="gap-2 text-xs sm:text-sm"
+          >
+            <IoCalendarOutline className="text-lg" />
+            Tipos de evento
+          </TabsTrigger>
+          <TabsTrigger value="categorias" className="gap-2 text-xs sm:text-sm">
+            <IoPricetagOutline className="text-lg" />
+            Categorías
+          </TabsTrigger>
+          <TabsTrigger value="colecciones" className="gap-2 text-xs sm:text-sm">
+            <IoFolderOpenOutline className="text-lg" />
+            Colecciones
+          </TabsTrigger>
+          <TabsTrigger value="regalos" className="gap-2 text-xs sm:text-sm">
+            <IoGiftOutline className="text-lg" />
+            Regalos
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="transacciones" className="mt-6">
           {transactions.length === 0 ? (
             <EmptyState
-              icon={<IoGiftOutline className="text-4xl sm:text-6xl" />}
+              icon={
+                <IoSwapHorizontalOutline className="text-4xl sm:text-6xl" />
+              }
               title="Sin transacciones"
               description="Todavía no hay transacciones en ningún evento"
             />
@@ -80,6 +138,43 @@ export default async function AdminPage() {
               <AdminPayoutsList payouts={payouts} />
             </Suspense>
           )}
+        </TabsContent>
+
+        <TabsContent value="tipos-de-evento" className="mt-6">
+          <Suspense fallback={<DashboardTransactionsSkeleton />}>
+            <AdminEventTypesList eventTypes={eventTypes} />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="categorias" className="mt-6">
+          <Suspense fallback={<DashboardTransactionsSkeleton />}>
+            <AdminCategoriesList
+              categories={categories}
+              eventTypes={eventTypes}
+            />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="colecciones" className="mt-6">
+          <Suspense fallback={<DashboardTransactionsSkeleton />}>
+            <AdminGiftlistsList
+              giftlists={adminGiftlists}
+              gifts={gifts}
+              categories={categories}
+              eventTypes={eventTypes}
+            />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="regalos" className="mt-6">
+          <Suspense fallback={<DashboardTransactionsSkeleton />}>
+            <AdminGiftsList
+              gifts={gifts}
+              categories={categories}
+              giftlists={giftlists}
+              eventTypes={eventTypes}
+            />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>
