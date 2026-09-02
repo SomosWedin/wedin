@@ -249,7 +249,7 @@ export async function getWishlistGifts({
       where: query,
       include: {
         gift: {
-          include: { image: true, category: { select: { name: true } } },
+          include: { image: true, category: true },
         },
         transactions: {
           where: { status: 'COMPLETED' },
@@ -519,7 +519,12 @@ export async function editGiftWithWishlistGift(
             'La categoría seleccionada no existe.'
           )
         }
-        if (!category.eventTypeIds.includes(current.event.eventTypeId)) {
+        const categoryChanged =
+          giftValues.categoryId !== current.gift.categoryId
+        if (
+          categoryChanged &&
+          !category.eventTypeIds.includes(current.event.eventTypeId)
+        ) {
           throw new WishlistGiftMutationError(
             'La categoría no es compatible con el tipo de evento.'
           )

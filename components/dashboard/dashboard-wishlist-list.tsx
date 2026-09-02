@@ -25,7 +25,7 @@ import { getWishlistGiftEditLockReason } from '@/lib/wishlist-gift-edit-lock'
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
   include: {
-    gift: { include: { image: true; category: { select: { name: true } } } }
+    gift: { include: { image: true; category: true } }
     transactions: { select: { quantity: true } }
   }
 }>
@@ -108,6 +108,11 @@ export default function DashboardWishlistList({
       return next
     })
   }
+
+  const categoryOptionsFor = (gift: WishlistGiftWithGift['gift']) =>
+    categories.some(category => category.id === gift.categoryId)
+      ? categories
+      : [...categories, gift.category]
 
   const activeWishlistGifts = wishlistGifts.filter(
     wishlistGift => !wishlistGift.isReceived
@@ -326,7 +331,7 @@ export default function DashboardWishlistList({
                     wishlistId={wishlistId}
                     eventId={eventId}
                     gift={wishlistGift.gift}
-                    categories={categories}
+                    categories={categoryOptionsFor(wishlistGift.gift)}
                     isFavoriteGift={wishlistGift.isFavoriteGift}
                     isGroupGift={wishlistGift.isGroupGift}
                     quantity={wishlistGift.quantity}
