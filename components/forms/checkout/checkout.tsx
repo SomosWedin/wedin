@@ -334,14 +334,14 @@ export default function CheckoutForm({
 
         <div className="order-3 flex flex-col gap-3 md:col-span-2 mt-3">
           <p className="text-sm text-center text-textTertiary">
-            Al confirmar tu compra aceptás las{' '}
+            Al confirmar tu compra aceptás los{' '}
             <a
               href={GUEST_TERMS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold underline"
             >
-              bases y condiciones
+              términos y condiciones
             </a>{' '}
             de wedin.
           </p>

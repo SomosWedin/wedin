@@ -7,6 +7,7 @@ import {
   findTermsDocumentBySlug,
   hasAcceptedOrganizerTerms,
   TERMS_DOCUMENTS,
+  TERMS_PATHS,
 } from '@/lib/terms'
 
 describe('terms document registry', () => {
@@ -54,5 +55,12 @@ describe('organizer terms acceptance state', () => {
       true
     )
     expect(hasAcceptedOrganizerTerms({ termsAcceptedAt: null })).toBe(false)
+  })
+})
+
+describe('terms route paths', () => {
+  it('names the documents the way the documents name themselves', () => {
+    expect(TERMS_PATHS.organizers).toBe('/terminos-y-condiciones/organizadores')
+    expect(TERMS_PATHS.guests).toBe('/terminos-y-condiciones/invitados')
   })
 })

@@ -10,6 +10,7 @@ import {
 import {
   adminRoutes,
   authRoutes,
+  legalRoutes,
   onboardingRoute,
   protectedRoutes,
 } from '@/lib/routes'
@@ -92,6 +93,8 @@ export async function middleware(request: NextRequest) {
 
   const isOnboardingRoute = matchesRoute(pathname, onboardingRoute)
 
+  const isLegalRoute = matchesRoute(pathname, legalRoutes)
+
   if (!isLoggedIn && (isAdminRoute || isProtectedRoute || isOnboardingRoute)) {
     return NextResponse.redirect(new URL('/login', nextUrl))
   }
@@ -100,7 +103,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', nextUrl))
   }
 
-  if (isLoggedIn && !isOnboarded && !isOnboardingRoute) {
+  if (isLoggedIn && !isOnboarded && !isOnboardingRoute && !isLegalRoute) {
     return NextResponse.redirect(new URL('/onboarding', nextUrl))
   }
 

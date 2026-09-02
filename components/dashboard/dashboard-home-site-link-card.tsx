@@ -133,14 +133,14 @@ export default function DashboardHomeSiteLinkCard({
           </Button>
 
           <p className="text-sm text-textTertiary">
-            Al activar tu lista de regalos aceptás las{' '}
+            Al activar tu lista de regalos aceptás los{' '}
             <Link
               href={TERMS_PATHS.organizers}
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold underline"
             >
-              bases y condiciones
+              términos y condiciones
             </Link>{' '}
             y que wedin descuente el valor de la comisión al recibir tus
             regalos.

@@ -98,7 +98,7 @@ Staff-only access (`/admin`) is documented in `app/admin/CLAUDE.md`.
   documented in `prisma/CLAUDE.md` — read it before touching `prisma/schema.prisma`.
 - **Legal documents are PDFs in S3**, not code. `lib/terms/documents.ts` is the
   registry (object key + slug + titles) that drives the single
-  `/bases-y-condiciones/[slug]` route, so replacing a document is an upload to
+  `/terminos-y-condiciones/[slug]` route, so replacing a document is an upload to
   `s3://somos-wedin/terms/` with no deploy, and adding one is a registry entry.
   Only `lib/server/terms-storage.ts` knows the bucket lives at AWS.
 - One-off ops script conventions are documented in `scripts/CLAUDE.md`.

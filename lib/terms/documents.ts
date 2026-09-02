@@ -41,7 +41,7 @@ export const TERMS_DOCUMENTS: Record<TermsAudienceKey, TermsDocument> =
 
 export const TERMS_DOCUMENT_LIST: TermsDocument[] = Object.values(documents)
 
-const TERMS_BASE_PATH = '/bases-y-condiciones'
+export const TERMS_BASE_PATH = '/terminos-y-condiciones'
 
 function getTermsPath(key: TermsAudienceKey) {
   return `${TERMS_BASE_PATH}/${documents[key].slug}`

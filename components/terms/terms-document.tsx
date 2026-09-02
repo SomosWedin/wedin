@@ -1,5 +1,3 @@
-import { FiExternalLink } from 'react-icons/fi'
-import { buttonVariants } from '@/components/ui/button'
 import type { TermsDocument } from '@/lib/terms'
 
 type TermsDocumentViewProps = {
@@ -21,21 +19,6 @@ export default function TermsDocumentView({
         <h1 className="mt-2 text-3xl font-black">{terms.title}</h1>
 
         <p className="mt-3 text-sm text-textTertiary">{terms.summary}</p>
-
-        <a
-          href={fileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={buttonVariants({ variant: 'outline', className: 'mt-6' })}
-        >
-          <FiExternalLink className="mr-2 w-4 h-4" />
-          Abrir el PDF
-        </a>
-
-        <p className="mt-3 text-sm md:hidden text-textTertiary">
-          Se abre en una pestaña nueva, así no perdés lo que ya cargaste en
-          esta.
-        </p>
       </header>
 
       <div className="hidden mt-8 md:block">

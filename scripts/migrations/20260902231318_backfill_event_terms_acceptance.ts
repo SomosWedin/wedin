@@ -19,7 +19,7 @@ export async function up(prisma: PrismaClient) {
     ],
   })
 
-  // Events already live before the bases y condiciones existed are treated as
+  // Events already live before the términos y condiciones existed are treated as
   // having accepted them — that is what the dashboard used to infer from
   // `isPublished`. Recording it here instead lets `hasAcceptedOrganizerTerms`
   // read a single immutable field, so hiding a site can no longer revoke an

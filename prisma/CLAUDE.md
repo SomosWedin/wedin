@@ -137,7 +137,7 @@ whenever you touch something documented below.
   Pagopar-issued hash to group by.
 - `Event.isPublished` — default flipped `true` → `false` (2026-08-30) so a
   new event starts hidden and the organizer has to press "Activar lista",
-  which is what makes their acceptance of the bases y condiciones an actual
+  which is what makes their acceptance of the términos y condiciones an actual
   deliberate act. **No backfill:** `db push` doesn't touch existing
   documents, so events already live in an environment keep the `true` they
   were written with, which is what we want — nobody's site goes dark on
