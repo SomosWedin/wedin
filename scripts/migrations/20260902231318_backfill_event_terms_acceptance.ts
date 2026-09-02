@@ -10,7 +10,9 @@ export async function up(prisma: PrismaClient) {
     update: 'Event',
     updates: [
       {
-        q: { isPublished: { $exists: false } },
+        q: {
+          $or: [{ isPublished: { $exists: false } }, { isPublished: null }],
+        },
         u: { $set: { isPublished: true } },
         multi: true,
       },
