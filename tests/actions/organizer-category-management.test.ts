@@ -208,6 +208,39 @@ describe('organizer category management', () => {
     expect(result).toEqual({ giftId: 'isolated-gift-1' })
   })
 
+  it('edits a gift whose category left the event type when the category is unchanged', async () => {
+    mocks.wishlistGiftFindFirst.mockResolvedValue(currentWishlistGift(false))
+    mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-1',
+      eventTypeIds: ['event-type-birthday'],
+    })
+
+    const result = await editGiftWithWishlistGift({
+      gift: { ...giftValues, categoryId: 'category-1' },
+      wishlistGift: wishlistGiftValues,
+    })
+
+    expect(result).toEqual({ giftId: 'private-gift-1' })
+  })
+
+  it('still blocks moving a gift into a category outside the event type', async () => {
+    mocks.wishlistGiftFindFirst.mockResolvedValue(currentWishlistGift(false))
+    mocks.categoryFindUnique.mockResolvedValue({
+      id: 'category-2',
+      eventTypeIds: ['event-type-birthday'],
+    })
+
+    const result = await editGiftWithWishlistGift({
+      gift: giftValues,
+      wishlistGift: wishlistGiftValues,
+    })
+
+    expect(mocks.giftUpdate).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      error: 'La categoría no es compatible con el tipo de evento.',
+    })
+  })
+
   it('blocks a category change while checkout has a reservation', async () => {
     mocks.wishlistGiftFindFirst.mockResolvedValue({
       ...currentWishlistGift(false),

@@ -68,10 +68,13 @@ whenever you touch something documented below.
     empty array for a missing scalar list, so `findMany` returns rows rather
     than throwing. The visible symptom is silent and worse — a filter like
     `eventTypes: { has: ... }` matches nothing, so the query succeeds and
-    returns zero rows. `getCategories` is built for that: it falls back to
-    the unscoped list, and `getCategoryIdsForEventType` returns `null` rather
-    than `[]` so callers skip scoping instead of filtering the catalog down
-    to nothing.
+    returns zero rows. `getCategories(eventTypeId)` does **not** guard against
+    that — it filters on `eventTypeIds` and returns `[]`, which is what the
+    organizer sees on `/wishlist` and `/gifts`. That is deliberate: falling
+    back to the unscoped list would show every category in the system,
+    exactly the leak the scoping exists to prevent. So `Category.eventTypeIds`
+    must be backfilled in an environment **before** deploying there, or
+    organizers get an empty category list with no error.
 
 ## Field notes
 
