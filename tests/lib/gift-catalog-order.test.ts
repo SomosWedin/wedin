@@ -93,7 +93,7 @@ describe('getVisibleWishlistGifts', () => {
     ])
   })
 
-  it('puts favorite gifts first', () => {
+  it('puts favorite gifts first in the default order', () => {
     const gifts = [
       makeGift('plain'),
       makeGift('favorite', { isFavoriteGift: true }),
@@ -119,7 +119,7 @@ describe('getVisibleWishlistGifts', () => {
     ])
   })
 
-  it('applies the price sort inside each tier', () => {
+  it('sorts strictly by price when the guest picks a price sort', () => {
     const gifts = [
       makeGift('cheap-paid', {
         gift: { name: 'a', price: '10' },
@@ -127,7 +127,7 @@ describe('getVisibleWishlistGifts', () => {
       }),
       makeGift('expensive', { gift: { name: 'b', price: '300' } }),
       makeGift('cheap', { gift: { name: 'c', price: '100' } }),
-      makeGift('cheap-favorite', {
+      makeGift('mid-favorite', {
         gift: { name: 'd', price: '200' },
         isFavoriteGift: true,
       }),
@@ -137,7 +137,7 @@ describe('getVisibleWishlistGifts', () => {
       idsOf(
         getVisibleWishlistGifts(gifts, { ...defaultOptions, sort: 'price-asc' })
       )
-    ).toEqual(['cheap-favorite', 'cheap', 'expensive', 'cheap-paid'])
+    ).toEqual(['cheap', 'mid-favorite', 'expensive', 'cheap-paid'])
 
     expect(
       idsOf(
@@ -146,7 +146,27 @@ describe('getVisibleWishlistGifts', () => {
           sort: 'price-desc',
         })
       )
-    ).toEqual(['cheap-favorite', 'expensive', 'cheap', 'cheap-paid'])
+    ).toEqual(['expensive', 'mid-favorite', 'cheap', 'cheap-paid'])
+  })
+
+  it('keeps already-gifted last even under an explicit price sort', () => {
+    const gifts = [
+      makeGift('expensive-paid', {
+        gift: { name: 'a', price: '900' },
+        isFullyPaid: true,
+      }),
+      makeGift('cheap-paid', {
+        gift: { name: 'b', price: '10' },
+        isFullyPaid: true,
+      }),
+      makeGift('available', { gift: { name: 'c', price: '500' } }),
+    ]
+
+    expect(
+      idsOf(
+        getVisibleWishlistGifts(gifts, { ...defaultOptions, sort: 'price-asc' })
+      )
+    ).toEqual(['available', 'cheap-paid', 'expensive-paid'])
   })
 
   it('preserves the incoming order within a tier when sorting by "recent"', () => {

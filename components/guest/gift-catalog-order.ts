@@ -43,7 +43,8 @@ export function getVisibleWishlistGifts<T extends OrderableWishlistGift>(
 
       const aIsFavorite = a.wishlistGift.isFavoriteGift
       const bIsFavorite = b.wishlistGift.isFavoriteGift
-      if (aIsFavorite !== bIsFavorite) return aIsFavorite ? -1 : 1
+      if (sort === 'recent' && aIsFavorite !== bIsFavorite)
+        return aIsFavorite ? -1 : 1
 
       const aPrice = Number(a.wishlistGift.gift.price) || 0
       const bPrice = Number(b.wishlistGift.gift.price) || 0
