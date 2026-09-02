@@ -112,7 +112,6 @@ model Event {
   eventTypeId     String    @db.ObjectId
   isPublished     Boolean   @default(false)
   termsAcceptedAt DateTime?
-  termsVersion    String?
 
   wishlist  Wishlist  @relation(fields: [wishlistId], references: [id])
   eventType EventType @relation(fields: [eventTypeId], references: [id])

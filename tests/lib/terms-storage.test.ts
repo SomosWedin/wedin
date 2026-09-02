@@ -1,21 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ send: vi.fn() }))
-
 vi.mock('server-only', () => ({}))
-vi.mock('@aws-sdk/client-s3', () => ({
-  HeadObjectCommand: class {
-    constructor(public input: unknown) {}
-  },
-  S3Client: class {
-    send = mocks.send
-  },
-}))
 
-import {
-  getTermsFileUrl,
-  getTermsFileVersion,
-} from '@/lib/server/terms-storage'
+import { getTermsFileUrl } from '@/lib/server/terms-storage'
 import { findTermsDocumentBySlug, TERMS_DOCUMENTS } from '@/lib/terms'
 
 describe('terms document registry', () => {
@@ -52,31 +39,5 @@ describe('terms file URL', () => {
     expect(() => getTermsFileUrl(TERMS_DOCUMENTS.guests)).toThrow(
       'Terms storage is not configured.'
     )
-  })
-})
-
-describe('terms file version', () => {
-  beforeEach(() => {
-    process.env.AWS_BUCKET = 'somos-wedin'
-    process.env.AWS_BUCKET_REGION = 'us-east-2'
-  })
-
-  it('fingerprints the document with its unquoted ETag', async () => {
-    mocks.send.mockResolvedValue({
-      ETag: '"4e3503bcbe13b17335ab73d6803a0193"',
-    })
-
-    await expect(getTermsFileVersion(TERMS_DOCUMENTS.guests)).resolves.toBe(
-      '4e3503bcbe13b17335ab73d6803a0193'
-    )
-  })
-
-  it('degrades to no version instead of throwing', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    mocks.send.mockRejectedValue(new Error('NoSuchKey'))
-
-    await expect(
-      getTermsFileVersion(TERMS_DOCUMENTS.guests)
-    ).resolves.toBeNull()
   })
 })

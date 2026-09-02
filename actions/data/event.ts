@@ -9,8 +9,6 @@ import {
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/actions/get-current-user'
 import type { ErrorResponse } from '@/auth'
-import { getTermsFileVersion } from '@/lib/server/terms-storage'
-import { TERMS_DOCUMENTS } from '@/lib/terms'
 import prismaClient from '@/prisma/client'
 import { EventUrlFormSchema } from '@/schemas/form'
 
@@ -192,10 +190,7 @@ export const setEventPublished = async (
       where: { id: ownedEvent.id },
       data: {
         isPublished,
-        ...(acceptsTermsNow && {
-          termsAcceptedAt: new Date(),
-          termsVersion: await getTermsFileVersion(TERMS_DOCUMENTS.organizers),
-        }),
+        ...(acceptsTermsNow && { termsAcceptedAt: new Date() }),
       },
     })
 

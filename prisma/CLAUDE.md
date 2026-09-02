@@ -139,18 +139,19 @@ whenever you touch something documented below.
   documents, so events already live in an environment keep the `true` they
   were written with, which is what we want — nobody's site goes dark on
   deploy.
-- `Event.termsAcceptedAt` / `termsVersion` — stamped by `setEventPublished`
-  the first time an event is published, never overwritten afterwards
-  (deactivating and reactivating does not re-stamp). Optional scalars with
-  no index, so none of the sparse-unique traps above apply. `termsVersion`
-  is the S3 ETag of `terms/wedin-terminos-organizadores.pdf`, read at
-  acceptance time by `getTermsFileVersion` (`lib/server/terms-storage.ts`)
-  — a fingerprint of the exact bytes the organizer was shown, so replacing
-  the PDF in the bucket does not retroactively change what past acceptances
-  point at. Nothing to bump by hand. It is `null` when S3 could not be
-  reached, because a metadata lookup must never block an activation the
-  organizer asked for. Grandfathered events (published
-  before this existed) have both `null` while being live, so the dashboard
+- `Event.termsAcceptedAt` — stamped by `setEventPublished` the first time an
+  event is published, never overwritten afterwards (deactivating and
+  reactivating does not re-stamp). Optional scalar with no index, so none of
+  the sparse-unique traps above apply. **There is deliberately no
+  `termsVersion` companion.** The documents are PDFs in S3 on a bucket
+  without versioning, so a stored fingerprint would point at bytes that the
+  next upload destroys — it could prove the terms changed but never produce
+  what was accepted. A re-acceptance flow does not need one either:
+  `termsAcceptedAt < LastModified` of the S3 object answers "did they accept
+  an outdated document". If the accepted bytes ever need to be recoverable,
+  enable bucket versioning and store `x-amz-version-id` — that is a storage
+  decision, not a schema one. Grandfathered events (published before this
+  existed) have `termsAcceptedAt` `null` while being live, so the dashboard
   treats `termsAcceptedAt != null || isPublished` as "already accepted" —
   otherwise they'd be shown an "Activar lista" button for a site that is
   already on. The consequence is that those events carry no acceptance
