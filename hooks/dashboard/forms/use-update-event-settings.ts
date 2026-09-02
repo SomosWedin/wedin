@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { type Event, EventType, type User } from '@prisma/client'
+import { type Event, type User } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { type SubmitHandler, useForm } from 'react-hook-form'
@@ -9,10 +9,14 @@ import type { z } from 'zod'
 import { updateEvent } from '@/actions/data/event'
 import { updateUserById } from '@/actions/data/user'
 import { useToast } from '@/hooks/use-toast'
-import { UpdateEventSettingsFormSchema } from '@/schemas/form'
+import { isWeddingEventType } from '@/lib/event-type'
+import {
+  createUpdateEventSettingsFormSchema,
+  UpdateEventSettingsFormSchema,
+} from '@/schemas/form'
 
 type UseUpdateEventAndUserDataProps = {
-  event: Event
+  event: Event & { eventType: { key: string } | null }
   currentUser: User
   secondaryEventUser?: User | null
 }
@@ -24,7 +28,9 @@ export function useUpdateEventSettings({
 }: UseUpdateEventAndUserDataProps) {
   const [loading, setLoading] = useState(false)
   const { name, lastName } = currentUser
-  const { id, date, eventType, url } = event
+  const { id, date, url } = event
+  const isWedding = isWeddingEventType(event.eventType)
+  const validationSchema = createUpdateEventSettingsFormSchema(isWedding)
   const {
     id: partnerId,
     name: partnerName,
@@ -35,18 +41,16 @@ export function useUpdateEventSettings({
   const router = useRouter()
 
   const form = useForm<z.infer<typeof UpdateEventSettingsFormSchema>>({
-    resolver: zodResolver(UpdateEventSettingsFormSchema),
+    resolver: zodResolver(validationSchema),
     mode: 'all',
     defaultValues: {
       eventDate: date || undefined,
-      eventType: eventType,
       eventUrl: url || undefined,
       name: name || '',
       lastName: lastName || '',
-      partnerName: eventType === EventType.WEDDING ? partnerName || '' : null,
-      partnerLastName:
-        eventType === EventType.WEDDING ? partnerLastName || '' : null,
-      partnerEmail: eventType === EventType.WEDDING ? partnerEmail || '' : null,
+      partnerName: isWedding ? partnerName || '' : null,
+      partnerLastName: isWedding ? partnerLastName || '' : null,
+      partnerEmail: isWedding ? partnerEmail || '' : null,
     },
   })
   const { isDirty, isValid } = form.formState
@@ -56,7 +60,7 @@ export function useUpdateEventSettings({
   > = async values => {
     setLoading(true)
 
-    const validatedFields = UpdateEventSettingsFormSchema.safeParse(values)
+    const validatedFields = validationSchema.safeParse(values)
 
     if (!validatedFields.success) {
       console.error(validatedFields.error.errors)

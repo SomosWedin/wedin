@@ -7,7 +7,6 @@ import {
   createWishlistGift,
   createWishlistGifts,
   deleteWishlistGift,
-  editWishlistGift,
   setWishlistGiftManuallyReceived,
 } from '@/actions/data/wishlist-gift'
 import { ToastAction } from '@/components/ui/toast'
@@ -15,7 +14,6 @@ import { useToast } from '@/hooks/use-toast'
 import type {
   WishlistGiftCreateSchema,
   WishlistGiftDeleteSchema,
-  WishlistGiftEditSchema,
   WishlistGiftReceivedToggleSchema,
   WishlistGiftsCreateSchema,
 } from '@/schemas/form'
@@ -101,28 +99,6 @@ export function useWishlistGift() {
     return response
   }
 
-  const updateWishlistGift = async (
-    values: z.infer<typeof WishlistGiftEditSchema>
-  ) => {
-    setLoading(true)
-    const response = await editWishlistGift(values)
-
-    if (response.error) {
-      toast({
-        title: 'Error al editar el regalo',
-        description: response.error,
-        variant: 'destructive',
-      })
-      setLoading(false)
-      return response
-    }
-
-    toast({ title: 'Regalo actualizado. ✅' })
-    router.refresh()
-    setLoading(false)
-    return response
-  }
-
   const setManuallyReceived = async (
     values: z.infer<typeof WishlistGiftReceivedToggleSchema>
   ) => {
@@ -151,7 +127,6 @@ export function useWishlistGift() {
     addToWishlist,
     addAllToWishlist,
     removeFromWishlist,
-    updateWishlistGift,
     setManuallyReceived,
   }
 }

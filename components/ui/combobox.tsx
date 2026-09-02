@@ -34,6 +34,7 @@ interface ComboboxProps {
   width?: string
   searchPlaceholder?: string
   clearable?: boolean
+  selectionMode?: 'label' | 'value'
 }
 
 export function Combobox({
@@ -44,14 +45,15 @@ export function Combobox({
   options,
   placeholder,
   selected,
+  selectionMode = 'label',
   width,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState<string>('')
 
-  const handleSelect = (label: string) => {
+  const handleSelect = (option: ComboboxOptions) => {
     if (onChange) {
-      onChange(label)
+      onChange(selectionMode === 'value' ? option.value : option.label)
     }
     setOpen(false)
   }
@@ -64,7 +66,13 @@ export function Combobox({
   }
 
   const renderSelectedItems = () => {
-    return options.find(item => item.label === selected)?.label || ''
+    return (
+      options.find(item =>
+        selectionMode === 'value'
+          ? item.value === selected
+          : item.label === selected
+      )?.label || ''
+    )
   }
 
   return (
@@ -156,13 +164,16 @@ export function Combobox({
                         <CommandItem
                           key={option.value}
                           value={option.label}
-                          onSelect={() => handleSelect(option.label)}
+                          onSelect={() => handleSelect(option)}
                           className="cursor-pointer hover:bg-secondaryBackgroundColor border-b-[1px]"
                         >
                           <Check
                             className={cn(
                               'mr-2 h-4 w-4',
-                              selected === option.label
+                              selected ===
+                                (selectionMode === 'value'
+                                  ? option.value
+                                  : option.label)
                                 ? 'opacity-100'
                                 : 'opacity-0'
                             )}

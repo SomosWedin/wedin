@@ -98,53 +98,57 @@ export default function GiftsCatalogSection({
               No se encontraron colecciones
             </div>
           ) : (
-            giftlists.map(giftlist => (
-              <div
-                key={giftlist.id}
-                className="border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow"
-              >
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  {giftlist.gifts.slice(0, 4).map(gift => (
-                    <div
-                      key={gift.id}
-                      className="aspect-square bg-gray-200 rounded flex items-center justify-center overflow-hidden"
-                    >
-                      {gift.image?.url ? (
-                        <Image
-                          src={gift.image.url}
-                          alt={gift.name}
-                          className="w-full h-full object-cover"
-                          width={200}
-                          height={200}
-                        />
-                      ) : (
-                        <IoGiftOutline className="text-3xl text-gray-400" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-2 mb-4">
-                  <Badge className="w-fit bg-gray100 text-textTertiary border-transparent">
-                    {giftlist.gifts.length} productos
-                  </Badge>
-                  <h3 className="text-lg font-bold">{giftlist.name}</h3>
-                  <p className="text-lg font-semibold">
-                    Gs.{' '}
-                    {giftlist.gifts
-                      .reduce((sum, gift) => sum + Number(gift.price || 0), 0)
-                      .toLocaleString()}
-                  </p>
-                </div>
-                <Button
-                  className="hover:bg-gray100 transition-colors"
-                  variant="outline"
-                  asChild
-                  size="lg"
+            giftlists
+              .filter(giftlist => giftlist.gifts.length > 0)
+              .map(giftlist => (
+                <div
+                  key={giftlist.id}
+                  className="border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow"
                 >
-                  <Link href={`/gifts/lists/${giftlist.id}`}>Ver paquete</Link>
-                </Button>
-              </div>
-            ))
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    {giftlist.gifts.slice(0, 4).map(gift => (
+                      <div
+                        key={gift.id}
+                        className="aspect-square bg-gray-200 rounded flex items-center justify-center overflow-hidden"
+                      >
+                        {gift.image?.url ? (
+                          <Image
+                            src={gift.image.url}
+                            alt={gift.name}
+                            className="w-full h-full object-cover"
+                            width={200}
+                            height={200}
+                          />
+                        ) : (
+                          <IoGiftOutline className="text-3xl text-gray-400" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-2 mb-4">
+                    <Badge className="w-fit bg-gray100 text-textTertiary border-transparent">
+                      {giftlist.gifts.length} productos
+                    </Badge>
+                    <h3 className="text-lg font-bold">{giftlist.name}</h3>
+                    <p className="text-lg font-semibold">
+                      Gs.{' '}
+                      {giftlist.gifts
+                        .reduce((sum, gift) => sum + Number(gift.price || 0), 0)
+                        .toLocaleString()}
+                    </p>
+                  </div>
+                  <Button
+                    className="hover:bg-gray100 transition-colors"
+                    variant="outline"
+                    asChild
+                    size="lg"
+                  >
+                    <Link href={`/gifts/lists/${giftlist.id}`}>
+                      Ver paquete
+                    </Link>
+                  </Button>
+                </div>
+              ))
           )}
         </div>
       </TabsContent>

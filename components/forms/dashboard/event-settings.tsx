@@ -1,6 +1,6 @@
 'use client'
 
-import { type Event, EventType, type User } from '@prisma/client'
+import { type Event, type User } from '@prisma/client'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react'
@@ -25,10 +25,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { useUpdateEventSettings } from '@/hooks/dashboard/forms/use-update-event-settings'
+import { isWeddingEventType } from '@/lib/event-type'
 import { cn } from '@/lib/utils'
 
 type DashboardEventSettingsFormProps = {
-  event: Event
+  event: Event & { eventType: { key: string } | null }
   currentUser: User
   secondaryEventUser: User | null
 }
@@ -171,7 +172,7 @@ export default function DashboardEventSettingsForm({
           </div>
         </div>
 
-        {event.eventType === EventType.WEDDING && (
+        {isWeddingEventType(event.eventType) && (
           <div className="flex flex-col gap-4 sm:grid sm:grid-cols-3 sm:gap-2">
             <FormField
               control={form.control}

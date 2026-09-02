@@ -2,19 +2,17 @@
 
 import type { Category } from '@prisma/client'
 import { IoPencilOutline } from 'react-icons/io5'
-import GiftForm from '@/components/forms/dialog/gift'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import {
   type EditableGift,
   useEditWishlistGift,
-} from '@/hooks/dialog/forms/use-edit-wishlist'
+} from '@/hooks/dialog/forms/use-edit-wishlist-gift'
+import {
+  WISHLIST_GIFT_EDIT_LOCK_MESSAGES,
+  type WishlistGiftEditLockReason,
+} from '@/lib/wishlist-gift-edit-lock'
+import GiftFormDialogContent from './gift-form-dialog-content'
 
 type EditWishlistGiftDialogProps = {
   wishlistGiftId: string
@@ -28,6 +26,7 @@ type EditWishlistGiftDialogProps = {
   minQuantity: number
   lockPrice: boolean
   allowTypeChange: boolean
+  editLockReason?: WishlistGiftEditLockReason | null
 }
 
 export default function EditWishlistGiftDialog({
@@ -42,19 +41,9 @@ export default function EditWishlistGiftDialog({
   minQuantity,
   lockPrice,
   allowTypeChange,
+  editLockReason,
 }: EditWishlistGiftDialogProps) {
-  const {
-    form,
-    open,
-    loading,
-    imagePreview,
-    preparingImage,
-    fileInputRef,
-    isValid,
-    handleFileChange,
-    handleOpenChange,
-    handleSubmit,
-  } = useEditWishlistGift({
+  const controller = useEditWishlistGift({
     wishlistGiftId,
     wishlistId,
     eventId,
@@ -65,36 +54,28 @@ export default function EditWishlistGiftDialog({
   })
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={controller.open} onOpenChange={controller.handleOpenChange}>
       <DialogTrigger asChild>
         <Button type="button" variant="outline" size="icon">
           <IoPencilOutline />
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Editar regalo</DialogTitle>
-        </DialogHeader>
-
-        <GiftForm
-          form={form}
-          categories={categories}
-          loading={loading}
-          isValid={isValid}
-          imagePreview={imagePreview}
-          preparingImage={preparingImage}
-          fileInputRef={fileInputRef}
-          uploadInputId={`edit-gift-image-${wishlistGiftId}`}
-          submitLabel="Guardar"
-          minQuantity={minQuantity}
-          lockPrice={lockPrice}
-          allowTypeChange={allowTypeChange}
-          onFileChange={handleFileChange}
-          onSubmit={handleSubmit}
-          onCancel={() => handleOpenChange(false)}
-        />
-      </DialogContent>
+      <GiftFormDialogContent
+        title="Editar regalo"
+        controller={controller}
+        categories={categories}
+        uploadInputId={`edit-gift-image-${wishlistGiftId}`}
+        submitLabel="Guardar"
+        minQuantity={minQuantity}
+        lockPrice={lockPrice}
+        allowTypeChange={allowTypeChange}
+        readOnlyReason={
+          editLockReason
+            ? WISHLIST_GIFT_EDIT_LOCK_MESSAGES[editLockReason]
+            : undefined
+        }
+      />
     </Dialog>
   )
 }

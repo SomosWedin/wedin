@@ -9,6 +9,7 @@ export async function getEventByUrl(slug: string) {
       include: {
         images: true,
         users: true,
+        eventType: true,
         _count: { select: { wishlistGifts: true } },
       },
     })

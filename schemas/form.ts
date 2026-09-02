@@ -1,4 +1,3 @@
-import { EventType } from '@prisma/client'
 import { type ZodType, z } from 'zod'
 
 export const UpdateEventSettingsFormSchema = z
@@ -7,7 +6,6 @@ export const UpdateEventSettingsFormSchema = z
       required_error: 'Debes seleccionar una fecha',
       invalid_type_error: '¡Eso no es una fecha!',
     }),
-    eventType: z.string(),
     eventUrl: z.string(),
     name: z
       .string()
@@ -24,42 +22,6 @@ export const UpdateEventSettingsFormSchema = z
     partnerEmail: z.string().nullable(),
   })
   .superRefine((data, ctx) => {
-    if (data.eventType !== EventType.WEDDING) return
-
-    const hasPartnerNameData = Boolean(data.partnerName || data.partnerLastName)
-
-    if (hasPartnerNameData) {
-      if (!data.partnerName) {
-        ctx.addIssue({
-          path: ['partnerName'],
-          message:
-            'El nombre de tu pareja es obligatorio para este tipo de evento',
-          code: z.ZodIssueCode.custom,
-        })
-      } else if (data.partnerName.length < 3) {
-        ctx.addIssue({
-          path: ['partnerName'],
-          message: 'El nombre de tu pareja debe contener al menos 3 caracteres',
-          code: z.ZodIssueCode.custom,
-        })
-      }
-      if (!data.partnerLastName) {
-        ctx.addIssue({
-          path: ['partnerLastName'],
-          message:
-            'El apellido de tu pareja es obligatorio para este tipo de evento',
-          code: z.ZodIssueCode.custom,
-        })
-      } else if (data.partnerLastName.length < 3) {
-        ctx.addIssue({
-          path: ['partnerLastName'],
-          message:
-            'El apellido de tu pareja debe contener al menos 3 caracteres',
-          code: z.ZodIssueCode.custom,
-        })
-      }
-    }
-
     if (
       data.partnerEmail &&
       !z.string().email().safeParse(data.partnerEmail).success
@@ -71,6 +33,42 @@ export const UpdateEventSettingsFormSchema = z
       })
     }
   })
+
+export function createUpdateEventSettingsFormSchema(isWedding: boolean) {
+  return UpdateEventSettingsFormSchema.superRefine((data, ctx) => {
+    if (!isWedding || !(data.partnerName || data.partnerLastName)) return
+
+    if (!data.partnerName) {
+      ctx.addIssue({
+        path: ['partnerName'],
+        message:
+          'El nombre de tu pareja es obligatorio para este tipo de evento',
+        code: z.ZodIssueCode.custom,
+      })
+    } else if (data.partnerName.length < 3) {
+      ctx.addIssue({
+        path: ['partnerName'],
+        message: 'El nombre de tu pareja debe contener al menos 3 caracteres',
+        code: z.ZodIssueCode.custom,
+      })
+    }
+
+    if (!data.partnerLastName) {
+      ctx.addIssue({
+        path: ['partnerLastName'],
+        message:
+          'El apellido de tu pareja es obligatorio para este tipo de evento',
+        code: z.ZodIssueCode.custom,
+      })
+    } else if (data.partnerLastName.length < 3) {
+      ctx.addIssue({
+        path: ['partnerLastName'],
+        message: 'El apellido de tu pareja debe contener al menos 3 caracteres',
+        code: z.ZodIssueCode.custom,
+      })
+    }
+  })
+}
 
 export const BankDetailsFormSchema = z.object({
   eventId: z.string(),
@@ -111,9 +109,47 @@ export const EventCoverFormSchema = z.object({
     }),
 })
 
+export const GiftlistNameSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'Ingresá un nombre para la colección' })
+  .max(60, { message: 'El nombre de la colección es demasiado largo' })
+
+export const AdminGiftlistSchema = z.object({
+  name: GiftlistNameSchema,
+  giftIds: z.array(z.string()),
+})
+export type AdminGiftlistValues = z.infer<typeof AdminGiftlistSchema>
+
+export const CategoryNameSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'Ingresá un nombre para la categoría' })
+  .max(60, { message: 'El nombre de la categoría es demasiado largo' })
+
+export const AdminCategorySchema = z.object({
+  name: CategoryNameSchema,
+  eventTypeIds: z
+    .array(z.string())
+    .min(1, { message: 'Seleccioná al menos un tipo de evento' }),
+})
+export type AdminCategoryValues = z.infer<typeof AdminCategorySchema>
+
+export const EventTypeNameSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'Ingresá un nombre para el tipo de evento' })
+  .max(60, { message: 'El nombre del tipo de evento es demasiado largo' })
+
+export const AdminEventTypeSchema = z.object({
+  name: EventTypeNameSchema,
+})
+export type AdminEventTypeValues = z.infer<typeof AdminEventTypeSchema>
+
 export const GiftFormSchema = z.object({
   name: z
     .string()
+    .trim()
     .min(1, { message: 'El nombre del regalo no puede estar vacío' })
     .max(60, { message: 'El nombre del regalo es demasiado largo' }),
   categoryId: z.string().min(1, { message: 'Debes seleccionar una categoría' }),
@@ -124,14 +160,13 @@ export const GiftFormSchema = z.object({
       message: 'El precio no puede ser mayor de PYG 99,999,999',
     }),
   isDefault: z.boolean().default(false),
-  sourceGiftId: z.string(),
-  isEditedVersion: z.boolean().default(false),
-  eventId: z.string().min(1, { message: 'No se encontro un event ID' }),
+  eventId: z.string().optional(),
+  giftlistIds: z.array(z.string().min(1)).default([]),
 
-  image: z.any().optional() as ZodType<File>,
+  image: z.custom<File>().optional(),
   imageUrl: z.string(),
 
-  wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }), // wishlistGiftPostSchema
+  wishlistId: z.string().optional(), // wishlistGiftPostSchema
   isFavoriteGift: z.boolean().default(false), // wishlistGiftPostSchema
   isGroupGift: z.boolean().default(false), // wishlistGiftPostSchema
   quantity: z.coerce // wishlistGiftPostSchema
@@ -142,8 +177,12 @@ export const GiftFormSchema = z.object({
     .default(1),
 })
 
-// We want to ignore the imageUrl field when creating/editing a gift
-export const GiftPostSchema = GiftFormSchema.omit({ image: true })
+export type GiftFormValues = z.infer<typeof GiftFormSchema>
+
+// We want to ignore the image field when creating/editing a gift
+export const GiftPostSchema = GiftFormSchema.omit({
+  image: true,
+})
 
 export const GiftEditSchema = GiftPostSchema.pick({
   name: true,
@@ -157,11 +196,16 @@ export const GiftCreateSchema = GiftPostSchema.pick({
   categoryId: true,
   price: true,
   isDefault: true,
-  isEditedVersion: true,
-  sourceGiftId: true,
   eventId: true,
   imageUrl: true,
 })
+
+const AdminGiftMutationSchema = GiftEditSchema.extend({
+  giftlistIds: GiftPostSchema.shape.giftlistIds,
+}).strict()
+
+export const AdminGiftCreateSchema = AdminGiftMutationSchema
+export const AdminGiftEditSchema = AdminGiftMutationSchema
 
 export const WishlistGiftCreateSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }),
@@ -172,8 +216,14 @@ export const WishlistGiftCreateSchema = z.object({
   quantity: z.coerce.number().int().min(1).max(20).default(1),
 })
 
+export const GiftWithWishlistGiftCreateSchema = z.object({
+  gift: GiftCreateSchema,
+  wishlistGift: WishlistGiftCreateSchema.omit({ giftId: true }),
+})
+
 export const WishlistGiftsCreateSchema = z.object({
   wishlistId: z.string().min(1, { message: 'No se encontro un wishlist ID' }),
+  giftlistId: z.string().min(1, { message: 'No se encontro una colección' }),
   giftIds: z.array(z.string().min(1, { message: 'No se encontro un gift ID' })),
   eventId: z.string().min(1, { message: 'No se encontro un event ID' }),
 })
@@ -185,6 +235,11 @@ export const WishlistGiftEditSchema = z.object({
   isFavoriteGift: z.boolean().default(false),
   isGroupGift: z.boolean().default(false),
   quantity: z.coerce.number().int().min(1).max(20).default(1),
+})
+
+export const GiftWithWishlistGiftEditSchema = z.object({
+  gift: GiftEditSchema,
+  wishlistGift: WishlistGiftEditSchema.omit({ giftId: true }),
 })
 
 export const WishlistGiftDeleteSchema = z.object({
