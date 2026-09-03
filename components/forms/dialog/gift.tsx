@@ -177,7 +177,7 @@ export default function GiftForm({
                   size="sm"
                   className="w-fit gap-2"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={preparingImage}
+                  disabled={preparingImage || Boolean(readOnlyReason)}
                 >
                   {preparingImage ? 'Procesando…' : 'Subir imagen'}
                   {preparingImage ? (
@@ -255,7 +255,8 @@ export default function GiftForm({
                 <Select
                   value={field.value}
                   disabled={
-                    canChooseEventType && selectedEventTypeIds.length === 0
+                    Boolean(readOnlyReason) ||
+                    (canChooseEventType && selectedEventTypeIds.length === 0)
                   }
                   onValueChange={value => {
                     if (
