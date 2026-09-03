@@ -34,6 +34,15 @@ export async function createTransactionsForCart(
     return { error: 'Tu carrito está vacío.' }
   }
 
+  const event = await prismaClient.event.findUnique({
+    where: { id: eventId },
+    select: { isPublished: true },
+  })
+
+  if (!event?.isPublished) {
+    return { error: 'Esta lista de regalos no está disponible.' }
+  }
+
   const {
     payerName,
     payerEmail,
@@ -234,6 +243,11 @@ export async function createPagoparCheckoutSession(
 
   if (!event) {
     return { error: 'Evento no encontrado.' }
+  }
+
+  if (!event.isPublished) {
+    await markTransactionsFailed(transactionIds)
+    return { error: 'Esta lista de regalos no está disponible.' }
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'

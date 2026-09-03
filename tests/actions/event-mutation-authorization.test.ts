@@ -83,7 +83,7 @@ describe('event mutation authorization', () => {
         id: 'event-1',
         users: { some: { id: 'user-1' } },
       },
-      select: { id: true },
+      select: { id: true, termsAcceptedAt: true },
     })
     expect(mocks.eventUpdate).toHaveBeenCalledWith({
       where: { id: 'event-1' },

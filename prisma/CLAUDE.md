@@ -135,3 +135,33 @@ whenever you touch something documented below.
   from the same `BANK_TRANSFER` cart checkout. The equivalent of
   `pagoparHash` for `CARD` transactions, since bank transfer never gets a
   Pagopar-issued hash to group by.
+- `Event.isPublished` — default flipped `true` → `false` (2026-08-30) so a
+  new event starts hidden and the organizer has to press "Activar lista",
+  which is what makes their acceptance of the términos y condiciones an actual
+  deliberate act. **No backfill:** `db push` doesn't touch existing
+  documents, so events already live in an environment keep the `true` they
+  were written with, which is what we want — nobody's site goes dark on
+  deploy.
+- `Event.termsAcceptedAt` — stamped by `setEventPublished` the first time an
+  event is published, never overwritten afterwards (deactivating and
+  reactivating does not re-stamp). Optional scalar with no index, so none of
+  the sparse-unique traps above apply. **There is deliberately no
+  `termsVersion` companion.** The documents are PDFs in S3 on a bucket
+  without versioning, so a stored fingerprint would point at bytes that the
+  next upload destroys — it could prove the terms changed but never produce
+  what was accepted. A re-acceptance flow does not need one either:
+  `termsAcceptedAt < LastModified` of the S3 object answers "did they accept
+  an outdated document". If the accepted bytes ever need to be recoverable,
+  enable bucket versioning and store `x-amz-version-id` — that is a storage
+  decision, not a schema one.
+
+  `hasAcceptedOrganizerTerms` reads `termsAcceptedAt` and nothing else.
+  It used to OR in `isPublished` to cover events that were already live
+  before the documents existed, but `isPublished` is mutable: hiding a site
+  revoked its acceptance, which both regressed an established organizer to
+  the "Activar lista" card and made the next activation stamp a consent
+  record for a document that card never showed. Those events are stamped by
+  `20260902231318_backfill_event_terms_acceptance` instead, so acceptance is
+  one immutable field. That migration also sets `isPublished: true` on
+  documents predating the field, which would otherwise pick up the new
+  `false` default and take live sites down.

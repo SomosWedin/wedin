@@ -1,4 +1,8 @@
+import { TERMS_BASE_PATH } from '@/lib/terms'
+
 export const publicRoutes: string[] = ['/e']
+
+export const legalRoutes: string[] = [TERMS_BASE_PATH]
 
 export const authRoutes: string[] = ['/login']
 

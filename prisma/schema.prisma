@@ -99,18 +99,19 @@ model User {
 }
 
 model Event {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  name         String?
-  date         DateTime?
-  coverMessage String?
-  url          String?   @unique
-  wishlistId   String    @db.ObjectId
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  country      String?
-  city         String?
-  eventTypeId  String    @db.ObjectId
-  isPublished  Boolean   @default(true)
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  name            String?
+  date            DateTime?
+  coverMessage    String?
+  url             String?   @unique
+  wishlistId      String    @db.ObjectId
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  country         String?
+  city            String?
+  eventTypeId     String    @db.ObjectId
+  isPublished     Boolean   @default(false)
+  termsAcceptedAt DateTime?
 
   wishlist  Wishlist  @relation(fields: [wishlistId], references: [id])
   eventType EventType @relation(fields: [eventTypeId], references: [id])

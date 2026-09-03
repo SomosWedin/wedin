@@ -21,7 +21,7 @@ async function getOwnedEvent(eventId: string) {
       id: eventId,
       users: { some: { id: currentUser.id } },
     },
-    select: { id: true },
+    select: { id: true, termsAcceptedAt: true },
   })
 }
 
@@ -178,9 +178,14 @@ export const setEventPublished = async (
     const ownedEvent = await getOwnedEvent(eventId)
     if (!ownedEvent) return { error: 'No autorizado.' }
 
+    const acceptsTermsNow = isPublished && !ownedEvent.termsAcceptedAt
+
     const updatedEvent = await prismaClient.event.update({
       where: { id: ownedEvent.id },
-      data: { isPublished },
+      data: {
+        isPublished,
+        ...(acceptsTermsNow && { termsAcceptedAt: new Date() }),
+      },
     })
 
     revalidatePath('/dashboard')

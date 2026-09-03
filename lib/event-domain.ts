@@ -69,6 +69,30 @@ export function getPublicEventUrl(eventSlug: string, pathname = '/') {
   return appUrl.toString()
 }
 
+export function getRootAppUrl(pathname = '/') {
+  const rootDomain = getConfiguredRootDomain()
+
+  const appUrl = new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  )
+
+  appUrl.hostname = rootDomain
+
+  appUrl.pathname = pathname.startsWith('/') ? pathname : `/${pathname}`
+
+  appUrl.search = ''
+  appUrl.hash = ''
+
+  if (rootDomain === 'localhost') {
+    appUrl.protocol = 'http:'
+  } else {
+    appUrl.protocol = 'https:'
+    appUrl.port = ''
+  }
+
+  return appUrl.toString()
+}
+
 /**
  * Browser-facing paths used while already on an event subdomain.
  * These paths must not include the internal /e/[slug] prefix.
