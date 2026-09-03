@@ -43,3 +43,7 @@ skills-lock.json
 
 # local planning doc, not for the repo
 plan.md
+
+# codex
+.codex/
+AGENTS.md
