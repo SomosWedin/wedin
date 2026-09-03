@@ -49,16 +49,6 @@ export const getSecondaryUser = async (
   }
 }
 
-export const getLoginUserByEmail = async (email: string) => {
-  try {
-    return await prismaClient.user.findUnique({
-      where: { email },
-    })
-  } catch (_error) {
-    return null
-  }
-}
-
 export const updateVerifiedOn = async (email: string) => {
   try {
     const currentUser = await prismaClient.user.update({
@@ -97,24 +87,5 @@ export const updateUserById = async (
   } catch (error) {
     console.error('Error updating user:', error)
     return { error: 'No pudimos actualizar tus datos.' }
-  }
-}
-
-export const upsertUser = async (email: string, provider?: string) => {
-  try {
-    return await prismaClient.user.upsert({
-      where: {
-        email: email,
-      },
-      update: {
-        email: email,
-      },
-      create: {
-        email: email,
-        // provider: provider,
-      },
-    })
-  } catch (error) {
-    console.error('Error upserting user:', error, provider)
   }
 }

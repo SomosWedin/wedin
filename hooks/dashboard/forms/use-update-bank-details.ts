@@ -46,7 +46,6 @@ export function useUpdateBankDetails({
     const validatedFields = BankDetailsFormSchema.safeParse(values)
 
     if (!validatedFields.success) {
-      console.log(validatedFields.error.errors)
       toast({
         title: 'Error en los campos del formulario',
         description: validatedFields.error.errors

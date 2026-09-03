@@ -23,7 +23,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { useCheckout } from '@/hooks/checkout/forms/use-checkout'
 import { useCartStore } from '@/hooks/use-cart-store'
 import { useStore } from '@/hooks/use-store'
+import { getRootAppUrl } from '@/lib/event-domain'
+import { TERMS_PATHS } from '@/lib/terms'
 import type { GuestCheckoutSchema } from '@/schemas/checkout'
+
+const GUEST_TERMS_URL = getRootAppUrl(TERMS_PATHS.guests)
 
 type PaymentMethod = z.infer<typeof GuestCheckoutSchema>['paymentMethod']
 
@@ -188,8 +192,12 @@ export default function CheckoutForm({
           />
 
           <div className="flex flex-col gap-3">
-            <div className="flex gap-2 items-center cursor-pointer">
+            <label
+              htmlFor="wantsMessage"
+              className="flex gap-2 items-center cursor-pointer"
+            >
               <Checkbox
+                id="wantsMessage"
                 checked={wantsMessage}
                 onCheckedChange={checked => {
                   const next = checked === true
@@ -200,7 +208,7 @@ export default function CheckoutForm({
               <span className="text-sm">
                 Te gustaría dejar un mensaje con tu regalo?
               </span>
-            </div>
+            </label>
 
             {wantsMessage && (
               <FormField
@@ -266,10 +274,12 @@ export default function CheckoutForm({
                 </div>
               ))}
             </div>
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-textTertiary">Cargo por servicio (3%)</span>
+            <div className="flex justify-between items-center pt-1">
+              <span className="text-sm text-textTertiary">
+                Cargo por servicio
+              </span>
 
-              <span className="font-semibold">
+              <span className="text-sm font-semibold">
                 Gs. {serviceFee.toLocaleString('es-PY')}
               </span>
             </div>
@@ -322,19 +332,34 @@ export default function CheckoutForm({
           />
         </div>
 
-        <Button
-          type="submit"
-          variant="success"
-          className="order-3 gap-2 md:col-span-2 mt-6"
-          disabled={loading || !isValid}
-        >
-          {loading ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <IoLockClosedOutline />
-          )}
-          Confirmar compra
-        </Button>
+        <div className="order-3 flex flex-col gap-3 md:col-span-2 mt-3">
+          <p className="text-sm text-center text-textTertiary">
+            Al confirmar tu compra aceptás los{' '}
+            <a
+              href={GUEST_TERMS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline"
+            >
+              términos y condiciones
+            </a>{' '}
+            de wedin.
+          </p>
+
+          <Button
+            type="submit"
+            variant="success"
+            className="gap-2"
+            disabled={loading || !isValid}
+          >
+            {loading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <IoLockClosedOutline />
+            )}
+            Confirmar compra
+          </Button>
+        </div>
       </form>
     </Form>
   )

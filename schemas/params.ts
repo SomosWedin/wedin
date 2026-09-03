@@ -28,6 +28,7 @@ export const GetGiftsParams = z
     wishlistId: z.string().optional(),
     itemsPerPage: z.number().optional(),
     page: z.string().optional(),
+    isDefault: z.boolean().optional(),
     name: z.string().optional(),
     sort: z.enum(['price-asc', 'price-desc']).optional(),
   })

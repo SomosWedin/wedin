@@ -16,7 +16,11 @@ import {
 } from '@/lib/site-preview'
 
 type SitePreviewProps = {
-  event: Event & { images: ImageModel[]; users: User[] }
+  event: Event & {
+    images: ImageModel[]
+    users: User[]
+    eventType: { key: string } | null
+  }
   wishlistGifts: WishlistGiftWithGift[]
 }
 

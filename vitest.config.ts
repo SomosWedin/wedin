@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
   resolve: {
@@ -7,8 +7,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('.', import.meta.url)),
     },
   },
+  oxc: { jsx: { runtime: 'automatic' } },
   test: {
     environment: 'node',
     clearMocks: true,
+    exclude: [...configDefaults.exclude, '**/.claude/**'],
   },
 })

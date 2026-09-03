@@ -1,6 +1,5 @@
 'use client'
 
-import { EventType } from '@prisma/client'
 import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import type { BaseSyntheticEvent } from 'react'
@@ -20,7 +19,7 @@ import illustration from '@/public/assets/onb-step-two-icon.svg'
 
 type StepTwoFormProps = {
   form: UseFormReturn<StepTwoValues>
-  eventType: EventType
+  isWedding: boolean
   isValid: boolean
   loading: boolean
   onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
@@ -28,7 +27,7 @@ type StepTwoFormProps = {
 
 export default function StepTwoForm({
   form,
-  eventType,
+  isWedding,
   isValid,
   loading,
   onSubmit,
@@ -68,23 +67,9 @@ export default function StepTwoForm({
               </FormItem>
             )}
           />
-
-          <FormField
-            control={form.control}
-            name="eventType"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Input type="hidden" {...field} />
-                </FormControl>
-
-                <FormMessage className="font-normal text-red-600" />
-              </FormItem>
-            )}
-          />
         </div>
 
-        {eventType === EventType.WEDDING && (
+        {isWedding && (
           <>
             <div className="flex w-full items-center gap-2">
               <div className="-mt-6 h-full w-full border-b border-gray200" />

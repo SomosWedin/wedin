@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   transactionCreate: vi.fn(),
   wishlistGiftUpdateMany: vi.fn(),
   wishlistGiftFindUnique: vi.fn(),
+  eventFindUnique: vi.fn(),
   applyTransactionStatusChange: vi.fn(),
 }))
 
@@ -14,6 +15,7 @@ vi.mock('@/prisma/client', () => ({
   default: {
     wishlistGift: { findMany: mocks.wishlistGiftFindMany },
     transaction: { findMany: mocks.transactionFindMany },
+    event: { findUnique: mocks.eventFindUnique },
     $transaction: mocks.$transaction,
   },
 }))
@@ -69,6 +71,7 @@ function cartItem(overrides: Partial<CheckoutCartItem> = {}): CheckoutCartItem {
 describe('createTransactionsForCart guardrails', () => {
   beforeEach(() => {
     transactionIdCounter = 0
+    mocks.eventFindUnique.mockResolvedValue({ isPublished: true })
     mocks.transactionFindMany.mockResolvedValue([]) // no stale CARD holds by default
     // Live re-read inside the claim transaction (checkout.ts's race-guard
     // fix) — quantity 5 / price 1000000 satisfy every test's outer
@@ -368,5 +371,38 @@ describe('createTransactionsForCart guardrails', () => {
       expect(result).toHaveProperty('success')
       expect(mocks.$transaction).toHaveBeenCalledTimes(2)
     })
+  })
+})
+
+describe('createTransactionsForCart event availability', () => {
+  beforeEach(() => {
+    mocks.transactionFindMany.mockResolvedValue([])
+  })
+
+  it('refuses a cart for an event that is not published', async () => {
+    mocks.eventFindUnique.mockResolvedValue({ isPublished: false })
+
+    const result = await createTransactionsForCart('event-1', payer, [
+      { wishlistGiftId: 'gift-1', amount: '100000', quantity: 1 },
+    ])
+
+    expect(result).toEqual({
+      error: 'Esta lista de regalos no está disponible.',
+    })
+    expect(mocks.wishlistGiftFindMany).not.toHaveBeenCalled()
+    expect(mocks.$transaction).not.toHaveBeenCalled()
+  })
+
+  it('refuses a cart for an event that no longer exists', async () => {
+    mocks.eventFindUnique.mockResolvedValue(null)
+
+    const result = await createTransactionsForCart('event-1', payer, [
+      { wishlistGiftId: 'gift-1', amount: '100000', quantity: 1 },
+    ])
+
+    expect(result).toEqual({
+      error: 'Esta lista de regalos no está disponible.',
+    })
+    expect(mocks.$transaction).not.toHaveBeenCalled()
   })
 })

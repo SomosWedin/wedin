@@ -7,6 +7,7 @@ import { getWishlistGifts } from '@/actions/data/wishlist-gift'
 import DashboardHomeSiteLinkCard from '@/components/dashboard/dashboard-home-site-link-card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { hasAcceptedOrganizerTerms } from '@/lib/terms'
 import { cn } from '@/lib/utils'
 
 type ChecklistItem = {
@@ -67,15 +68,18 @@ export default async function DashboardHome() {
     allChecklistItemsCompleted && hasEventUrl(event) ? event : null
 
   const allCompleted = completedEvent !== null
+  const isActivated = hasAcceptedOrganizerTerms(event)
 
   return (
     <section className="w-full h-full flex flex-col justify-start items-center gap-8">
       <div className="w-full flex flex-col gap-2 border-b border-gray-200 pb-6">
         <h1 className="text-2xl font-black">Inicio</h1>
         <p className="text-textTertiary">
-          {allCompleted
-            ? 'Tu página está lista, compartila con tus invitados'
-            : 'Configura tu página y sigue los pasos para tener todo listo para tu evento'}
+          {!allCompleted
+            ? 'Configura tu página y sigue los pasos para tener todo listo para tu evento'
+            : isActivated
+              ? 'Tu página está lista, compartila con tus invitados'
+              : 'Ya casi está, activá tu lista para compartirla con tus invitados'}
         </p>
       </div>
 

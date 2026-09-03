@@ -3,7 +3,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { IoGiftOutline } from 'react-icons/io5'
-import { getCategories } from '@/actions/data/category'
 import { getEvent } from '@/actions/data/event'
 import { getGiftlist } from '@/actions/data/giftlist'
 import { getWishlistGifts } from '@/actions/data/wishlist-gift'
@@ -22,19 +21,15 @@ export default async function GiftlistDetailPage({
     return <div>Error</div>
   }
 
-  const [giftlist, wishlistGifts, categories] = await Promise.all([
-    getGiftlist(params.giftlistId),
+  const [giftlist, wishlistGifts] = await Promise.all([
+    getGiftlist(params.giftlistId, event.eventTypeId),
     getWishlistGifts({ searchParams: { wishlistId: event.wishlistId } }),
-    getCategories(),
   ])
 
   if (!giftlist) {
     redirect('/gifts')
   }
 
-  const categoryNameById = new Map(
-    categories.map(category => [category.id, category.name])
-  )
   const wishlistGiftIds = new Set(
     wishlistGifts
       .filter(wishlistGift => !wishlistGift.isReceived)
@@ -68,6 +63,7 @@ export default async function GiftlistDetailPage({
             </p>
           </div>
           <AddGiftlistToWishlistButton
+            giftlistId={giftlist.id}
             eventId={event.id}
             wishlistId={event.wishlistId}
             giftIds={giftIds}
@@ -114,8 +110,7 @@ export default async function GiftlistDetailPage({
                       <div>
                         <p className="font-medium">{gift.name}</p>
                         <p className="text-sm text-gray-500">
-                          {categoryNameById.get(gift.categoryId) ??
-                            'Sin categoría'}
+                          {gift.category.name}
                         </p>
                       </div>
                     </div>

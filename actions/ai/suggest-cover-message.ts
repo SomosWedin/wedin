@@ -1,8 +1,8 @@
 'use server'
 
-import { EventType } from '@prisma/client'
 import { getCurrentUser } from '@/actions/get-current-user'
 import { AI_MODEL, anthropic } from '@/lib/anthropic'
+import { isWeddingEventType } from '@/lib/event-type'
 import prismaClient from '@/prisma/client'
 import { CoverMessageSuggestionsSchema } from '@/schemas/ai'
 
@@ -32,7 +32,7 @@ export async function suggestCoverMessage(eventId: string) {
 
   const event = await prismaClient.event.findFirst({
     where: { id: eventId, users: { some: { id: user.id } } },
-    include: { users: true },
+    include: { users: true, eventType: true },
   })
 
   if (!event) {
@@ -45,7 +45,7 @@ export async function suggestCoverMessage(eventId: string) {
     .join(' & ')
 
   const eventDescription = [
-    event.eventType === EventType.WEDDING ? 'una boda' : 'un evento',
+    isWeddingEventType(event.eventType) ? 'una boda' : 'un evento',
     coupleNames && `de ${coupleNames}`,
     event.date && `el ${event.date.toLocaleDateString('es-PY')}`,
     event.city &&

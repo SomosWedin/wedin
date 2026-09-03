@@ -21,10 +21,11 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift'
+import { getWishlistGiftEditLockReason } from '@/lib/wishlist-gift-edit-lock'
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
   include: {
-    gift: { include: { image: true } }
+    gift: { include: { image: true; category: true } }
     transactions: { select: { quantity: true } }
   }
 }>
@@ -108,9 +109,11 @@ export default function DashboardWishlistList({
     })
   }
 
-  const categoryNameById = new Map(
-    categories.map(category => [category.id, category.name])
-  )
+  const categoryOptionsFor = (gift: WishlistGiftWithGift['gift']) =>
+    categories.some(category => category.id === gift.categoryId)
+      ? categories
+      : [...categories, gift.category]
+
   const activeWishlistGifts = wishlistGifts.filter(
     wishlistGift => !wishlistGift.isReceived
   )
@@ -226,6 +229,14 @@ export default function DashboardWishlistList({
 
         {filteredWishlistGifts.map(wishlistGift => {
           const estado = getEstado(wishlistGift)
+          const editLockReason = getWishlistGiftEditLockReason({
+            isFullyPaid: wishlistGift.isFullyPaid,
+            isManuallyReceived: wishlistGift.isManuallyReceived,
+            groupGiftParts: wishlistGift.groupGiftParts,
+            reservedQuantity: wishlistGift.reservedQuantity,
+            reservedAmount: wishlistGift.reservedAmount,
+            hasCompletedTransaction: wishlistGift.transactions.length > 0,
+          })
 
           return (
             <div
@@ -249,8 +260,7 @@ export default function DashboardWishlistList({
                 <div>
                   <p className="font-medium">{wishlistGift.gift.name}</p>
                   <p className="text-sm text-gray-500">
-                    {categoryNameById.get(wishlistGift.gift.categoryId) ??
-                      'Sin categoría'}
+                    {wishlistGift.gift.category.name}
                   </p>
                 </div>
               </div>
@@ -321,19 +331,14 @@ export default function DashboardWishlistList({
                     wishlistId={wishlistId}
                     eventId={eventId}
                     gift={wishlistGift.gift}
-                    categories={categories}
+                    categories={categoryOptionsFor(wishlistGift.gift)}
                     isFavoriteGift={wishlistGift.isFavoriteGift}
                     isGroupGift={wishlistGift.isGroupGift}
                     quantity={wishlistGift.quantity}
                     minQuantity={wishlistGift.reservedQuantity}
-                    lockPrice={
-                      !wishlistGift.isGroupGift &&
-                      wishlistGift.reservedQuantity > 0
-                    }
-                    allowTypeChange={
-                      wishlistGift.reservedQuantity === 0 &&
-                      wishlistGift.reservedAmount === 0
-                    }
+                    lockPrice={editLockReason !== null}
+                    allowTypeChange={editLockReason === null}
+                    editLockReason={editLockReason}
                   />
                   <DeleteWishlistGiftDialog
                     wishlistId={wishlistId}

@@ -1,6 +1,7 @@
 'use server'
 
 import { createHash, timingSafeEqual } from 'crypto'
+import { distributeServiceFee } from './pagopar-fee'
 
 const publicKey = process.env.PAGOPAR_PUBLIC_KEY
 const privateKey = process.env.PAGOPAR_PRIVATE_KEY
@@ -69,40 +70,26 @@ export async function createOrder(
 
   const token = sha1(privateKey + orderId + String(totalAmount))
 
-  const compras_items = [
-    ...items.map((item, index) => ({
-      nombre: item.name,
-      cantidad: item.quantity,
-      categoria: 4,
-      ciudad: '1',
-      descripcion: item.name,
-      id_producto: index + 1,
-      precio_total: item.amount,
-      public_key: publicKey,
-      url_imagen: item.imageUrl ?? '',
-      vendedor_telefono: '',
-      vendedor_direccion: '',
-      vendedor_direccion_referencia: '',
-      vendedor_direccion_coordenadas: '',
-    })),
-    // agregamos para que el monto_total del body sea igual al total de
-    // la suma de precio_total entre todos los producto
-    {
-      nombre: 'Cargo por servicio',
-      cantidad: 1,
-      categoria: 4,
-      ciudad: '1',
-      descripcion: 'Cargo por servicio (3%)',
-      id_producto: items.length + 1,
-      precio_total: serviceFee,
-      public_key: publicKey,
-      url_imagen: '',
-      vendedor_telefono: '',
-      vendedor_direccion: '',
-      vendedor_direccion_referencia: '',
-      vendedor_direccion_coordenadas: '',
-    },
-  ]
+  const itemAmounts = distributeServiceFee(
+    items.map(item => item.amount),
+    serviceFee
+  )
+
+  const compras_items = items.map((item, index) => ({
+    nombre: item.name,
+    cantidad: item.quantity,
+    categoria: 4,
+    ciudad: '1',
+    descripcion: item.name,
+    id_producto: index + 1,
+    precio_total: itemAmounts[index],
+    public_key: publicKey,
+    url_imagen: item.imageUrl ?? '',
+    vendedor_telefono: '',
+    vendedor_direccion: '',
+    vendedor_direccion_referencia: '',
+    vendedor_direccion_coordenadas: '',
+  }))
 
   try {
     const response = await fetch(

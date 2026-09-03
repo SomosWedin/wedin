@@ -1,4 +1,3 @@
-import { EventType } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useState } from 'react'
@@ -24,11 +23,11 @@ export const useOnboarding = () => {
   const { update } = useSession()
 
   // Step One
-  const handleEventTypeUpdate = async (eventType: EventType) => {
+  const handleEventTypeUpdate = async (eventTypeId: string) => {
     setLoading(true)
 
     try {
-      const response = await updateEventTypeStepOne(eventType)
+      const response = await updateEventTypeStepOne(eventTypeId)
 
       if (!response.success) {
         toast({
@@ -203,10 +202,6 @@ export const useOnboarding = () => {
     }
   }
 
-  const saveEventTypeToLocalStorage = (eventType: EventType) => {
-    localStorage.setItem('eventType', eventType)
-  }
-
   return {
     loading,
     handleEventTypeUpdate,
@@ -214,6 +209,5 @@ export const useOnboarding = () => {
     handleEventLocationUpdate,
     handleEventDateUpdate,
     handleCompleteOnboarding,
-    saveEventTypeToLocalStorage,
   }
 }
