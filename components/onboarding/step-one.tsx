@@ -53,7 +53,7 @@ export default function OnboardingStepOne({
               }}
             >
               <CardHeader>
-                <Icon className="text-4xl" />
+                <Icon className="h-9 w-9" strokeWidth={1.5} />
               </CardHeader>
               <CardContent className="flex justify-between items-center gap-2">
                 <h1 className="text-xl font-bold text-textPrimary">
