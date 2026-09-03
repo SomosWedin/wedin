@@ -20,9 +20,6 @@ export default function TermsDocumentView({
 
         <p className="mt-3 text-sm text-textTertiary">{terms.summary}</p>
 
-        {/* WebKit renders a framed PDF as an unscrollable first page, so every
-            browser on iOS needs a way out of the frame. No media query can
-            single those out, so the link stays visible at every width. */}
         <a
           href={fileUrl}
           target="_blank"

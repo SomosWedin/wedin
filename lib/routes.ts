@@ -2,8 +2,6 @@ import { TERMS_BASE_PATH } from '@/lib/terms'
 
 export const publicRoutes: string[] = ['/e']
 
-// Readable by anyone, in any session state — they are the documents a user is
-// asked to accept, so an unfinished onboarding must not redirect away from one.
 export const legalRoutes: string[] = [TERMS_BASE_PATH]
 
 export const authRoutes: string[] = ['/login']

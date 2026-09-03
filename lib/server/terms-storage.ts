@@ -11,11 +11,6 @@ const s3Client = new S3Client({
   },
 })
 
-/**
- * The bucket is never named to the browser: the document is streamed through
- * our own route, so the objects can stay private and their URLs stay useless
- * to anyone who finds them.
- */
 export async function getTermsFileStream(document: TermsDocument) {
   const bucket = process.env.AWS_BUCKET
 

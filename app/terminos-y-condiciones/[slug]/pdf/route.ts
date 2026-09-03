@@ -24,8 +24,6 @@ export async function GET(_request: Request, { params }: TermsPdfRouteContext) {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="${fileName}"`,
-      // Served from the CDN between refreshes, so replacing the object in S3
-      // still takes effect without a deploy and without paying egress per read.
       'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
     },
   })
