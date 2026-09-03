@@ -1,11 +1,10 @@
 import type { EventType } from '@prisma/client'
 import Image from 'next/image'
-import { CiHeart } from 'react-icons/ci'
 import { FaChevronRight } from 'react-icons/fa6'
-import { GiWineGlass } from 'react-icons/gi'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { useOnboarding } from '@/hooks/use-onboarding'
-import { SYSTEM_EVENT_TYPES } from '@/lib/event-type'
+import { sortEventTypesForOnboarding } from '@/lib/event-type'
+import { getEventTypeIcon } from '@/lib/event-type-icons'
 import wedinIcon from '@/public/assets/w-icon.svg'
 import OnboardingStepper from './stepper'
 
@@ -16,16 +15,7 @@ export default function OnboardingStepOne({
 }) {
   const { handleEventTypeUpdate, loading } = useOnboarding()
 
-  const handleCardClick = (eventTypeId?: string) => {
-    if (eventTypeId) handleEventTypeUpdate(eventTypeId)
-  }
-
-  const wedding = eventTypes.find(
-    eventType => eventType.key === SYSTEM_EVENT_TYPES.WEDDING.key
-  )
-  const other = eventTypes.find(
-    eventType => eventType.key === SYSTEM_EVENT_TYPES.OTHER.key
-  )
+  const sortedEventTypes = sortEventTypesForOnboarding(eventTypes)
 
   return (
     <div className="relative flex flex-col justify-center items-center gap-8 h-full">
@@ -40,46 +30,40 @@ export default function OnboardingStepOne({
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-8 items-center">
-        <Card
-          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${
-            loading ? 'cursor-not-allowed pointer-events-none opacity-65' : ''
-          }`}
-          onClick={() => {
-            handleCardClick(wedding?.id)
-          }}
-        >
-          <CardHeader>
-            <CiHeart className="text-4xl" />
-          </CardHeader>
-          <CardContent className="flex justify-between items-center">
-            <h1 className="text-xl font-bold text-textPrimary">
-              Un casamiento
-            </h1>
-            <FaChevronRight className="text-sm" />
-          </CardContent>
-        </Card>
+      {sortedEventTypes.length === 0 && (
+        <p className="text-secondary400 text-center">
+          No hay tipos de evento disponibles en este momento.
+        </p>
+      )}
 
-        <div className="h-12 border-r border-gray200 sm:block hidden"></div>
+      <div className="grid w-full max-w-3xl grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+        {sortedEventTypes.map(eventType => {
+          const Icon = getEventTypeIcon(eventType.key)
 
-        <Card
-          className={`w-64 bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${
-            loading ? 'cursor-not-allowed pointer-events-none opacity-70' : ''
-          }`}
-          onClick={() => {
-            handleCardClick(other?.id)
-          }}
-        >
-          <CardHeader>
-            <GiWineGlass className="text-4xl" />
-          </CardHeader>
-          <CardContent className="flex justify-between items-center">
-            <h1 className="text-xl font-bold text-textPrimary">
-              Otro tipo de evento
-            </h1>
-            <FaChevronRight className="text-sm" />
-          </CardContent>
-        </Card>
+          return (
+            <Card
+              key={eventType.id}
+              className={`w-full bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${
+                loading
+                  ? 'cursor-not-allowed pointer-events-none opacity-65'
+                  : ''
+              }`}
+              onClick={() => {
+                handleEventTypeUpdate(eventType.id)
+              }}
+            >
+              <CardHeader className="p-4 sm:p-6">
+                <Icon className="h-8 w-8 sm:h-9 sm:w-9" strokeWidth={1.5} />
+              </CardHeader>
+              <CardContent className="flex justify-between items-center gap-1.5 p-4 pt-0 sm:p-6 sm:pt-0">
+                <h1 className="text-base sm:text-xl font-bold text-textPrimary">
+                  {eventType.name}
+                </h1>
+                <FaChevronRight className="text-xs sm:text-sm shrink-0" />
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       <OnboardingStepper step={1} />
