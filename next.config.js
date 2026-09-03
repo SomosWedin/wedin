@@ -12,10 +12,10 @@ const nextConfig = {
       'plus.unsplash.com',
       'somos-wedin.s3.us-east-2.amazonaws.com',
       'somos-wedin-prod.s3.us-east-2.amazonaws.com',
+      'www.macrobaby.com',
       // Add other domains you want to allow here
     ],
   },
-};
+}
 
-module.exports = nextConfig;
-
+module.exports = nextConfig
