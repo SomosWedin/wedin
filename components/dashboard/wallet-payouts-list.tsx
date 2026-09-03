@@ -107,8 +107,8 @@ export default function WalletPayoutsList({
                 </span>
               </div>
 
-              <div className="grid grid-cols-[minmax(0,1fr)_max-content] gap-4 text-sm text-red-600">
-                <span>Costo de servicio (4,9%)</span>
+              <div className="grid grid-cols-[minmax(0,1fr)_max-content] gap-4 text-sm text-textTertiary">
+                <span>Costo de servicio (4,9% + IVA)</span>
                 <span className="whitespace-nowrap tabular-nums">
                   − Gs. {serviceFee.toLocaleString('es-PY')}
                 </span>
