@@ -191,15 +191,53 @@ pull_database() {
   restore_atlas_database false
 }
 
+generate_prisma_client() {
+  (
+    cd "$project_dir"
+    DATABASE_URL="$local_db_uri" yarn prisma generate
+  )
+}
+
+apply_tracked_migrations() {
+  (
+    cd "$project_dir"
+    DATABASE_URL="$local_db_uri" yarn migrate
+  )
+}
+
+push_prisma_schema() {
+  (
+    cd "$project_dir"
+    DATABASE_URL="$local_db_uri" yarn prisma db push
+  )
+}
+
+migrate_database() {
+  require_command yarn
+  start_database
+
+  echo "Generating Prisma Client and applying tracked migrations to local MongoDB..."
+  generate_prisma_client
+  apply_tracked_migrations
+}
+
+push_database() {
+  require_command yarn
+  start_database
+
+  echo "Generating Prisma Client and pushing the Prisma schema to local MongoDB..."
+  generate_prisma_client
+  push_prisma_schema
+}
+
 sync_database() {
   require_command yarn
   start_database
 
-  echo "Applying Wedin migrations and Prisma schema to local MongoDB..."
-  (
-    cd "$project_dir"
-    DATABASE_URL="$local_db_uri" yarn migrate:deploy
-  )
+  echo "Applying tracked migrations and the Prisma schema to local MongoDB..."
+  generate_prisma_client
+  apply_tracked_migrations
+  push_prisma_schema
 }
 
 refresh_database() {
@@ -229,6 +267,12 @@ case "${1:-}" in
   refresh)
     refresh_database
     ;;
+  migrate)
+    migrate_database
+    ;;
+  push)
+    push_database
+    ;;
   sync)
     sync_database
     ;;
@@ -236,7 +280,7 @@ case "${1:-}" in
     run_development
     ;;
   *)
-    echo "Usage: $0 <start|stop|pull|refresh|sync|dev>" >&2
+    echo "Usage: $0 <start|stop|pull|refresh|migrate|push|sync|dev>" >&2
     exit 1
     ;;
 esac

@@ -18,6 +18,8 @@
     "db:local:stop": "bash scripts/local-db.sh stop",
     "db:local:pull": "bash scripts/local-db.sh pull",
     "db:local:refresh": "bash scripts/local-db.sh refresh",
+    "db:local:migrate": "bash scripts/local-db.sh migrate",
+    "db:local:push": "bash scripts/local-db.sh push",
     "db:local:sync": "bash scripts/local-db.sh sync",
     "test": "vitest",
     "test:run": "vitest run"
