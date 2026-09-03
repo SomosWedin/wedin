@@ -9,7 +9,7 @@ export default function TermsLayout({
   return (
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-100">
-        <div className="flex items-center px-4 py-3 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="flex items-center px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <Image src={wedinLogo} alt="wedin" width={110} />
         </div>
       </header>

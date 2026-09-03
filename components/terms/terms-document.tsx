@@ -10,7 +10,7 @@ export default function TermsDocumentView({
   fileUrl,
 }: TermsDocumentViewProps) {
   return (
-    <article className="px-4 py-10 mx-auto max-w-4xl sm:px-6 sm:py-16">
+    <article className="px-4 py-10 mx-auto max-w-4xl sm:px-6">
       <header className="pb-8 border-b border-gray-200">
         <p className="text-sm font-medium tracking-wide uppercase text-primary400">
           {terms.audience}
