@@ -19,6 +19,15 @@ export default function TermsDocumentView({
         <h1 className="mt-2 text-3xl font-black">{terms.title}</h1>
 
         <p className="mt-3 text-sm text-textTertiary">{terms.summary}</p>
+
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block mt-6 text-sm font-semibold underline md:hidden"
+        >
+          Leer el documento
+        </a>
       </header>
 
       <div className="hidden mt-8 md:block">

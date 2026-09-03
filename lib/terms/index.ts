@@ -9,6 +9,7 @@ export function hasAcceptedOrganizerTerms(event: {
 export type { TermsDocument } from './documents'
 export {
   findTermsDocumentBySlug,
+  getTermsPdfPath,
   TERMS_BASE_PATH,
   TERMS_DOCUMENT_LIST,
   TERMS_DOCUMENTS,

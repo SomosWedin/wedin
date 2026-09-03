@@ -53,6 +53,10 @@ export const TERMS_PATHS = {
   privacy: getTermsPath('privacy'),
 } as const
 
+export function getTermsPdfPath(document: TermsDocument) {
+  return `${TERMS_BASE_PATH}/${document.slug}/pdf`
+}
+
 export function findTermsDocumentBySlug(slug: string) {
   return TERMS_DOCUMENT_LIST.find(document => document.slug === slug) ?? null
 }

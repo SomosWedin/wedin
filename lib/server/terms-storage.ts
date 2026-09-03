@@ -1,19 +1,38 @@
 import 'server-only'
 
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import type { TermsDocument } from '@/lib/terms/documents'
 
-export function getTermsFileUrl(document: TermsDocument) {
-  const bucket = process.env.AWS_BUCKET
-  const region = process.env.AWS_BUCKET_REGION
+const s3Client = new S3Client({
+  region: process.env.AWS_BUCKET_REGION as string,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+  },
+})
 
-  if (!bucket || !region) {
-    throw new Error('Terms storage is not configured.')
+/**
+ * The bucket is never named to the browser: the document is streamed through
+ * our own route, so the objects can stay private and their URLs stay useless
+ * to anyone who finds them.
+ */
+export async function getTermsFileStream(document: TermsDocument) {
+  const bucket = process.env.AWS_BUCKET
+
+  if (!bucket) {
+    console.error('Terms storage is not configured.')
+    return null
   }
 
-  const encodedKey = document.objectKey
-    .split('/')
-    .map(segment => encodeURIComponent(segment))
-    .join('/')
+  try {
+    const object = await s3Client.send(
+      new GetObjectCommand({ Bucket: bucket, Key: document.objectKey })
+    )
 
-  return `https://${bucket}.s3.${region}.amazonaws.com/${encodedKey}`
+    return object.Body?.transformToWebStream() ?? null
+  } catch (error) {
+    console.error(`Error reading terms file ${document.objectKey}:`, error)
+
+    return null
+  }
 }

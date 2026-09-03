@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import TermsDocumentView from '@/components/terms/terms-document'
-import { getTermsFileUrl } from '@/lib/server/terms-storage'
-import { findTermsDocumentBySlug, TERMS_DOCUMENT_LIST } from '@/lib/terms'
+import {
+  findTermsDocumentBySlug,
+  getTermsPdfPath,
+  TERMS_DOCUMENT_LIST,
+} from '@/lib/terms'
 
 type TermsPageProps = {
   params: { slug: string }
@@ -28,5 +31,5 @@ export default function TermsPage({ params }: TermsPageProps) {
 
   if (!terms) notFound()
 
-  return <TermsDocumentView terms={terms} fileUrl={getTermsFileUrl(terms)} />
+  return <TermsDocumentView terms={terms} fileUrl={getTermsPdfPath(terms)} />
 }

@@ -1,10 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mocks = vi.hoisted(() => ({ send: vi.fn() }))
 
 vi.mock('server-only', () => ({}))
+vi.mock('@aws-sdk/client-s3', () => ({
+  GetObjectCommand: class {
+    constructor(public input: unknown) {}
+  },
+  S3Client: class {
+    send = mocks.send
+  },
+}))
 
-import { getTermsFileUrl } from '@/lib/server/terms-storage'
+import { getTermsFileStream } from '@/lib/server/terms-storage'
 import {
   findTermsDocumentBySlug,
+  getTermsPdfPath,
   hasAcceptedOrganizerTerms,
   TERMS_DOCUMENTS,
   TERMS_PATHS,
@@ -26,24 +37,45 @@ describe('terms document registry', () => {
   })
 })
 
-describe('terms file URL', () => {
+describe('terms file stream', () => {
+  const originalBucket = process.env.AWS_BUCKET
+
   beforeEach(() => {
     process.env.AWS_BUCKET = 'somos-wedin'
-    process.env.AWS_BUCKET_REGION = 'us-east-2'
+    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
-  it('builds the public object URL from the configured bucket', () => {
-    expect(getTermsFileUrl(TERMS_DOCUMENTS.organizers)).toBe(
-      'https://somos-wedin.s3.us-east-2.amazonaws.com/terms/wedin-terminos-organizadores.pdf'
+  afterEach(() => {
+    process.env.AWS_BUCKET = originalBucket
+  })
+
+  it('streams the object identified by the registry', async () => {
+    const stream = Symbol('stream')
+    mocks.send.mockResolvedValue({
+      Body: { transformToWebStream: () => stream },
+    })
+
+    await expect(getTermsFileStream(TERMS_DOCUMENTS.organizers)).resolves.toBe(
+      stream
     )
+
+    expect(mocks.send.mock.calls[0][0].input).toEqual({
+      Bucket: 'somos-wedin',
+      Key: 'terms/wedin-terminos-organizadores.pdf',
+    })
   })
 
-  it('fails loudly when storage is not configured', () => {
+  it('returns nothing when the object cannot be read', async () => {
+    mocks.send.mockRejectedValue(new Error('NoSuchKey'))
+
+    await expect(getTermsFileStream(TERMS_DOCUMENTS.guests)).resolves.toBeNull()
+  })
+
+  it('returns nothing when storage is not configured', async () => {
     process.env.AWS_BUCKET = ''
 
-    expect(() => getTermsFileUrl(TERMS_DOCUMENTS.guests)).toThrow(
-      'Terms storage is not configured.'
-    )
+    await expect(getTermsFileStream(TERMS_DOCUMENTS.guests)).resolves.toBeNull()
+    expect(mocks.send).not.toHaveBeenCalled()
   })
 })
 
@@ -62,5 +94,16 @@ describe('terms route paths', () => {
   it('names the documents the way the documents name themselves', () => {
     expect(TERMS_PATHS.organizers).toBe('/terminos-y-condiciones/organizadores')
     expect(TERMS_PATHS.guests).toBe('/terminos-y-condiciones/invitados')
+  })
+})
+
+describe('terms pdf path', () => {
+  it('keeps the document behind our own origin', () => {
+    expect(getTermsPdfPath(TERMS_DOCUMENTS.guests)).toBe(
+      '/terminos-y-condiciones/invitados/pdf'
+    )
+    expect(getTermsPdfPath(TERMS_DOCUMENTS.organizers)).not.toContain(
+      'amazonaws'
+    )
   })
 })
