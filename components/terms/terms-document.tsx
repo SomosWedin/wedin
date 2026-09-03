@@ -11,7 +11,7 @@ export default function TermsDocumentView({
 }: TermsDocumentViewProps) {
   return (
     <article className="px-4 py-10 mx-auto max-w-4xl sm:px-6 sm:py-16">
-      <header className="pb-8 md:border-b md:border-gray-200">
+      <header className="pb-8 border-b border-gray-200">
         <p className="text-sm font-medium tracking-wide uppercase text-primary400">
           {terms.audience}
         </p>
@@ -20,17 +20,20 @@ export default function TermsDocumentView({
 
         <p className="mt-3 text-sm text-textTertiary">{terms.summary}</p>
 
+        {/* WebKit renders a framed PDF as an unscrollable first page, so every
+            browser on iOS needs a way out of the frame. No media query can
+            single those out, so the link stays visible at every width. */}
         <a
           href={fileUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block mt-6 text-sm font-semibold underline md:hidden"
+          className="inline-block mt-6 text-sm font-semibold underline"
         >
-          Leer el documento
+          Leer el documento completo
         </a>
       </header>
 
-      <div className="hidden mt-8 md:block">
+      <div className="mt-8">
         <iframe
           src={fileUrl}
           title={`${terms.title} — ${terms.audience}`}
