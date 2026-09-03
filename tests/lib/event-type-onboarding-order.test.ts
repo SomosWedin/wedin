@@ -1,20 +1,29 @@
 import { describe, expect, it } from 'vitest'
-import { sortEventTypesForOnboarding } from '@/lib/event-type'
+import {
+  SYSTEM_EVENT_TYPES,
+  sortEventTypesForOnboarding,
+} from '@/lib/event-type'
 import { getEventTypeIcon } from '@/lib/event-type-icons'
 
 describe('onboarding event type ordering', () => {
   const eventTypes = [
-    { key: 'fkdsjflsdjakf', name: '15 años' },
-    { key: 'baby-shower', name: 'Baby Shower' },
+    { key: 'sweet-15', name: '15 años' },
+    { key: 'baby-shower', name: 'Baby shower' },
     { key: 'wedding', name: 'Casamiento' },
-    { key: 'other', name: 'Cumpleaños' },
-    { key: 'otro', name: 'Otros' },
+    { key: 'birthday', name: 'Cumpleaños' },
+    { key: 'other', name: 'Otro tipo de evento' },
   ]
 
   it('puts the wedding type first and sorts the rest by name', () => {
     expect(
       sortEventTypesForOnboarding(eventTypes).map(type => type.name)
-    ).toEqual(['Casamiento', '15 años', 'Baby Shower', 'Cumpleaños', 'Otros'])
+    ).toEqual([
+      'Casamiento',
+      '15 años',
+      'Baby shower',
+      'Cumpleaños',
+      'Otro tipo de evento',
+    ])
   })
 
   it('does not mutate the input', () => {
@@ -29,19 +38,27 @@ describe('onboarding event type ordering', () => {
     const withoutWedding = eventTypes.filter(type => type.key !== 'wedding')
     expect(
       sortEventTypesForOnboarding(withoutWedding).map(type => type.name)
-    ).toEqual(['15 años', 'Baby Shower', 'Cumpleaños', 'Otros'])
+    ).toEqual(['15 años', 'Baby shower', 'Cumpleaños', 'Otro tipo de evento'])
   })
 })
 
 describe('onboarding event type icons', () => {
-  it('resolves a distinct icon for the known system keys', () => {
-    expect(getEventTypeIcon('wedding')).not.toBe(getEventTypeIcon('other'))
-    expect(getEventTypeIcon('baby-shower')).not.toBe(
-      getEventTypeIcon('wedding')
+  const fallbackIcon = getEventTypeIcon('an-admin-created-key')
+
+  it('resolves a dedicated icon for every system event type', () => {
+    for (const eventType of Object.values(SYSTEM_EVENT_TYPES)) {
+      expect(getEventTypeIcon(eventType.key)).not.toBe(fallbackIcon)
+    }
+  })
+
+  it('gives each system event type a distinct icon', () => {
+    const icons = Object.values(SYSTEM_EVENT_TYPES).map(eventType =>
+      getEventTypeIcon(eventType.key)
     )
+    expect(new Set(icons).size).toBe(icons.length)
   })
 
   it('falls back to a generic icon for admin-created keys', () => {
-    expect(getEventTypeIcon('fkdsjflsdjakf')).toBe(getEventTypeIcon('otro'))
+    expect(getEventTypeIcon('fkdsjflsdjakf')).toBe(fallbackIcon)
   })
 })

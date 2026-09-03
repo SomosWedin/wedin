@@ -11,11 +11,10 @@ import { SYSTEM_EVENT_TYPES } from '@/lib/event-type'
 
 const EVENT_TYPE_ICONS: Record<string, IconType> = {
   [SYSTEM_EVENT_TYPES.WEDDING.key]: CiHeart,
+  [SYSTEM_EVENT_TYPES.BIRTHDAY.key]: GiCakeSlice,
+  [SYSTEM_EVENT_TYPES.BABY_SHOWER.key]: GiBabyBottle,
+  [SYSTEM_EVENT_TYPES.SWEET_15.key]: GiBalloons,
   [SYSTEM_EVENT_TYPES.OTHER.key]: GiWineGlass,
-  'baby-shower': GiBabyBottle,
-  cumpleanos: GiCakeSlice,
-  '15-anos': GiBalloons,
-  aniversarios: GiWineGlass,
 }
 
 export function getEventTypeIcon(key: string): IconType {

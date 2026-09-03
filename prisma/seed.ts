@@ -3,7 +3,10 @@ const { faker } = require('@faker-js/faker')
 const {
   SYSTEM_EVENT_TYPES: systemEventTypes,
 }: {
-  SYSTEM_EVENT_TYPES: Record<'WEDDING' | 'OTHER', { key: string; name: string }>
+  SYSTEM_EVENT_TYPES: Record<
+    'WEDDING' | 'BIRTHDAY' | 'BABY_SHOWER' | 'SWEET_15' | 'OTHER',
+    { key: string; name: string }
+  >
 } = require('../lib/event-type')
 const {
   buildGiftNameScopeKey,
