@@ -53,6 +53,7 @@ import {
   buildAdminGiftlistsCsv,
   sanitizeCsvFilename,
 } from '@/lib/admin-giftlist-csv'
+import { downloadCsv } from '@/lib/csv'
 
 type GiftlistFormController = ReturnType<typeof useGiftlistFormController>
 type GiftWithImage = Prisma.GiftGetPayload<{ include: { image: true } }>
@@ -274,22 +275,14 @@ export default function AdminGiftlistsList({
     selectedGiftlists: AdminGiftlist[],
     filename: string
   ) => {
-    const csv = buildAdminGiftlistsCsv({
-      giftlists: selectedGiftlists,
-      gifts,
-      categories,
-    })
-    const url = URL.createObjectURL(
-      new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    downloadCsv(
+      buildAdminGiftlistsCsv({
+        giftlists: selectedGiftlists,
+        gifts,
+        categories,
+      }),
+      filename
     )
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    link.style.display = 'none'
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(url)
   }
 
   const handleExportButton = () => {

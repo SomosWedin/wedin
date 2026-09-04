@@ -28,14 +28,6 @@ const CSV_HEADERS = [
 
 const spanishCollator = new Intl.Collator('es-PY', { sensitivity: 'base' })
 
-function escapeCsvValue(value: string) {
-  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
-}
-
-function csvLine(values: string[]) {
-  return values.map(escapeCsvValue).join(',')
-}
-
 export function buildAdminGiftlistsCsv({
   giftlists,
   gifts,
@@ -82,7 +74,7 @@ export function buildAdminGiftlistsCsv({
     }
   }
 
-  return `\uFEFF${rows.map(csvLine).join('\r\n')}\r\n`
+  return buildCsv(rows)
 }
 
 export function sanitizeCsvFilename(name: string) {
@@ -96,3 +88,5 @@ export function sanitizeCsvFilename(name: string) {
 
   return sanitized || 'coleccion'
 }
+
+import { buildCsv } from '@/lib/csv'
