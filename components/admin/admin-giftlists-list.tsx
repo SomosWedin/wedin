@@ -1,12 +1,13 @@
 'use client'
 
-import type { Category, EventType, Gift } from '@prisma/client'
+import type { Category, EventType, Prisma } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import {
   IoAdd,
   IoChevronDown,
   IoChevronUp,
+  IoDownloadOutline,
   IoPencilOutline,
   IoSearchOutline,
   IoSwapVerticalOutline,
@@ -48,8 +49,13 @@ import { useCreateAdminGiftlist } from '@/hooks/dialog/forms/use-create-admin-gi
 import { useEditAdminGiftlist } from '@/hooks/dialog/forms/use-edit-admin-giftlist'
 import type { useGiftlistFormController } from '@/hooks/dialog/forms/use-giftlist-form-controller'
 import { useToast } from '@/hooks/use-toast'
+import {
+  buildAdminGiftlistsCsv,
+  sanitizeCsvFilename,
+} from '@/lib/admin-giftlist-csv'
 
 type GiftlistFormController = ReturnType<typeof useGiftlistFormController>
+type GiftWithImage = Prisma.GiftGetPayload<{ include: { image: true } }>
 type SortColumn = 'name' | 'eventTypes' | 'categories'
 type SortDirection = 'asc' | 'desc'
 
@@ -169,7 +175,7 @@ export default function AdminGiftlistsList({
   eventTypes,
 }: {
   giftlists: AdminGiftlist[]
-  gifts: Pick<Gift, 'id' | 'name' | 'categoryId'>[]
+  gifts: GiftWithImage[]
   categories: Category[]
   eventTypes: EventType[]
 }) {
@@ -177,6 +183,7 @@ export default function AdminGiftlistsList({
   const { toast } = useToast()
   const [deleting, setDeleting] = useState<AdminGiftlist | undefined>()
   const [deletingLoading, setDeletingLoading] = useState(false)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const [nameFilter, setNameFilter] = useState('')
   const [eventTypeFilter, setEventTypeFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -213,6 +220,10 @@ export default function AdminGiftlistsList({
     ).sort((left, right) => left.localeCompare(right, 'es'))
 
   const normalizedNameFilter = nameFilter.trim().toLocaleLowerCase('es-PY')
+  const hasActiveFilters =
+    Boolean(normalizedNameFilter) ||
+    eventTypeFilter !== 'all' ||
+    categoryFilter !== 'all'
   const filteredGiftlists = giftlists.filter(giftlist => {
     const matchesName = giftlist.name
       .toLocaleLowerCase('es-PY')
@@ -257,6 +268,37 @@ export default function AdminGiftlistsList({
     }
 
     setSortDirection(direction => (direction === 'asc' ? 'desc' : 'asc'))
+  }
+
+  const exportGiftlists = (
+    selectedGiftlists: AdminGiftlist[],
+    filename: string
+  ) => {
+    const csv = buildAdminGiftlistsCsv({
+      giftlists: selectedGiftlists,
+      gifts,
+      categories,
+    })
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    )
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.style.display = 'none'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleExportButton = () => {
+    if (hasActiveFilters) {
+      setExportDialogOpen(true)
+      return
+    }
+
+    exportGiftlists(giftlists, 'colecciones.csv')
   }
 
   const remove = async () => {
@@ -324,6 +366,15 @@ export default function AdminGiftlistsList({
             ))}
           </SelectContent>
         </Select>
+        <Button
+          type="button"
+          variant="outline"
+          className="gap-2"
+          disabled={giftlists.length === 0}
+          onClick={handleExportButton}
+        >
+          Exportar CSV <IoDownloadOutline className="text-lg" />
+        </Button>
         <CreateGiftlistDialog gifts={giftOptions} eventTypes={eventTypes} />
       </div>
       <div className="overflow-hidden rounded-lg bg-white">
@@ -405,6 +456,21 @@ export default function AdminGiftlistsList({
                 {getCategoryNames(giftlist).join(', ') || 'Sin categorías'}
               </div>
               <div className="col-span-2 flex justify-end gap-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  aria-label={`Exportar ${giftlist.name}`}
+                  title="Exportar colección"
+                  onClick={() =>
+                    exportGiftlists(
+                      [giftlist],
+                      `${sanitizeCsvFilename(giftlist.name)}.csv`
+                    )
+                  }
+                >
+                  <IoDownloadOutline />
+                </Button>
                 <EditGiftlistDialog
                   giftlist={giftlist}
                   gifts={giftOptions}
@@ -424,6 +490,36 @@ export default function AdminGiftlistsList({
           ))
         )}
       </div>
+      <AlertDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Qué colecciones querés exportar?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Hay filtros activos. Podés exportar las colecciones visibles o
+              todas las colecciones.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => exportGiftlists(giftlists, 'colecciones.csv')}
+            >
+              Exportar todas
+            </AlertDialogAction>
+            <AlertDialogAction
+              className="bg-success text-white hover:bg-success/80"
+              disabled={filteredGiftlists.length === 0}
+              onClick={() =>
+                exportGiftlists(filteredGiftlists, 'colecciones-filtradas.csv')
+              }
+            >
+              Exportar resultados filtrados
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog
         open={Boolean(deleting)}
         onOpenChange={open => !open && setDeleting(undefined)}
