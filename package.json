@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "bash scripts/local-db.sh dev",
     "build": "yarn test:run && prisma generate && next build",
     "deploy:build": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/deploy-build.ts",
     "start": "next start",
@@ -13,6 +14,13 @@
     "migrate:deploy": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/deploy-migrations.ts",
     "migration:create": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/create-migration.ts",
     "migration:status": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migration-status.ts",
+    "db:local:start": "bash scripts/local-db.sh start",
+    "db:local:stop": "bash scripts/local-db.sh stop",
+    "db:local:pull": "bash scripts/local-db.sh pull",
+    "db:local:refresh": "bash scripts/local-db.sh refresh",
+    "db:local:migrate": "bash scripts/local-db.sh migrate",
+    "db:local:push": "bash scripts/local-db.sh push",
+    "db:local:sync": "bash scripts/local-db.sh sync",
     "test": "vitest",
     "test:run": "vitest run"
   },
