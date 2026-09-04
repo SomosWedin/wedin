@@ -16,7 +16,7 @@ export function isError(response: unknown): response is ErrorResponse {
 
 const emailProvider = Resend({
   apiKey: process.env.RESEND_API_KEY,
-  from: 'Wedin <no-reply@somoswedin.com>',
+  from: 'Wedin <accesso@somoswedin.com>',
 
   async sendVerificationRequest({ identifier, url, provider }) {
     const existingUser = await prismaClient.user.findUnique({

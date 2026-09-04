@@ -7,13 +7,27 @@ import { useMemo, useState } from 'react'
 import {
   IoChevronDown,
   IoChevronUp,
+  IoDownloadOutline,
   IoGiftOutline,
   IoSearchOutline,
   IoSwapVerticalOutline,
 } from 'react-icons/io5'
 import type { GiftlistOption } from '@/actions/data/giftlist'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
+import { buildAdminGiftsCsv } from '@/lib/admin-gift-csv'
+import { downloadCsv } from '@/lib/csv'
 import CreateGiftDialog from '../dialog/create-gift-dialog'
 import DeleteAdminGiftDialog from '../dialog/delete-admin-gift-dialog'
 import EditAdminGiftDialog from '../dialog/edit-admin-gift-dialog'
@@ -57,6 +71,7 @@ export default function AdminGiftsList({
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [giftlistFilter, setGiftlistFilter] = useState('')
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const [sortColumn, setSortColumn] = useState<SortColumn | null>('createdAt')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
@@ -115,6 +130,8 @@ export default function AdminGiftsList({
 
     return matchesSearch && matchesCategory && matchesGiftlist
   })
+  const hasActiveFilters =
+    Boolean(search.trim()) || Boolean(categoryFilter) || Boolean(giftlistFilter)
 
   const sortedGifts = sortColumn
     ? [...filteredGifts].sort((a, b) => {
@@ -126,6 +143,27 @@ export default function AdminGiftsList({
         return sortDirection === 'asc' ? diff : -diff
       })
     : filteredGifts
+
+  const exportGifts = (selectedGifts: GiftWithImage[], filename: string) => {
+    downloadCsv(
+      buildAdminGiftsCsv({
+        gifts: selectedGifts,
+        categories,
+        giftlists,
+        eventTypes,
+      }),
+      filename
+    )
+  }
+
+  const handleExportButton = () => {
+    if (hasActiveFilters) {
+      setExportDialogOpen(true)
+      return
+    }
+
+    exportGifts(gifts, 'regalos.csv')
+  }
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -160,6 +198,15 @@ export default function AdminGiftsList({
           clearable
           selectionMode="value"
         />
+        <Button
+          type="button"
+          variant="outline"
+          className="gap-2"
+          disabled={gifts.length === 0}
+          onClick={handleExportButton}
+        >
+          Exportar CSV <IoDownloadOutline className="text-lg" />
+        </Button>
         <CreateGiftDialog
           mode="admin"
           categories={categories}
@@ -260,6 +307,34 @@ export default function AdminGiftsList({
           </div>
         ))}
       </div>
+      <AlertDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Qué regalos querés exportar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hay filtros activos. Podés exportar los regalos visibles o todos
+              los regalos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => exportGifts(gifts, 'regalos.csv')}
+            >
+              Exportar todos
+            </AlertDialogAction>
+            <AlertDialogAction
+              className="bg-success text-white hover:bg-success/80"
+              disabled={filteredGifts.length === 0}
+              onClick={() =>
+                exportGifts(filteredGifts, 'regalos-filtrados.csv')
+              }
+            >
+              Exportar resultados filtrados
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
