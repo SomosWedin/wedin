@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useUpdateBankDetails } from '@/hooks/dashboard/forms/use-update-bank-details'
+import { aliasTypesPY } from '@/lib/alias-types-py'
 import { bankEntitiesPY } from '@/lib/bank-entities-py'
 
 type BankDetailsFormProps = {
@@ -165,6 +166,52 @@ export default function DashboardBankDetailsUpdateForm({
                     <SelectItem value="usd">USD</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-3">
+          <FormField
+            control={form.control}
+            name="aliasType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo de alias (opcional)</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl className="!mt-1.5">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="bg-white">
+                    {aliasTypesPY.map(aliasType => (
+                      <SelectItem key={aliasType.value} value={aliasType.value}>
+                        {aliasType.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="alias"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Alias (opcional)</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Alias"
+                    className="!mt-1.5"
+                    {...field}
+                    value={field.value || ''}
+                  />
+                </FormControl>
                 <FormMessage className="font-normal text-red-600" />
               </FormItem>
             )}

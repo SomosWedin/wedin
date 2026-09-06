@@ -70,29 +70,49 @@ export function createUpdateEventSettingsFormSchema(isWedding: boolean) {
   })
 }
 
-export const BankDetailsFormSchema = z.object({
-  eventId: z.string(),
-  bankName: z.string().min(1, { message: 'Debe seleccionar una entidad' }),
-  accountHolder: z
-    .string()
-    .min(1, { message: 'Nombre y apellido no puede estar vacío' })
-    .min(2, { message: 'Nombre y Apellido muy corto' })
-    .max(255, { message: 'Nombre y Apellido muy largo' }),
-  accountNumber: z
-    .string()
-    .min(1, { message: 'Número de cuenta no puede estar vacío' })
-    .max(24, { message: 'Número de cuenta muy largo' }),
-  accountType: z.string().min(1, { message: 'Debe seleccionar una moneda' }),
-  identificationType: z
-    .string()
-    .min(1, { message: 'Debe seleccionar un documento' }),
-  identificationNumber: z
-    .string()
-    .min(1, { message: 'Número de documento no puede estar vacío' })
-    .max(12, { message: 'Número de documento muy largo' }),
-  razonSocial: z.string().optional(),
-  ruc: z.string().optional(),
-})
+export const BankDetailsFormSchema = z
+  .object({
+    eventId: z.string(),
+    bankName: z.string().min(1, { message: 'Debe seleccionar una entidad' }),
+    accountHolder: z
+      .string()
+      .min(1, { message: 'Nombre y apellido no puede estar vacío' })
+      .min(2, { message: 'Nombre y Apellido muy corto' })
+      .max(255, { message: 'Nombre y Apellido muy largo' }),
+    accountNumber: z
+      .string()
+      .min(1, { message: 'Número de cuenta no puede estar vacío' })
+      .max(24, { message: 'Número de cuenta muy largo' }),
+    accountType: z.string().min(1, { message: 'Debe seleccionar una moneda' }),
+    identificationType: z
+      .string()
+      .min(1, { message: 'Debe seleccionar un documento' }),
+    identificationNumber: z
+      .string()
+      .min(1, { message: 'Número de documento no puede estar vacío' })
+      .max(12, { message: 'Número de documento muy largo' }),
+    aliasType: z.string().optional(),
+    alias: z.string().max(255, { message: 'Alias muy largo' }).optional(),
+    razonSocial: z.string().optional(),
+    ruc: z.string().optional(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.alias && !values.aliasType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['aliasType'],
+        message: 'Elegí el tipo de alias',
+      })
+    }
+
+    if (values.aliasType && !values.alias) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['alias'],
+        message: 'Ingresá el alias',
+      })
+    }
+  })
 export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>
 
 export const EventCoverFormSchema = z.object({
