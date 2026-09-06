@@ -103,7 +103,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', nextUrl))
   }
 
-  if (isLoggedIn && !isOnboarded && !isOnboardingRoute && !isLegalRoute) {
+  if (
+    isLoggedIn &&
+    !isOnboarded &&
+    !isOnboardingRoute &&
+    !isLegalRoute &&
+    !isAdminRoute
+  ) {
     return NextResponse.redirect(new URL('/onboarding', nextUrl))
   }
 

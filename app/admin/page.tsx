@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { lazy, Suspense } from 'react'
 import {
@@ -69,6 +70,9 @@ export default async function AdminPage() {
       <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-200 pb-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-black">Panel de staff</h1>
+          <Link href="/admin/jobs" className="text-sm underline">
+            Trabajos de importación
+          </Link>
           <p className="text-textTertiary">
             Todas las transacciones y solicitudes de retiro de todos los
             eventos. Cambiar el estado queda registrado con tu usuario.

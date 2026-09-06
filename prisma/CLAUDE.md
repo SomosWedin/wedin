@@ -165,3 +165,14 @@ whenever you touch something documented below.
   one immutable field. That migration also sets `isPublished: true` on
   documents predating the field, which would otherwise pick up the new
   `false` default and take live sites down.
+
+- `GiftImportJob`, `GiftImportRow`, and `GiftImportHistory` persist staff gift
+  imports. Rows retain the mapped input, resolved review snapshot, and exclusion decision; the
+  job retains its catalog review token and collection-creation setting.
+  `submissionId` is required and unique. Row position and source row number
+  are each unique within a job. No sparse indexes are needed. The tracked
+  gift-import migration creates the collections/indexes before workers run.
+  A worker must write the job's lease fence inside the same transaction as
+  every gift/collection change and row checkpoint. `runId` isolates manual
+  retries from older deliveries; `lockOwner` identifies each worker attempt.
+  Expired leases are recoverable. Successful rows and history are retained.

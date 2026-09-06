@@ -316,3 +316,81 @@ model Image {
   Event Event? @relation(fields: [eventId], references: [id])
   Gift  Gift?  @relation(fields: [giftId], references: [id])
 }
+
+enum ImportJobStatus {
+  PREPARING
+  QUEUED
+  PROCESSING
+  COMPLETED
+  COMPLETED_WITH_ERRORS
+  FAILED
+}
+
+enum ImportRowStatus {
+  PENDING
+  CREATED
+  SKIPPED
+  FAILED
+}
+
+model GiftImportJob {
+  id                       String              @id @default(auto()) @map("_id") @db.ObjectId
+  submissionId             String              @unique
+  submittedById            String              @db.ObjectId
+  submittedBy              String
+  filename                 String
+  expectedRows             Int
+  uploadedRows             Int                 @default(0)
+  uploadedBytes            Int                 @default(0)
+  createMissingCollections Boolean
+  previewToken             String?
+  acceptedAt               DateTime?
+  status                   ImportJobStatus     @default(PREPARING)
+  runId                    String              @default("")
+  lockOwner                String              @default("")
+  lockExpiresAt            DateTime
+  createdCount             Int                 @default(0)
+  skippedCount             Int                 @default(0)
+  failedCount              Int                 @default(0)
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+  startedAt                DateTime?
+  completedAt              DateTime?
+  rows                     GiftImportRow[]
+  history                  GiftImportHistory[]
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+}
+
+model GiftImportRow {
+  id        String          @id @default(auto()) @map("_id") @db.ObjectId
+  jobId     String          @db.ObjectId
+  job       GiftImportJob   @relation(fields: [jobId], references: [id])
+  rowNumber Int
+  position  Int
+  input     Json
+  review    Json?
+  excluded  Boolean         @default(false)
+  status    ImportRowStatus @default(PENDING)
+  giftId    String?
+  error     String?
+  attempts  Int             @default(0)
+  updatedAt DateTime        @updatedAt
+
+  @@unique([jobId, rowNumber])
+  @@unique([jobId, position])
+  @@index([jobId, status, position])
+}
+
+model GiftImportHistory {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  jobId     String        @db.ObjectId
+  job       GiftImportJob @relation(fields: [jobId], references: [id])
+  rowNumber Int?
+  attemptId String
+  message   String
+  createdAt DateTime      @default(now())
+
+  @@index([jobId, createdAt])
+}
