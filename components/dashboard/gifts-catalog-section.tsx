@@ -14,6 +14,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+const GIFTS_PER_GUEST = 0.25
+
+const suggestedGuestCount = (giftCount: number) =>
+  Math.round(giftCount / GIFTS_PER_GUEST)
+
 type GiftsCatalogSectionProps = {
   gifts: Awaited<ReturnType<typeof getGifts>>
   giftlists: Awaited<ReturnType<typeof getGiftlists>>
@@ -126,9 +131,14 @@ export default function GiftsCatalogSection({
                     ))}
                   </div>
                   <div className="flex flex-col gap-2 mb-4">
-                    <Badge className="w-fit bg-gray100 text-textTertiary border-transparent">
-                      {giftlist.gifts.length} productos
-                    </Badge>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className="w-fit bg-gray100 text-textTertiary border-transparent">
+                        {giftlist.gifts.length} productos
+                      </Badge>
+                      <Badge className="w-fit bg-gray100 text-textTertiary border-transparent">
+                        ~ {suggestedGuestCount(giftlist.gifts.length)} invitados
+                      </Badge>
+                    </div>
                     <h3 className="text-lg font-bold">{giftlist.name}</h3>
                     <p className="text-lg font-semibold">
                       Gs.{' '}
@@ -144,7 +154,7 @@ export default function GiftsCatalogSection({
                     size="lg"
                   >
                     <Link href={`/gifts/lists/${giftlist.id}`}>
-                      Ver paquete
+                      Ver colección
                     </Link>
                   </Button>
                 </div>
