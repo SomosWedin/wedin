@@ -54,6 +54,7 @@ export const GetGiftsSearchParams = z.object({
 export const GetGiftlistsSearchParams = z.object({
   category: z.string().optional(),
   name: z.string().optional(),
+  sort: z.enum(['price-asc', 'price-desc']).optional(),
 })
 
 export const WishlistGiftSearchParams = z.object({
