@@ -11,68 +11,60 @@ import { getErrorMessage } from '../helper'
 import { getBankDetails } from './bank-details'
 import { ORGANIZER_SERVICE_FEE_RATE } from './fee'
 
-async function getEventFinancials(eventId: string) {
-  const [completedTransactions, activePayouts] = await Promise.all([
-    prismaClient.transaction.findMany({
-      where: { eventId, status: 'COMPLETED' },
-      select: { amount: true },
-    }),
-    prismaClient.payout.findMany({
-      where: { eventId, status: { not: 'REJECTED' } },
-      select: { amount: true },
-    }),
-  ])
-
-  return { completedTransactions, activePayouts }
+export type WalletSummary = {
+  totalReceived: number
+  serviceFee: number
+  totalRequested: number
+  inTransit: number
+  settled: number
+  balance: number
 }
 
-export async function getEventBalance(eventId: string): Promise<number> {
-  try {
-    const { completedTransactions, activePayouts } =
-      await getEventFinancials(eventId)
-
-    const totalReceived = completedTransactions.reduce(
-      (sum, transaction) => sum + (Number(transaction.amount) || 0),
-      0
-    )
-    const totalPaidOut = activePayouts.reduce(
-      (sum, payout) => sum + (Number(payout.amount) || 0),
-      0
-    )
-
-    return totalReceived - totalPaidOut
-  } catch (error) {
-    console.error('Error computing event balance:', error)
-    return 0
-  }
+const EMPTY_WALLET_SUMMARY: WalletSummary = {
+  totalReceived: 0,
+  serviceFee: 0,
+  totalRequested: 0,
+  inTransit: 0,
+  settled: 0,
+  balance: 0,
 }
 
-export async function getWalletSummary(eventId: string) {
+const sumAmounts = (rows: { amount: string }[]) =>
+  rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0)
+
+export async function getWalletSummary(
+  eventId: string
+): Promise<WalletSummary> {
   try {
-    const { completedTransactions, activePayouts } =
-      await getEventFinancials(eventId)
+    const [completedTransactions, activePayouts] = await Promise.all([
+      prismaClient.transaction.findMany({
+        where: { eventId, status: 'COMPLETED' },
+        select: { amount: true },
+      }),
+      prismaClient.payout.findMany({
+        where: { eventId, status: { not: 'REJECTED' } },
+        select: { amount: true, status: true },
+      }),
+    ])
 
-    const totalReceived = completedTransactions.reduce(
-      (sum, transaction) => sum + (Number(transaction.amount) || 0),
-      0
-    )
-    const grossTotal = Math.round(totalReceived)
-    const serviceFee = Math.round(grossTotal * ORGANIZER_SERVICE_FEE_RATE)
-    const netTotal = grossTotal - serviceFee
-
-    const totalPaidOut = activePayouts.reduce(
-      (sum, payout) => sum + (Number(payout.amount) || 0),
-      0
+    const totalReceived = Math.round(sumAmounts(completedTransactions))
+    const serviceFee = Math.round(totalReceived * ORGANIZER_SERVICE_FEE_RATE)
+    const totalRequested = Math.round(sumAmounts(activePayouts))
+    const settled = Math.round(
+      sumAmounts(activePayouts.filter(payout => payout.status === 'COMPLETED'))
     )
 
     return {
       totalReceived,
-      giftsCount: completedTransactions.length,
-      balance: netTotal - totalPaidOut,
+      serviceFee,
+      totalRequested,
+      inTransit: totalRequested - settled,
+      settled,
+      balance: totalReceived - serviceFee - totalRequested,
     }
   } catch (error) {
     console.error('Error getting wallet summary:', error)
-    return { totalReceived: 0, giftsCount: 0, balance: 0 }
+    return EMPTY_WALLET_SUMMARY
   }
 }
 
@@ -118,11 +110,9 @@ export async function requestPayout(
     }
   }
 
-  const balance = await getEventBalance(eventId)
-  const serviceFee = Math.round(balance * ORGANIZER_SERVICE_FEE_RATE)
-  const totalMinusFee = balance - serviceFee
+  const { balance } = await getWalletSummary(eventId)
 
-  if (amount > totalMinusFee) {
+  if (amount > balance) {
     return { error: 'El monto solicitado supera tu saldo disponible.' }
   }
 
