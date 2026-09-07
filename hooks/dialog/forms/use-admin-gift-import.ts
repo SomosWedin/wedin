@@ -36,6 +36,7 @@ export function useAdminGiftImport() {
     null
   )
   const [error, setError] = useState('')
+  const [queueDispatchFailed, setQueueDispatchFailed] = useState(false)
   const [fileName, setFileName] = useState('')
   const [datasets, setDatasets] = useState<GiftImportDataset[]>([])
   const [datasetIndex, setDatasetIndex] = useState(0)
@@ -86,6 +87,7 @@ export function useAdminGiftImport() {
       cancelPreparedJob()
       setStep(0)
       setError('')
+      setQueueDispatchFailed(false)
       setFileName('')
       setDatasets([])
       setDatasetIndex(0)
@@ -106,6 +108,7 @@ export function useAdminGiftImport() {
     busy.current = true
     setLoading('file')
     setError('')
+    setQueueDispatchFailed(false)
     setDatasets([])
     setFileName('')
     try {
@@ -222,6 +225,7 @@ export function useAdminGiftImport() {
     busy.current = true
     setLoading('preview')
     setError('')
+    setQueueDispatchFailed(false)
     try {
       const content = JSON.stringify({
         rows: parsed.data,
@@ -292,6 +296,7 @@ export function useAdminGiftImport() {
     busy.current = true
     setLoading('import')
     setError('')
+    setQueueDispatchFailed(false)
     try {
       const result = await requestGiftImport('accept', {
         jobId: preparedJobId.current,
@@ -300,6 +305,9 @@ export function useAdminGiftImport() {
       })
       if ('error' in result && result.error) {
         setError(result.error)
+        setQueueDispatchFailed(
+          'queueDispatchFailed' in result && result.queueDispatchFailed === true
+        )
         if ('reviewChanged' in result && result.reviewChanged) {
           const refreshed = await loadReview(
             preparedJobId.current,
@@ -332,6 +340,7 @@ export function useAdminGiftImport() {
     step,
     loading,
     error,
+    queueDispatchFailed,
     fileName,
     datasets,
     datasetIndex,
@@ -359,6 +368,7 @@ export function useAdminGiftImport() {
         submissionContent.current = ''
         setStep(current => Math.max(0, current - 1))
         setError('')
+        setQueueDispatchFailed(false)
         setSkipErrors(false)
       }
     },

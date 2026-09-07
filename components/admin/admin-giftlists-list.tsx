@@ -325,8 +325,8 @@ export default function AdminGiftlistsList({
             ))}
           </SelectContent>
         </Select>
-        <CreateGiftlistDialog gifts={giftOptions} eventTypes={eventTypes} />
         <ImportAdminCollectionsDialog gifts={giftOptions} />
+        <CreateGiftlistDialog gifts={giftOptions} eventTypes={eventTypes} />
       </div>
       <div className="overflow-hidden rounded-lg bg-white">
         <div className="hidden grid-cols-12 gap-4 rounded-t-lg bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600 sm:grid">

@@ -1,6 +1,17 @@
 import { Client, Receiver } from '@upstash/qstash'
 import prisma from '@/prisma/client'
 
+export const IMPORT_DISPATCH_FAILURE_MESSAGE =
+  'No se pudo enviar la importación a QStash. Los datos ya están guardados. Abrí Trabajos de importación en /admin/jobs y seleccioná “Reintentar pendientes y fallidos”.'
+
+export function importDispatchFailure(jobId: string) {
+  return {
+    error: IMPORT_DISPATCH_FAILURE_MESSAGE,
+    jobId,
+    queueDispatchFailed: true,
+  } as const
+}
+
 export function importQueueConfig() {
   const devMode = process.env.NODE_ENV === 'development' && !process.env.VERCEL
   const vercelBase =

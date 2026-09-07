@@ -28,6 +28,7 @@ export function useAdminCollectionImport() {
     null
   )
   const [error, setError] = useState('')
+  const [queueDispatchFailed, setQueueDispatchFailed] = useState(false)
   const [fileName, setFileName] = useState('')
   const [datasets, setDatasets] = useState<GiftImportDataset[]>([])
   const [datasetIndex, setDatasetIndex] = useState(0)
@@ -75,6 +76,7 @@ export function useAdminCollectionImport() {
     setStep(0)
     setLoading(null)
     setError('')
+    setQueueDispatchFailed(false)
     setFileName('')
     setDatasets([])
     setDatasetIndex(0)
@@ -105,6 +107,7 @@ export function useAdminCollectionImport() {
     busy.current = true
     setLoading('file')
     setError('')
+    setQueueDispatchFailed(false)
     try {
       if (file.size > MAX_IMPORT_FILE_BYTES)
         throw new Error('El archivo supera 10 MB.')
@@ -191,6 +194,7 @@ export function useAdminCollectionImport() {
     busy.current = true
     setLoading('preview')
     setError('')
+    setQueueDispatchFailed(false)
     try {
       const content = JSON.stringify(parsed.data)
       if (content !== submissionContent.current) {
@@ -251,6 +255,7 @@ export function useAdminCollectionImport() {
     busy.current = true
     setLoading('import')
     setError('')
+    setQueueDispatchFailed(false)
     try {
       const result = await requestCollectionImport('accept', {
         jobId: preparedJobId.current,
@@ -261,6 +266,9 @@ export function useAdminCollectionImport() {
       })
       if (result.error) {
         setError(result.error)
+        setQueueDispatchFailed(
+          'queueDispatchFailed' in result && result.queueDispatchFailed === true
+        )
         if (
           'reviewChanged' in result &&
           result.reviewChanged &&
@@ -295,6 +303,7 @@ export function useAdminCollectionImport() {
     step,
     loading,
     error,
+    queueDispatchFailed,
     fileName,
     datasets,
     dataset,
@@ -327,6 +336,7 @@ export function useAdminCollectionImport() {
         submissionId.current = ''
         submissionContent.current = ''
         setStep(value => Math.max(0, value - 1))
+        setQueueDispatchFailed(false)
       }
     },
     review,

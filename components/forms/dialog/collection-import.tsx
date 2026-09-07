@@ -6,6 +6,7 @@ import { useId, useState } from 'react'
 import CollectionImportMapping from '@/components/admin/collection-import-mapping'
 import CollectionImportPreview from '@/components/admin/collection-import-preview'
 import { ImportSelect } from '@/components/admin/gift-import-mapping'
+import ImportJobError from '@/components/admin/import-job-error'
 import { Button } from '@/components/ui/button'
 import { DialogFooter } from '@/components/ui/dialog'
 import type { AdminCollectionImportController } from '@/hooks/dialog/forms/use-admin-collection-import'
@@ -188,12 +189,10 @@ export default function CollectionImportForm({
         )}
       </div>
       {error && (
-        <p
-          role="alert"
-          className="rounded-md bg-red-50 p-3 text-sm text-red-700"
-        >
-          {error}
-        </p>
+        <ImportJobError
+          message={error}
+          queueDispatchFailed={controller.queueDispatchFailed}
+        />
       )}
       {loading && (
         <p role="status" className="text-xs text-textTertiary">

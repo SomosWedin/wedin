@@ -2,7 +2,10 @@
 
 import { randomUUID } from 'node:crypto'
 import { getCurrentUser } from '@/actions/get-current-user'
-import { dispatchImportJob } from '@/lib/server/import-queue'
+import {
+  dispatchImportJob,
+  importDispatchFailure,
+} from '@/lib/server/import-queue'
 import prisma from '@/prisma/client'
 import {
   GiftImportRowsSchema,
@@ -219,6 +222,8 @@ export async function acceptAdminGiftImport(input: unknown) {
         })
         if (job?.kind !== 'GIFT' || job.submittedById !== user.id)
           return { error: 'Importación no encontrada.' } as const
+        if (job.acceptedAt && job.status === 'FAILED')
+          return importDispatchFailure(job.id)
         if (job.acceptedAt)
           return { jobId: job.id, runId: job.runId, dispatch: false } as const
         if (
@@ -291,18 +296,22 @@ export async function acceptAdminGiftImport(input: unknown) {
       { timeout: 30000 }
     )
     if ('error' in result) return result
-    if (result.dispatch) await dispatchImportJob(result.jobId, result.runId)
+    if (result.dispatch) {
+      try {
+        await dispatchImportJob(result.jobId, result.runId)
+      } catch {
+        return importDispatchFailure(result.jobId)
+      }
+    }
     return { jobId: result.jobId } as const
   } catch {
     const existing = await prisma.giftImportJob
       .findUnique({ where: { id: parsed.data.jobId } })
       .catch(() => null)
-    if (
-      existing?.submittedById === user.id &&
-      existing.acceptedAt &&
-      existing.status !== 'FAILED'
-    )
-      return { jobId: existing.id } as const
+    if (existing?.submittedById === user.id && existing.acceptedAt)
+      return existing.status === 'FAILED'
+        ? importDispatchFailure(existing.id)
+        : ({ jobId: existing.id } as const)
     return {
       error:
         'No se pudo poner la importación en cola. Revisá su estado en Trabajos; podés reintentar sin duplicar regalos.',

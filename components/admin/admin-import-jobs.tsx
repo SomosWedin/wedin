@@ -13,6 +13,7 @@ import type {
   getAdminImportJobs,
   retryAdminImportJob,
 } from '@/actions/data/import-job'
+import GiftImportJobResult from '@/components/admin/gift-import-job-result'
 import ExistingImportGiftDialog from '@/components/dialog/existing-import-gift-dialog'
 import { Button } from '@/components/ui/button'
 import {
@@ -530,29 +531,27 @@ export default function AdminImportJobs() {
                         </td>
                         <td className="p-2">{rowStatusLabels[row.status]}</td>
                         <td className="p-2">
-                          {row.error}
-                          {details.job.kind === 'COLLECTION' && row.review && (
-                            <CollectionJobResult
-                              review={
-                                row.review as unknown as CollectionImportPreviewRow
-                              }
-                              onGift={id => setGiftId(id)}
-                              giftTrigger={giftTrigger}
-                            />
-                          )}
-                          {row.giftId && (
-                            <button
-                              type="button"
-                              className="underline"
-                              onClick={event => {
-                                giftTrigger.current = event.currentTarget
-                                setGiftId(row.giftId)
+                          {details.job.kind === 'GIFT' ? (
+                            <GiftImportJobResult
+                              row={row}
+                              onGift={(id, button) => {
+                                giftTrigger.current = button
+                                setGiftId(id)
                               }}
-                            >
-                              {row.status === 'CREATED'
-                                ? 'Ver regalo creado'
-                                : 'Ver regalo existente'}
-                            </button>
+                            />
+                          ) : (
+                            <>
+                              {row.error}
+                              {row.review && (
+                                <CollectionJobResult
+                                  review={
+                                    row.review as unknown as CollectionImportPreviewRow
+                                  }
+                                  onGift={id => setGiftId(id)}
+                                  giftTrigger={giftTrigger}
+                                />
+                              )}
+                            </>
                           )}
                         </td>
                       </tr>
