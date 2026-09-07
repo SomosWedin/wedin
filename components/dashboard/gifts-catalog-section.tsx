@@ -14,6 +14,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+const GIFTS_PER_GUEST = 0.25
+
+const suggestedGuestCount = (giftCount: number) =>
+  Math.round(giftCount / GIFTS_PER_GUEST)
+
 type GiftsCatalogSectionProps = {
   gifts: Awaited<ReturnType<typeof getGifts>>
   giftlists: Awaited<ReturnType<typeof getGiftlists>>
@@ -32,6 +37,7 @@ export default function GiftsCatalogSection({
   wishlistGiftIds,
 }: GiftsCatalogSectionProps) {
   const [isPending, startTransition] = useTransition()
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
 
   return (
     <Tabs defaultValue="todos" className="w-full">
@@ -92,7 +98,11 @@ export default function GiftsCatalogSection({
       </TabsContent>
 
       <TabsContent value="predefinidas" className="mt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div
+          className={`grid grid-cols-1 md:grid-cols-2 gap-6 transition-opacity ${
+            isPending ? 'opacity-50 pointer-events-none' : ''
+          }`}
+        >
           {giftlists.length === 0 ? (
             <div className="col-span-2 text-center py-12 text-gray-500">
               No se encontraron colecciones
@@ -103,19 +113,20 @@ export default function GiftsCatalogSection({
               .map(giftlist => (
                 <div
                   key={giftlist.id}
-                  className="border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow"
+                  className="flex overflow-hidden bg-white rounded-xl border border-gray-200 transition-shadow hover:shadow-sm"
                 >
-                  <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div className="grid overflow-hidden grid-cols-2 gap-1 self-center m-4 w-32 rounded-xl shrink-0 sm:w-44">
                     {giftlist.gifts.slice(0, 4).map(gift => (
                       <div
                         key={gift.id}
-                        className="aspect-square bg-gray-200 rounded flex items-center justify-center overflow-hidden"
+                        className="flex overflow-hidden justify-center items-center bg-gray-200 aspect-square"
                       >
                         {gift.image?.url ? (
                           <Image
+                            unoptimized
                             src={gift.image.url}
                             alt={gift.name}
-                            className="w-full h-full object-cover"
+                            className="object-cover w-full h-full"
                             width={200}
                             height={200}
                           />
@@ -125,28 +136,45 @@ export default function GiftsCatalogSection({
                       </div>
                     ))}
                   </div>
-                  <div className="flex flex-col gap-2 mb-4">
-                    <Badge className="w-fit bg-gray100 text-textTertiary border-transparent">
-                      {giftlist.gifts.length} productos
-                    </Badge>
-                    <h3 className="text-lg font-bold">{giftlist.name}</h3>
-                    <p className="text-lg font-semibold">
-                      Gs.{' '}
-                      {giftlist.gifts
-                        .reduce((sum, gift) => sum + Number(gift.price || 0), 0)
-                        .toLocaleString()}
-                    </p>
+
+                  <div className="flex flex-col flex-1 gap-3 justify-center py-3 pr-3 sm:py-5 sm:pr-5 min-w-0">
+                    <div className="flex flex-nowrap gap-1 sm:gap-2 items-center">
+                      <Badge className="px-3 py-1 text-xs bg-gray100 text-textPrimary border-transparent">
+                        {giftlist.gifts.length} regalos
+                      </Badge>
+                      <Badge className="px-3 py-1 text-xs bg-gray100 text-textPrimary border-transparent">
+                        ~ {suggestedGuestCount(giftlist.gifts.length)} invitados
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-bold sm:text-2xl text-textPrimary">
+                        {giftlist.name}
+                      </h3>
+
+                      <p className="text-sm sm:text-base text-textTertiary">
+                        Gs.{' '}
+                        {giftlist.gifts
+                          .reduce(
+                            (sum, gift) => sum + Number(gift.price || 0),
+                            0
+                          )
+                          .toLocaleString('es-PY')}{' '}
+                        total en regalos
+                      </p>
+                    </div>
+
+                    <Button
+                      className="w-fit transition-colors hover:bg-gray100"
+                      variant="outline"
+                      asChild
+                      size={isMobile ? 'sm' : 'default'}
+                    >
+                      <Link href={`/gifts/lists/${giftlist.id}`}>
+                        Ver Colección
+                      </Link>
+                    </Button>
                   </div>
-                  <Button
-                    className="hover:bg-gray100 transition-colors"
-                    variant="outline"
-                    asChild
-                    size="lg"
-                  >
-                    <Link href={`/gifts/lists/${giftlist.id}`}>
-                      Ver paquete
-                    </Link>
-                  </Button>
                 </div>
               ))
           )}

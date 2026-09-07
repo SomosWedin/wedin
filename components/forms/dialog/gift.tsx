@@ -150,6 +150,7 @@ export default function GiftForm({
               <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-md bg-gray-50">
                 {imagePreview ? (
                   <Image
+                    unoptimized
                     src={imagePreview}
                     alt="Vista previa del regalo"
                     className="h-full w-full object-cover"

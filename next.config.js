@@ -12,10 +12,25 @@ const nextConfig = {
       'plus.unsplash.com',
       'somos-wedin.s3.us-east-2.amazonaws.com',
       'somos-wedin-prod.s3.us-east-2.amazonaws.com',
+      'www.macrobaby.com',
+      'i.imgur.com',
+      'images.zola.com',
+      'http2.mlstatic.com',
+      'm.media-amazon.com',
+      'img.freepik.com',
+      'pisende.vtexassets.com',
+      'dcdn-us.mitiendanube.com',
+      'as2.ftcdn.net',
+      'images-na.ssl-images-amazon.com',
+      'transportesniko.com',
+      'terrazas.casa',
+      'manualidadeseli.com',
+      'baudinequipamientos.com',
+      'maderahogar.com',
+      'i.pinimg.com'
       // Add other domains you want to allow here
     ],
   },
-};
+}
 
-module.exports = nextConfig;
-
+module.exports = nextConfig

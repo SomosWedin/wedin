@@ -247,6 +247,7 @@ export default function DashboardWishlistList({
                 <div className="flex overflow-hidden justify-center items-center w-12 h-12 bg-gray-200 rounded">
                   {wishlistGift.gift.image?.url ? (
                     <Image
+                      unoptimized
                       src={wishlistGift.gift.image.url}
                       alt={wishlistGift.gift.name}
                       className="object-cover w-full h-full"

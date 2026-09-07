@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import CreateGiftDialog from '../dialog/create-gift-dialog'
 import DeleteAdminGiftDialog from '../dialog/delete-admin-gift-dialog'
 import EditAdminGiftDialog from '../dialog/edit-admin-gift-dialog'
+import ImportAdminGiftsDialog from '../dialog/import-admin-gifts-dialog'
 
 type GiftWithImage = Prisma.GiftGetPayload<{
   include: { image: true }
@@ -160,6 +161,11 @@ export default function AdminGiftsList({
           clearable
           selectionMode="value"
         />
+        <ImportAdminGiftsDialog
+          categories={categories}
+          giftlists={giftlists}
+          eventTypes={eventTypes}
+        />
         <CreateGiftDialog
           mode="admin"
           categories={categories}
@@ -214,6 +220,7 @@ export default function AdminGiftsList({
               <div className="flex justify-center items-center w-12 h-12 bg-gray-100 rounded overflow-hidden shrink-0">
                 {gift.image?.url ? (
                   <Image
+                    unoptimized
                     src={gift.image.url}
                     alt={gift.name}
                     className="object-cover w-full h-full"

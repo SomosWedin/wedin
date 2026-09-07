@@ -249,6 +249,7 @@ export default function CheckoutForm({
                   <div className="flex overflow-hidden justify-center items-center w-12 h-12 bg-gray-100 rounded-md shrink-0">
                     {item.giftImageUrl ? (
                       <Image
+                        unoptimized
                         src={item.giftImageUrl}
                         alt={item.giftName}
                         className="object-cover w-full h-full"
