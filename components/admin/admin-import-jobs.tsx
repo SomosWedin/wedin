@@ -1,0 +1,593 @@
+'use client'
+
+import {
+  type MutableRefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+import type {
+  cancelAdminImportJob,
+  getAdminImportJobDetails,
+  getAdminImportJobs,
+  retryAdminImportJob,
+} from '@/actions/data/import-job'
+import GiftImportJobResult from '@/components/admin/gift-import-job-result'
+import ExistingImportGiftDialog from '@/components/dialog/existing-import-gift-dialog'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import type { CollectionImportPreviewRow } from '@/schemas/collection-import'
+import {
+  importKindLabels,
+  jobStatusLabels,
+  rowStatusLabels,
+} from '@/schemas/import-job'
+
+type Jobs = Awaited<ReturnType<typeof getAdminImportJobs>>
+type Details = Awaited<ReturnType<typeof getAdminImportJobDetails>>
+type Retry = Awaited<ReturnType<typeof retryAdminImportJob>>
+type Cancel = Awaited<ReturnType<typeof cancelAdminImportJob>>
+const date = (value: Date | string | null) =>
+  value ? new Date(value).toLocaleString('es-PY') : '—'
+
+async function fetchJson<T>(url: string, init?: RequestInit) {
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), 15000)
+  try {
+    const response = await fetch(url, {
+      ...init,
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+    if (!response.ok) throw new Error(`Request failed: ${response.status}`)
+    return (await response.json()) as T
+  } finally {
+    window.clearTimeout(timeout)
+  }
+}
+
+function Pager({
+  page,
+  total,
+  onChange,
+}: {
+  page: number
+  total: number
+  onChange: (page: number) => void
+}) {
+  return (
+    <div className="flex items-center gap-3 text-sm">
+      <Button
+        variant="outline"
+        disabled={page === 0}
+        onClick={() => onChange(page - 1)}
+      >
+        Anterior
+      </Button>
+      <span>
+        Página {page + 1} de {Math.max(1, Math.ceil(total / 20))}
+      </span>
+      <Button
+        variant="outline"
+        disabled={(page + 1) * 20 >= total}
+        onClick={() => onChange(page + 1)}
+      >
+        Siguiente
+      </Button>
+    </div>
+  )
+}
+
+function CollectionJobResult({
+  review,
+  onGift,
+  giftTrigger,
+}: {
+  review: CollectionImportPreviewRow
+  onGift: (id: string) => void
+  giftTrigger: MutableRefObject<HTMLButtonElement | null>
+}) {
+  const groups = [
+    ['Agregados', review.added],
+    ['Quitados', review.removed],
+    ['Conservados', review.retained],
+  ] as const
+  return (
+    <div className="space-y-1 text-xs">
+      {groups.map(([label, gifts]) =>
+        gifts.length ? (
+          <p key={label}>
+            {label}:{' '}
+            {gifts.map((gift, index) => (
+              <span key={gift.id}>
+                {index > 0 && ', '}
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={event => {
+                    giftTrigger.current = event.currentTarget
+                    onGift(gift.id)
+                  }}
+                >
+                  {gift.name}
+                </button>
+              </span>
+            ))}
+          </p>
+        ) : null
+      )}
+      {review.ignored.length > 0 && (
+        <p>Ignorados: {review.ignored.map(item => item.name).join(', ')}</p>
+      )}
+    </div>
+  )
+}
+
+export default function AdminImportJobs() {
+  const [page, setPage] = useState(0)
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('')
+  const [kind, setKind] = useState('')
+  const [result, setResult] = useState<Jobs | null>(null)
+  const [selected, setSelected] = useState<string | null>(null)
+  const [details, setDetails] = useState<Details | null>(null)
+  const [rowPage, setRowPage] = useState(0)
+  const [historyPage, setHistoryPage] = useState(0)
+  const [version, setVersion] = useState(0)
+  const [retrying, setRetrying] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+  const [error, setError] = useState('')
+  const [giftId, setGiftId] = useState<string | null>(null)
+  const trigger = useRef<HTMLButtonElement | null>(null)
+  const giftTrigger = useRef<HTMLButtonElement | null>(null)
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Manual retries must immediately reload persisted status.
+  useEffect(() => {
+    let cancelled = false
+    let running = false
+    const refresh = async () => {
+      if (running) return
+      running = true
+      const params = new URLSearchParams({ page: String(page), search })
+      if (status) params.set('status', status)
+      if (kind) params.set('kind', kind)
+      try {
+        const response = await fetchJson<Jobs>(
+          `/api/admin/import-jobs?${params}`
+        )
+        if (!cancelled) setResult(response)
+      } catch {
+        if (!cancelled)
+          setResult({ error: 'No se pudieron cargar los trabajos.' })
+      } finally {
+        running = false
+      }
+    }
+    void refresh()
+    const interval = setInterval(() => void refresh(), 5000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [page, search, status, kind, version])
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Manual retries must immediately reload persisted status.
+  useEffect(() => {
+    setDetails(null)
+    if (!selected) return
+    let cancelled = false
+    let running = false
+    const refresh = async () => {
+      if (running) return
+      running = true
+      const params = new URLSearchParams({
+        page: String(rowPage),
+        historyPage: String(historyPage),
+      })
+      try {
+        const response = await fetchJson<Details>(
+          `/api/admin/import-jobs/${selected}?${params}`
+        )
+        if (!cancelled) setDetails(response)
+      } catch {
+        if (!cancelled)
+          setDetails({ error: 'No se pudieron cargar los detalles.' })
+      } finally {
+        running = false
+      }
+    }
+    void refresh()
+    const interval = setInterval(() => void refresh(), 5000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [selected, rowPage, historyPage, version])
+
+  const retry = useCallback(async () => {
+    if (!selected || retrying) return
+    setRetrying(true)
+    setError('')
+    try {
+      const response = await fetchJson<Retry>(
+        `/api/admin/import-jobs/${selected}/retry`,
+        { method: 'POST' }
+      )
+      if (response.error) setError(response.error)
+      setVersion(value => value + 1)
+    } catch {
+      setError('No se pudo reintentar. Intentá nuevamente.')
+    } finally {
+      setRetrying(false)
+    }
+  }, [selected, retrying])
+  const cancel = useCallback(async () => {
+    if (!selected || cancelling) return
+    setCancelling(true)
+    setError('')
+    try {
+      const response = await fetchJson<Cancel>(
+        `/api/admin/import-jobs/${selected}/cancel`,
+        { method: 'POST' }
+      )
+      if ('error' in response)
+        setError(response.error || 'No se pudo cancelar la preparación.')
+      setVersion(value => value + 1)
+    } catch {
+      setError('No se pudo cancelar la preparación. Intentá nuevamente.')
+    } finally {
+      setCancelling(false)
+    }
+  }, [selected, cancelling])
+  const job = details && 'job' in details ? details.job : null
+  const unfinishedCount = job
+    ? Math.max(
+        0,
+        job.expectedRows -
+          job.createdCount -
+          job.updatedCount -
+          job.skippedCount
+      )
+    : 0
+  const lockActive = job ? new Date(job.lockExpiresAt) > new Date() : false
+  const canRetry = Boolean(
+    job?.acceptedAt &&
+      job.status !== 'COMPLETED' &&
+      !lockActive &&
+      unfinishedCount
+  )
+  const retryReason = !job
+    ? ''
+    : job.status === 'CANCELLED'
+      ? 'Esta preparación fue cancelada antes de aceptar la importación.'
+      : !job.acceptedAt
+        ? 'Este trabajo no fue aceptado y no tiene procesamiento para reintentar. Volvé a cargar el archivo y completá la revisión.'
+        : job.status === 'COMPLETED' || !unfinishedCount
+          ? 'No quedan filas pendientes o fallidas.'
+          : lockActive
+            ? `Hay un trabajador activo. El reintento estará disponible después de ${date(job.lockExpiresAt)}.`
+            : ''
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <Input
+          aria-label="Buscar por archivo"
+          placeholder="Buscar por archivo"
+          className="max-w-sm"
+          value={search}
+          onChange={event => {
+            setSearch(event.target.value)
+            setPage(0)
+          }}
+        />
+        <select
+          aria-label="Estado de la importación"
+          className="rounded-md border p-2"
+          value={status}
+          onChange={event => {
+            setStatus(event.target.value)
+            setPage(0)
+          }}
+        >
+          <option value="">Todos los estados</option>
+          {Object.entries(jobStatusLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Tipo de importación"
+          className="rounded-md border p-2"
+          value={kind}
+          onChange={event => {
+            setKind(event.target.value)
+            setPage(0)
+          }}
+        >
+          <option value="">Todos los tipos</option>
+          {Object.entries(importKindLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {!result ? (
+        <p role="status">Cargando trabajos…</p>
+      ) : result.error ? (
+        <p role="alert">{result.error}</p>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-left text-sm">
+              <caption className="sr-only">Trabajos de importación</caption>
+              <thead className="bg-gray-50">
+                <tr>
+                  {[
+                    'Archivo',
+                    'Tipo',
+                    'Enviado por',
+                    'Estado',
+                    'Procesadas / total',
+                    'Resultados',
+                    'Fechas',
+                    'Acciones',
+                  ].map(label => (
+                    <th scope="col" key={label} className="p-3">
+                      {label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {result.jobs.map(item => (
+                  <tr key={item.id} className="border-t">
+                    <td className="max-w-64 break-words p-3">
+                      {item.filename}
+                    </td>
+                    <td className="p-3">{importKindLabels[item.kind]}</td>
+                    <td className="p-3">{item.submittedBy}</td>
+                    <td className="p-3">{jobStatusLabels[item.status]}</td>
+                    <td className="p-3">
+                      {item.createdCount +
+                        item.updatedCount +
+                        item.skippedCount +
+                        item.failedCount}{' '}
+                      / {item.expectedRows}
+                      {item.status === 'PREPARING' && (
+                        <span className="block text-xs">
+                          {item.uploadedRows} guardadas
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {item.kind === 'COLLECTION' ? (
+                        <>
+                          {item.createdCount} creadas · {item.updatedCount}{' '}
+                          actualizadas · {item.skippedCount} omitidas ·{' '}
+                          {item.failedCount} fallidas
+                        </>
+                      ) : (
+                        <>
+                          {item.createdCount} creados · {item.skippedCount}{' '}
+                          omitidos · {item.failedCount} fallidos
+                        </>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap p-3 text-xs">
+                      Creada: {date(item.createdAt)}
+                      <br />
+                      Actualizada: {date(item.updatedAt)}
+                      <br />
+                      Finalizada: {date(item.completedAt)}
+                    </td>
+                    <td className="p-3">
+                      <Button
+                        variant="outline"
+                        onClick={event => {
+                          trigger.current = event.currentTarget
+                          setRowPage(0)
+                          setHistoryPage(0)
+                          setError('')
+                          setSelected(item.id)
+                        }}
+                      >
+                        Ver detalles
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {result.jobs.length === 0 && (
+              <p className="p-6 text-center">
+                No hay trabajos con estos filtros.
+              </p>
+            )}
+          </div>
+          <Pager page={page} total={result.total} onChange={setPage} />
+        </>
+      )}
+      <Dialog
+        open={Boolean(selected)}
+        onOpenChange={open => {
+          if (!open) setSelected(null)
+        }}
+      >
+        <DialogContent
+          className="max-h-[90dvh] max-w-5xl overflow-y-auto"
+          onCloseAutoFocus={event => {
+            event.preventDefault()
+            trigger.current?.focus()
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>
+              {job?.filename || 'Detalles de importación'}
+            </DialogTitle>
+            <DialogDescription>
+              Resultados guardados e historial de procesamiento.
+            </DialogDescription>
+          </DialogHeader>
+          {!details ? (
+            <p role="status">Cargando detalles…</p>
+          ) : details.error ? (
+            <p role="alert">{details.error}</p>
+          ) : (
+            <>
+              <p>
+                {importKindLabels[details.job.kind]} ·{' '}
+                {jobStatusLabels[details.job.status]} ·{' '}
+                {details.job.submittedBy}
+              </p>
+              <p className="text-sm">
+                Inicio: {date(details.job.startedAt)} · Finalización:{' '}
+                {date(details.job.completedAt)}
+              </p>
+              {details.job.status === 'PREPARING' && (
+                <p className="text-sm">
+                  La importación todavía no fue aceptada. Si cerraste la
+                  revisión, cancelá esta preparación y volvé a cargar el
+                  archivo.
+                </p>
+              )}
+              {details.job.status === 'CANCELLED' && (
+                <p className="text-sm">
+                  La revisión se cerró sin aceptar la importación. No se creó ni
+                  modificó ningún regalo o colección.
+                </p>
+              )}
+              {details.job.acceptedAt && unfinishedCount > 0 && (
+                <p className="text-sm">
+                  Quedan {unfinishedCount}{' '}
+                  {unfinishedCount === 1
+                    ? 'fila pendiente o fallida'
+                    : 'filas pendientes o fallidas'}
+                  .
+                </p>
+              )}
+              {details.job.status === 'PREPARING' ? (
+                <Button
+                  variant="outline"
+                  disabled={cancelling}
+                  onClick={() => void cancel()}
+                >
+                  {cancelling ? 'Cancelando…' : 'Cancelar preparación'}
+                </Button>
+              ) : details.job.status !== 'CANCELLED' ? (
+                <Button
+                  variant="outline"
+                  disabled={!canRetry || retrying}
+                  onClick={() => void retry()}
+                >
+                  {retrying ? 'Enviando…' : 'Reintentar pendientes y fallidos'}
+                </Button>
+              ) : null}
+              {retryReason && (
+                <p className="text-xs text-textTertiary">{retryReason}</p>
+              )}
+              {error && (
+                <p role="alert" className="text-red-700">
+                  {error}
+                </p>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <caption className="sr-only">Resultados por fila</caption>
+                  <thead>
+                    <tr>
+                      {[
+                        'Fila',
+                        details.job.kind === 'COLLECTION'
+                          ? 'Colección'
+                          : 'Regalo',
+                        'Estado',
+                        'Resultado',
+                      ].map(label => (
+                        <th className="p-2" scope="col" key={label}>
+                          {label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {details.rows.map(row => (
+                      <tr key={row.id} className="border-t">
+                        <td className="p-2">{row.rowNumber}</td>
+                        <td className="p-2">
+                          {String(
+                            (row.input as { name?: string })?.name || '—'
+                          )}
+                        </td>
+                        <td className="p-2">{rowStatusLabels[row.status]}</td>
+                        <td className="p-2">
+                          {details.job.kind === 'GIFT' ? (
+                            <GiftImportJobResult
+                              row={row}
+                              onGift={(id, button) => {
+                                giftTrigger.current = button
+                                setGiftId(id)
+                              }}
+                            />
+                          ) : (
+                            <>
+                              {row.error}
+                              {row.review && (
+                                <CollectionJobResult
+                                  review={
+                                    row.review as unknown as CollectionImportPreviewRow
+                                  }
+                                  onGift={id => setGiftId(id)}
+                                  giftTrigger={giftTrigger}
+                                />
+                              )}
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pager
+                page={rowPage}
+                total={details.job.uploadedRows}
+                onChange={setRowPage}
+              />
+              <h2 className="font-semibold">Historial</h2>
+              <ul className="space-y-2 text-sm">
+                {details.history.map(entry => (
+                  <li key={entry.id}>
+                    <time>{date(entry.createdAt)}</time> ·{' '}
+                    {entry.rowNumber ? `Fila ${entry.rowNumber}: ` : ''}
+                    {entry.message}
+                  </li>
+                ))}
+              </ul>
+              <Pager
+                page={historyPage}
+                total={details.historyTotal}
+                onChange={setHistoryPage}
+              />
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      <ExistingImportGiftDialog
+        giftId={giftId}
+        onClose={() => setGiftId(null)}
+        restoreFocus={() => giftTrigger.current?.focus()}
+      />
+    </div>
+  )
+}

@@ -63,6 +63,7 @@ export default function GiftDetailDialog({
             <div className="flex overflow-hidden justify-center items-center w-32 h-32 bg-gray-100 rounded-md shrink-0">
               {gift.image?.url ? (
                 <Image
+                  unoptimized
                   src={gift.image.url}
                   alt={gift.name}
                   className="object-cover w-full h-full"

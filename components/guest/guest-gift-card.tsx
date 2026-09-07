@@ -81,6 +81,7 @@ export default function GuestGiftCard({
       <div className="relative overflow-hidden w-full bg-gray-100 rounded-lg aspect-square">
         {gift.image?.url ? (
           <Image
+            unoptimized
             src={gift.image.url}
             alt={gift.name}
             fill

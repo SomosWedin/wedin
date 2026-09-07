@@ -97,6 +97,7 @@ export default async function GiftlistDetailPage({
                       <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center overflow-hidden shrink-0">
                         {gift.image?.url ? (
                           <Image
+                            unoptimized
                             src={gift.image.url}
                             alt={gift.name}
                             className="w-full h-full object-cover"
