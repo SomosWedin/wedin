@@ -1,4 +1,66 @@
 import { type ZodType, z } from 'zod'
+import { EVENT_SLUG_PATTERN } from '@/lib/event-domain'
+
+const RESERVED_EVENT_URLS = [
+  'www',
+  'home',
+  'landing',
+  'app',
+  'api',
+  'admin',
+  'dashboard',
+  'mail',
+  'ftp',
+  'blog',
+  'help',
+  'support',
+  'status',
+  'cdn',
+  'assets',
+  'static',
+  'img',
+  'images',
+  'docs',
+  'staging',
+  'dev',
+  'test',
+  'ns1',
+  'ns2',
+  'smtp',
+  'webmail',
+  'autodiscover',
+  'cpanel',
+  'shop',
+  'store',
+  'login',
+  'register',
+  'auth',
+  'null',
+  'undefined',
+  'wedin',
+  'wedin-staging',
+  'send',
+  'resend',
+]
+
+export const EventUrlSlugSchema = z
+  .string()
+  .min(1, { message: 'La dirección de tu evento no puede estar vacío' })
+  .min(3, {
+    message: 'La dirección de tu evento debe contener al menos 3 caracteres',
+  })
+  .max(63, {
+    message:
+      'La dirección de tu evento debe contener un máximo de 63 caracteres',
+  })
+  .transform(value => value.toLowerCase())
+  .refine(value => EVENT_SLUG_PATTERN.test(value), {
+    message:
+      'La dirección de tu evento solo puede contener letras, números y guiones, y no puede empezar ni terminar con un guión',
+  })
+  .refine(value => !RESERVED_EVENT_URLS.includes(value), {
+    message: 'Esa dirección está reservada, elegí otra.',
+  })
 
 export const UpdateEventSettingsFormSchema = z
   .object({
@@ -6,7 +68,7 @@ export const UpdateEventSettingsFormSchema = z
       required_error: 'Debes seleccionar una fecha',
       invalid_type_error: '¡Eso no es una fecha!',
     }),
-    eventUrl: z.string(),
+    eventUrl: EventUrlSlugSchema,
     name: z
       .string()
       .min(1, { message: 'Tu nombre no puede estar vacío' })
@@ -70,29 +132,86 @@ export function createUpdateEventSettingsFormSchema(isWedding: boolean) {
   })
 }
 
-export const BankDetailsFormSchema = z.object({
-  eventId: z.string(),
-  bankName: z.string().min(1, { message: 'Debe seleccionar una entidad' }),
-  accountHolder: z
-    .string()
-    .min(1, { message: 'Nombre y apellido no puede estar vacío' })
-    .min(2, { message: 'Nombre y Apellido muy corto' })
-    .max(255, { message: 'Nombre y Apellido muy largo' }),
-  accountNumber: z
-    .string()
-    .min(1, { message: 'Número de cuenta no puede estar vacío' })
-    .max(24, { message: 'Número de cuenta muy largo' }),
-  accountType: z.string().min(1, { message: 'Debe seleccionar una moneda' }),
-  identificationType: z
-    .string()
-    .min(1, { message: 'Debe seleccionar un documento' }),
-  identificationNumber: z
-    .string()
-    .min(1, { message: 'Número de documento no puede estar vacío' })
-    .max(12, { message: 'Número de documento muy largo' }),
-  razonSocial: z.string().optional(),
-  ruc: z.string().optional(),
-})
+export const BankDetailsFormSchema = z
+  .object({
+    eventId: z.string(),
+    bankName: z.string().min(1, { message: 'Debe seleccionar una entidad' }),
+    accountHolder: z
+      .string()
+      .min(1, { message: 'Nombre y apellido no puede estar vacío' })
+      .min(2, { message: 'Nombre y Apellido muy corto' })
+      .max(255, { message: 'Nombre y Apellido muy largo' }),
+    accountNumber: z
+      .string()
+      .min(1, { message: 'Número de cuenta no puede estar vacío' })
+      .max(24, { message: 'Número de cuenta muy largo' }),
+    accountType: z.string().min(1, { message: 'Debe seleccionar una moneda' }),
+    identificationType: z
+      .string()
+      .min(1, { message: 'Debe seleccionar un documento' }),
+    identificationNumber: z
+      .string()
+      .min(1, { message: 'Número de documento no puede estar vacío' })
+      .max(12, { message: 'Número de documento muy largo' }),
+    aliasType: z.string().optional(),
+    alias: z.string().max(255, { message: 'Alias muy largo' }).optional(),
+    razonSocial: z.string().optional(),
+    ruc: z.string().max(12, { message: 'RUC muy largo' }).optional(),
+  })
+  .superRefine((values, ctx) => {
+    const alias = values.alias?.trim()
+    const aliasType = values.aliasType?.trim()
+    const razonSocial = values.razonSocial?.trim()
+    const ruc = values.ruc?.trim()
+
+    if (alias && !aliasType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['aliasType'],
+        message: 'Elegí el tipo de alias',
+      })
+    }
+
+    if (aliasType && !alias) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['alias'],
+        message: 'Ingresá el alias',
+      })
+    }
+
+    if (alias && alias.length < 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['alias'],
+        message: 'Alias muy corto',
+      })
+    }
+
+    if (razonSocial && !ruc) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ruc'],
+        message: 'Ingresá el RUC',
+      })
+    }
+
+    if (ruc && !razonSocial) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['razonSocial'],
+        message: 'Ingresá la razón social',
+      })
+    }
+
+    if (ruc && ruc.length < 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ruc'],
+        message: 'RUC muy corto',
+      })
+    }
+  })
 export type BankDetailsFormType = z.infer<typeof BankDetailsFormSchema>
 
 export const EventCoverFormSchema = z.object({
@@ -299,70 +418,9 @@ export const TransactionStatusLogUpdateSchema = z.object({
   changedAt: z.string().transform(str => new Date(str)), // Ensure changedAt is a valid Date
 })
 
-// Reserved so an event slug can never collide with a real subdomain if we
-// move guest sites from /e/{eventUrl} to {eventUrl}.wedin.app later.
-const RESERVED_EVENT_URLS = [
-  'www',
-  'home',
-  'landing',
-  'app',
-  'api',
-  'admin',
-  'dashboard',
-  'mail',
-  'ftp',
-  'blog',
-  'help',
-  'support',
-  'status',
-  'cdn',
-  'assets',
-  'static',
-  'img',
-  'images',
-  'docs',
-  'staging',
-  'dev',
-  'test',
-  'ns1',
-  'ns2',
-  'smtp',
-  'webmail',
-  'autodiscover',
-  'cpanel',
-  'shop',
-  'store',
-  'login',
-  'register',
-  'auth',
-  'null',
-  'undefined',
-  'wedin',
-  'wedin-staging',
-  'send',
-  'resend',
-]
-
 export const EventUrlFormSchema = z.object({
   eventId: z.string(),
-  eventUrl: z
-    .string()
-    .min(1, { message: 'La dirección de tu evento no puede estar vacío' })
-    .min(3, {
-      message: 'La dirección de tu evento debe contener al menos 3 caracteres',
-    })
-    .max(63, {
-      message:
-        'La dirección de tu evento debe contener un máximo de 63 caracteres',
-    })
-    .transform(value => value.toLowerCase())
-    .refine(value => /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(value), {
-      message:
-        'La dirección de tu evento solo puede contener letras, números y guiones, y no puede empezar ni terminar con un guión',
-    })
-    .refine(value => !RESERVED_EVENT_URLS.includes(value), {
-      message: 'Esa dirección está reservada, elegí otra.',
-    }),
+  eventUrl: EventUrlSlugSchema,
 })
 
 export const EventCoverImageFormSchema = z.object({

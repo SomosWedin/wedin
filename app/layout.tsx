@@ -21,7 +21,7 @@ export default async function RootLayout({
   const session = await auth()
   return (
     <SessionProvider session={session}>
-      <html lang="en">
+      <html lang="es">
         <body className={`${inter.className} antialiased sm:min-h-screen`}>
           <Toaster />
           <Provider>{children}</Provider>

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { useToggleEventPublished } from '@/hooks/dashboard/use-toggle-event-published'
 import { useToast } from '@/hooks/use-toast'
-import { getPublicEventUrl } from '@/lib/event-domain'
+import { getPublicEventUrl, isValidEventSlug } from '@/lib/event-domain'
 import { hasAcceptedOrganizerTerms, TERMS_PATHS } from '@/lib/terms'
 import type { CompletedEvent } from './dashboard-home'
 
@@ -36,9 +36,13 @@ export default function DashboardHomeSiteLinkCard({
     hasAcceptedTerms: hasAcceptedOrganizerTerms(event),
   })
 
-  const guestUrl = getPublicEventUrl(currentUrl)
+  const guestUrl = isValidEventSlug(currentUrl)
+    ? getPublicEventUrl(currentUrl)
+    : null
 
   const handleShare = async () => {
+    if (!guestUrl) return
+
     try {
       await navigator.clipboard.writeText(guestUrl)
 
@@ -74,7 +78,12 @@ export default function DashboardHomeSiteLinkCard({
         />
       </div>
 
-      {hasAcceptedTerms ? (
+      {!guestUrl ? (
+        <p className="text-sm text-textTertiary">
+          Tu dirección actual no es válida. Editala arriba usando solo letras,
+          números y guiones para poder compartir tu sitio.
+        </p>
+      ) : hasAcceptedTerms ? (
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
             <Switch

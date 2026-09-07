@@ -10,7 +10,7 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/actions/get-current-user'
 import type { ErrorResponse } from '@/auth'
 import prismaClient from '@/prisma/client'
-import { EventUrlFormSchema } from '@/schemas/form'
+import { EventUrlFormSchema, EventUrlSlugSchema } from '@/schemas/form'
 
 async function getOwnedEvent(eventId: string) {
   const currentUser = await getCurrentUser()
@@ -96,7 +96,17 @@ export const updateEvent = async (
     }
 
     if (data.url) {
-      updateData.url = data.url
+      const validatedUrl = EventUrlSlugSchema.safeParse(data.url)
+
+      if (!validatedUrl.success) {
+        return {
+          error:
+            validatedUrl.error.errors[0]?.message ??
+            'La dirección de tu evento no es válida',
+        }
+      }
+
+      updateData.url = validatedUrl.data
     }
 
     const updatedEvent = await prismaClient.event.update({
