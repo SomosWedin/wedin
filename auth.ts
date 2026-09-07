@@ -16,7 +16,7 @@ export function isError(response: unknown): response is ErrorResponse {
   return (response as ErrorResponse).error !== undefined
 }
 
-const AUTH_EMAIL_FROM = 'Wedin <no-reply@somoswedin.com>'
+const AUTH_EMAIL_FROM = 'Wedin <acceso@somoswedin.com>'
 
 const emailProvider = Resend({
   apiKey: process.env.RESEND_API_KEY,

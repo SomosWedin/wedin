@@ -44,7 +44,7 @@ describe('authentication email', () => {
 
   it('attaches the logo data referenced by the HTML', async () => {
     const request = await buildAuthEmailRequest({
-      from: 'Wedin <no-reply@somoswedin.com>',
+      from: 'Wedin <acceso@somoswedin.com>',
       isNewUser: false,
       to: 'user@example.com',
       url: magicLink,
