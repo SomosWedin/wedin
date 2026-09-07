@@ -81,7 +81,7 @@ export default async function AdminPage() {
       </div>
 
       <Tabs defaultValue="transacciones" className="w-full">
-        <TabsList className="max-w-full justify-start gap-2 overflow-x-auto sm:gap-3 sm:justify-center">
+        <TabsList className="h-auto min-h-10 max-w-full justify-start gap-2 overflow-x-auto overflow-y-hidden sm:gap-3 sm:justify-center">
           <TabsTrigger
             value="transacciones"
             className="shrink-0 gap-2 text-xs sm:text-sm"

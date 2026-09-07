@@ -1,6 +1,12 @@
 'use client'
 
-import { CheckCircle2, FileSpreadsheet, Loader2, Upload } from 'lucide-react'
+import {
+  Check,
+  CheckCircle2,
+  FileSpreadsheet,
+  Loader2,
+  Upload,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useId, useState } from 'react'
 import GiftImportMapping, {
@@ -178,18 +184,33 @@ export default function GiftImportForm({
     >
       <ol
         aria-label="Pasos de importación"
-        className="grid shrink-0 grid-cols-3 gap-2"
+        className="grid shrink-0 grid-cols-3 gap-1.5"
       >
         {['Subir archivo', 'Relacionar campos', 'Revisar y aceptar'].map(
-          (label, index) => (
-            <li
-              key={label}
-              aria-current={step === index ? 'step' : undefined}
-              className={`rounded-md px-2 py-2 text-center text-xs sm:text-sm ${step === index ? 'bg-success font-medium text-white' : 'bg-gray-100 text-textTertiary'}`}
-            >
-              {index + 1}. {label}
-            </li>
-          )
+          (label, index) => {
+            const state =
+              index < step ? 'done' : index === step ? 'current' : 'todo'
+            return (
+              <li
+                key={label}
+                aria-current={state === 'current' ? 'step' : undefined}
+                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-center text-xs font-medium sm:text-sm ${
+                  state === 'current'
+                    ? 'bg-success text-white'
+                    : state === 'done'
+                      ? 'bg-success/10 text-success'
+                      : 'bg-gray-100 text-textTertiary'
+                }`}
+              >
+                {state === 'done' ? (
+                  <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                ) : (
+                  <span className="tabular-nums">{index + 1}.</span>
+                )}
+                <span className="truncate">{label}</span>
+              </li>
+            )
+          }
         )}
       </ol>
       <div
@@ -197,16 +218,24 @@ export default function GiftImportForm({
         aria-busy={Boolean(loading)}
       >
         {jobId !== null ? (
-          <div className="space-y-3 py-10 text-center" role="status">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-green-600" />
-            <p className="text-xl font-semibold">Importación en cola</p>
-            <p className="text-sm text-textTertiary">
-              Podés cerrar esta ventana. La importación continuará en segundo
-              plano.
-            </p>
-            <Link href="/admin/jobs" className="inline-block underline">
-              Ver trabajos de importación
-            </Link>
+          <div
+            className="flex flex-col items-center gap-3 py-10 text-center"
+            role="status"
+          >
+            <span className="rounded-full bg-success/10 p-3">
+              <CheckCircle2 className="h-9 w-9 text-success" />
+            </span>
+            <div className="space-y-1">
+              <p className="text-lg font-semibold">Importación en cola</p>
+              <p className="mx-auto max-w-sm text-sm text-textTertiary">
+                {validCount} {validCount === 1 ? 'regalo' : 'regalos'} · suele
+                tardar unos minutos. Podés cerrar esta ventana; continúa en
+                segundo plano.
+              </p>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin/jobs">Ver progreso</Link>
+            </Button>
           </div>
         ) : step === 0 ? (
           <UploadStep controller={controller} />
@@ -223,12 +252,23 @@ export default function GiftImportForm({
         />
       )}
       {loading && (
-        <p role="status" className="text-xs text-textTertiary">
+        <p
+          role="status"
+          className="flex items-center gap-2 text-xs text-textTertiary"
+        >
+          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden />
           {loading === 'import'
             ? 'Guardando y enviando la importación a la cola…'
             : loading === 'preview'
               ? 'Validando categorías, colecciones y regalos existentes…'
               : 'Leyendo el archivo…'}
+        </p>
+      )}
+      {!loading && step === 2 && jobId === null && !canAccept && (
+        <p className="text-xs text-textTertiary">
+          {validCount === 0
+            ? 'Ninguna fila se puede crear. Volvé a relacionar los campos.'
+            : 'Marcá “omitir las filas con errores” para continuar.'}
         </p>
       )}
       <DialogFooter className="shrink-0 border-t pt-4">
@@ -257,19 +297,21 @@ export default function GiftImportForm({
             <Button
               type="submit"
               variant="success"
-              className="min-h-10 h-auto min-w-0 whitespace-normal py-2"
+              className="h-auto min-h-10 whitespace-normal py-2 leading-tight"
               disabled={
                 Boolean(loading) ||
                 (step === 0 && !controller.dataset) ||
                 (step === 2 && !canAccept)
               }
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading && (
+                <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
+              )}
               {step === 0
-                ? 'Relacionar campos'
+                ? 'Continuar'
                 : step === 1
                   ? 'Revisar regalos'
-                  : `Aceptar e importar ${validCount} ${validCount === 1 ? 'regalo' : 'regalos'}`}
+                  : `Importar ${validCount} ${validCount === 1 ? 'regalo' : 'regalos'}`}
             </Button>
           </>
         )}

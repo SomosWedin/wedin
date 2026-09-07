@@ -50,16 +50,44 @@ export default function GiftImportPreview({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-2 text-center">
-        {[
-          ['Filas', preview.length],
-          ['Listos para crear', preview.length - invalidCount],
-          ['Con errores', invalidCount],
-        ].map(([label, count]) => (
-          <div key={label} className="rounded-lg border bg-gray-50 p-3">
-            <p className="text-xl font-semibold">{count}</p>
-            <p className="text-xs text-textTertiary">{label}</p>
-          </div>
-        ))}
+        {(
+          [
+            { label: 'Filas', count: preview.length, tone: 'neutral' },
+            {
+              label: 'Listos para crear',
+              count: preview.length - invalidCount,
+              tone: 'ok',
+            },
+            { label: 'Con errores', count: invalidCount, tone: 'bad' },
+          ] as const
+        ).map(({ label, count, tone }) => {
+          const active = count > 0 && tone !== 'neutral'
+          return (
+            <div
+              key={label}
+              className={`rounded-lg border p-3 ${
+                active && tone === 'ok'
+                  ? 'border-success/30 bg-success/5'
+                  : active && tone === 'bad'
+                    ? 'border-red-200 bg-red-50'
+                    : 'border-borderDefault bg-gray-50'
+              }`}
+            >
+              <p
+                className={`text-xl font-semibold tabular-nums ${
+                  active && tone === 'ok'
+                    ? 'text-success'
+                    : active && tone === 'bad'
+                      ? 'text-red-700'
+                      : ''
+                }`}
+              >
+                {count}
+              </p>
+              <p className="text-xs text-textTertiary">{label}</p>
+            </div>
+          )
+        })}
       </div>
       <p className="text-sm text-textTertiary">
         Se crearán regalos en el catálogo con las categorías y colecciones
@@ -98,12 +126,9 @@ export default function GiftImportPreview({
               onChange={event => setSkipErrors(event.target.checked)}
             />
             <span>
-              Omitir {invalidCount} {invalidCount === 1 ? 'fila' : 'filas'} con
-              errores e importar {preview.length - invalidCount}{' '}
-              {preview.length - invalidCount === 1
-                ? 'regalo válido'
-                : 'regalos válidos'}
-              .
+              Omitir las {invalidCount} {invalidCount === 1 ? 'fila' : 'filas'}{' '}
+              con errores e importar {preview.length - invalidCount}{' '}
+              {preview.length - invalidCount === 1 ? 'regalo' : 'regalos'}.
             </span>
           </label>
         </div>
@@ -170,7 +195,9 @@ export default function GiftImportPreview({
                   key={row.rowNumber}
                   className={row.errors.length ? 'bg-red-50/50' : ''}
                 >
-                  <td className="p-3 align-top text-textTertiary">
+                  <td
+                    className={`p-3 align-top text-textTertiary ${row.errors.length ? 'border-l-2 border-l-red-400' : ''}`}
+                  >
                     {row.rowNumber}
                   </td>
                   <td className="max-w-52 break-words p-3 align-top">

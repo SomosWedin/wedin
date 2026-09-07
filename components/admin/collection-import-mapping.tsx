@@ -99,14 +99,18 @@ export default function CollectionImportMapping({
         podés separar nombres simples con punto y coma, | o saltos de línea.
       </p>
       <details
-        className="rounded-lg border p-3"
+        className={`rounded-lg border p-3 ${unresolved.length > 0 ? 'border-red-200 bg-red-50/40' : ''}`}
         open={unresolved.length > 0 || undefined}
       >
         <summary className="cursor-pointer text-sm font-medium">
           Relación de regalos: {uniqueReferences.length} referencias ·{' '}
-          {unresolved.length
-            ? `${unresolved.length} requieren revisión`
-            : 'todas relacionadas'}
+          {unresolved.length ? (
+            <span className="text-red-700">
+              {unresolved.length} requieren revisión
+            </span>
+          ) : (
+            <span className="text-success">todas relacionadas</span>
+          )}
         </summary>
         <p className="mt-2 text-xs text-textTertiary">
           Los nombres únicos se relacionan automáticamente. Una referencia sin

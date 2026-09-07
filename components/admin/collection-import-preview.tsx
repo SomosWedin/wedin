@@ -69,12 +69,22 @@ export default function CollectionImportPreview({
   return (
     <div className="space-y-4">
       <div className="grid gap-2 text-sm sm:grid-cols-4">
-        {(['create', 'update', 'unchanged', 'invalid'] as const).map(action => (
-          <div key={action} className="rounded-md border p-3">
-            <p className="font-medium">{actionLabels[action]}</p>
-            <p className="text-lg tabular-nums">{counts[action]}</p>
-          </div>
-        ))}
+        {(['create', 'update', 'unchanged', 'invalid'] as const).map(action => {
+          const bad = action === 'invalid' && counts[action] > 0
+          return (
+            <div
+              key={action}
+              className={`rounded-md border p-3 ${bad ? 'border-red-200 bg-red-50' : 'border-borderDefault'}`}
+            >
+              <p className="font-medium">{actionLabels[action]}</p>
+              <p
+                className={`text-lg tabular-nums ${bad ? 'text-red-700' : ''}`}
+              >
+                {counts[action]}
+              </p>
+            </div>
+          )
+        })}
       </div>
       {invalidCount > 0 && (
         <label className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm">
@@ -161,7 +171,9 @@ export default function CollectionImportPreview({
                   key={row.rowNumber}
                   className={row.errors.length ? 'bg-red-50/50' : ''}
                 >
-                  <td className="max-w-52 p-3 align-top">
+                  <td
+                    className={`max-w-52 p-3 align-top ${row.errors.length ? 'border-l-2 border-l-red-400' : ''}`}
+                  >
                     <p className="font-medium">{row.name || 'Sin nombre'}</p>
                     <p className="text-xs text-textTertiary">
                       Fila {row.rowNumber}

@@ -159,12 +159,42 @@ export default function GiftImportMapping({
     setCreateMissingCollections,
   } = controller
   if (!dataset) return null
+  const autoMapped = giftImportFields.filter(
+    field => mapping[field.key].column !== null
+  )
+  const missingRequired = giftImportFields.filter(
+    field =>
+      field.required &&
+      mapping[field.key].column === null &&
+      !mapping[field.key].value.trim()
+  )
   return (
     <div className="space-y-5">
       <p className="text-sm text-textTertiary">
         Relacioná cada campo con una columna o asigná un valor para todas las
         filas. Si una celda está vacía, se usará el valor de respaldo.
       </p>
+      <div className="space-y-1 rounded-lg border bg-gray-50 p-3 text-sm">
+        <p>
+          {autoMapped.length ? (
+            <>
+              Relacionados por encabezado:{' '}
+              <span className="font-medium">
+                {autoMapped.map(field => field.label).join(', ')}
+              </span>
+              .
+            </>
+          ) : (
+            'No se detectaron encabezados conocidos; asigná cada campo abajo.'
+          )}
+        </p>
+        {missingRequired.length > 0 && (
+          <p className="text-red-700">
+            Falta asignar:{' '}
+            {missingRequired.map(field => field.label).join(', ')}.
+          </p>
+        )}
+      </div>
       <div className="divide-y rounded-lg border">
         <div className="hidden grid-cols-[1fr_1.4fr_1.4fr] gap-4 rounded-t-lg bg-gray-50 p-3 text-xs font-medium text-textTertiary sm:grid">
           <span>Campo de Wedin</span>
@@ -267,20 +297,30 @@ export default function GiftImportMapping({
         const unmatched = values.filter(
           value => !findImportOption(matches[field][value] || value, options)
         )
+        const willCreate = field === 'collections' && createMissingCollections
+        const needsAttention = unmatched.length > 0 && !willCreate
         return (
           <details
             key={field}
-            className="rounded-lg border p-3"
+            className={`rounded-lg border p-3 ${needsAttention ? 'border-red-200 bg-red-50/40' : ''}`}
             open={unmatched.length > 0 || undefined}
           >
             <summary className="cursor-pointer text-sm font-medium">
               {giftImportFields.find(item => item.key === field)?.label}:{' '}
               {values.length} {values.length === 1 ? 'valor' : 'valores'} ·{' '}
-              {unmatched.length
-                ? field === 'collections' && createMissingCollections
-                  ? `${unmatched.length} por crear`
-                  : `${unmatched.length} sin coincidencia`
-                : 'todos relacionados'}
+              {unmatched.length ? (
+                willCreate ? (
+                  <span className="text-blue-700">
+                    {unmatched.length} por crear
+                  </span>
+                ) : (
+                  <span className="text-red-700">
+                    {unmatched.length} sin coincidencia
+                  </span>
+                )
+              ) : (
+                <span className="text-success">todos relacionados</span>
+              )}
             </summary>
             {field === 'collections' && (
               <label className="mt-3 flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm">
