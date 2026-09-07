@@ -37,6 +37,7 @@ export default function GiftsCatalogSection({
   wishlistGiftIds,
 }: GiftsCatalogSectionProps) {
   const [isPending, startTransition] = useTransition()
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
 
   return (
     <Tabs defaultValue="todos" className="w-full">
@@ -136,33 +137,38 @@ export default function GiftsCatalogSection({
                     ))}
                   </div>
 
-                  <div className="flex flex-col flex-1 gap-3 justify-center py-5 pr-5 min-w-0">
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <Badge className="px-3 py-1 text-sm bg-gray100 text-textPrimary border-transparent">
+                  <div className="flex flex-col flex-1 gap-3 justify-center py-3 pr-3 sm:py-5 sm:pr-5 min-w-0">
+                    <div className="flex flex-nowrap gap-1 sm:gap-2 items-center">
+                      <Badge className="px-3 py-1 text-xs bg-gray100 text-textPrimary border-transparent">
                         {giftlist.gifts.length} regalos
                       </Badge>
-                      <Badge className="px-3 py-1 text-sm bg-gray100 text-textPrimary border-transparent">
+                      <Badge className="px-3 py-1 text-xs bg-gray100 text-textPrimary border-transparent">
                         ~ {suggestedGuestCount(giftlist.gifts.length)} invitados
                       </Badge>
                     </div>
 
-                    <h3 className="text-xl font-bold sm:text-2xl text-textPrimary">
-                      {giftlist.name}
-                    </h3>
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-bold sm:text-2xl text-textPrimary">
+                        {giftlist.name}
+                      </h3>
 
-                    <p className="text-textTertiary">
-                      Gs.{' '}
-                      {giftlist.gifts
-                        .reduce((sum, gift) => sum + Number(gift.price || 0), 0)
-                        .toLocaleString('es-PY')}{' '}
-                      total en regalos
-                    </p>
+                      <p className="text-sm sm:text-base text-textTertiary">
+                        Gs.{' '}
+                        {giftlist.gifts
+                          .reduce(
+                            (sum, gift) => sum + Number(gift.price || 0),
+                            0
+                          )
+                          .toLocaleString('es-PY')}{' '}
+                        total en regalos
+                      </p>
+                    </div>
 
                     <Button
                       className="w-fit transition-colors hover:bg-gray100"
                       variant="outline"
                       asChild
-                      size="lg"
+                      size={isMobile ? 'sm' : 'default'}
                     >
                       <Link href={`/gifts/lists/${giftlist.id}`}>
                         Ver Colección
