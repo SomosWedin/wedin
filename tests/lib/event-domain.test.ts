@@ -173,6 +173,16 @@ describe('event-domain helpers', () => {
     expect(isValidEventSlug(value)).toBe(false)
   })
 
+  // Truthiness is not validity: a stored slug can be a non-empty string and
+  // still be unrenderable, which is what took the dashboard down.
+  it.each(['Sorpresa!', 'mi evento', 'ab', '-abc'])(
+    'does not mistake the truthy but invalid slug %s for a usable one',
+    slug => {
+      expect(Boolean(slug)).toBe(true)
+      expect(isValidEventSlug(slug)).toBe(false)
+    }
+  )
+
   // A slug the form accepts must always be renderable: getPublicEventUrl
   // throws on anything EVENT_SLUG_PATTERN rejects, and that throw happens
   // during a client render, so any drift white-screens the dashboard.

@@ -6,7 +6,7 @@ import {
 } from 'react-icons/io5'
 import EmptyState from '@/components/common/empty-state'
 import { Button } from '@/components/ui/button'
-import { getPublicEventUrl } from '@/lib/event-domain'
+import { getPublicEventUrl, isValidEventSlug } from '@/lib/event-domain'
 import { getOrderStatus } from '@/lib/pagopar'
 import prismaClient from '@/prisma/client'
 
@@ -45,7 +45,7 @@ export default async function PagoparResultPage({
     )
   }
 
-  const backHref = transaction.event.url
+  const backHref = isValidEventSlug(transaction.event.url)
     ? getPublicEventUrl(transaction.event.url)
     : '/'
 

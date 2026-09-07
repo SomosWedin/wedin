@@ -4,7 +4,9 @@ function normalizeHostname(value: string) {
   return value.trim().toLowerCase().split(':')[0].replace(/\.$/, '')
 }
 
-export function isValidEventSlug(value: string | null | undefined) {
+export function isValidEventSlug(
+  value: string | null | undefined
+): value is string {
   return typeof value === 'string' && EVENT_SLUG_PATTERN.test(value)
 }
 
