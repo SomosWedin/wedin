@@ -1,4 +1,5 @@
 import { type ZodType, z } from 'zod'
+import { EVENT_SLUG_PATTERN } from '@/lib/event-domain'
 
 // Reserved so an event slug can never collide with a real subdomain if we
 // move guest sites from /e/{eventUrl} to {eventUrl}.wedin.app later.
@@ -55,7 +56,7 @@ export const EventUrlSlugSchema = z
       'La dirección de tu evento debe contener un máximo de 63 caracteres',
   })
   .transform(value => value.toLowerCase())
-  .refine(value => /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(value), {
+  .refine(value => EVENT_SLUG_PATTERN.test(value), {
     message:
       'La dirección de tu evento solo puede contener letras, números y guiones, y no puede empezar ni terminar con un guión',
   })

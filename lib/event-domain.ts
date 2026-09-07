@@ -4,6 +4,10 @@ function normalizeHostname(value: string) {
   return value.trim().toLowerCase().split(':')[0].replace(/\.$/, '')
 }
 
+export function isValidEventSlug(value: string | null | undefined) {
+  return typeof value === 'string' && EVENT_SLUG_PATTERN.test(value)
+}
+
 export function getConfiguredRootDomain() {
   return normalizeHostname(process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost')
 }

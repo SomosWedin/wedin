@@ -5,9 +5,10 @@ import {
   getConfiguredRootDomain,
   getEventSlugFromHost,
   getPublicEventUrl,
+  isValidEventSlug,
   publicEventPaths,
 } from '@/lib/event-domain'
-import { EventUrlFormSchema } from '@/schemas/form'
+import { EventUrlFormSchema, EventUrlSlugSchema } from '@/schemas/form'
 
 const originalRootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN
 const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL
@@ -160,4 +161,36 @@ describe('event-domain helpers', () => {
       expect(result.success).toBe(false)
     }
   )
+
+  it.each(['Sorpresa!', 'mi evento', '-abc', 'ab', 'UPPERCASE', ''])(
+    'reports the unrenderable slug %s as invalid instead of throwing',
+    slug => {
+      expect(isValidEventSlug(slug)).toBe(false)
+    }
+  )
+
+  it.each([null, undefined])('treats %s as an invalid slug', value => {
+    expect(isValidEventSlug(value)).toBe(false)
+  })
+
+  // A slug the form accepts must always be renderable: getPublicEventUrl
+  // throws on anything EVENT_SLUG_PATTERN rejects, and that throw happens
+  // during a client render, so any drift white-screens the dashboard.
+  it.each([
+    'Sorpresa!',
+    'mi evento',
+    'amelie-y-john',
+    'ABC',
+    'ab',
+    'abc',
+    'amelie.john',
+    'admin',
+  ])('keeps slug validation and URL building in agreement for %s', slug => {
+    const parsed = EventUrlSlugSchema.safeParse(slug)
+
+    if (!parsed.success) return
+
+    expect(isValidEventSlug(parsed.data)).toBe(true)
+    expect(() => getPublicEventUrl(parsed.data)).not.toThrow()
+  })
 })
