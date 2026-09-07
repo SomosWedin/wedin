@@ -177,12 +177,25 @@ export async function getGiftlists({
       },
     })
 
-    if (!eventTypeId) return giftlists
+    const scoped = eventTypeId
+      ? giftlists.filter(
+          giftlist =>
+            giftlist.gifts.length > 0 &&
+            deriveGiftlistEventTypeIds(giftlist.gifts).includes(eventTypeId)
+        )
+      : giftlists
 
-    return giftlists.filter(
-      giftlist =>
-        giftlist.gifts.length > 0 &&
-        deriveGiftlistEventTypeIds(giftlist.gifts).includes(eventTypeId)
+    const sort = searchParams?.sort
+
+    if (sort !== 'price-asc' && sort !== 'price-desc') return scoped
+
+    const totalPrice = (giftlist: (typeof scoped)[number]) =>
+      giftlist.gifts.reduce((sum, gift) => sum + Number(gift.price || 0), 0)
+
+    return [...scoped].sort((a, b) =>
+      sort === 'price-asc'
+        ? totalPrice(a) - totalPrice(b)
+        : totalPrice(b) - totalPrice(a)
     )
   } catch (error) {
     console.error('Error retrieving gift lists:', error)
