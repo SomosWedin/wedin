@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import NextAuth, { type DefaultSession } from 'next-auth'
 import { JWT } from 'next-auth/jwt'
@@ -41,12 +42,14 @@ const emailProvider = Resend({
       : 'Tu enlace para iniciar sesión en Wedin'
 
     const body = isNewUser
-      ? 'Confirmá tu correo para crear tu cuenta y comenzar el onboarding.'
-      : 'Usá el siguiente enlace para ingresar a tu cuenta.'
+      ? 'Recibimos una solicitud para crear una cuenta en Wedin con esta dirección de correo. Confirmala con el botón de abajo y seguí con la configuración de tu evento.'
+      : 'Recibimos una solicitud para ingresar a tu cuenta de Wedin con esta dirección de correo. Usá el botón de abajo para entrar.'
 
-    const textBody = isNewUser
-      ? 'Confirmá tu correo para crear tu cuenta:'
-      : 'Abrí este enlace para iniciar sesión:'
+    const expiryHours = Math.round((provider.maxAge ?? 86400) / 3600)
+
+    const preheader = isNewUser
+      ? 'Confirmá tu correo para terminar de crear tu cuenta.'
+      : 'Tu enlace de acceso a Wedin.'
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -58,17 +61,31 @@ const emailProvider = Resend({
         from: provider.from,
         to: identifier,
         subject,
+        ...(process.env.AUTH_EMAIL_REPLY_TO
+          ? { reply_to: process.env.AUTH_EMAIL_REPLY_TO }
+          : {}),
+        headers: {
+          'X-Entity-Ref-ID': randomUUID(),
+        },
 
         html: `
           <!doctype html>
-          <html>
-            <body style="margin:0; background:#f6f6f6; font-family:Arial,sans-serif;">
+          <html lang="es">
+            <body style="margin:0; padding:0; background:#f6f6f6; font-family:Arial,Helvetica,sans-serif;">
+              <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+                ${preheader}
+              </div>
+
               <div style="max-width:560px; margin:40px auto; padding:32px; background:white; border-radius:12px;">
-                <h1 style="color:#222; margin-top:0;">
+                <p style="margin:0 0 24px; font-size:18px; font-weight:700; color:#16a268; letter-spacing:-0.02em;">
+                  Wedin
+                </p>
+
+                <h1 style="color:#222; margin:0 0 16px; font-size:22px; line-height:1.3;">
                   ${heading}
                 </h1>
 
-                <p style="color:#555; line-height:1.6;">
+                <p style="color:#555; line-height:1.6; margin:0 0 24px;">
                   ${body}
                 </p>
 
@@ -77,7 +94,7 @@ const emailProvider = Resend({
                   style="
                     display:inline-block;
                     padding:14px 24px;
-                    margin:16px 0;
+                    margin:0 0 24px;
                     background:#16a268;
                     color:white;
                     text-decoration:none;
@@ -88,21 +105,54 @@ const emailProvider = Resend({
                   ${actionText}
                 </a>
 
-                <p style="color:#888; font-size:13px;">
-                  Si no solicitaste este enlace, podés ignorar este correo.
+                <p style="color:#555; line-height:1.6; margin:0 0 8px; font-size:14px;">
+                  Si el botón no funciona, copiá y pegá esta dirección en tu navegador:
+                </p>
+
+                <p style="margin:0 0 24px; font-size:13px; line-height:1.5; word-break:break-all; color:#16a268;">
+                  ${url}
+                </p>
+
+                <p style="color:#555; line-height:1.6; margin:0 0 8px; font-size:14px;">
+                  El enlace vence en ${expiryHours} horas y sirve una sola vez.
+                </p>
+
+                <p style="color:#888; font-size:13px; line-height:1.6; margin:0;">
+                  Si no solicitaste este enlace, podés ignorar este correo. Nadie
+                  podrá acceder a tu cuenta sin abrirlo.
+                </p>
+
+                <hr style="border:none; border-top:1px solid #eee; margin:32px 0 16px;" />
+
+                <p style="color:#999; font-size:12px; line-height:1.6; margin:0 0 8px;">
+                  Wedin — listas de regalos para bodas y eventos. Asunción, Paraguay.
+                </p>
+
+                <p style="color:#999; font-size:12px; line-height:1.6; margin:0;">
+                  Recibiste este correo porque se solicitó un enlace de acceso para
+                  ${identifier} en
+                  <a href="https://www.somoswedin.com" style="color:#999;">somoswedin.com</a>.
+                  Es un correo transaccional, no una comunicación publicitaria.
                 </p>
               </div>
             </body>
           </html>
         `,
 
-        text: `
-${heading}
+        text: `${heading}
 
-${textBody}
+${body}
 
-${url}
-        `.trim(),
+${actionText}: ${url}
+
+El enlace vence en ${expiryHours} horas y sirve una sola vez.
+
+Si no solicitaste este enlace, podés ignorar este correo. Nadie podrá acceder a tu cuenta sin abrirlo.
+
+--
+Wedin — listas de regalos para bodas y eventos. Asunción, Paraguay.
+Recibiste este correo porque se solicitó un enlace de acceso para ${identifier} en somoswedin.com.
+Es un correo transaccional, no una comunicación publicitaria.`,
       }),
     })
 
