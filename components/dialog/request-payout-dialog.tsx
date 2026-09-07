@@ -1,5 +1,6 @@
 'use client'
 
+import { IoArrowDownOutline } from 'react-icons/io5'
 import RequestPayoutForm from '@/components/forms/dialog/request-payout'
 import { Button } from '@/components/ui/button'
 import {
@@ -43,7 +44,8 @@ export default function RequestPayoutDialog({
           className="gap-2"
           disabled={balance <= 0}
         >
-          Retirar efectivo
+          <IoArrowDownOutline />
+          Retirar dinero
         </Button>
       </DialogTrigger>
 
@@ -52,7 +54,7 @@ export default function RequestPayoutDialog({
         onOpenAutoFocus={event => event.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>Retirar efectivo</DialogTitle>
+          <DialogTitle>Retirar dinero</DialogTitle>
         </DialogHeader>
 
         <RequestPayoutForm

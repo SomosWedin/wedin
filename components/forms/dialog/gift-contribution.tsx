@@ -70,6 +70,7 @@ export default function GiftContributionForm({
           <div className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-100">
             {gift.image?.url ? (
               <Image
+                unoptimized
                 src={gift.image.url}
                 alt={gift.name}
                 className="h-full w-full object-cover"
