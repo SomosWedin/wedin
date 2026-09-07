@@ -190,7 +190,7 @@ model WishlistGift {
   quantity           Int      @default(1)
   reservedQuantity   Int      @default(0)
   wishlistId         String   @db.ObjectId
-  giftId             String?  @db.ObjectId
+  giftId             String   @db.ObjectId
   eventId            String   @db.ObjectId
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

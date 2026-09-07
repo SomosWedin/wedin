@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { useWishlistGift } from '@/hooks/dashboard/use-wishlist-gift'
+import { giftLabel } from '@/lib/missing-gift'
 import { getWishlistGiftEditLockReason } from '@/lib/wishlist-gift-edit-lock'
 
 type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
@@ -45,7 +46,7 @@ const ESTADO_OPTIONS = [
 ] as const
 
 function getEstado(wishlistGift: WishlistGiftWithGift) {
-  const price = Number(wishlistGift.gift.price) || 0
+  const price = Number(wishlistGift.gift?.price) || 0
   const contributed = Number(wishlistGift.groupGiftParts) || 0
   const groupPercentage = computePercentage(price, contributed)
 
@@ -110,7 +111,7 @@ export default function DashboardWishlistList({
   }
 
   const categoryOptionsFor = (gift: WishlistGiftWithGift['gift']) =>
-    categories.some(category => category.id === gift.categoryId)
+    !gift || categories.some(category => category.id === gift.categoryId)
       ? categories
       : [...categories, gift.category]
 
@@ -123,7 +124,7 @@ export default function DashboardWishlistList({
   )
   const totalGiftsValue = activeWishlistGifts.reduce(
     (sum, wishlistGift) =>
-      sum + (Number(wishlistGift.gift.price) || 0) * wishlistGift.quantity,
+      sum + (Number(wishlistGift.gift?.price) || 0) * wishlistGift.quantity,
     0
   )
 
@@ -132,12 +133,12 @@ export default function DashboardWishlistList({
 
     if (!estadoFilter && estado.status === 'archived') return false
 
-    const matchesSearch = wishlistGift.gift.name
+    const matchesSearch = giftLabel(wishlistGift.gift)
       .toLowerCase()
       .includes(search.trim().toLowerCase())
     const matchesEstado = !estadoFilter || estado.status === estadoFilter
     const matchesCategory =
-      !categoryFilter || wishlistGift.gift.categoryId === categoryFilter
+      !categoryFilter || wishlistGift.gift?.categoryId === categoryFilter
 
     return matchesSearch && matchesEstado && matchesCategory
   })
@@ -245,7 +246,7 @@ export default function DashboardWishlistList({
             >
               <div className="flex col-span-3 gap-3 items-center">
                 <div className="flex overflow-hidden justify-center items-center w-12 h-12 bg-gray-200 rounded">
-                  {wishlistGift.gift.image?.url ? (
+                  {wishlistGift.gift?.image?.url ? (
                     <Image
                       unoptimized
                       src={wishlistGift.gift.image.url}
@@ -259,9 +260,9 @@ export default function DashboardWishlistList({
                   )}
                 </div>
                 <div>
-                  <p className="font-medium">{wishlistGift.gift.name}</p>
+                  <p className="font-medium">{giftLabel(wishlistGift.gift)}</p>
                   <p className="text-sm text-gray-500">
-                    {wishlistGift.gift.category.name}
+                    {wishlistGift.gift?.category.name ?? 'Sin categoría'}
                   </p>
                 </div>
               </div>
@@ -273,7 +274,10 @@ export default function DashboardWishlistList({
 
               <div className="col-span-2 text-sm">
                 <p>
-                  Gs.{Number(wishlistGift.gift.price).toLocaleString('es-PY')}
+                  Gs.
+                  {Number(wishlistGift.gift?.price ?? 0).toLocaleString(
+                    'es-PY'
+                  )}
                 </p>
                 {!wishlistGift.isGroupGift &&
                   wishlistGift.quantity > 1 &&
@@ -327,24 +331,26 @@ export default function DashboardWishlistList({
 
               {!wishlistGift.isReceived && (
                 <div className="flex col-span-2 gap-2 justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-                  <EditWishlistGiftDialog
-                    wishlistGiftId={wishlistGift.id}
-                    wishlistId={wishlistId}
-                    eventId={eventId}
-                    gift={wishlistGift.gift}
-                    categories={categoryOptionsFor(wishlistGift.gift)}
-                    isFavoriteGift={wishlistGift.isFavoriteGift}
-                    isGroupGift={wishlistGift.isGroupGift}
-                    quantity={wishlistGift.quantity}
-                    minQuantity={wishlistGift.reservedQuantity}
-                    lockPrice={editLockReason !== null}
-                    allowTypeChange={editLockReason === null}
-                    editLockReason={editLockReason}
-                  />
+                  {wishlistGift.gift && (
+                    <EditWishlistGiftDialog
+                      wishlistGiftId={wishlistGift.id}
+                      wishlistId={wishlistId}
+                      eventId={eventId}
+                      gift={wishlistGift.gift}
+                      categories={categoryOptionsFor(wishlistGift.gift)}
+                      isFavoriteGift={wishlistGift.isFavoriteGift}
+                      isGroupGift={wishlistGift.isGroupGift}
+                      quantity={wishlistGift.quantity}
+                      minQuantity={wishlistGift.reservedQuantity}
+                      lockPrice={editLockReason !== null}
+                      allowTypeChange={editLockReason === null}
+                      editLockReason={editLockReason}
+                    />
+                  )}
                   <DeleteWishlistGiftDialog
                     wishlistId={wishlistId}
                     giftId={wishlistGift.giftId}
-                    giftName={wishlistGift.gift.name}
+                    giftName={giftLabel(wishlistGift.gift)}
                   />
                 </div>
               )}

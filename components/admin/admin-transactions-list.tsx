@@ -17,6 +17,7 @@ import {
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
 import { useAdminTransactionStatus } from '@/hooks/admin/use-admin-transaction-status'
+import { giftLabel } from '@/lib/missing-gift'
 import { coupleName } from '@/lib/utils'
 
 type TransactionWithGiftAndEvent = Prisma.TransactionGetPayload<{
@@ -93,7 +94,7 @@ export default function AdminTransactionsList({
     const matchesSearch =
       !normalizedSearch ||
       (transaction.payerName ?? '').toLowerCase().includes(normalizedSearch) ||
-      transaction.wishlistGift.gift.name
+      giftLabel(transaction.wishlistGift.gift)
         .toLowerCase()
         .includes(normalizedSearch) ||
       coupleName(transaction.event.users)
@@ -269,7 +270,7 @@ export default function AdminTransactionsList({
                 Gs. {Number(transaction.amount).toLocaleString('es-PY')}
               </div>
               <div className="col-span-2 text-textTertiary text-sm">
-                {transaction.wishlistGift.gift.name}
+                {giftLabel(transaction.wishlistGift.gift)}
               </div>
               <div className="flex col-span-3 gap-2 items-center">
                 {estado.icon}

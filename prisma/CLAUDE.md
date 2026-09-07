@@ -85,6 +85,29 @@ whenever you touch something documented below.
   but the row and its transactions are kept. Despite the name, it's not
   literally "physically received" — no dedicated concept for that exists
   yet.
+- `WishlistGift.gift` is an **optional relation over a required `giftId`
+  scalar** (`gift Gift?` + `giftId String`). Mongo enforces no foreign keys, so
+  a deleted `Gift` leaves `giftId` dangling — and because Prisma throws
+  `Inconsistent query result: Field gift is required to return data` whenever a
+  query _projects_ a required relation that resolves to nothing, one orphan
+  used to blank whole pages. Note the trap: a relation-bearing `select`
+  (`select: { gift: { select: { price: true } } }`) throws exactly like an
+  `include`; only scalar-only projections such as `giftId: true` are safe.
+  Nearly every read wraps the query in `try/catch` and returns `[]`, so the
+  symptom was a silent empty list, not an error — `getAllTransactionsForAdmin`
+  is unscoped, so a single orphan anywhere emptied the whole admin ledger,
+  while `getWalletSummary` (scalar-only) kept reporting the correct balance.
+  Keeping the scalar required is deliberate: it leaves the applied
+  `20260828193711_migrate_gift_categories` migration compiling, and `db push`
+  is a no-op since relation optionality is not stored in Mongo.
+  Read paths degrade via `giftLabel`/`MISSING_GIFT_LABEL` (`lib/missing-gift.ts`);
+  **money paths must refuse instead of degrading** — checkout, Pagopar session
+  creation, claim reclaim and progress recompute all bail on a null gift rather
+  than treating a missing price as `0`. `20260907233651_repair_orphan_wishlist_gifts`
+  cleans existing orphans: hard-deletes those with no transactions, archives
+  (`isReceived: true`) those with any, since deleting them would just move the
+  orphan to `Transaction.wishlistGiftId` and dropping their `COMPLETED` rows
+  would move the event's withdrawable balance.
 - `WishlistGift.reservedAmount` / `reservedQuantity` — atomic overselling
   guards used by `actions/data/checkout.ts` (group gifts held by amount,
   individual gifts held by unit count). Not `@unique`; atomicity comes from
@@ -113,6 +136,12 @@ whenever you touch something documented below.
   relation `connect`. The tracked gift-category migration deletes unreferenced
   orphan gifts and images, but retains and reports any orphan referenced by a
   wishlist to protect transaction history.
+- **Known gap, unfixed:** the gift-import path calls `updateGiftRecord`
+  (`actions/data/gift-operations.ts`) directly, so an import can change a
+  catalog gift's `price`/`categoryId` without the `catalogGiftSnapshotRequired`
+  / `copyCatalogGiftForWishlistLinks` gate that the interactive admin edit uses
+  (`actions/data/gift.ts`). An import therefore silently mutates gifts that live
+  wishlists already reference. Not an orphan, but the same class of defect.
 - `Gift.nameScopeKey` is a JSON-encoded unique key that normalizes the name
   and scopes catalog names by category and private organizer names by event
   plus category.

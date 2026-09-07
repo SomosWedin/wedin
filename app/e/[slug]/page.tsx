@@ -3,6 +3,7 @@ import {
   getEventByUrl,
   getPublicWishlistGifts,
 } from '@/actions/data/public-event'
+import { hasGift } from '@/components/guest/guest-gift-card'
 import GuestGiftCatalog from '@/components/guest/guest-gift-catalog'
 import GuestHero from '@/components/guest/guest-hero'
 import SiteUnavailable from '@/components/guest/site-unavailable'
@@ -18,7 +19,7 @@ export default async function GuestEventPage({ params }: GuestEventPageProps) {
 
   if (!event.isPublished) return <SiteUnavailable />
 
-  const wishlistGifts = await getPublicWishlistGifts(event.id)
+  const wishlistGifts = (await getPublicWishlistGifts(event.id)).filter(hasGift)
 
   return (
     <>

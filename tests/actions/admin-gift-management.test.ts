@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   categoryFindUnique: vi.fn(),
   wishlistGiftFindUnique: vi.fn(),
   wishlistGiftUpdate: vi.fn(),
+  wishlistGiftCount: vi.fn(),
   imageDeleteMany: vi.fn(),
   transaction: vi.fn(),
   recomputeWishlistGiftProgress: vi.fn(),
@@ -47,6 +48,7 @@ vi.mock('@/prisma/client', () => ({
     wishlistGift: {
       findUnique: mocks.wishlistGiftFindUnique,
       update: mocks.wishlistGiftUpdate,
+      count: mocks.wishlistGiftCount,
     },
     image: {
       deleteMany: mocks.imageDeleteMany,
@@ -108,6 +110,7 @@ describe('admin creates and edits catalog gifts', () => {
       reservedQuantity: 0,
     })
     mocks.wishlistGiftUpdate.mockResolvedValue({ id: 'wishlist-gift-1' })
+    mocks.wishlistGiftCount.mockResolvedValue(0)
     mocks.imageDeleteMany.mockResolvedValue({ count: 1 })
     mocks.recomputeWishlistGiftProgress.mockResolvedValue(undefined)
     mocks.transaction.mockImplementation(
@@ -132,6 +135,7 @@ describe('admin creates and edits catalog gifts', () => {
           wishlistGift: {
             findUnique: mocks.wishlistGiftFindUnique,
             update: mocks.wishlistGiftUpdate,
+            count: mocks.wishlistGiftCount,
           },
           image: { deleteMany: mocks.imageDeleteMany },
         })
@@ -487,6 +491,28 @@ describe('admin creates and edits catalog gifts', () => {
       expect(result).toEqual({ giftId: 'gift-1' })
     }
   )
+
+  it('refuses the delete when a link appears after the copy loop', async () => {
+    mocks.giftFindFirst.mockResolvedValue({
+      id: 'gift-1',
+      name: 'Sofá original',
+      price: '800000',
+      categoryId: 'category-1',
+      giftlistIds: [],
+      image: null,
+      wishlistGifts: [],
+    })
+    mocks.wishlistGiftCount.mockResolvedValue(1)
+
+    const result = await deleteDefaultGiftAsAdmin('gift-1')
+
+    expect(mocks.giftDelete).not.toHaveBeenCalled()
+    expect(mocks.imageDeleteMany).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      error:
+        'El regalo se agregó a una lista mientras se eliminaba. Intentá de nuevo.',
+    })
+  })
 
   it('does not create wishlist copies when only collections change', async () => {
     mocks.giftFindFirst.mockResolvedValue({

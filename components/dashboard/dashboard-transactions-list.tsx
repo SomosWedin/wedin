@@ -15,6 +15,7 @@ import ThankTransactionDialog from '@/components/dialog/thank-transaction-dialog
 import { getQuantityProgress } from '@/components/guest/gift-progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { giftLabel } from '@/lib/missing-gift'
 import {
   ESTADO_BY_STATUS,
   ESTADO_OPTIONS,
@@ -104,7 +105,7 @@ export default function DashboardTransactionsList({
   )
   const totalGiftsPrice = wishlistGifts.reduce(
     (sum, wishlistGift) =>
-      sum + (Number(wishlistGift.gift.price) || 0) * wishlistGift.quantity,
+      sum + (Number(wishlistGift.gift?.price) || 0) * wishlistGift.quantity,
     0
   )
 
@@ -113,7 +114,7 @@ export default function DashboardTransactionsList({
     const matchesSearch =
       !normalizedSearch ||
       (transaction.payerName ?? '').toLowerCase().includes(normalizedSearch) ||
-      transaction.wishlistGift.gift.name
+      giftLabel(transaction.wishlistGift.gift)
         .toLowerCase()
         .includes(normalizedSearch)
     const matchesEstado = !estadoFilter || transaction.status === estadoFilter
@@ -277,7 +278,7 @@ export default function DashboardTransactionsList({
                   Gs. {Number(transaction.amount).toLocaleString('es-PY')}
                 </div>
                 <div className="col-span-2 text-textTertiary text-sm">
-                  {transaction.wishlistGift.gift.name}
+                  {giftLabel(transaction.wishlistGift.gift)}
                 </div>
               </div>
 

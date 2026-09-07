@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
 import { deriveGiftlistEventTypeIds } from '@/lib/giftlist-event-types'
+import { MISSING_GIFT_EDIT_ERROR } from '@/lib/missing-gift'
 import {
   getWishlistGiftEditLockReason,
   WISHLIST_GIFT_EDIT_LOCK_MESSAGES,
@@ -489,6 +490,10 @@ export async function editGiftWithWishlistGift(
 
         if (!current) {
           throw new WishlistGiftMutationError('No autorizado.')
+        }
+
+        if (!current.gift) {
+          throw new WishlistGiftMutationError(MISSING_GIFT_EDIT_ERROR)
         }
 
         if (

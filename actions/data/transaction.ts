@@ -64,10 +64,6 @@ export async function updateTransactionNotes(
       return { error: 'Transacción no encontrada.' }
     }
 
-    // A guest can pay for several gifts in one checkout — CARD transactions
-    // share pagoparHash, BANK_TRANSFER ones share bankTransferGroupId.
-    // Thanking one thanks the whole checkout, so the organizer doesn't have
-    // to repeat it per gift.
     const groupWhere = transaction.pagoparHash
       ? { pagoparHash: transaction.pagoparHash }
       : transaction.bankTransferGroupId
@@ -94,10 +90,6 @@ export async function updateTransactionNotes(
   }
 }
 
-// Adjusts the atomic claim from createTransactionsForCart
-// (actions/data/checkout.ts) by a signed delta — shared by release
-// (negative, on FAILED/REFUNDED) and reclaim (positive, when an admin
-// override resurrects a transaction back out of FAILED/REFUNDED) below.
 async function adjustWishlistGiftClaim(
   transaction: { wishlistGiftId: string; amount: string; quantity: number },
   amountDelta: number,
@@ -150,31 +142,31 @@ async function reclaimWishlistGiftClaim(transaction: {
     },
   })
 
-  if (!wishlistGift) return false
+  if (!wishlistGift?.gift) return false
 
   const amount = Number(transaction.amount) || 0
 
   const claim = wishlistGift.isGroupGift
     ? await prismaClient.wishlistGift.updateMany({
-        where: {
-          id: transaction.wishlistGiftId,
-          isGroupGift: true,
-          reservedAmount: {
-            lte: (Number(wishlistGift.gift.price) || 0) - amount,
-          },
+      where: {
+        id: transaction.wishlistGiftId,
+        isGroupGift: true,
+        reservedAmount: {
+          lte: (Number(wishlistGift.gift.price) || 0) - amount,
         },
-        data: { reservedAmount: { increment: amount } },
-      })
+      },
+      data: { reservedAmount: { increment: amount } },
+    })
     : await prismaClient.wishlistGift.updateMany({
-        where: {
-          id: transaction.wishlistGiftId,
-          isGroupGift: false,
-          reservedQuantity: {
-            lte: wishlistGift.quantity - transaction.quantity,
-          },
+      where: {
+        id: transaction.wishlistGiftId,
+        isGroupGift: false,
+        reservedQuantity: {
+          lte: wishlistGift.quantity - transaction.quantity,
         },
-        data: { reservedQuantity: { increment: transaction.quantity } },
-      })
+      },
+      data: { reservedQuantity: { increment: transaction.quantity } },
+    })
 
   return claim.count === 1
 }
@@ -195,7 +187,7 @@ export async function recomputeWishlistGiftProgress(wishlistGiftId: string) {
       if (!wishlistGift) return
 
       if (wishlistGift.isGroupGift) {
-        const price = Number(wishlistGift.gift.price) || 0
+        const price = Number(wishlistGift.gift?.price) || 0
         const contributed = wishlistGift.transactions.reduce(
           (sum, transaction) => sum + (Number(transaction.amount) || 0),
           0
@@ -205,7 +197,9 @@ export async function recomputeWishlistGiftProgress(wishlistGiftId: string) {
           where: { id: wishlistGiftId },
           data: {
             groupGiftParts: String(contributed),
-            isFullyPaid: price > 0 && contributed >= price,
+            ...(wishlistGift.gift
+              ? { isFullyPaid: price > 0 && contributed >= price }
+              : {}),
           },
         })
         return
@@ -235,9 +229,6 @@ export async function applyTransactionStatusChange(
 
   if (!transaction || transaction.status === status) return
 
-  // A delayed webhook can't resurrect a released (FAILED/REFUNDED)
-  // transaction into COMPLETED — its slot may already be reclaimed.
-  // Only an admin override (changedById set) is allowed to do that.
   if (
     changedById === null &&
     status === 'COMPLETED' &&
@@ -301,9 +292,6 @@ export async function applyTransactionStatusChange(
   await recomputeWishlistGiftProgress(transaction.wishlistGiftId)
 }
 
-// Staff-only (User.role === 'ADMIN', set manually in the DB): reads across
-// every event, not scoped to the logged-in user's own event like
-// getTransactions above.
 export async function getAllTransactionsForAdmin() {
   const currentUser = await getCurrentUser()
 
@@ -351,19 +339,16 @@ export async function updateTransactionStatusAsAdmin(
   }
 
   try {
-    // A guest can pay for several gifts in one bank transfer — those
-    // transactions share bankTransferGroupId. One proof of transfer covers
-    // the whole group, so confirming (or rejecting) one confirms them all.
     const transactionIds = transaction?.bankTransferGroupId
       ? (
-          await prismaClient.transaction.findMany({
-            where: {
-              bankTransferGroupId: transaction.bankTransferGroupId,
-              eventId: transaction.eventId,
-            },
-            select: { id: true },
-          })
-        ).map(({ id }) => id)
+        await prismaClient.transaction.findMany({
+          where: {
+            bankTransferGroupId: transaction.bankTransferGroupId,
+            eventId: transaction.eventId,
+          },
+          select: { id: true },
+        })
+      ).map(({ id }) => id)
       : [transactionId]
 
     for (const id of transactionIds) {
