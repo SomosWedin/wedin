@@ -1,8 +1,6 @@
 import { type ZodType, z } from 'zod'
 import { EVENT_SLUG_PATTERN } from '@/lib/event-domain'
 
-// Reserved so an event slug can never collide with a real subdomain if we
-// move guest sites from /e/{eventUrl} to {eventUrl}.wedin.app later.
 const RESERVED_EVENT_URLS = [
   'www',
   'home',
