@@ -94,10 +94,15 @@ export const BankDetailsFormSchema = z
     aliasType: z.string().optional(),
     alias: z.string().max(255, { message: 'Alias muy largo' }).optional(),
     razonSocial: z.string().optional(),
-    ruc: z.string().optional(),
+    ruc: z.string().max(255, { message: 'RUC muy largo' }).optional(),
   })
   .superRefine((values, ctx) => {
-    if (values.alias && !values.aliasType) {
+    const alias = values.alias?.trim()
+    const aliasType = values.aliasType?.trim()
+    const razonSocial = values.razonSocial?.trim()
+    const ruc = values.ruc?.trim()
+
+    if (alias && !aliasType) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['aliasType'],
@@ -105,11 +110,43 @@ export const BankDetailsFormSchema = z
       })
     }
 
-    if (values.aliasType && !values.alias) {
+    if (aliasType && !alias) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['alias'],
         message: 'Ingresá el alias',
+      })
+    }
+
+    if (alias && alias.length < 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['alias'],
+        message: 'Alias muy corto',
+      })
+    }
+
+    if (razonSocial && !ruc) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ruc'],
+        message: 'Ingresá el RUC',
+      })
+    }
+
+    if (ruc && !razonSocial) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['razonSocial'],
+        message: 'Ingresá la razón social',
+      })
+    }
+
+    if (ruc && ruc.length < 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ruc'],
+        message: 'RUC muy corto',
       })
     }
   })
