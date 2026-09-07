@@ -78,6 +78,45 @@ Gift types (domain concept, modeled on `WishlistGift` in `prisma/schema.prisma`)
   one unit would end up with two `COMPLETED` transactions, both counting
   toward the withdrawable balance.
 
+### Editing a gift after money has moved
+
+`name`, `price` and the image live on the shared `Gift` catalog row, **not**
+on `WishlistGift` (`Gift.eventId` is null for catalog gifts). So "editing a
+gift" from the dashboard is never a plain field write: `editGiftWithWishlistGift`
+(`actions/data/wishlist-gift.ts`) forks a private per-event `Gift` when the row
+is `isDefault` or shared by more than one wishlist, then repoints
+`WishlistGift.giftId` at the fork.
+
+- `getWishlistGiftEditLockReason` (`lib/wishlist-gift-edit-lock.ts`) is the
+  single source of truth for whether a gift is locked, and returns
+  `received` (`isFullyPaid`, `groupGiftParts > 0`, or any `COMPLETED`
+  transaction) → `reservation` (`reservedQuantity`/`reservedAmount` claimed by
+  a live checkout, self-healing once `releaseExpiredHolds` expires the hold) →
+  `manual` (organizer flipped "Recibido" by hand; reversible). Both the row UI
+  and the server action call it — don't re-derive the condition anywhere else.
+- **A lock never blocks the whole edit.** Name and image stay editable in every
+  lock state; only price, quantity, gift type and category are frozen. A locked
+  edit that changes nothing else short-circuits without a write.
+- The lock is **not** enforced by rejecting the request. The form only
+  _disables_ the money inputs, so the action pins `price`, `categoryId`,
+  `isFavoriteGift`, `isGroupGift` and `quantity` to the stored row and ignores
+  whatever the client sent. That pinning is the security boundary — a submitted
+  price change on a locked gift is silently dropped, not honoured and not
+  errored. Keep it that way if you add a field.
+- A locked edit must also skip the `groupGiftParts`/`isFullyPaid` recompute;
+  those belong to `applyTransactionStatusChange`. `updateWishlistGiftRecord`
+  has a `locked` mode that writes only `giftId` for exactly this reason, and
+  drops the conditional-`updateMany` guard along with it — that guard exists to
+  protect the money fields, which the locked path never writes.
+- **Renames are retroactive by design.** `Transaction` carries no gift-name
+  snapshot and the "Regalos recibidos" ledger renders `wishlistGift.gift.name`
+  live, so renaming a paid gift relabels money already collected. This was
+  weighed and accepted (the motivating case is fixing typos and bad photos
+  after guests start paying); don't add a snapshot column without asking.
+- `deleteWishlistGift` bypasses the lock entirely — a couple can archive a gift
+  with completed contributions (`isReceived: true`) even while it's locked for
+  editing. Known, not a bug to fix in passing.
+
 ### Terminology (Spanish UI ↔ code/domain)
 
 - regalo(s) → gift(s)
@@ -109,3 +148,4 @@ Staff-only access (`/admin`) is documented in `app/admin/CLAUDE.md`.
   as a real test account, either use an email address you can actually
   receive mail at and click the real magic link, or ask the user to log in
   and hand off.
+- Use as less comments as possible unless it is doing something not normal

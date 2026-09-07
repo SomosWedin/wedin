@@ -36,6 +36,7 @@ import {
   createGiftWithWishlistGift,
   editGiftWithWishlistGift,
 } from '@/actions/data/wishlist-gift'
+import { WISHLIST_GIFT_EDIT_LOCK_MESSAGES } from '@/lib/wishlist-gift-edit-lock'
 
 const giftValues = {
   name: 'Silla personalizada',
@@ -52,8 +53,7 @@ const wishlistGiftValues = {
   quantity: 1,
 }
 
-const RESERVATION_LOCK_ERROR =
-  'Este regalo está reservado en un checkout. Podrás editarlo si la reserva vence o el pago falla.'
+const RESERVATION_LOCK_ERROR = WISHLIST_GIFT_EDIT_LOCK_MESSAGES.reservation
 const unlockedWishlistGiftWhere = {
   id: 'wishlist-gift-1',
   isFullyPaid: false,
@@ -255,7 +255,7 @@ describe('atomic gift and wishlist gift mutations', () => {
     expect(result).toEqual({ giftId: 'default-gift-1' })
   })
 
-  it('rolls back before copying when a reserved individual gift changes price', async () => {
+  it('renames a reserved gift but ignores the submitted price', async () => {
     mocks.wishlistGiftFindFirst.mockResolvedValue({
       ...currentWishlistGift(true),
       reservedQuantity: 1,
@@ -270,11 +270,57 @@ describe('atomic gift and wishlist gift mutations', () => {
       wishlistGift: wishlistGiftValues,
     })
 
+    expect(mocks.giftCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        name: 'Silla personalizada',
+        price: '100000',
+      }),
+    })
+    expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'wishlist-gift-1' },
+      data: { giftId: 'private-gift-1' },
+    })
+    expect(transactionCompleted).toBe(true)
+    expect(result).toEqual({ giftId: 'private-gift-1' })
+  })
+
+  it('leaves a locked gift untouched when neither name nor image change', async () => {
+    mocks.wishlistGiftFindFirst.mockResolvedValue({
+      ...currentWishlistGift(true),
+      isFullyPaid: true,
+    })
+
+    const result = await editGiftWithWishlistGift({
+      gift: { ...giftValues, name: 'Silla original', price: '999999' },
+      wishlistGift: { ...wishlistGiftValues, quantity: 7 },
+    })
+
     expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(mocks.giftUpdate).not.toHaveBeenCalled()
     expect(mocks.wishlistGiftUpdateMany).not.toHaveBeenCalled()
-    expect(transactionCompleted).toBe(false)
-    expect(result).toEqual({
-      error: RESERVATION_LOCK_ERROR,
+    expect(result).toEqual({ giftId: 'default-gift-1' })
+  })
+
+  it('never writes progress or wishlist settings for a locked gift', async () => {
+    mocks.wishlistGiftFindFirst.mockResolvedValue({
+      ...currentWishlistGift(false),
+      isFullyPaid: true,
+      transactions: [{ amount: '150000', quantity: 1 }],
+    })
+
+    await editGiftWithWishlistGift({
+      gift: giftValues,
+      wishlistGift: {
+        ...wishlistGiftValues,
+        isGroupGift: true,
+        isFavoriteGift: true,
+        quantity: 9,
+      },
+    })
+
+    expect(mocks.wishlistGiftUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'wishlist-gift-1' },
+      data: { giftId: 'private-gift-1' },
     })
   })
 

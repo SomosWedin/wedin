@@ -81,7 +81,7 @@ export async function createTransactionsForCart(
       wishlistGift => wishlistGift.id === item.wishlistGiftId
     )
 
-    if (!wishlistGift) {
+    if (!wishlistGift || !wishlistGift.gift) {
       return { error: 'Uno de los regalos ya no está disponible.' }
     }
 
@@ -134,10 +134,11 @@ export async function createTransactionsForCart(
         wishlistGift => wishlistGift.id === item.wishlistGiftId
       )
 
-      if (!wishlistGift) {
+      if (!wishlistGift || !wishlistGift.gift) {
         throw new CartClaimError('Uno de los regalos ya no está disponible.')
       }
 
+      const giftName = wishlistGift.gift.name
       const amount = Number(item.amount) || 0
       const requestedQty = wishlistGift.isGroupGift
         ? 1
@@ -152,10 +153,8 @@ export async function createTransactionsForCart(
             select: { quantity: true, gift: { select: { price: true } } },
           })
 
-          if (!liveWishlistGift) {
-            throw new CartClaimError(
-              `"${wishlistGift.gift.name}" ya no está disponible.`
-            )
+          if (!liveWishlistGift || !liveWishlistGift.gift) {
+            throw new CartClaimError(`"${giftName}" ya no está disponible.`)
           }
 
           const livePrice = Number(liveWishlistGift.gift.price) || 0
@@ -201,7 +200,7 @@ export async function createTransactionsForCart(
 
           if (claim.count !== 1) {
             throw new CartClaimError(
-              `"${wishlistGift.gift.name}" ya no está disponible — alguien más lo reservó recién.`
+              `"${giftName}" ya no está disponible — alguien más lo reservó recién.`
             )
           }
 

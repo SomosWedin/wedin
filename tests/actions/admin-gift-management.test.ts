@@ -437,7 +437,7 @@ describe('admin creates and edits catalog gifts', () => {
       },
     },
   ])(
-    'copies and relinks the old gift before an admin changes only its $field',
+    'propagates to linked wishlists when an admin changes only its $field',
     async ({ existing }) => {
       mocks.giftFindFirst.mockResolvedValue({
         id: 'gift-1',
@@ -448,21 +448,42 @@ describe('admin creates and edits catalog gifts', () => {
 
       const result = await editAdminGift(editValues, 'gift-1')
 
+      expect(mocks.giftCreate).not.toHaveBeenCalled()
+      expect(mocks.wishlistGiftUpdate).not.toHaveBeenCalled()
+      expect(mocks.giftUpdate).toHaveBeenCalledOnce()
+      expect(result).toEqual({ giftId: 'gift-1' })
+    }
+  )
+
+  it.each([
+    { field: 'price', changed: { price: '999000' } },
+    { field: 'category', changed: { categoryId: 'category-2' } },
+  ])(
+    'still copies and relinks the old gift when an admin changes its $field',
+    async ({ changed }) => {
+      mocks.giftFindFirst.mockResolvedValue({
+        id: 'gift-1',
+        giftlistIds: [],
+        wishlistGifts: [{ id: 'wishlist-gift-1', eventId: 'event-1' }],
+        name: editValues.name,
+        price: editValues.price,
+        categoryId: editValues.categoryId,
+        image: { url: editValues.imageUrl },
+        ...changed,
+      })
+
+      const result = await editAdminGift(editValues, 'gift-1')
+
       expect(mocks.giftCreate).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          name: existing.name,
-          price: existing.price,
-          category: { connect: { id: existing.categoryId } },
-          ...(existing.image
-            ? { image: { create: { url: existing.image.url } } }
-            : {}),
+          name: editValues.name,
+          price: changed.price ?? editValues.price,
         }),
       })
       expect(mocks.wishlistGiftUpdate).toHaveBeenCalledWith({
         where: { id: 'wishlist-gift-1' },
         data: { giftId: 'private-gift-1' },
       })
-      expect(mocks.giftUpdate).toHaveBeenCalledOnce()
       expect(result).toEqual({ giftId: 'gift-1' })
     }
   )

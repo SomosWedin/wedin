@@ -56,10 +56,6 @@ const wishlistGiftValues = {
   quantity: 1,
 }
 
-const RESERVATION_LOCK_ERROR =
-  'Este regalo está reservado en un checkout. Podrás editarlo si la reserva vence o el pago falla.'
-const RECEIVED_LOCK_ERROR =
-  'Este regalo ya recibió contribuciones o pagos y no se puede editar.'
 const unlockedWishlistGiftWhere = {
   id: 'wishlist-gift-1',
   isFullyPaid: false,
@@ -129,7 +125,7 @@ describe('organizer category management', () => {
     )
   })
 
-  it('blocks changing a category after individual activity', async () => {
+  it('ignores a category change after individual activity', async () => {
     mocks.wishlistGiftFindFirst.mockResolvedValue({
       ...currentWishlistGift(true),
       reservedQuantity: 1,
@@ -143,11 +139,12 @@ describe('organizer category management', () => {
     })
 
     expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(mocks.giftUpdate).not.toHaveBeenCalled()
     expect(mocks.wishlistGiftUpdateMany).not.toHaveBeenCalled()
-    expect(result).toEqual({ error: RECEIVED_LOCK_ERROR })
+    expect(result).toEqual({ giftId: 'default-gift-1' })
   })
 
-  it('blocks a category change after group contributions', async () => {
+  it('ignores a category change after group contributions', async () => {
     mocks.wishlistGiftFindFirst.mockResolvedValue({
       ...currentWishlistGift(true),
       isGroupGift: true,
@@ -161,8 +158,9 @@ describe('organizer category management', () => {
     })
 
     expect(mocks.giftCreate).not.toHaveBeenCalled()
+    expect(mocks.giftUpdate).not.toHaveBeenCalled()
     expect(mocks.wishlistGiftUpdateMany).not.toHaveBeenCalled()
-    expect(result).toEqual({ error: RECEIVED_LOCK_ERROR })
+    expect(result).toEqual({ giftId: 'default-gift-1' })
   })
 
   it('updates an existing private gift in place when only its category changes', async () => {
@@ -241,7 +239,7 @@ describe('organizer category management', () => {
     })
   })
 
-  it('blocks a category change while checkout has a reservation', async () => {
+  it('ignores a category change while checkout has a reservation', async () => {
     mocks.wishlistGiftFindFirst.mockResolvedValue({
       ...currentWishlistGift(false),
       reservedQuantity: 1,
@@ -252,7 +250,9 @@ describe('organizer category management', () => {
       wishlistGift: wishlistGiftValues,
     })
 
+    expect(mocks.giftCreate).not.toHaveBeenCalled()
     expect(mocks.giftUpdate).not.toHaveBeenCalled()
-    expect(result).toEqual({ error: RESERVATION_LOCK_ERROR })
+    expect(mocks.wishlistGiftUpdateMany).not.toHaveBeenCalled()
+    expect(result).toEqual({ giftId: 'private-gift-1' })
   })
 })

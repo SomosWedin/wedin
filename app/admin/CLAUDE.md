@@ -20,3 +20,28 @@ redirect in `middleware.ts` explicitly exempts admin routes (a freshly
 `ADMIN`-flagged account defaults to `isOnboarded: false` and would
 otherwise get bounced into the couple-onboarding wizard) — a new top-level
 route group outside `app/admin/` would need the same exemption.
+
+### Editing catalog gifts
+
+`editAdminGift` (`actions/data/gift.ts`) never consults the wishlist edit lock
+(`lib/wishlist-gift-edit-lock.ts`) — a catalog gift is editable no matter how
+many events have paid for it. What protects couples is **copy-on-write, and
+only for the money fields**:
+
+- Changing `price` or `categoryId` calls `copyCatalogGiftForWishlistLinks`
+  first, forking a private per-event `Gift` for every linked `WishlistGift` and
+  repointing it, so live events keep the values guests were shown. The gate is
+  `catalogGiftSnapshotRequired`, not "did anything change".
+- Changing only the **name or image** does not fork. The catalog row is renamed
+  in place, so every `WishlistGift` still pointing at it picks the change up —
+  **including ones with completed payments**, whose ledger relabels. That is
+  deliberate (see the root `CLAUDE.md`); linkage decides propagation, payment
+  state is irrelevant here.
+- Gifts a couple already customized are private `Gift` rows and are therefore
+  untouched by any admin edit, name included — there's no path to push a
+  correction into them.
+- `deleteDefaultGiftAsAdmin` always forks, unconditionally: the row is about to
+  disappear, so a snapshot is mandatory.
+
+Neither path revalidates `/e/[slug]`, so a rename may not reach the public
+event page until that route re-renders.
