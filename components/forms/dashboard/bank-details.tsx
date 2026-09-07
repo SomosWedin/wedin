@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { FaCheck } from 'react-icons/fa6'
 import UnsavedChangesDialog from '@/components/dialog/unsaved-changes-dialog'
 import IdentificationNumberField from '@/components/forms/common/identification-number-field-input'
+import RucInput from '@/components/forms/common/ruc-input'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import {
@@ -247,10 +248,11 @@ export default function DashboardBankDetailsUpdateForm({
                 <FormItem>
                   <FormLabel>RUC</FormLabel>
                   <FormControl>
-                    <Input
+                    <RucInput
                       placeholder="Ej. 800.223-5"
                       className="!mt-1.5"
-                      {...field}
+                      value={field.value || ''}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage className="font-normal text-red-600" />

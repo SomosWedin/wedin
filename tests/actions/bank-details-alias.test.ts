@@ -135,15 +135,25 @@ describe('bank details optional field lengths', () => {
     })
   })
 
-  it('rejects a RUC longer than 255 characters', () => {
+  it('rejects a RUC longer than the document number cap of 12', () => {
     const result = BankDetailsFormSchema.safeParse({
       ...baseValues,
       razonSocial: 'Wedin SA',
-      ruc: '8'.repeat(256),
+      ruc: '8'.repeat(13),
     })
 
     expect(result.success).toBe(false)
     expect(result.error?.issues[0]).toMatchObject({ path: ['ruc'] })
+  })
+
+  it('accepts a RUC at the 12 character cap', () => {
+    const result = BankDetailsFormSchema.safeParse({
+      ...baseValues,
+      razonSocial: 'Wedin SA',
+      ruc: '8'.repeat(12),
+    })
+
+    expect(result.success).toBe(true)
   })
 
   it('treats whitespace-only optional fields as empty', () => {

@@ -94,7 +94,7 @@ export const BankDetailsFormSchema = z
     aliasType: z.string().optional(),
     alias: z.string().max(255, { message: 'Alias muy largo' }).optional(),
     razonSocial: z.string().optional(),
-    ruc: z.string().max(255, { message: 'RUC muy largo' }).optional(),
+    ruc: z.string().max(12, { message: 'RUC muy largo' }).optional(),
   })
   .superRefine((values, ctx) => {
     const alias = values.alias?.trim()
