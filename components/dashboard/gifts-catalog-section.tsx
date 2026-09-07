@@ -97,7 +97,11 @@ export default function GiftsCatalogSection({
       </TabsContent>
 
       <TabsContent value="predefinidas" className="mt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div
+          className={`grid grid-cols-1 md:grid-cols-2 gap-6 transition-opacity ${
+            isPending ? 'opacity-50 pointer-events-none' : ''
+          }`}
+        >
           {giftlists.length === 0 ? (
             <div className="col-span-2 text-center py-12 text-gray-500">
               No se encontraron colecciones
