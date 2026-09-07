@@ -32,6 +32,8 @@ export function useUpdateBankDetails({
       accountType: bankDetails?.accountType || 'pyg',
       identificationType: bankDetails?.identificationType || 'ci',
       identificationNumber: bankDetails?.identificationNumber || '',
+      aliasType: bankDetails?.aliasType || '',
+      alias: bankDetails?.alias || '',
       razonSocial: bankDetails?.razonSocial || '',
       ruc: bankDetails?.ruc || '',
     },

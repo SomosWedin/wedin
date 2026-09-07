@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { FaCheck } from 'react-icons/fa6'
 import UnsavedChangesDialog from '@/components/dialog/unsaved-changes-dialog'
 import IdentificationNumberField from '@/components/forms/common/identification-number-field-input'
+import RucInput from '@/components/forms/common/ruc-input'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import {
@@ -24,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useUpdateBankDetails } from '@/hooks/dashboard/forms/use-update-bank-details'
+import { aliasTypesPY } from '@/lib/alias-types-py'
 import { bankEntitiesPY } from '@/lib/bank-entities-py'
 
 type BankDetailsFormProps = {
@@ -171,6 +173,52 @@ export default function DashboardBankDetailsUpdateForm({
           />
         </div>
 
+        <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-3">
+          <FormField
+            control={form.control}
+            name="aliasType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo de alias (opcional)</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl className="!mt-1.5">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="bg-white">
+                    {aliasTypesPY.map(aliasType => (
+                      <SelectItem key={aliasType.value} value={aliasType.value}>
+                        {aliasType.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="alias"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Alias (opcional)</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Alias"
+                    className="!mt-1.5"
+                    {...field}
+                    value={field.value || ''}
+                  />
+                </FormControl>
+                <FormMessage className="font-normal text-red-600" />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <div className="flex flex-col gap-4 w-full">
           <h2 className="text-xl font-medium">Datos de facturación</h2>
 
@@ -200,10 +248,11 @@ export default function DashboardBankDetailsUpdateForm({
                 <FormItem>
                   <FormLabel>RUC</FormLabel>
                   <FormControl>
-                    <Input
+                    <RucInput
                       placeholder="Ej. 800.223-5"
                       className="!mt-1.5"
-                      {...field}
+                      value={field.value || ''}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage className="font-normal text-red-600" />
