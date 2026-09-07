@@ -220,6 +220,7 @@ export default function AdminGiftsList({
               <div className="flex justify-center items-center w-12 h-12 bg-gray-100 rounded overflow-hidden shrink-0">
                 {gift.image?.url ? (
                   <Image
+                    unoptimized
                     src={gift.image.url}
                     alt={gift.name}
                     className="object-cover w-full h-full"
