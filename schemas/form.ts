@@ -171,7 +171,7 @@ export const GiftFormSchema = z.object({
     .string()
     .trim()
     .min(1, { message: 'El nombre del regalo no puede estar vacío' })
-    .max(60, { message: 'El nombre del regalo es demasiado largo' }),
+    .max(256, { message: 'El nombre del regalo es demasiado largo' }),
   categoryId: z.string().min(1, { message: 'Debes seleccionar una categoría' }),
   price: z
     .string()

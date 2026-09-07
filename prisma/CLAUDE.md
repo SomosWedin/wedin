@@ -165,3 +165,20 @@ whenever you touch something documented below.
   one immutable field. That migration also sets `isPublished: true` on
   documents predating the field, which would otherwise pick up the new
   `false` default and take live sites down.
+
+- `GiftImportJob`, `GiftImportRow`, and `GiftImportHistory` persist staff gift
+  and collection imports. `kind` selects the worker and result presentation.
+  Rows retain the mapped input, resolved review snapshot, and exclusion decision; the
+  job retains its catalog review token and gift-import collection-creation setting.
+  `submissionId` is required and unique. Row position and source row number
+  are each unique within a job. No sparse indexes are needed. The tracked
+  gift-import migration creates the collections/indexes before workers run.
+  A worker must write the job's lease fence inside the same transaction as
+  every gift/collection change and row checkpoint. `runId` isolates manual
+  retries from older deliveries; `lockOwner` identifies each worker attempt.
+  Expired leases are recoverable. Successful rows and history are retained.
+  Closing or backing out of an import review marks its unaccepted `PREPARING`
+  job as `CANCELLED`; cancellation never changes an accepted job. Adding this
+  enum value needs a regenerated Prisma client but no MongoDB data migration.
+  Collection rows store the reviewed membership snapshot and refuse to overwrite
+  a collection that changed before the worker commits its exact synchronization.

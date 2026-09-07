@@ -132,6 +132,10 @@ yarn dev:local
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Background gift imports
+
+See [gift import jobs](docs-gift-import-jobs.md) for local QStash setup, Vercel configuration, migrations, and recovery.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
