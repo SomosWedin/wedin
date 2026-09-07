@@ -3,6 +3,8 @@ import NextAuth, { type DefaultSession } from 'next-auth'
 import { JWT } from 'next-auth/jwt'
 import Resend from 'next-auth/providers/resend'
 import { getUserByEmail, updateVerifiedOn } from '@/actions/data/user'
+import { AUTH_EMAIL_MAX_AGE_SECONDS } from '@/lib/auth-email'
+import { buildAuthEmailRequest } from '@/lib/server/auth-email'
 import prismaClient from '@/prisma/client'
 import authConfig from './auth.config'
 
@@ -14,9 +16,12 @@ export function isError(response: unknown): response is ErrorResponse {
   return (response as ErrorResponse).error !== undefined
 }
 
+const AUTH_EMAIL_FROM = 'Wedin <no-reply@somoswedin.com>'
+
 const emailProvider = Resend({
   apiKey: process.env.RESEND_API_KEY,
-  from: 'Wedin <no-reply@somoswedin.com>',
+  from: AUTH_EMAIL_FROM,
+  maxAge: AUTH_EMAIL_MAX_AGE_SECONDS,
 
   async sendVerificationRequest({ identifier, url, provider }) {
     const existingUser = await prismaClient.user.findUnique({
@@ -28,25 +33,12 @@ const emailProvider = Resend({
       },
     })
 
-    const isNewUser = !existingUser
-
-    const actionText = isNewUser ? 'Autenticar cuenta' : 'Iniciar sesión'
-
-    const heading = isNewUser
-      ? 'Confirmá tu cuenta de Wedin'
-      : 'Ingresá a Wedin'
-
-    const subject = isNewUser
-      ? 'Autenticá tu cuenta de Wedin'
-      : 'Tu enlace para iniciar sesión en Wedin'
-
-    const body = isNewUser
-      ? 'Confirmá tu correo para crear tu cuenta y comenzar el onboarding.'
-      : 'Usá el siguiente enlace para ingresar a tu cuenta.'
-
-    const textBody = isNewUser
-      ? 'Confirmá tu correo para crear tu cuenta:'
-      : 'Abrí este enlace para iniciar sesión:'
+    const email = await buildAuthEmailRequest({
+      from: AUTH_EMAIL_FROM,
+      isNewUser: !existingUser,
+      to: identifier,
+      url,
+    })
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -54,56 +46,7 @@ const emailProvider = Resend({
         Authorization: `Bearer ${provider.apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: provider.from,
-        to: identifier,
-        subject,
-
-        html: `
-          <!doctype html>
-          <html>
-            <body style="margin:0; background:#f6f6f6; font-family:Arial,sans-serif;">
-              <div style="max-width:560px; margin:40px auto; padding:32px; background:white; border-radius:12px;">
-                <h1 style="color:#222; margin-top:0;">
-                  ${heading}
-                </h1>
-
-                <p style="color:#555; line-height:1.6;">
-                  ${body}
-                </p>
-
-                <a
-                  href="${url}"
-                  style="
-                    display:inline-block;
-                    padding:14px 24px;
-                    margin:16px 0;
-                    background:#16a268;
-                    color:white;
-                    text-decoration:none;
-                    border-radius:8px;
-                    font-weight:600;
-                  "
-                >
-                  ${actionText}
-                </a>
-
-                <p style="color:#888; font-size:13px;">
-                  Si no solicitaste este enlace, podés ignorar este correo.
-                </p>
-              </div>
-            </body>
-          </html>
-        `,
-
-        text: `
-${heading}
-
-${textBody}
-
-${url}
-        `.trim(),
-      }),
+      body: JSON.stringify(email),
     })
 
     if (!response.ok) {
