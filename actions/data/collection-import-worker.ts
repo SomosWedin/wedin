@@ -9,7 +9,11 @@ import {
   GiftlistGiftSelectionError,
   validateCatalogGiftIds,
 } from './giftlist-operations'
-import { IMPORT_LEASE_MS, ImportBusyError } from './import-job-worker'
+import {
+  IMPORT_LEASE_MS,
+  ImportBusyError,
+  renewImportLease,
+} from './import-job-lease'
 
 class CollectionRowValidationError extends Error {}
 
@@ -20,24 +24,6 @@ const sameIds = (left: string[], right: string[]) => {
     sortedLeft.length === sortedRight.length &&
     sortedLeft.every((id, index) => id === sortedRight[index])
   )
-}
-
-async function fence(
-  tx: Prisma.TransactionClient,
-  jobId: string,
-  runId: string,
-  attemptId: string
-) {
-  const changed = await tx.giftImportJob.updateMany({
-    where: {
-      id: jobId,
-      runId,
-      lockOwner: attemptId,
-      lockExpiresAt: { gt: new Date() },
-    },
-    data: { lockExpiresAt: new Date(Date.now() + IMPORT_LEASE_MS) },
-  })
-  if (!changed.count) throw new ImportBusyError('Worker lease expired')
 }
 
 export async function processCollectionImportJob(
@@ -95,7 +81,7 @@ export async function processCollectionImportJob(
       try {
         await prisma.$transaction(
           async tx => {
-            await fence(tx, jobId, runId, attemptId)
+            await renewImportLease(tx, jobId, runId, attemptId, 'COLLECTION')
             CollectionImportRowSchema.parse(row.input)
             const accepted =
               row.review as unknown as CollectionImportPreviewRow | null
@@ -206,7 +192,7 @@ export async function processCollectionImportJob(
         )
           throw error
         await prisma.$transaction(async tx => {
-          await fence(tx, jobId, runId, attemptId)
+          await renewImportLease(tx, jobId, runId, attemptId, 'COLLECTION')
           await tx.giftImportRow.update({
             where: { id: row.id },
             data: {
@@ -231,7 +217,7 @@ export async function processCollectionImportJob(
       }
     }
     const pending = await prisma.$transaction(async tx => {
-      await fence(tx, jobId, runId, attemptId)
+      await renewImportLease(tx, jobId, runId, attemptId, 'COLLECTION')
       const count = await tx.giftImportRow.count({
         where: { jobId, status: 'PENDING', excluded: false },
       })

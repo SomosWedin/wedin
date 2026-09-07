@@ -226,10 +226,31 @@ export default function AdminImportJobs() {
     }
   }, [selected, retrying])
   const job = details && 'job' in details ? details.job : null
-  const canRetry =
+  const unfinishedCount = job
+    ? Math.max(
+        0,
+        job.expectedRows -
+          job.createdCount -
+          job.updatedCount -
+          job.skippedCount
+      )
+    : 0
+  const lockActive = job ? new Date(job.lockExpiresAt) > new Date() : false
+  const canRetry = Boolean(
     job?.acceptedAt &&
-    job.status !== 'COMPLETED' &&
-    new Date(job.lockExpiresAt) <= new Date()
+      job.status !== 'COMPLETED' &&
+      !lockActive &&
+      unfinishedCount
+  )
+  const retryReason = !job
+    ? ''
+    : !job.acceptedAt
+      ? 'Este trabajo no fue aceptado y no tiene procesamiento para reintentar. Volvé a cargar el archivo y completá la revisión.'
+      : job.status === 'COMPLETED' || !unfinishedCount
+        ? 'No quedan filas pendientes o fallidas.'
+        : lockActive
+          ? `Hay un trabajador activo. El reintento estará disponible después de ${date(job.lockExpiresAt)}.`
+          : ''
 
   return (
     <div className="space-y-4">
@@ -411,8 +432,17 @@ export default function AdminImportJobs() {
               </p>
               {details.job.status === 'PREPARING' && (
                 <p className="text-sm">
-                  La importación todavía no fue aceptada. Completá la revisión
-                  en la ventana de importación.
+                  La importación no fue aceptada y no creó regalos. Volvé a
+                  cargar el archivo para completar la revisión.
+                </p>
+              )}
+              {details.job.acceptedAt && unfinishedCount > 0 && (
+                <p className="text-sm">
+                  Quedan {unfinishedCount}{' '}
+                  {unfinishedCount === 1
+                    ? 'fila pendiente o fallida'
+                    : 'filas pendientes o fallidas'}
+                  .
                 </p>
               )}
               <Button
@@ -422,6 +452,9 @@ export default function AdminImportJobs() {
               >
                 {retrying ? 'Enviando…' : 'Reintentar pendientes y fallidos'}
               </Button>
+              {retryReason && (
+                <p className="text-xs text-textTertiary">{retryReason}</p>
+              )}
               {error && (
                 <p role="alert" className="text-red-700">
                   {error}

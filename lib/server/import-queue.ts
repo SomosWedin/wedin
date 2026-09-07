@@ -3,8 +3,13 @@ import prisma from '@/prisma/client'
 
 export function importQueueConfig() {
   const devMode = process.env.NODE_ENV === 'development' && !process.env.VERCEL
+  const vercelBase =
+    process.env.VERCEL && process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : ''
   const base =
-    process.env.QSTASH_CALLBACK_URL || (devMode ? 'http://localhost:3000' : '')
+    process.env.QSTASH_CALLBACK_URL ||
+    (devMode ? 'http://localhost:3000' : vercelBase)
   const url = new URL(base)
   if (
     url.username ||

@@ -13,29 +13,15 @@ import {
   GiftlistSelectionError,
   validateGiftlistIdsForCreate,
 } from './giftlist-operations'
+import {
+  IMPORT_LEASE_MS,
+  ImportBusyError,
+  renewImportLease,
+} from './import-job-lease'
 
-export const IMPORT_LEASE_MS = 90_000
-export class ImportBusyError extends Error {}
+export { IMPORT_LEASE_MS, ImportBusyError } from './import-job-lease'
+
 class RowValidationError extends Error {}
-
-async function fence(
-  tx: Prisma.TransactionClient,
-  jobId: string,
-  runId: string,
-  attemptId: string
-) {
-  const changed = await tx.giftImportJob.updateMany({
-    where: {
-      id: jobId,
-      kind: 'GIFT',
-      runId,
-      lockOwner: attemptId,
-      lockExpiresAt: { gt: new Date() },
-    },
-    data: { lockExpiresAt: new Date(Date.now() + IMPORT_LEASE_MS) },
-  })
-  if (!changed.count) throw new ImportBusyError('Worker lease expired')
-}
 
 export async function processImportJob(
   jobId: string,
@@ -91,7 +77,7 @@ export async function processImportJob(
       try {
         await prisma.$transaction(
           async tx => {
-            await fence(tx, jobId, runId, attemptId)
+            await renewImportLease(tx, jobId, runId, attemptId, 'GIFT')
             const input = GiftImportRowSchema.parse(row.input)
             const accepted =
               row.review as unknown as GiftImportPreviewRow | null
@@ -201,7 +187,7 @@ export async function processImportJob(
         )
           throw error
         await prisma.$transaction(async tx => {
-          await fence(tx, jobId, runId, attemptId)
+          await renewImportLease(tx, jobId, runId, attemptId, 'GIFT')
           await tx.giftImportRow.update({
             where: { id: row.id },
             data: {
@@ -226,7 +212,7 @@ export async function processImportJob(
       }
     }
     const pending = await prisma.$transaction(async tx => {
-      await fence(tx, jobId, runId, attemptId)
+      await renewImportLease(tx, jobId, runId, attemptId, 'GIFT')
       const count = await tx.giftImportRow.count({
         where: { jobId, status: 'PENDING', excluded: false },
       })

@@ -184,6 +184,17 @@ describe('QStash gift import boundary', () => {
     vi.stubEnv('VERCEL', '')
     expect(importQueueConfig().devMode).toBe(true)
   })
+  it('uses the current Vercel deployment as the callback when no explicit origin is configured', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL', '1')
+    vi.stubEnv('VERCEL_URL', 'wedin-preview.example.test')
+    vi.stubEnv('QSTASH_CALLBACK_URL', '')
+
+    expect(importQueueConfig()).toEqual({
+      devMode: false,
+      base: 'https://wedin-preview.example.test',
+    })
+  })
   it('chunks Unicode-heavy rows below the request size limit without dropping rows', () => {
     const rows = Array.from({ length: 50 }, (_, i) => ({
       rowNumber: i + 1,

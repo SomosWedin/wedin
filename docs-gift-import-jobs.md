@@ -35,12 +35,14 @@ use the jobs table to resume saved imports after a restart.
 
 ## Vercel
 
-Configure `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`,
-`QSTASH_NEXT_SIGNING_KEY`, and `QSTASH_CALLBACK_URL=https://your-app-domain`
-for the intended deployment environment. The callback origin must reach this
-same deployment and database. Use separate queue credentials and callback
-origins for preview environments. Deployment protection must allow QStash to
-reach `/api/jobs/gift-import`, `/api/jobs/gift-import/failure`,
+Configure `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, and
+`QSTASH_NEXT_SIGNING_KEY` for the intended deployment environment. Set
+`QSTASH_CALLBACK_URL=https://your-app-domain` when a stable public origin is
+required. Otherwise Vercel deployments use their system-provided `VERCEL_URL`,
+which keeps the callback on the same immutable deployment and database. Use
+separate queue credentials and callback origins for preview environments.
+Deployment protection must allow QStash to reach
+`/api/jobs/gift-import`, `/api/jobs/gift-import/failure`,
 `/api/jobs/collection-import`, and `/api/jobs/collection-import/failure` (all
 verify QStash signatures, including the exact callback URL).
 
