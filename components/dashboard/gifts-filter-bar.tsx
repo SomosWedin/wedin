@@ -62,7 +62,7 @@ export default function GiftsFilterBar({
         <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <Input
           type="text"
-          placeholder="Regalo"
+          placeholder="Buscar producto o colección"
           className="pl-10"
           value={search}
           onChange={event => {

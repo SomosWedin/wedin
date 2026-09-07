@@ -150,6 +150,7 @@ export default function GiftForm({
               <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-md bg-gray-50">
                 {imagePreview ? (
                   <Image
+                    unoptimized
                     src={imagePreview}
                     alt="Vista previa del regalo"
                     className="h-full w-full object-cover"
@@ -177,7 +178,7 @@ export default function GiftForm({
                   size="sm"
                   className="w-fit gap-2"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={preparingImage}
+                  disabled={preparingImage || Boolean(readOnlyReason)}
                 >
                   {preparingImage ? 'Procesando…' : 'Subir imagen'}
                   {preparingImage ? (
@@ -255,7 +256,8 @@ export default function GiftForm({
                 <Select
                   value={field.value}
                   disabled={
-                    canChooseEventType && selectedEventTypeIds.length === 0
+                    Boolean(readOnlyReason) ||
+                    (canChooseEventType && selectedEventTypeIds.length === 0)
                   }
                   onValueChange={value => {
                     if (

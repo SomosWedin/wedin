@@ -1,14 +1,6 @@
-import { lazy, Suspense } from 'react'
-import { IoWalletOutline } from 'react-icons/io5'
 import { getEvent } from '@/actions/data/event'
 import { getPayouts, getWalletSummary } from '@/actions/data/payout'
-import EmptyState from '@/components/common/empty-state'
-import RequestPayoutDialog from '@/components/dialog/request-payout-dialog'
-import DashboardTransactionsSkeleton from '@/components/skeletons/dashboard-transactions'
-
-const WalletPayoutsList = lazy(
-  () => import('@/components/dashboard/wallet-payouts-list')
-)
+import WalletOverview from '@/components/dashboard/wallet-overview'
 
 export default async function DashboardWallet() {
   const event = await getEvent()
@@ -23,29 +15,16 @@ export default async function DashboardWallet() {
   ])
 
   return (
-    <div className="w-full h-full flex items-center flex-col gap-8">
-      <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-200 pb-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-black">Mi billetera</h1>
-          <p className="text-textTertiary">
-            El monto que envíes a tu cuenta te llegará dentro de las 72 horas
-            hábiles.
-          </p>
-        </div>
-        <RequestPayoutDialog eventId={event.id} balance={summary.balance} />
+    <div className="flex flex-col gap-8 w-full h-full">
+      <div className="flex flex-col gap-2 pb-6 border-b border-gray-200">
+        <h1 className="text-2xl font-black">Mi billetera</h1>
+        <p className="text-textTertiary">
+          Acá se acumula el dinero de los regalos que recibís. Retiralo cuando
+          quieras.
+        </p>
       </div>
 
-      {payouts.length === 0 ? (
-        <EmptyState
-          icon={<IoWalletOutline className="text-4xl sm:text-6xl" />}
-          title="Sin movimientos"
-          description="Todavía no has solicitado ningún retiro"
-        />
-      ) : (
-        <Suspense fallback={<DashboardTransactionsSkeleton />}>
-          <WalletPayoutsList summary={summary} payouts={payouts} />
-        </Suspense>
-      )}
+      <WalletOverview eventId={event.id} summary={summary} payouts={payouts} />
     </div>
   )
 }
