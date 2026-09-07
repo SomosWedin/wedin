@@ -290,7 +290,7 @@ export default function DashboardWishlistList({
                   })()}
               </div>
 
-              <div className="flex col-span-2 gap-2 items-center text-sm">
+              <div className="flex flex-wrap col-span-2 gap-2 items-center text-sm min-w-0">
                 <Badge className={estado.className}>
                   <IoSparkles className="mr-1" />
                   {estado.label}

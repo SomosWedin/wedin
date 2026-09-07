@@ -15,7 +15,7 @@ const documents = {
     slug: 'organizadores',
     objectKey: 'terms/wedin-terminos-organizadores.pdf',
     title: 'Términos y Condiciones de Uso',
-    audience: 'Novios y organizadores',
+    audience: 'Anfitriones',
     summary: 'Condiciones que aceptás al activar tu lista de regalos en wedin.',
   },
   guests: {
