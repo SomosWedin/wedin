@@ -113,6 +113,7 @@ export default function GiftsCatalogSection({
                       >
                         {gift.image?.url ? (
                           <Image
+                            unoptimized
                             src={gift.image.url}
                             alt={gift.name}
                             className="w-full h-full object-cover"
