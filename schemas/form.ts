@@ -1,12 +1,75 @@
 import { type ZodType, z } from 'zod'
 
+// Reserved so an event slug can never collide with a real subdomain if we
+// move guest sites from /e/{eventUrl} to {eventUrl}.wedin.app later.
+const RESERVED_EVENT_URLS = [
+  'www',
+  'home',
+  'landing',
+  'app',
+  'api',
+  'admin',
+  'dashboard',
+  'mail',
+  'ftp',
+  'blog',
+  'help',
+  'support',
+  'status',
+  'cdn',
+  'assets',
+  'static',
+  'img',
+  'images',
+  'docs',
+  'staging',
+  'dev',
+  'test',
+  'ns1',
+  'ns2',
+  'smtp',
+  'webmail',
+  'autodiscover',
+  'cpanel',
+  'shop',
+  'store',
+  'login',
+  'register',
+  'auth',
+  'null',
+  'undefined',
+  'wedin',
+  'wedin-staging',
+  'send',
+  'resend',
+]
+
+export const EventUrlSlugSchema = z
+  .string()
+  .min(1, { message: 'La dirección de tu evento no puede estar vacío' })
+  .min(3, {
+    message: 'La dirección de tu evento debe contener al menos 3 caracteres',
+  })
+  .max(63, {
+    message:
+      'La dirección de tu evento debe contener un máximo de 63 caracteres',
+  })
+  .transform(value => value.toLowerCase())
+  .refine(value => /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(value), {
+    message:
+      'La dirección de tu evento solo puede contener letras, números y guiones, y no puede empezar ni terminar con un guión',
+  })
+  .refine(value => !RESERVED_EVENT_URLS.includes(value), {
+    message: 'Esa dirección está reservada, elegí otra.',
+  })
+
 export const UpdateEventSettingsFormSchema = z
   .object({
     eventDate: z.date({
       required_error: 'Debes seleccionar una fecha',
       invalid_type_error: '¡Eso no es una fecha!',
     }),
-    eventUrl: z.string(),
+    eventUrl: EventUrlSlugSchema,
     name: z
       .string()
       .min(1, { message: 'Tu nombre no puede estar vacío' })
@@ -299,70 +362,9 @@ export const TransactionStatusLogUpdateSchema = z.object({
   changedAt: z.string().transform(str => new Date(str)), // Ensure changedAt is a valid Date
 })
 
-// Reserved so an event slug can never collide with a real subdomain if we
-// move guest sites from /e/{eventUrl} to {eventUrl}.wedin.app later.
-const RESERVED_EVENT_URLS = [
-  'www',
-  'home',
-  'landing',
-  'app',
-  'api',
-  'admin',
-  'dashboard',
-  'mail',
-  'ftp',
-  'blog',
-  'help',
-  'support',
-  'status',
-  'cdn',
-  'assets',
-  'static',
-  'img',
-  'images',
-  'docs',
-  'staging',
-  'dev',
-  'test',
-  'ns1',
-  'ns2',
-  'smtp',
-  'webmail',
-  'autodiscover',
-  'cpanel',
-  'shop',
-  'store',
-  'login',
-  'register',
-  'auth',
-  'null',
-  'undefined',
-  'wedin',
-  'wedin-staging',
-  'send',
-  'resend',
-]
-
 export const EventUrlFormSchema = z.object({
   eventId: z.string(),
-  eventUrl: z
-    .string()
-    .min(1, { message: 'La dirección de tu evento no puede estar vacío' })
-    .min(3, {
-      message: 'La dirección de tu evento debe contener al menos 3 caracteres',
-    })
-    .max(63, {
-      message:
-        'La dirección de tu evento debe contener un máximo de 63 caracteres',
-    })
-    .transform(value => value.toLowerCase())
-    .refine(value => /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(value), {
-      message:
-        'La dirección de tu evento solo puede contener letras, números y guiones, y no puede empezar ni terminar con un guión',
-    })
-    .refine(value => !RESERVED_EVENT_URLS.includes(value), {
-      message: 'Esa dirección está reservada, elegí otra.',
-    }),
+  eventUrl: EventUrlSlugSchema,
 })
 
 export const EventCoverImageFormSchema = z.object({

@@ -93,4 +93,30 @@ describe('event mutation authorization', () => {
       success: expect.objectContaining({ id: 'event-1' }),
     })
   })
+
+  it.each([
+    ['Sorpresa!', 'punctuation'],
+    ['mi evento', 'spaces'],
+    ['-mi-evento', 'a leading hyphen'],
+    ['ab', 'fewer than three characters'],
+    ['admin', 'a reserved subdomain'],
+  ])('refuses to store %s as an event url (%s)', async invalidUrl => {
+    mocks.eventFindFirst.mockResolvedValue({ id: 'event-1' })
+
+    const result = await updateEvent('event-1', { url: invalidUrl })
+
+    expect(result.error).toBeDefined()
+    expect(mocks.eventUpdate).not.toHaveBeenCalled()
+  })
+
+  it('normalizes an event url to lowercase before storing it', async () => {
+    mocks.eventFindFirst.mockResolvedValue({ id: 'event-1' })
+
+    await updateEvent('event-1', { url: 'CumpleYayo' })
+
+    expect(mocks.eventUpdate).toHaveBeenCalledWith({
+      where: { id: 'event-1' },
+      data: { url: 'cumpleyayo' },
+    })
+  })
 })
