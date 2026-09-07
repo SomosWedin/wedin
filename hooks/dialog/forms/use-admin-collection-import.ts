@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   cancelImportPreparation,
   requestCollectionImport,
@@ -19,6 +19,11 @@ import type {
 import { CollectionImportRowsSchema } from '@/schemas/collection-import'
 import type { GiftImportDataset } from '@/schemas/gift-import'
 import { MAX_IMPORT_FILE_BYTES } from '@/schemas/gift-import'
+import {
+  paginateReviewRows,
+  readImportFile,
+  useAbandonedImportDraft,
+} from './use-import-draft-wizard'
 
 export function useAdminCollectionImport() {
   const router = useRouter()
@@ -44,33 +49,10 @@ export function useAdminCollectionImport() {
   const [jobId, setJobId] = useState<string | null>(null)
   const submissionId = useRef('')
   const submissionContent = useRef('')
-  const preparedJobId = useRef('')
-  const activeWorker = useRef<Worker | null>(null)
-  const workerTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { preparedJobId, activeWorker, workerTimeout, cancelPreparedJob } =
+    useAbandonedImportDraft(router)
   const busy = useRef(false)
   const dataset = datasets[datasetIndex]
-
-  useEffect(
-    () => () => {
-      activeWorker.current?.terminate()
-      if (workerTimeout.current) clearTimeout(workerTimeout.current)
-      const abandonedJobId = preparedJobId.current
-      preparedJobId.current = ''
-      if (abandonedJobId)
-        void cancelImportPreparation(abandonedJobId).catch(() => undefined)
-    },
-    []
-  )
-
-  const cancelPreparedJob = () => {
-    const abandonedJobId = preparedJobId.current
-    preparedJobId.current = ''
-    if (abandonedJobId) {
-      void cancelImportPreparation(abandonedJobId)
-        .then(() => router.refresh())
-        .catch(() => undefined)
-    }
-  }
 
   const reset = () => {
     setStep(0)
@@ -111,34 +93,7 @@ export function useAdminCollectionImport() {
     try {
       if (file.size > MAX_IMPORT_FILE_BYTES)
         throw new Error('El archivo supera 10 MB.')
-      const buffer = await file.arrayBuffer()
-      const parsed = await new Promise<GiftImportDataset[]>(
-        (resolve, reject) => {
-          const worker = new Worker(
-            new URL('../../../lib/gift-import.worker.ts', import.meta.url),
-            { type: 'module' }
-          )
-          activeWorker.current = worker
-          workerTimeout.current = setTimeout(
-            () =>
-              reject(
-                new Error(
-                  'El archivo tardó demasiado en abrirse. Probá con un archivo más pequeño.'
-                )
-              ),
-            30_000
-          )
-          worker.onmessage = event =>
-            event.data.datasets
-              ? resolve(event.data.datasets)
-              : reject(
-                  new Error(event.data.error || 'No se pudo leer el archivo.')
-                )
-          worker.onerror = () =>
-            reject(new Error('No se pudo leer el archivo.'))
-          worker.postMessage({ name: file.name, buffer }, [buffer])
-        }
-      )
+      const parsed = await readImportFile(file, { activeWorker, workerTimeout })
       setDatasets(parsed)
       setDatasetIndex(0)
       setFileName(file.name)
@@ -167,20 +122,12 @@ export function useAdminCollectionImport() {
     setError('')
   }
 
-  const loadReview = async (id: string, count: number, token: string) => {
-    const rows: CollectionImportPreviewRow[] = []
-    for (let page = 0; page * 10 < count; page++) {
-      const result = await requestCollectionImport('reviewRows', {
-        jobId: id,
-        page,
-        historyPage: 0,
-      })
-      if (result.error || result.previewToken !== token)
-        throw new Error('No se pudo cargar la revisión completa.')
-      rows.push(...result.preview)
-    }
-    return rows
-  }
+  const loadReview = (id: string, count: number, token: string) =>
+    paginateReviewRows<CollectionImportPreviewRow>(
+      page => requestCollectionImport('reviewRows', { jobId: id, page }),
+      count,
+      token
+    )
 
   const review = async () => {
     if (!dataset || busy.current) return
@@ -287,9 +234,11 @@ export function useAdminCollectionImport() {
         }
         return
       }
-      preparedJobId.current = ''
-      setJobId(result.jobId)
-      router.refresh()
+      if ('jobId' in result && result.jobId) {
+        preparedJobId.current = ''
+        setJobId(result.jobId)
+        router.refresh()
+      }
     } catch {
       setError('No se pudo poner la importación en cola.')
     } finally {

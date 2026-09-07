@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   cancelImportPreparation,
   requestGiftImport,
@@ -21,6 +21,11 @@ import {
   type GiftImportValueMatches,
   MAX_IMPORT_FILE_BYTES,
 } from '@/schemas/gift-import'
+import {
+  paginateReviewRows,
+  readImportFile,
+  useAbandonedImportDraft,
+} from './use-import-draft-wizard'
 
 const emptyMatches = (): GiftImportValueMatches => ({
   category: {},
@@ -46,39 +51,16 @@ export function useAdminGiftImport() {
   const [matches, setMatches] = useState(emptyMatches)
   const submissionId = useRef('')
   const submissionContent = useRef('')
-  const preparedJobId = useRef('')
   const [jobId, setJobId] = useState<string | null>(null)
   const [previewToken, setPreviewToken] = useState('')
   const [preview, setPreview] = useState<GiftImportPreviewRow[]>([])
   const [skipErrors, setSkipErrors] = useState(false)
   const [createMissingCollections, setCreateMissingCollections] =
     useState(false)
-  const activeWorker = useRef<Worker | null>(null)
-  const workerTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { preparedJobId, activeWorker, workerTimeout, cancelPreparedJob } =
+    useAbandonedImportDraft(router)
   const busy = useRef(false)
   const dataset = datasets[datasetIndex]
-
-  useEffect(
-    () => () => {
-      activeWorker.current?.terminate()
-      if (workerTimeout.current) clearTimeout(workerTimeout.current)
-      const abandonedJobId = preparedJobId.current
-      preparedJobId.current = ''
-      if (abandonedJobId)
-        void cancelImportPreparation(abandonedJobId).catch(() => undefined)
-    },
-    []
-  )
-
-  const cancelPreparedJob = () => {
-    const abandonedJobId = preparedJobId.current
-    preparedJobId.current = ''
-    if (abandonedJobId) {
-      void cancelImportPreparation(abandonedJobId)
-        .then(() => router.refresh())
-        .catch(() => undefined)
-    }
-  }
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (busy.current) return
@@ -114,42 +96,7 @@ export function useAdminGiftImport() {
     try {
       if (file.size > MAX_IMPORT_FILE_BYTES)
         throw new Error('El archivo supera 10 MB.')
-      const buffer = await file.arrayBuffer()
-      const parsed = await new Promise<GiftImportDataset[]>(
-        (resolve, reject) => {
-          const worker = new Worker(
-            new URL('../../../lib/gift-import.worker.ts', import.meta.url),
-            { type: 'module' }
-          )
-          activeWorker.current = worker
-          workerTimeout.current = setTimeout(
-            () =>
-              reject(
-                new Error(
-                  'El archivo tardó demasiado en abrirse. Probá con un archivo más pequeño.'
-                )
-              ),
-            30_000
-          )
-          worker.onmessage = (
-            event: MessageEvent<{
-              datasets?: GiftImportDataset[]
-              error?: string
-            }>
-          ) => {
-            if (event.data.datasets) resolve(event.data.datasets)
-            else
-              reject(
-                new Error(event.data.error || 'No se pudo leer el archivo.')
-              )
-          }
-          worker.onerror = () =>
-            reject(
-              new Error('No se pudo leer el archivo. Verificá que sea válido.')
-            )
-          worker.postMessage({ name: file.name, buffer }, [buffer])
-        }
-      )
+      const parsed = await readImportFile(file, { activeWorker, workerTimeout })
       setDatasets(parsed)
       setFileName(file.name)
       setDatasetIndex(0)
@@ -202,16 +149,12 @@ export function useAdminGiftImport() {
     }))
   }
 
-  const loadReview = async (id: string, count: number, token: string) => {
-    const reviewed: GiftImportPreviewRow[] = []
-    for (let page = 0; page * 10 < count; page++) {
-      const result = await requestGiftImport('reviewRows', { jobId: id, page })
-      if (result.error || result.previewToken !== token)
-        throw new Error('No se pudo cargar la revisión completa.')
-      reviewed.push(...result.preview)
-    }
-    return reviewed
-  }
+  const loadReview = (id: string, count: number, token: string) =>
+    paginateReviewRows<GiftImportPreviewRow>(
+      page => requestGiftImport('reviewRows', { jobId: id, page }),
+      count,
+      token
+    )
 
   const review = async () => {
     if (!dataset || busy.current) return

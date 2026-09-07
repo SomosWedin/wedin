@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import type { Prisma } from '@prisma/client'
 import { validateCollectionName } from '@/lib/collection-import'
 import { normalizeImportLabel } from '@/lib/gift-import'
@@ -8,7 +7,6 @@ import type {
   CollectionImportPreviewRow,
   CollectionImportRow,
 } from '@/schemas/collection-import'
-import { saveImportReview } from './gift-import-preview'
 
 const sameIds = (left: string[], right: string[]) => {
   const sortedLeft = [...left].sort()
@@ -17,15 +15,6 @@ const sameIds = (left: string[], right: string[]) => {
     sortedLeft.length === sortedRight.length &&
     sortedLeft.every((id, index) => id === sortedRight[index])
   )
-}
-
-export function collectionReviewResult(preview: CollectionImportPreviewRow[]) {
-  return {
-    preview,
-    previewToken: createHash('sha256')
-      .update(JSON.stringify(preview))
-      .digest('hex'),
-  }
 }
 
 export async function previewCollectionRows(
@@ -196,12 +185,4 @@ export async function previewCollectionRows(
             },
     }
   })
-}
-
-export async function saveCollectionImportReview(
-  client: Prisma.TransactionClient,
-  jobId: string,
-  preview: CollectionImportPreviewRow[]
-) {
-  return saveImportReview(client, jobId, preview)
 }

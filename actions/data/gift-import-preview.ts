@@ -9,7 +9,7 @@ import type {
   GiftImportRow,
 } from '@/schemas/gift-import'
 
-export function reviewResult(preview: GiftImportPreviewRow[]) {
+export function reviewResult<T>(preview: T[]) {
   return {
     preview,
     previewToken: createHash('sha256')
@@ -18,11 +18,9 @@ export function reviewResult(preview: GiftImportPreviewRow[]) {
   }
 }
 
-export async function previewRows(
-  client: Prisma.TransactionClient,
-  rows: GiftImportRow[],
-  createMissingCollections: boolean
-) {
+export async function loadImportCatalog(
+  client: Prisma.TransactionClient
+): Promise<GiftImportCatalog> {
   const [categories, collections, eventTypes] = await Promise.all([
     client.category.findMany({
       select: { id: true, name: true, eventTypeIds: true },
@@ -36,7 +34,7 @@ export async function previewRows(
     }),
     client.eventType.findMany({ select: { id: true, name: true, key: true } }),
   ])
-  const catalog: GiftImportCatalog = {
+  return {
     categories,
     eventTypes,
     collections: collections.map(collection => ({
@@ -46,35 +44,47 @@ export async function previewRows(
       eventTypeIds: deriveGiftlistEventTypeIds(collection.gifts),
     })),
   }
+}
+
+export async function resolveExistingGifts(
+  client: Prisma.TransactionClient,
+  preview: Pick<GiftImportPreviewRow, 'values'>[]
+): Promise<Map<string, string>> {
+  const keys = preview.flatMap(row =>
+    row.values
+      ? [buildGiftNameScopeKey({ ...row.values, isDefault: true })]
+      : []
+  )
+  if (!keys.length) return new Map()
+  const existing = await client.gift.findMany({
+    where: { nameScopeKey: { in: keys } },
+    select: { id: true, nameScopeKey: true },
+  })
+  return new Map(existing.map(gift => [gift.nameScopeKey, gift.id]))
+}
+
+export async function previewRows(
+  client: Prisma.TransactionClient,
+  rows: GiftImportRow[],
+  createMissingCollections: boolean
+) {
+  const catalog = await loadImportCatalog(client)
   const initial = buildGiftImportPreview(
     rows,
     catalog,
     new Set(),
     createMissingCollections
   )
-  const keys = initial.flatMap(row =>
-    row.values
-      ? [buildGiftNameScopeKey({ ...row.values, isDefault: true })]
-      : []
-  )
-  const existing = keys.length
-    ? await client.gift.findMany({
-        where: { nameScopeKey: { in: keys } },
-        select: { id: true, nameScopeKey: true },
-      })
-    : []
-  const existingIds = new Map(
-    existing.map(gift => [gift.nameScopeKey, gift.id])
-  )
+  const existingById = await resolveExistingGifts(client, initial)
   return buildGiftImportPreview(
     rows,
     catalog,
-    new Set(existing.map(gift => gift.nameScopeKey)),
+    new Set(existingById.keys()),
     createMissingCollections
   ).map(row => ({
     ...row,
     existingGiftId: row.values
-      ? existingIds.get(
+      ? existingById.get(
           buildGiftNameScopeKey({ ...row.values, isDefault: true })
         )
       : undefined,

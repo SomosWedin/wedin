@@ -81,34 +81,46 @@ export default async function AdminPage() {
       </div>
 
       <Tabs defaultValue="transacciones" className="w-full">
-        <TabsList className="gap-2 sm:gap-3">
+        <TabsList className="max-w-full justify-start gap-2 overflow-x-auto sm:gap-3 sm:justify-center">
           <TabsTrigger
             value="transacciones"
-            className="gap-2 text-xs sm:text-sm"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
           >
             <IoSwapHorizontalOutline className="text-lg" />
             Transacciones
           </TabsTrigger>
-          <TabsTrigger value="retiros" className="gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="retiros"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
+          >
             <IoCashOutline className="text-lg" />
             Solicitudes de retiro
           </TabsTrigger>
           <TabsTrigger
             value="tipos-de-evento"
-            className="gap-2 text-xs sm:text-sm"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
           >
             <IoCalendarOutline className="text-lg" />
             Tipos de evento
           </TabsTrigger>
-          <TabsTrigger value="categorias" className="gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="categorias"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
+          >
             <IoPricetagOutline className="text-lg" />
             Categorías
           </TabsTrigger>
-          <TabsTrigger value="colecciones" className="gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="colecciones"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
+          >
             <IoFolderOpenOutline className="text-lg" />
             Colecciones
           </TabsTrigger>
-          <TabsTrigger value="regalos" className="gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="regalos"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
+          >
             <IoGiftOutline className="text-lg" />
             Regalos
           </TabsTrigger>
