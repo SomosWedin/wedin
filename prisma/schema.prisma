@@ -137,6 +137,8 @@ model BankDetails {
   identificationType   String
   identificationNumber String
   eventId              String   @unique @db.ObjectId
+  aliasType            String?
+  alias                String?
   razonSocial          String?
   ruc                  String?
   createdAt            DateTime @default(now())
