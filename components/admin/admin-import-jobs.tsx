@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import {
+import type {
   getAdminImportJobDetails,
   getAdminImportJobs,
   retryAdminImportJob,
@@ -31,8 +31,25 @@ import {
 
 type Jobs = Awaited<ReturnType<typeof getAdminImportJobs>>
 type Details = Awaited<ReturnType<typeof getAdminImportJobDetails>>
+type Retry = Awaited<ReturnType<typeof retryAdminImportJob>>
 const date = (value: Date | string | null) =>
   value ? new Date(value).toLocaleString('es-PY') : '—'
+
+async function fetchJson<T>(url: string, init?: RequestInit) {
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), 15000)
+  try {
+    const response = await fetch(url, {
+      ...init,
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+    if (!response.ok) throw new Error(`Request failed: ${response.status}`)
+    return (await response.json()) as T
+  } finally {
+    window.clearTimeout(timeout)
+  }
+}
 
 function Pager({
   page,
@@ -135,16 +152,20 @@ export default function AdminImportJobs() {
     const refresh = async () => {
       if (running) return
       running = true
-      const response = await getAdminImportJobs({
-        page,
-        search,
-        ...(status ? { status } : {}),
-        ...(kind ? { kind } : {}),
-      }).catch(
-        () => ({ error: 'No se pudieron cargar los trabajos.' }) as const
-      )
-      if (!cancelled) setResult(response)
-      running = false
+      const params = new URLSearchParams({ page: String(page), search })
+      if (status) params.set('status', status)
+      if (kind) params.set('kind', kind)
+      try {
+        const response = await fetchJson<Jobs>(
+          `/api/admin/import-jobs?${params}`
+        )
+        if (!cancelled) setResult(response)
+      } catch {
+        if (!cancelled)
+          setResult({ error: 'No se pudieron cargar los trabajos.' })
+      } finally {
+        running = false
+      }
     }
     void refresh()
     const interval = setInterval(() => void refresh(), 5000)
@@ -163,15 +184,21 @@ export default function AdminImportJobs() {
     const refresh = async () => {
       if (running) return
       running = true
-      const response = await getAdminImportJobDetails({
-        jobId: selected,
-        page: rowPage,
-        historyPage,
-      }).catch(
-        () => ({ error: 'No se pudieron cargar los detalles.' }) as const
-      )
-      if (!cancelled) setDetails(response)
-      running = false
+      const params = new URLSearchParams({
+        page: String(rowPage),
+        historyPage: String(historyPage),
+      })
+      try {
+        const response = await fetchJson<Details>(
+          `/api/admin/import-jobs/${selected}?${params}`
+        )
+        if (!cancelled) setDetails(response)
+      } catch {
+        if (!cancelled)
+          setDetails({ error: 'No se pudieron cargar los detalles.' })
+      } finally {
+        running = false
+      }
     }
     void refresh()
     const interval = setInterval(() => void refresh(), 5000)
@@ -186,7 +213,10 @@ export default function AdminImportJobs() {
     setRetrying(true)
     setError('')
     try {
-      const response = await retryAdminImportJob(selected)
+      const response = await fetchJson<Retry>(
+        `/api/admin/import-jobs/${selected}/retry`,
+        { method: 'POST' }
+      )
       if (response.error) setError(response.error)
       setVersion(value => value + 1)
     } catch {
