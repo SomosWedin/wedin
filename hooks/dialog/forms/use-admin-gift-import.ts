@@ -3,12 +3,9 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
-  acceptAdminGiftImport,
-  getAdminImportReviewRows,
-  reviewAdminImportJob,
-  startAdminImportJob,
-  uploadAdminImportRows,
-} from '@/actions/data/import-job'
+  cancelImportPreparation,
+  requestGiftImport,
+} from '@/lib/admin-import-api'
 import {
   autoMatchGiftImportHeaders,
   chunkGiftImportRows,
@@ -64,14 +61,29 @@ export function useAdminGiftImport() {
     () => () => {
       activeWorker.current?.terminate()
       if (workerTimeout.current) clearTimeout(workerTimeout.current)
+      const abandonedJobId = preparedJobId.current
+      preparedJobId.current = ''
+      if (abandonedJobId)
+        void cancelImportPreparation(abandonedJobId).catch(() => undefined)
     },
     []
   )
+
+  const cancelPreparedJob = () => {
+    const abandonedJobId = preparedJobId.current
+    preparedJobId.current = ''
+    if (abandonedJobId) {
+      void cancelImportPreparation(abandonedJobId)
+        .then(() => router.refresh())
+        .catch(() => undefined)
+    }
+  }
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (busy.current) return
     setOpen(nextOpen)
     if (!nextOpen) {
+      cancelPreparedJob()
       setStep(0)
       setError('')
       setFileName('')
@@ -80,7 +92,7 @@ export function useAdminGiftImport() {
       setMapping(autoMatchGiftImportHeaders([]))
       setMatches(emptyMatches())
       submissionId.current = ''
-      preparedJobId.current = ''
+      submissionContent.current = ''
       setPreviewToken('')
       setPreview([])
       setSkipErrors(false)
@@ -190,7 +202,7 @@ export function useAdminGiftImport() {
   const loadReview = async (id: string, count: number, token: string) => {
     const reviewed: GiftImportPreviewRow[] = []
     for (let page = 0; page * 10 < count; page++) {
-      const result = await getAdminImportReviewRows({ jobId: id, page })
+      const result = await requestGiftImport('reviewRows', { jobId: id, page })
       if (result.error || result.previewToken !== token)
         throw new Error('No se pudo cargar la revisión completa.')
       reviewed.push(...result.preview)
@@ -216,11 +228,16 @@ export function useAdminGiftImport() {
         createMissingCollections,
       })
       if (content !== submissionContent.current) {
+        if (preparedJobId.current) {
+          const cancelled = await cancelImportPreparation(preparedJobId.current)
+          if ('error' in cancelled) throw new Error(cancelled.error)
+          preparedJobId.current = ''
+        }
         submissionId.current = ''
         submissionContent.current = content
       }
       if (!submissionId.current) submissionId.current = crypto.randomUUID()
-      const started = await startAdminImportJob({
+      const started = await requestGiftImport('start', {
         submissionId: submissionId.current,
         filename: fileName,
         expectedRows: parsed.data.length,
@@ -233,7 +250,7 @@ export function useAdminGiftImport() {
       preparedJobId.current = started.jobId
       let offset = 0
       for (const chunk of chunkGiftImportRows(parsed.data)) {
-        const uploaded = await uploadAdminImportRows({
+        const uploaded = await requestGiftImport('upload', {
           jobId: started.jobId,
           offset,
           rows: chunk,
@@ -244,7 +261,7 @@ export function useAdminGiftImport() {
           return
         }
       }
-      const result = await reviewAdminImportJob(started.jobId)
+      const result = await requestGiftImport('review', started.jobId)
       if ('error' in result && result.error) {
         setError(result.error)
         return
@@ -276,7 +293,7 @@ export function useAdminGiftImport() {
     setLoading('import')
     setError('')
     try {
-      const result = await acceptAdminGiftImport({
+      const result = await requestGiftImport('accept', {
         jobId: preparedJobId.current,
         previewToken,
         excludedRowNumbers: skipErrors ? invalid.map(row => row.rowNumber) : [],
@@ -296,6 +313,7 @@ export function useAdminGiftImport() {
         return
       }
       if ('jobId' in result && result.jobId) {
+        preparedJobId.current = ''
         setJobId(result.jobId)
         router.refresh()
       }
@@ -336,8 +354,9 @@ export function useAdminGiftImport() {
     setCreateMissingCollections,
     back: () => {
       if (!busy.current) {
+        cancelPreparedJob()
         submissionId.current = ''
-        preparedJobId.current = ''
+        submissionContent.current = ''
         setStep(current => Math.max(0, current - 1))
         setError('')
         setSkipErrors(false)

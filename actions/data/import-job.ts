@@ -369,6 +369,41 @@ export async function getAdminImportJobDetails(input: unknown) {
   }
 }
 
+export async function cancelAdminImportJob(input: unknown) {
+  const user = await getCurrentUser()
+  if (user?.role !== 'ADMIN') return { error: 'No autorizado.' } as const
+  const parsed = JobIdSchema.safeParse(input)
+  if (!parsed.success) return { error: 'Importación inválida.' } as const
+  try {
+    return await prisma.$transaction(async tx => {
+      const job = await tx.giftImportJob.findUnique({
+        where: { id: parsed.data },
+      })
+      if (!job) return { error: 'Importación no encontrada.' } as const
+      if (job.status === 'CANCELLED') return { ok: true } as const
+      if (job.status !== 'PREPARING' || job.acceptedAt)
+        return {
+          error: 'La importación ya fue aceptada y no se puede cancelar.',
+        } as const
+      const cancelledAt = new Date()
+      await tx.giftImportJob.update({
+        where: { id: job.id },
+        data: { status: 'CANCELLED', completedAt: cancelledAt },
+      })
+      await tx.giftImportHistory.create({
+        data: {
+          jobId: job.id,
+          attemptId: randomUUID(),
+          message: `Preparación cancelada por ${user.name || user.email || user.id} antes de aceptar la importación.`,
+        },
+      })
+      return { ok: true } as const
+    })
+  } catch {
+    return { error: 'No se pudo cancelar la preparación.' } as const
+  }
+}
+
 export async function retryAdminImportJob(input: unknown) {
   const user = await getCurrentUser()
   if (user?.role !== 'ADMIN') return { error: 'No autorizado.' } as const

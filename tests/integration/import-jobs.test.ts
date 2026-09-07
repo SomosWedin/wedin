@@ -47,6 +47,7 @@ import { processCollectionImportJob } from '@/actions/data/collection-import-wor
 import * as giftOperations from '@/actions/data/gift-operations'
 import {
   acceptAdminGiftImport,
+  cancelAdminImportJob,
   getAdminImportJobDetails,
   getAdminImportJobs,
   getAdminImportReviewRows,
@@ -212,6 +213,7 @@ describe.skipIf(process.env.RUN_LOCAL_IMPORT_TESTS !== '1')(
         uploadAdminImportRows,
         reviewAdminImportJob,
         acceptAdminGiftImport,
+        cancelAdminImportJob,
         getAdminImportJobs,
         getAdminImportJobDetails,
         getAdminImportReviewRows,
@@ -271,6 +273,31 @@ describe.skipIf(process.env.RUN_LOCAL_IMPORT_TESTS !== '1')(
       expect(results).toEqual([{ jobId: input.jobId }, { jobId: input.jobId }])
       expect(mocks.dispatch).toHaveBeenCalledTimes(1)
     })
+    it('cancels an abandoned preparation once and never cancels accepted work', async () => {
+      const input = await prepare()
+      expect(await cancelAdminImportJob(input.jobId)).toEqual({ ok: true })
+      expect(await cancelAdminImportJob(input.jobId)).toEqual({ ok: true })
+      expect(
+        await local.giftImportJob.findUniqueOrThrow({
+          where: { id: input.jobId },
+        })
+      ).toMatchObject({
+        status: 'CANCELLED',
+        acceptedAt: null,
+      })
+      expect(
+        await local.giftImportHistory.count({ where: { jobId: input.jobId } })
+      ).toBe(1)
+      expect(await acceptAdminGiftImport(input)).toHaveProperty('error')
+
+      const queued = await accepted()
+      expect(await cancelAdminImportJob(queued.id)).toHaveProperty('error')
+      expect(
+        await local.giftImportJob.findUniqueOrThrow({
+          where: { id: queued.id },
+        })
+      ).toMatchObject({ status: 'QUEUED' })
+    })
     it('pages persisted review and row history without losing the saved review token', async () => {
       const input = await prepare(
         Array.from({ length: 25 }, (_, i) => inputRow(i + 1))
@@ -320,11 +347,12 @@ describe.skipIf(process.env.RUN_LOCAL_IMPORT_TESTS !== '1')(
       expect(mocks.dispatch).not.toHaveBeenCalled()
       expect(await local.gift.count()).toBe(0)
     })
-    it('requires ownership to upload, review, or accept another admin submission', async () => {
+    it('requires ownership for review and acceptance but lets staff cancel an abandoned preparation', async () => {
       const input = await prepare()
       mocks.user.mockResolvedValue({ ...admin, id: 'bbbbbbbbbbbbbbbbbbbbbbbb' })
       expect(await reviewAdminImportJob(input.jobId)).toHaveProperty('error')
       expect(await acceptAdminGiftImport(input)).toHaveProperty('error')
+      expect(await cancelAdminImportJob(input.jobId)).toEqual({ ok: true })
       expect(
         await uploadAdminImportRows({
           jobId: input.jobId,

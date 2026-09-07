@@ -3,12 +3,9 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
-  acceptAdminCollectionImport,
-  getAdminCollectionImportReviewRows,
-  reviewAdminCollectionImportJob,
-  startAdminCollectionImportJob,
-  uploadAdminCollectionImportRows,
-} from '@/actions/data/collection-import'
+  cancelImportPreparation,
+  requestCollectionImport,
+} from '@/lib/admin-import-api'
 import {
   autoMatchCollectionImportHeaders,
   chunkCollectionImportRows,
@@ -56,9 +53,23 @@ export function useAdminCollectionImport() {
     () => () => {
       activeWorker.current?.terminate()
       if (workerTimeout.current) clearTimeout(workerTimeout.current)
+      const abandonedJobId = preparedJobId.current
+      preparedJobId.current = ''
+      if (abandonedJobId)
+        void cancelImportPreparation(abandonedJobId).catch(() => undefined)
     },
     []
   )
+
+  const cancelPreparedJob = () => {
+    const abandonedJobId = preparedJobId.current
+    preparedJobId.current = ''
+    if (abandonedJobId) {
+      void cancelImportPreparation(abandonedJobId)
+        .then(() => router.refresh())
+        .catch(() => undefined)
+    }
+  }
 
   const reset = () => {
     setStep(0)
@@ -83,7 +94,10 @@ export function useAdminCollectionImport() {
   const handleOpenChange = (nextOpen: boolean) => {
     if (busy.current) return
     setOpen(nextOpen)
-    if (!nextOpen) reset()
+    if (!nextOpen) {
+      cancelPreparedJob()
+      reset()
+    }
   }
 
   const upload = async (file: File) => {
@@ -153,7 +167,7 @@ export function useAdminCollectionImport() {
   const loadReview = async (id: string, count: number, token: string) => {
     const rows: CollectionImportPreviewRow[] = []
     for (let page = 0; page * 10 < count; page++) {
-      const result = await getAdminCollectionImportReviewRows({
+      const result = await requestCollectionImport('reviewRows', {
         jobId: id,
         page,
         historyPage: 0,
@@ -180,11 +194,16 @@ export function useAdminCollectionImport() {
     try {
       const content = JSON.stringify(parsed.data)
       if (content !== submissionContent.current) {
+        if (preparedJobId.current) {
+          const cancelled = await cancelImportPreparation(preparedJobId.current)
+          if ('error' in cancelled) throw new Error(cancelled.error)
+          preparedJobId.current = ''
+        }
         submissionId.current = ''
         submissionContent.current = content
       }
       if (!submissionId.current) submissionId.current = crypto.randomUUID()
-      const started = await startAdminCollectionImportJob({
+      const started = await requestCollectionImport('start', {
         submissionId: submissionId.current,
         filename: fileName,
         expectedRows: parsed.data.length,
@@ -193,7 +212,7 @@ export function useAdminCollectionImport() {
       preparedJobId.current = started.jobId
       let offset = 0
       for (const chunk of chunkCollectionImportRows(parsed.data)) {
-        const uploaded = await uploadAdminCollectionImportRows({
+        const uploaded = await requestCollectionImport('upload', {
           jobId: started.jobId,
           offset,
           rows: chunk,
@@ -201,7 +220,7 @@ export function useAdminCollectionImport() {
         if (uploaded.error) throw new Error(uploaded.error)
         offset += chunk.length
       }
-      const result = await reviewAdminCollectionImportJob(started.jobId)
+      const result = await requestCollectionImport('review', started.jobId)
       if (result.error) throw new Error(result.error)
       const reviewed = await loadReview(
         started.jobId,
@@ -233,7 +252,7 @@ export function useAdminCollectionImport() {
     setLoading('import')
     setError('')
     try {
-      const result = await acceptAdminCollectionImport({
+      const result = await requestCollectionImport('accept', {
         jobId: preparedJobId.current,
         previewToken,
         excludedRowNumbers: skipErrors ? invalid.map(row => row.rowNumber) : [],
@@ -260,6 +279,7 @@ export function useAdminCollectionImport() {
         }
         return
       }
+      preparedJobId.current = ''
       setJobId(result.jobId)
       router.refresh()
     } catch {
@@ -301,7 +321,14 @@ export function useAdminCollectionImport() {
       setStep(1)
       setError('')
     },
-    back: () => setStep(value => Math.max(0, value - 1)),
+    back: () => {
+      if (!busy.current) {
+        cancelPreparedJob()
+        submissionId.current = ''
+        submissionContent.current = ''
+        setStep(value => Math.max(0, value - 1))
+      }
+    },
     review,
     accept,
   }

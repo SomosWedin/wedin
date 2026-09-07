@@ -1,10 +1,13 @@
 # Background catalog imports
 
-Staff upload and match a file, transfer mapped rows in requests of at most
-20 rows / 600 KB, review the persisted import (downloaded in pages of ten
-rows), then accept it. Acceptance rechecks the review token and all included rows before queueing. Only the job
-and run identifiers are sent through QStash. The modal can close after
-acceptance; `/admin/jobs` shows persisted progress and paginated details.
+Staff upload and match a file in the browser without creating a job. When they
+request step 3, the app creates a `PREPARING` draft and transfers mapped rows
+through stable JSON endpoints in requests of at most 20 rows / 600 KB. This
+keeps large imports out of one Server Action and lets the server persist and
+page the database-backed review. Acceptance rechecks the review token and all
+included rows before queueing. Only the job and run identifiers are sent
+through QStash. The modal can close after acceptance; `/admin/jobs` shows
+persisted progress and paginated details.
 
 Collection imports use the same job lifecycle. They synchronize only the
 collections present in the file, never create or edit gifts, and show added,
@@ -64,9 +67,11 @@ pending/failed rows when no worker lease is active. A manual retry changes
 excluded rows remain untouched. Validation errors continue to the next row;
 infrastructure failures keep completed work and record only a safe message.
 
-Preparing jobs have not been accepted and never create gifts. If their modal
-was closed before acceptance, upload/review the file again. Editing,
-cancellation, scheduling, and deleting job history are outside this feature.
+Preparing jobs have not been accepted and never create gifts. Closing or
+backing out of their review marks them cancelled. Existing stranded
+preparations can also be cancelled from the jobs table; importing their file
+still requires a new upload and review. Cancelling accepted work, editing,
+scheduling, and deleting job history are outside this feature.
 
 QStash reference: https://upstash.com/docs/qstash/howto/local-development
 and https://upstash.com/docs/qstash/features/callbacks.

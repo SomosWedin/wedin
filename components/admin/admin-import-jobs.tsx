@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react'
 import type {
+  cancelAdminImportJob,
   getAdminImportJobDetails,
   getAdminImportJobs,
   retryAdminImportJob,
@@ -32,6 +33,7 @@ import {
 type Jobs = Awaited<ReturnType<typeof getAdminImportJobs>>
 type Details = Awaited<ReturnType<typeof getAdminImportJobDetails>>
 type Retry = Awaited<ReturnType<typeof retryAdminImportJob>>
+type Cancel = Awaited<ReturnType<typeof cancelAdminImportJob>>
 const date = (value: Date | string | null) =>
   value ? new Date(value).toLocaleString('es-PY') : '—'
 
@@ -140,6 +142,7 @@ export default function AdminImportJobs() {
   const [historyPage, setHistoryPage] = useState(0)
   const [version, setVersion] = useState(0)
   const [retrying, setRetrying] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [error, setError] = useState('')
   const [giftId, setGiftId] = useState<string | null>(null)
   const trigger = useRef<HTMLButtonElement | null>(null)
@@ -225,6 +228,24 @@ export default function AdminImportJobs() {
       setRetrying(false)
     }
   }, [selected, retrying])
+  const cancel = useCallback(async () => {
+    if (!selected || cancelling) return
+    setCancelling(true)
+    setError('')
+    try {
+      const response = await fetchJson<Cancel>(
+        `/api/admin/import-jobs/${selected}/cancel`,
+        { method: 'POST' }
+      )
+      if ('error' in response)
+        setError(response.error || 'No se pudo cancelar la preparación.')
+      setVersion(value => value + 1)
+    } catch {
+      setError('No se pudo cancelar la preparación. Intentá nuevamente.')
+    } finally {
+      setCancelling(false)
+    }
+  }, [selected, cancelling])
   const job = details && 'job' in details ? details.job : null
   const unfinishedCount = job
     ? Math.max(
@@ -244,13 +265,15 @@ export default function AdminImportJobs() {
   )
   const retryReason = !job
     ? ''
-    : !job.acceptedAt
-      ? 'Este trabajo no fue aceptado y no tiene procesamiento para reintentar. Volvé a cargar el archivo y completá la revisión.'
-      : job.status === 'COMPLETED' || !unfinishedCount
-        ? 'No quedan filas pendientes o fallidas.'
-        : lockActive
-          ? `Hay un trabajador activo. El reintento estará disponible después de ${date(job.lockExpiresAt)}.`
-          : ''
+    : job.status === 'CANCELLED'
+      ? 'Esta preparación fue cancelada antes de aceptar la importación.'
+      : !job.acceptedAt
+        ? 'Este trabajo no fue aceptado y no tiene procesamiento para reintentar. Volvé a cargar el archivo y completá la revisión.'
+        : job.status === 'COMPLETED' || !unfinishedCount
+          ? 'No quedan filas pendientes o fallidas.'
+          : lockActive
+            ? `Hay un trabajador activo. El reintento estará disponible después de ${date(job.lockExpiresAt)}.`
+            : ''
 
   return (
     <div className="space-y-4">
@@ -432,8 +455,15 @@ export default function AdminImportJobs() {
               </p>
               {details.job.status === 'PREPARING' && (
                 <p className="text-sm">
-                  La importación no fue aceptada y no creó regalos. Volvé a
-                  cargar el archivo para completar la revisión.
+                  La importación todavía no fue aceptada. Si cerraste la
+                  revisión, cancelá esta preparación y volvé a cargar el
+                  archivo.
+                </p>
+              )}
+              {details.job.status === 'CANCELLED' && (
+                <p className="text-sm">
+                  La revisión se cerró sin aceptar la importación. No se creó ni
+                  modificó ningún regalo o colección.
                 </p>
               )}
               {details.job.acceptedAt && unfinishedCount > 0 && (
@@ -445,13 +475,23 @@ export default function AdminImportJobs() {
                   .
                 </p>
               )}
-              <Button
-                variant="outline"
-                disabled={!canRetry || retrying}
-                onClick={() => void retry()}
-              >
-                {retrying ? 'Enviando…' : 'Reintentar pendientes y fallidos'}
-              </Button>
+              {details.job.status === 'PREPARING' ? (
+                <Button
+                  variant="outline"
+                  disabled={cancelling}
+                  onClick={() => void cancel()}
+                >
+                  {cancelling ? 'Cancelando…' : 'Cancelar preparación'}
+                </Button>
+              ) : details.job.status !== 'CANCELLED' ? (
+                <Button
+                  variant="outline"
+                  disabled={!canRetry || retrying}
+                  onClick={() => void retry()}
+                >
+                  {retrying ? 'Enviando…' : 'Reintentar pendientes y fallidos'}
+                </Button>
+              ) : null}
               {retryReason && (
                 <p className="text-xs text-textTertiary">{retryReason}</p>
               )}

@@ -62,6 +62,7 @@ export const JobListSchema = z.object({
   status: z
     .enum([
       'PREPARING',
+      'CANCELLED',
       'QUEUED',
       'PROCESSING',
       'COMPLETED',
@@ -81,7 +82,8 @@ export const JobDetailsSchema = z.object({
   historyPage: z.number().int().min(0).default(0),
 })
 export const jobStatusLabels = {
-  PREPARING: 'Preparando',
+  PREPARING: 'Borrador en revisión',
+  CANCELLED: 'Cancelada',
   QUEUED: 'En cola',
   PROCESSING: 'Procesando',
   COMPLETED: 'Completada',

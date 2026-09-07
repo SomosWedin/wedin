@@ -177,5 +177,8 @@ whenever you touch something documented below.
   every gift/collection change and row checkpoint. `runId` isolates manual
   retries from older deliveries; `lockOwner` identifies each worker attempt.
   Expired leases are recoverable. Successful rows and history are retained.
+  Closing or backing out of an import review marks its unaccepted `PREPARING`
+  job as `CANCELLED`; cancellation never changes an accepted job. Adding this
+  enum value needs a regenerated Prisma client but no MongoDB data migration.
   Collection rows store the reviewed membership snapshot and refuse to overwrite
   a collection that changed before the worker commits its exact synchronization.
