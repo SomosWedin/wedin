@@ -3,20 +3,24 @@ import type { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { dispatchImportJob } from '@/lib/server/import-queue'
 import prisma from '@/prisma/client'
+import type { CollectionImportPreviewRow } from '@/schemas/collection-import'
+import { CollectionImportRowSchema } from '@/schemas/collection-import'
 import {
-  type GiftImportPreviewRow,
-  GiftImportRowSchema,
-} from '@/schemas/gift-import'
-import { previewRows } from './gift-import-preview'
-import { CategoryNotFoundError, createGiftRecord } from './gift-operations'
-import {
-  GiftlistSelectionError,
-  validateGiftlistIdsForCreate,
+  GiftlistGiftSelectionError,
+  validateCatalogGiftIds,
 } from './giftlist-operations'
+import { IMPORT_LEASE_MS, ImportBusyError } from './import-job-worker'
 
-export const IMPORT_LEASE_MS = 90_000
-export class ImportBusyError extends Error {}
-class RowValidationError extends Error {}
+class CollectionRowValidationError extends Error {}
+
+const sameIds = (left: string[], right: string[]) => {
+  const sortedLeft = [...left].sort()
+  const sortedRight = [...right].sort()
+  return (
+    sortedLeft.length === sortedRight.length &&
+    sortedLeft.every((id, index) => id === sortedRight[index])
+  )
+}
 
 async function fence(
   tx: Prisma.TransactionClient,
@@ -27,7 +31,6 @@ async function fence(
   const changed = await tx.giftImportJob.updateMany({
     where: {
       id: jobId,
-      kind: 'GIFT',
       runId,
       lockOwner: attemptId,
       lockExpiresAt: { gt: new Date() },
@@ -37,7 +40,7 @@ async function fence(
   if (!changed.count) throw new ImportBusyError('Worker lease expired')
 }
 
-export async function processImportJob(
+export async function processCollectionImportJob(
   jobId: string,
   runId: string,
   deliveryAttempt = 0
@@ -47,6 +50,7 @@ export async function processImportJob(
   const acquired = await prisma.giftImportJob.updateMany({
     where: {
       id: jobId,
+      kind: 'COLLECTION',
       runId,
       acceptedAt: { not: null },
       status: { in: ['QUEUED', 'PROCESSING', 'FAILED'] },
@@ -78,7 +82,7 @@ export async function processImportJob(
         attemptId,
         message: deliveryAttempt
           ? `Reintento automático ${Math.min(deliveryAttempt, 3)} de 3.`
-          : 'Procesamiento de lote iniciado.',
+          : 'Procesamiento de colecciones iniciado.',
       },
     })
     const rows = await prisma.giftImportRow.findMany({
@@ -92,100 +96,102 @@ export async function processImportJob(
         await prisma.$transaction(
           async tx => {
             await fence(tx, jobId, runId, attemptId)
-            const input = GiftImportRowSchema.parse(row.input)
+            CollectionImportRowSchema.parse(row.input)
             const accepted =
-              row.review as unknown as GiftImportPreviewRow | null
-            if (!accepted?.values)
-              throw new RowValidationError(
+              row.review as unknown as CollectionImportPreviewRow | null
+            if (!accepted?.values || accepted.errors.length)
+              throw new CollectionRowValidationError(
                 'La fila no tiene una revisión válida guardada.'
               )
-            input.category = accepted.values.categoryId
-            input.collections = [
-              ...accepted.values.giftlistIds,
-              ...accepted.values.newGiftlistNames,
-            ].join('|')
-            const [reviewed] = await previewRows(
+            const values = accepted.values
+            const targetGiftIds = await validateCatalogGiftIds(
               tx,
-              [input],
-              job.createMissingCollections
+              values.targetGiftIds
             )
-            let giftId = reviewed.existingGiftId
-            if (!giftId) {
-              // A removed reviewed collection must never become a new collection named after its ID.
-              await validateGiftlistIdsForCreate(
-                tx,
-                accepted.values.giftlistIds,
-                accepted.values.categoryId
-              )
-              if (reviewed.errors.length || !reviewed.values)
-                throw new RowValidationError(
-                  reviewed.errors.some(message =>
-                    message.includes('compartirían un tipo de evento')
-                  )
-                    ? 'Los regalos ya no comparten un tipo de evento con la colección.'
-                    : reviewed.errors.some(message =>
-                          message.includes('Categoría sin coincidencia')
-                        )
-                      ? 'La categoría revisada ya no existe.'
-                      : reviewed.errors.some(
-                            message =>
-                              message.includes('tipo') ||
-                              message.includes('Tipo')
-                          )
-                        ? 'Revisá los tipos de evento: cambiaron los tipos disponibles o admitidos por la categoría.'
-                        : 'La fila ya no pasa la validación. Revisá el nombre, precio, imagen y las colecciones guardadas.'
+            let collectionId = values.collectionId
+            if (collectionId) {
+              const collection = await tx.giftlist.findUnique({
+                where: { id: collectionId },
+                select: { id: true, normalizedName: true, giftIds: true },
+              })
+              if (!collection)
+                throw new CollectionRowValidationError(
+                  'La colección revisada ya no existe.'
                 )
-              const { giftlistIds, newGiftlistNames, ...values } =
-                reviewed.values
-              const collectionIds = [...giftlistIds]
-              for (const name of newGiftlistNames) {
-                const collection = await tx.giftlist.upsert({
-                  where: { normalizedName: name.toLocaleLowerCase('es-PY') },
-                  update: {},
-                  create: {
-                    name,
-                    normalizedName: name.toLocaleLowerCase('es-PY'),
+              if (
+                collection.normalizedName !==
+                  values.name.toLocaleLowerCase('es-PY') ||
+                !sameIds(collection.giftIds, values.expectedGiftIds)
+              )
+                throw new CollectionRowValidationError(
+                  'La colección cambió después de la revisión. Creá una nueva importación para revisar el estado actual.'
+                )
+              await tx.giftlist.update({
+                where: { id: collection.id },
+                data: { gifts: { set: targetGiftIds.map(id => ({ id })) } },
+              })
+            } else {
+              if (!targetGiftIds.length)
+                throw new CollectionRowValidationError(
+                  'No se puede crear una colección vacía.'
+                )
+              const duplicate = await tx.giftlist.findUnique({
+                where: {
+                  normalizedName: values.name.toLocaleLowerCase('es-PY'),
+                },
+                select: { id: true },
+              })
+              if (duplicate)
+                throw new CollectionRowValidationError(
+                  'La colección fue creada después de la revisión.'
+                )
+              collectionId = (
+                await tx.giftlist.create({
+                  data: {
+                    name: values.name,
+                    normalizedName: values.name.toLocaleLowerCase('es-PY'),
+                    gifts: {
+                      connect: targetGiftIds.map(id => ({ id })),
+                    },
                   },
                 })
-                collectionIds.push(collection.id)
-              }
-              const compatibleIds = await validateGiftlistIdsForCreate(
-                tx,
-                collectionIds,
-                values.categoryId
-              )
-              giftId = (
-                await createGiftRecord(
-                  tx,
-                  { ...values, isDefault: true },
-                  compatibleIds
-                )
               ).id
             }
-            const skipped = Boolean(reviewed.existingGiftId)
+            const status =
+              accepted.action === 'create'
+                ? 'CREATED'
+                : accepted.action === 'update'
+                  ? 'UPDATED'
+                  : 'SKIPPED'
             await tx.giftImportRow.update({
               where: { id: row.id },
               data: {
-                status: skipped ? 'SKIPPED' : 'CREATED',
-                giftId,
+                status,
+                collectionId,
                 error: null,
                 attempts: { increment: 1 },
               },
             })
             await tx.giftImportJob.update({
               where: { id: jobId },
-              data: skipped
-                ? { skippedCount: { increment: 1 } }
-                : { createdCount: { increment: 1 } },
+              data:
+                status === 'CREATED'
+                  ? { createdCount: { increment: 1 } }
+                  : status === 'UPDATED'
+                    ? { updatedCount: { increment: 1 } }
+                    : { skippedCount: { increment: 1 } },
             })
             await tx.giftImportHistory.create({
               data: {
                 jobId,
                 rowNumber: row.rowNumber,
                 attemptId,
-                message: skipped
-                  ? 'Omitida: el regalo ya existe en el catálogo.'
-                  : 'Regalo creado.',
+                message:
+                  status === 'CREATED'
+                    ? `Colección creada: ${accepted.added.length} regalos agregados, ${accepted.ignored.length} referencias ignoradas.`
+                    : status === 'UPDATED'
+                      ? `Colección actualizada: ${accepted.added.length} agregados, ${accepted.removed.length} removidos, ${accepted.ignored.length} referencias ignoradas.`
+                      : 'Omitida: la colección ya tenía exactamente estos regalos.',
               },
             })
           },
@@ -194,9 +200,8 @@ export async function processImportJob(
       } catch (error) {
         if (
           !(
-            error instanceof RowValidationError ||
-            error instanceof GiftlistSelectionError ||
-            error instanceof CategoryNotFoundError
+            error instanceof CollectionRowValidationError ||
+            error instanceof GiftlistGiftSelectionError
           )
         )
           throw error
@@ -255,7 +260,7 @@ export async function processImportJob(
     revalidatePath('/admin')
     revalidatePath('/gifts')
     revalidatePath('/wishlist')
-    if (pending) await dispatchImportJob(jobId, runId)
+    if (pending) await dispatchImportJob(jobId, runId, 'COLLECTION')
   } catch (error) {
     await prisma.$transaction(async tx => {
       const changed = await tx.giftImportJob.updateMany({
@@ -268,36 +273,10 @@ export async function processImportJob(
             jobId,
             attemptId,
             message:
-              'Error temporal al procesar el lote. La cola reintentará hasta tres veces; se conserva el trabajo completado.',
+              'Error temporal al procesar el lote. La cola reintentará y conservará las colecciones completadas.',
           },
         })
     })
     throw error
   }
-}
-
-export async function recordImportDeliveryFailure(
-  jobId: string,
-  runId: string
-) {
-  await prisma.$transaction(async tx => {
-    const changed = await tx.giftImportJob.updateMany({
-      where: {
-        id: jobId,
-        runId,
-        status: { in: ['QUEUED', 'PROCESSING'] },
-      },
-      // Exhaustion can arrive before the final worker lease expires. Preserve that lease.
-      data: { status: 'FAILED' },
-    })
-    if (changed.count)
-      await tx.giftImportHistory.create({
-        data: {
-          jobId,
-          attemptId: runId,
-          message:
-            'Se agotaron los reintentos de entrega. Reintentá los pendientes desde Trabajos.',
-        },
-      })
-  })
 }

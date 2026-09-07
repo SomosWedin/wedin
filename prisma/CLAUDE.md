@@ -167,8 +167,9 @@ whenever you touch something documented below.
   `false` default and take live sites down.
 
 - `GiftImportJob`, `GiftImportRow`, and `GiftImportHistory` persist staff gift
-  imports. Rows retain the mapped input, resolved review snapshot, and exclusion decision; the
-  job retains its catalog review token and collection-creation setting.
+  and collection imports. `kind` selects the worker and result presentation.
+  Rows retain the mapped input, resolved review snapshot, and exclusion decision; the
+  job retains its catalog review token and gift-import collection-creation setting.
   `submissionId` is required and unique. Row position and source row number
   are each unique within a job. No sparse indexes are needed. The tracked
   gift-import migration creates the collections/indexes before workers run.
@@ -176,3 +177,5 @@ whenever you touch something documented below.
   every gift/collection change and row checkpoint. `runId` isolates manual
   retries from older deliveries; `lockOwner` identifies each worker attempt.
   Expired leases are recoverable. Successful rows and history are retained.
+  Collection rows store the reviewed membership snapshot and refuse to overwrite
+  a collection that changed before the worker commits its exact synchronization.

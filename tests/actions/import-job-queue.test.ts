@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   history: vi.fn(),
   process: vi.fn(),
+  processCollection: vi.fn(),
   failure: vi.fn(),
 }))
 vi.mock('@upstash/qstash', async importOriginal => {
@@ -30,7 +31,11 @@ vi.mock('@/actions/data/import-job-worker', () => ({
   processImportJob: mocks.process,
   recordImportDeliveryFailure: mocks.failure,
 }))
+vi.mock('@/actions/data/collection-import-worker', () => ({
+  processCollectionImportJob: mocks.processCollection,
+}))
 
+import { POST as collectionPOST } from '@/app/api/jobs/collection-import/route'
 import { POST as failurePOST } from '@/app/api/jobs/gift-import/failure/route'
 import { POST } from '@/app/api/jobs/gift-import/route'
 import { chunkGiftImportRows } from '@/lib/gift-import'
@@ -93,6 +98,23 @@ describe('QStash gift import boundary', () => {
         )
       ).status
     ).toBe(200)
+  })
+  it('uses a separate signed collection endpoint with the same identifier-only message', async () => {
+    const path = '/api/jobs/collection-import'
+    expect(
+      (await collectionPOST(signed(JSON.stringify({ jobId, runId }), path)))
+        .status
+    ).toBe(200)
+    expect(mocks.processCollection).toHaveBeenCalledWith(jobId, runId, 0)
+
+    await dispatchImportJob(jobId, runId, 'COLLECTION')
+    expect(mocks.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: `${base}${path}`,
+        body: { jobId, runId },
+        failureCallback: `${base}${path}/failure`,
+      })
+    )
   })
   it('rejects missing, forged, modified-body, and wrong-endpoint signatures', async () => {
     const body = JSON.stringify({ jobId, runId })

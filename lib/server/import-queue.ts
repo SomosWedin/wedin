@@ -40,20 +40,28 @@ export async function verifyImportSignature(
   }
 }
 
-export async function dispatchImportJob(jobId: string, runId: string) {
+export async function dispatchImportJob(
+  jobId: string,
+  runId: string,
+  kind: 'GIFT' | 'COLLECTION' = 'GIFT'
+) {
   try {
     const { devMode, base } = importQueueConfig()
     const client = new Client({
       devMode,
       token: process.env.QSTASH_TOKEN || '',
     })
+    const path =
+      kind === 'COLLECTION'
+        ? '/api/jobs/collection-import'
+        : '/api/jobs/gift-import'
     await client.publishJSON({
-      url: `${base}/api/jobs/gift-import`,
+      url: `${base}${path}`,
       body: { jobId, runId },
       retries: 3,
       retryDelay: '95000',
       timeout: '60s',
-      failureCallback: `${base}/api/jobs/gift-import/failure`,
+      failureCallback: `${base}${path}/failure`,
     })
   } catch {
     await prisma.$transaction(async tx => {

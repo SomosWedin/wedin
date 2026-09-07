@@ -1,6 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  type MutableRefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import {
   getAdminImportJobDetails,
   getAdminImportJobs,
@@ -16,7 +22,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { jobStatusLabels, rowStatusLabels } from '@/schemas/import-job'
+import type { CollectionImportPreviewRow } from '@/schemas/collection-import'
+import {
+  importKindLabels,
+  jobStatusLabels,
+  rowStatusLabels,
+} from '@/schemas/import-job'
 
 type Jobs = Awaited<ReturnType<typeof getAdminImportJobs>>
 type Details = Awaited<ReturnType<typeof getAdminImportJobDetails>>
@@ -55,10 +66,56 @@ function Pager({
   )
 }
 
+function CollectionJobResult({
+  review,
+  onGift,
+  giftTrigger,
+}: {
+  review: CollectionImportPreviewRow
+  onGift: (id: string) => void
+  giftTrigger: MutableRefObject<HTMLButtonElement | null>
+}) {
+  const groups = [
+    ['Agregados', review.added],
+    ['Quitados', review.removed],
+    ['Conservados', review.retained],
+  ] as const
+  return (
+    <div className="space-y-1 text-xs">
+      {groups.map(([label, gifts]) =>
+        gifts.length ? (
+          <p key={label}>
+            {label}:{' '}
+            {gifts.map((gift, index) => (
+              <span key={gift.id}>
+                {index > 0 && ', '}
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={event => {
+                    giftTrigger.current = event.currentTarget
+                    onGift(gift.id)
+                  }}
+                >
+                  {gift.name}
+                </button>
+              </span>
+            ))}
+          </p>
+        ) : null
+      )}
+      {review.ignored.length > 0 && (
+        <p>Ignorados: {review.ignored.map(item => item.name).join(', ')}</p>
+      )}
+    </div>
+  )
+}
+
 export default function AdminImportJobs() {
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [kind, setKind] = useState('')
   const [result, setResult] = useState<Jobs | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [details, setDetails] = useState<Details | null>(null)
@@ -82,6 +139,7 @@ export default function AdminImportJobs() {
         page,
         search,
         ...(status ? { status } : {}),
+        ...(kind ? { kind } : {}),
       }).catch(
         () => ({ error: 'No se pudieron cargar los trabajos.' }) as const
       )
@@ -94,7 +152,7 @@ export default function AdminImportJobs() {
       cancelled = true
       clearInterval(interval)
     }
-  }, [page, search, status, version])
+  }, [page, search, status, kind, version])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Manual retries must immediately reload persisted status.
   useEffect(() => {
@@ -172,6 +230,22 @@ export default function AdminImportJobs() {
             </option>
           ))}
         </select>
+        <select
+          aria-label="Tipo de importación"
+          className="rounded-md border p-2"
+          value={kind}
+          onChange={event => {
+            setKind(event.target.value)
+            setPage(0)
+          }}
+        >
+          <option value="">Todos los tipos</option>
+          {Object.entries(importKindLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
       {!result ? (
         <p role="status">Cargando trabajos…</p>
@@ -181,17 +255,16 @@ export default function AdminImportJobs() {
         <>
           <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-left text-sm">
-              <caption className="sr-only">
-                Trabajos de importación de regalos
-              </caption>
+              <caption className="sr-only">Trabajos de importación</caption>
               <thead className="bg-gray-50">
                 <tr>
                   {[
                     'Archivo',
+                    'Tipo',
                     'Enviado por',
                     'Estado',
                     'Procesadas / total',
-                    'Creados / omitidos / fallidos',
+                    'Resultados',
                     'Fechas',
                     'Acciones',
                   ].map(label => (
@@ -207,10 +280,14 @@ export default function AdminImportJobs() {
                     <td className="max-w-64 break-words p-3">
                       {item.filename}
                     </td>
+                    <td className="p-3">{importKindLabels[item.kind]}</td>
                     <td className="p-3">{item.submittedBy}</td>
                     <td className="p-3">{jobStatusLabels[item.status]}</td>
                     <td className="p-3">
-                      {item.createdCount + item.skippedCount + item.failedCount}{' '}
+                      {item.createdCount +
+                        item.updatedCount +
+                        item.skippedCount +
+                        item.failedCount}{' '}
                       / {item.expectedRows}
                       {item.status === 'PREPARING' && (
                         <span className="block text-xs">
@@ -219,8 +296,18 @@ export default function AdminImportJobs() {
                       )}
                     </td>
                     <td className="p-3">
-                      {item.createdCount} / {item.skippedCount} /{' '}
-                      {item.failedCount}
+                      {item.kind === 'COLLECTION' ? (
+                        <>
+                          {item.createdCount} creadas · {item.updatedCount}{' '}
+                          actualizadas · {item.skippedCount} omitidas ·{' '}
+                          {item.failedCount} fallidas
+                        </>
+                      ) : (
+                        <>
+                          {item.createdCount} creados · {item.skippedCount}{' '}
+                          omitidos · {item.failedCount} fallidos
+                        </>
+                      )}
                     </td>
                     <td className="whitespace-nowrap p-3 text-xs">
                       Creada: {date(item.createdAt)}
@@ -284,6 +371,7 @@ export default function AdminImportJobs() {
           ) : (
             <>
               <p>
+                {importKindLabels[details.job.kind]} ·{' '}
                 {jobStatusLabels[details.job.status]} ·{' '}
                 {details.job.submittedBy}
               </p>
@@ -314,7 +402,14 @@ export default function AdminImportJobs() {
                   <caption className="sr-only">Resultados por fila</caption>
                   <thead>
                     <tr>
-                      {['Fila', 'Regalo', 'Estado', 'Resultado'].map(label => (
+                      {[
+                        'Fila',
+                        details.job.kind === 'COLLECTION'
+                          ? 'Colección'
+                          : 'Regalo',
+                        'Estado',
+                        'Resultado',
+                      ].map(label => (
                         <th className="p-2" scope="col" key={label}>
                           {label}
                         </th>
@@ -333,6 +428,15 @@ export default function AdminImportJobs() {
                         <td className="p-2">{rowStatusLabels[row.status]}</td>
                         <td className="p-2">
                           {row.error}
+                          {details.job.kind === 'COLLECTION' && row.review && (
+                            <CollectionJobResult
+                              review={
+                                row.review as unknown as CollectionImportPreviewRow
+                              }
+                              onGift={id => setGiftId(id)}
+                              giftTrigger={giftTrigger}
+                            />
+                          )}
                           {row.giftId && (
                             <button
                               type="button"

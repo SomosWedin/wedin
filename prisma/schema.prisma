@@ -329,8 +329,14 @@ enum ImportJobStatus {
 enum ImportRowStatus {
   PENDING
   CREATED
+  UPDATED
   SKIPPED
   FAILED
+}
+
+enum ImportJobKind {
+  GIFT
+  COLLECTION
 }
 
 model GiftImportJob {
@@ -339,6 +345,7 @@ model GiftImportJob {
   submittedById            String              @db.ObjectId
   submittedBy              String
   filename                 String
+  kind                     ImportJobKind       @default(GIFT)
   expectedRows             Int
   uploadedRows             Int                 @default(0)
   uploadedBytes            Int                 @default(0)
@@ -350,6 +357,7 @@ model GiftImportJob {
   lockOwner                String              @default("")
   lockExpiresAt            DateTime
   createdCount             Int                 @default(0)
+  updatedCount             Int                 @default(0)
   skippedCount             Int                 @default(0)
   failedCount              Int                 @default(0)
   createdAt                DateTime            @default(now())
@@ -360,23 +368,25 @@ model GiftImportJob {
   history                  GiftImportHistory[]
 
   @@index([status, createdAt])
+  @@index([kind, status, createdAt])
   @@index([createdAt])
 }
 
 model GiftImportRow {
-  id        String          @id @default(auto()) @map("_id") @db.ObjectId
-  jobId     String          @db.ObjectId
-  job       GiftImportJob   @relation(fields: [jobId], references: [id])
-  rowNumber Int
-  position  Int
-  input     Json
-  review    Json?
-  excluded  Boolean         @default(false)
-  status    ImportRowStatus @default(PENDING)
-  giftId    String?
-  error     String?
-  attempts  Int             @default(0)
-  updatedAt DateTime        @updatedAt
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  jobId        String          @db.ObjectId
+  job          GiftImportJob   @relation(fields: [jobId], references: [id])
+  rowNumber    Int
+  position     Int
+  input        Json
+  review       Json?
+  excluded     Boolean         @default(false)
+  status       ImportRowStatus @default(PENDING)
+  giftId       String?
+  collectionId String?
+  error        String?
+  attempts     Int             @default(0)
+  updatedAt    DateTime        @updatedAt
 
   @@unique([jobId, rowNumber])
   @@unique([jobId, position])

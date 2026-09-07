@@ -36,6 +36,14 @@ vi.mock('@/prisma/client', () => ({
   },
 }))
 
+import {
+  acceptAdminCollectionImport,
+  getAdminCollectionImportReviewRows,
+  reviewAdminCollectionImportJob,
+  startAdminCollectionImportJob,
+  uploadAdminCollectionImportRows,
+} from '@/actions/data/collection-import'
+import { processCollectionImportJob } from '@/actions/data/collection-import-worker'
 import * as giftOperations from '@/actions/data/gift-operations'
 import {
   acceptAdminGiftImport,
@@ -54,6 +62,7 @@ import {
 } from '@/actions/data/import-job-worker'
 import { POST as workerPOST } from '@/app/api/jobs/gift-import/route'
 import { up } from '@/scripts/migrations/20260906040326_gift_import_jobs'
+import { up as extendImportJobs } from '@/scripts/migrations/20260906190000_extend_import_jobs_for_collections'
 
 const admin = {
   id: 'aaaaaaaaaaaaaaaaaaaaaaaa',
@@ -99,6 +108,38 @@ async function accepted(rows = [inputRow(1)], collections = false) {
   expect(await acceptAdminGiftImport(input)).toEqual({ jobId: input.jobId })
   return local.giftImportJob.findUniqueOrThrow({ where: { id: input.jobId } })
 }
+async function prepareCollections(
+  rows: {
+    rowNumber: number
+    name: string
+    gifts: {
+      sourceKey: string
+      name: string
+      giftId?: string
+    }[]
+  }[]
+) {
+  const started = await startAdminCollectionImportJob({
+    submissionId: randomUUID(),
+    filename: 'collections.csv',
+    expectedRows: rows.length,
+  })
+  if (!started.jobId) throw new Error(started.error)
+  expect(
+    await uploadAdminCollectionImportRows({
+      jobId: started.jobId,
+      offset: 0,
+      rows,
+    })
+  ).toEqual({ ok: true })
+  const reviewed = await reviewAdminCollectionImportJob(started.jobId)
+  if (!('previewToken' in reviewed)) throw new Error(reviewed.error)
+  return {
+    jobId: started.jobId,
+    previewToken: reviewed.previewToken,
+    excludedRowNumbers: [] as number[],
+  }
+}
 
 describe.skipIf(process.env.RUN_LOCAL_IMPORT_TESTS !== '1')(
   'gift import jobs with local MongoDB',
@@ -106,6 +147,8 @@ describe.skipIf(process.env.RUN_LOCAL_IMPORT_TESTS !== '1')(
     beforeAll(async () => {
       await up(local)
       await up(local)
+      await extendImportJobs(local)
+      await extendImportJobs(local)
       await local.$runCommandRaw({
         createIndexes: 'Gift',
         indexes: [
@@ -173,6 +216,11 @@ describe.skipIf(process.env.RUN_LOCAL_IMPORT_TESTS !== '1')(
         getAdminImportJobDetails,
         getAdminImportReviewRows,
         retryAdminImportJob,
+        startAdminCollectionImportJob,
+        uploadAdminCollectionImportRows,
+        reviewAdminCollectionImportJob,
+        acceptAdminCollectionImport,
+        getAdminCollectionImportReviewRows,
       ])
         expect(await action({})).toEqual({ error: 'No autorizado.' })
       expect(await local.giftImportJob.count()).toBe(0)
@@ -353,6 +401,118 @@ describe.skipIf(process.env.RUN_LOCAL_IMPORT_TESTS !== '1')(
       expect(await local.giftImportRow.findFirst()).toMatchObject({
         giftId: gift.id,
         status: 'CREATED',
+      })
+    })
+    it('exactly synchronizes collections without creating missing gifts', async () => {
+      const oldGift = await local.gift.create({
+        data: {
+          name: 'Old gift',
+          nameScopeKey: 'old-gift',
+          price: '1000',
+          isDefault: true,
+          category: { connect: { id: categoryId } },
+        },
+      })
+      const newGift = await local.gift.create({
+        data: {
+          name: 'New gift',
+          nameScopeKey: 'new-gift',
+          price: '1000',
+          isDefault: true,
+          category: { connect: { id: categoryId } },
+        },
+      })
+      const collection = await local.giftlist.create({
+        data: {
+          name: 'Test collection',
+          normalizedName: 'test collection',
+          gifts: { connect: { id: oldGift.id } },
+        },
+      })
+      const input = await prepareCollections([
+        {
+          rowNumber: 2,
+          name: collection.name,
+          gifts: [
+            { sourceKey: 'new', name: newGift.name },
+            { sourceKey: 'missing', name: 'Missing gift' },
+          ],
+        },
+      ])
+      expect(
+        await acceptAdminCollectionImport({
+          ...input,
+          acknowledgeRemovals: true,
+          acknowledgeIgnored: true,
+        })
+      ).toEqual({ jobId: input.jobId })
+      const job = await local.giftImportJob.findUniqueOrThrow({
+        where: { id: input.jobId },
+      })
+      await processCollectionImportJob(job.id, job.runId)
+      await processCollectionImportJob(job.id, job.runId)
+      expect(
+        await local.giftlist.findUnique({ where: { id: collection.id } })
+      ).toMatchObject({ giftIds: [newGift.id] })
+      expect(await local.gift.count()).toBe(2)
+      expect(
+        await local.giftImportJob.findUnique({ where: { id: job.id } })
+      ).toMatchObject({ status: 'COMPLETED', updatedCount: 1 })
+      expect(await local.giftImportRow.findFirst()).toMatchObject({
+        status: 'UPDATED',
+        collectionId: collection.id,
+      })
+    })
+    it('does not overwrite a collection changed after acceptance', async () => {
+      const reviewedGift = await local.gift.create({
+        data: {
+          name: 'Reviewed gift',
+          nameScopeKey: 'reviewed-gift',
+          price: '1000',
+          isDefault: true,
+          category: { connect: { id: categoryId } },
+        },
+      })
+      const laterGift = await local.gift.create({
+        data: {
+          name: 'Later gift',
+          nameScopeKey: 'later-gift',
+          price: '1000',
+          isDefault: true,
+          category: { connect: { id: categoryId } },
+        },
+      })
+      const collection = await local.giftlist.create({
+        data: { name: 'Changing', normalizedName: 'changing' },
+      })
+      const input = await prepareCollections([
+        {
+          rowNumber: 2,
+          name: collection.name,
+          gifts: [{ sourceKey: 'reviewed', name: reviewedGift.name }],
+        },
+      ])
+      expect(
+        await acceptAdminCollectionImport({
+          ...input,
+          acknowledgeRemovals: false,
+          acknowledgeIgnored: false,
+        })
+      ).toEqual({ jobId: input.jobId })
+      await local.giftlist.update({
+        where: { id: collection.id },
+        data: { gifts: { set: [{ id: laterGift.id }] } },
+      })
+      const job = await local.giftImportJob.findUniqueOrThrow({
+        where: { id: input.jobId },
+      })
+      await processCollectionImportJob(job.id, job.runId)
+      expect(
+        await local.giftlist.findUnique({ where: { id: collection.id } })
+      ).toMatchObject({ giftIds: [laterGift.id] })
+      expect(await local.giftImportRow.findFirst()).toMatchObject({
+        status: 'FAILED',
+        error: expect.stringContaining('cambió después de la revisión'),
       })
     })
     it('revalidates collection compatibility, continues other rows, and retries only failed work', async () => {

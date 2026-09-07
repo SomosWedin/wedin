@@ -9,6 +9,8 @@ import {
 
 const MAX_EXPANDED_BYTES = 40 * 1024 * 1024
 const MAX_DATASETS = 20
+const MAX_CELL_CHARS = 64 * 1024
+const DEFAULT_CELL_CHARS = 4096
 const spreadsheetExtension = /\.(csv|xlsx|xls)$/i
 
 function readZip(data: Uint8Array, spreadsheetsOnly: boolean) {
@@ -142,8 +144,7 @@ function parseCsv(text: string): string[][] {
     else if (character === '"')
       throw new Error('El CSV tiene comillas sin escapar.')
     else if (!closedQuote) cell += character
-    if (cell.length > 4096)
-      throw new Error('Una celda supera 4.096 caracteres.')
+    if (cell.length > MAX_CELL_CHARS) throw new Error('Una celda supera 64 KB.')
   }
   if (quoted) throw new Error('El CSV tiene una celda con comillas sin cerrar.')
   if (cell || row.length || closedQuote) finishRow()
@@ -165,9 +166,21 @@ function toDataset(
   const headers = Array.from({ length: width }, (_, index) =>
     String(header[index] ?? '').trim()
   )
+  const allowsLongRelations = (header: string) =>
+    ['regalos', 'gifts', 'productos', 'items'].includes(
+      header.trim().toLocaleLowerCase('es')
+    )
   const rows = matrix.slice(headerIndex + 1).flatMap((row, index) => {
     const cells = headers.map((_, column) => String(row[column] ?? '').trim())
-    if (cells.some(cell => cell.length > 4096))
+    if (cells.some(cell => cell.length > MAX_CELL_CHARS))
+      throw new Error(`${name}: una celda supera 64 KB.`)
+    if (
+      cells.some(
+        (cell, column) =>
+          cell.length > DEFAULT_CELL_CHARS &&
+          !allowsLongRelations(headers[column])
+      )
+    )
       throw new Error(`${name}: una celda supera 4.096 caracteres.`)
     return cells.some(Boolean)
       ? [{ rowNumber: headerIndex + index + 2, cells }]
@@ -175,9 +188,7 @@ function toDataset(
   })
   if (!rows.length) return null
   if (rows.length > MAX_IMPORT_ROWS)
-    throw new Error(
-      `${name}: máximo ${MAX_IMPORT_ROWS} regalos por importación.`
-    )
+    throw new Error(`${name}: máximo ${MAX_IMPORT_ROWS} filas por importación.`)
   return { name, headers, rows }
 }
 

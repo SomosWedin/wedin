@@ -81,10 +81,10 @@ export async function previewRows(
   }))
 }
 
-export async function saveImportReview(
+export async function saveImportReview<T extends { rowNumber: number }>(
   client: Prisma.TransactionClient,
   jobId: string,
-  preview: GiftImportPreviewRow[]
+  preview: T[]
 ) {
   for (let offset = 0; offset < preview.length; offset += 100) {
     const saved = await client.$runCommandRaw({

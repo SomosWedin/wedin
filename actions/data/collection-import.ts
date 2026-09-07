@@ -5,27 +5,27 @@ import { getCurrentUser } from '@/actions/get-current-user'
 import { dispatchImportJob } from '@/lib/server/import-queue'
 import prisma from '@/prisma/client'
 import {
-  GiftImportRowsSchema,
-  MAX_IMPORT_PAYLOAD_BYTES,
-} from '@/schemas/gift-import'
+  type CollectionImportPreviewRow,
+  CollectionImportRowsSchema,
+} from '@/schemas/collection-import'
+import { MAX_IMPORT_PAYLOAD_BYTES } from '@/schemas/gift-import'
 import {
-  AcceptImportJobSchema,
+  AcceptCollectionImportJobSchema,
   JobDetailsSchema,
   JobIdSchema,
-  JobListSchema,
-  StartImportJobSchema,
-  UploadImportRowsSchema,
+  StartCollectionImportJobSchema,
+  UploadCollectionImportRowsSchema,
 } from '@/schemas/import-job'
 import {
-  previewRows,
-  reviewResult,
-  saveImportReview,
-} from './gift-import-preview'
+  collectionReviewResult,
+  previewCollectionRows,
+  saveCollectionImportReview,
+} from './collection-import-preview'
 
-export async function startAdminImportJob(input: unknown) {
+export async function startAdminCollectionImportJob(input: unknown) {
   const user = await getCurrentUser()
   if (user?.role !== 'ADMIN') return { error: 'No autorizado.' } as const
-  const parsed = StartImportJobSchema.safeParse(input)
+  const parsed = StartCollectionImportJobSchema.safeParse(input)
   if (!parsed.success)
     return { error: 'Datos de importación inválidos.' } as const
   try {
@@ -34,7 +34,8 @@ export async function startAdminImportJob(input: unknown) {
       update: {},
       create: {
         ...parsed.data,
-        kind: 'GIFT',
+        kind: 'COLLECTION',
+        createMissingCollections: false,
         submittedById: user.id,
         submittedBy: user.name || user.email || user.id,
         lockExpiresAt: new Date(0),
@@ -42,43 +43,38 @@ export async function startAdminImportJob(input: unknown) {
     })
     if (
       job.submittedById !== user.id ||
-      job.kind !== 'GIFT' ||
+      job.kind !== 'COLLECTION' ||
       job.filename !== parsed.data.filename ||
-      job.expectedRows !== parsed.data.expectedRows ||
-      job.createMissingCollections !== parsed.data.createMissingCollections
+      job.expectedRows !== parsed.data.expectedRows
     )
       return { error: 'La solicitud ya pertenece a otra importación.' } as const
     return { jobId: job.id } as const
   } catch {
-    // Concurrent starts can lose the unique-index race after the same job was saved.
     const existing = await prisma.giftImportJob
       .findUnique({ where: { submissionId: parsed.data.submissionId } })
       .catch(() => null)
     if (
       existing?.submittedById === user.id &&
-      existing.kind === 'GIFT' &&
+      existing.kind === 'COLLECTION' &&
       existing.filename === parsed.data.filename &&
-      existing.expectedRows === parsed.data.expectedRows &&
-      existing.createMissingCollections === parsed.data.createMissingCollections
+      existing.expectedRows === parsed.data.expectedRows
     )
       return { jobId: existing.id } as const
-    return {
-      error: 'No se pudo preparar la importación. Intentá nuevamente.',
-    } as const
+    return { error: 'No se pudo preparar la importación.' } as const
   }
 }
 
-export async function uploadAdminImportRows(input: unknown) {
+export async function uploadAdminCollectionImportRows(input: unknown) {
   const user = await getCurrentUser()
   if (user?.role !== 'ADMIN') return { error: 'No autorizado.' } as const
-  const parsed = UploadImportRowsSchema.safeParse(input)
+  const parsed = UploadCollectionImportRowsSchema.safeParse(input)
   if (!parsed.success)
     return { error: 'Bloque de importación inválido.' } as const
   const { jobId, rows, offset } = parsed.data
   try {
     return await prisma.$transaction(async tx => {
       const job = await tx.giftImportJob.findUnique({ where: { id: jobId } })
-      if (job?.kind !== 'GIFT' || job.submittedById !== user.id)
+      if (job?.kind !== 'COLLECTION' || job.submittedById !== user.id)
         return { error: 'Importación no encontrada.' } as const
       if (offset < job.uploadedRows) {
         const saved = await tx.giftImportRow.findMany({
@@ -87,7 +83,8 @@ export async function uploadAdminImportRows(input: unknown) {
         })
         return saved.length === rows.length &&
           saved.every(
-            (row, i) => JSON.stringify(row.input) === JSON.stringify(rows[i])
+            (row, index) =>
+              JSON.stringify(row.input) === JSON.stringify(rows[index])
           )
           ? ({ ok: true } as const)
           : ({ error: 'El bloque ya guardado es diferente.' } as const)
@@ -109,23 +106,21 @@ export async function uploadAdminImportRows(input: unknown) {
         },
       })
       await tx.giftImportRow.createMany({
-        data: rows.map((row, i) => ({
+        data: rows.map((row, index) => ({
           jobId,
           rowNumber: row.rowNumber,
-          position: offset + i,
+          position: offset + index,
           input: row,
         })),
       })
       return { ok: true } as const
     })
   } catch {
-    return {
-      error: 'No se pudo guardar el bloque. Intentá nuevamente.',
-    } as const
+    return { error: 'No se pudo guardar el bloque.' } as const
   }
 }
 
-export async function reviewAdminImportJob(input: unknown) {
+export async function reviewAdminCollectionImportJob(input: unknown) {
   const user = await getCurrentUser()
   if (user?.role !== 'ADMIN') return { error: 'No autorizado.' } as const
   const parsed = JobIdSchema.safeParse(input)
@@ -137,7 +132,7 @@ export async function reviewAdminImportJob(input: unknown) {
           where: { id: parsed.data },
         })
         if (
-          job?.kind !== 'GIFT' ||
+          job?.kind !== 'COLLECTION' ||
           job.submittedById !== user.id ||
           job.status !== 'PREPARING' ||
           job.uploadedRows !== job.expectedRows
@@ -147,30 +142,30 @@ export async function reviewAdminImportJob(input: unknown) {
           where: { jobId: job.id },
           orderBy: { position: 'asc' },
         })
-        const rows = GiftImportRowsSchema.parse(saved.map(row => row.input))
-        const reviewed = reviewResult(
-          await previewRows(tx, rows, job.createMissingCollections)
+        const rows = CollectionImportRowsSchema.parse(
+          saved.map(row => row.input)
+        )
+        const reviewed = collectionReviewResult(
+          await previewCollectionRows(tx, rows)
         )
         await tx.giftImportJob.update({
           where: { id: job.id },
           data: { previewToken: reviewed.previewToken },
         })
-        await saveImportReview(tx, job.id, reviewed.preview)
+        await saveCollectionImportReview(tx, job.id, reviewed.preview)
         return {
           previewToken: reviewed.previewToken,
           rowCount: reviewed.preview.length,
-        }
+        } as const
       },
       { timeout: 30000 }
     )
   } catch {
-    return {
-      error: 'No se pudo revisar la importación. Intentá nuevamente.',
-    } as const
+    return { error: 'No se pudo revisar la importación.' } as const
   }
 }
 
-export async function getAdminImportReviewRows(input: unknown) {
+export async function getAdminCollectionImportReviewRows(input: unknown) {
   const user = await getCurrentUser()
   if (user?.role !== 'ADMIN') return { error: 'No autorizado.' } as const
   const parsed = JobDetailsSchema.safeParse(input)
@@ -180,7 +175,7 @@ export async function getAdminImportReviewRows(input: unknown) {
       where: { id: parsed.data.jobId },
     })
     if (
-      job?.kind !== 'GIFT' ||
+      job?.kind !== 'COLLECTION' ||
       job.submittedById !== user.id ||
       !job.previewToken ||
       job.status !== 'PREPARING'
@@ -195,8 +190,7 @@ export async function getAdminImportReviewRows(input: unknown) {
     })
     return {
       preview: rows.map(
-        row =>
-          row.review as unknown as import('@/schemas/gift-import').GiftImportPreviewRow
+        row => row.review as unknown as CollectionImportPreviewRow
       ),
       previewToken: job.previewToken,
     } as const
@@ -205,10 +199,10 @@ export async function getAdminImportReviewRows(input: unknown) {
   }
 }
 
-export async function acceptAdminGiftImport(input: unknown) {
+export async function acceptAdminCollectionImport(input: unknown) {
   const user = await getCurrentUser()
   if (user?.role !== 'ADMIN') return { error: 'No autorizado.' } as const
-  const parsed = AcceptImportJobSchema.safeParse(input)
+  const parsed = AcceptCollectionImportJobSchema.safeParse(input)
   if (!parsed.success)
     return { error: 'Datos de importación inválidos.' } as const
   try {
@@ -217,7 +211,7 @@ export async function acceptAdminGiftImport(input: unknown) {
         const job = await tx.giftImportJob.findUnique({
           where: { id: parsed.data.jobId },
         })
-        if (job?.kind !== 'GIFT' || job.submittedById !== user.id)
+        if (job?.kind !== 'COLLECTION' || job.submittedById !== user.id)
           return { error: 'Importación no encontrada.' } as const
         if (job.acceptedAt)
           return { jobId: job.id, runId: job.runId, dispatch: false } as const
@@ -231,19 +225,21 @@ export async function acceptAdminGiftImport(input: unknown) {
           where: { jobId: job.id },
           orderBy: { position: 'asc' },
         })
-        const rows = GiftImportRowsSchema.parse(saved.map(row => row.input))
-        const fresh = reviewResult(
-          await previewRows(tx, rows, job.createMissingCollections)
+        const rows = CollectionImportRowsSchema.parse(
+          saved.map(row => row.input)
+        )
+        const fresh = collectionReviewResult(
+          await previewCollectionRows(tx, rows)
         )
         if (fresh.previewToken !== parsed.data.previewToken) {
           await tx.giftImportJob.update({
             where: { id: job.id },
             data: { previewToken: fresh.previewToken },
           })
-          await saveImportReview(tx, job.id, fresh.preview)
+          await saveCollectionImportReview(tx, job.id, fresh.preview)
           return {
             error:
-              'El catálogo cambió desde la revisión. Revisá los datos actualizados antes de aceptar.',
+              'El catálogo cambió desde la revisión. Revisá los cambios actualizados.',
             previewToken: fresh.previewToken,
             reviewChanged: true,
           } as const
@@ -255,11 +251,25 @@ export async function acceptAdminGiftImport(input: unknown) {
         if (
           !included.length ||
           included.some(row => row.errors.length || !row.values) ||
-          Array.from(excluded).some(n => !rows.some(row => row.rowNumber === n))
+          Array.from(excluded).some(
+            rowNumber => !rows.some(row => row.rowNumber === rowNumber)
+          )
         )
           return {
             error:
-              'La revisión tiene errores. Seleccioná al menos un regalo válido.',
+              'La revisión tiene errores. Dejá al menos una colección válida.',
+          } as const
+        if (
+          included.some(row => row.removed.length) &&
+          !parsed.data.acknowledgeRemovals
+        )
+          return { error: 'Confirmá los regalos que se quitarán.' } as const
+        if (
+          included.some(row => row.ignored.length) &&
+          !parsed.data.acknowledgeIgnored
+        )
+          return {
+            error: 'Confirmá las referencias que se ignorarán.',
           } as const
         await tx.giftImportRow.updateMany({
           where: { jobId: job.id, rowNumber: { in: Array.from(excluded) } },
@@ -283,7 +293,7 @@ export async function acceptAdminGiftImport(input: unknown) {
           data: {
             jobId: job.id,
             attemptId: runId,
-            message: 'Importación aceptada y guardada.',
+            message: 'Importación de colecciones aceptada y guardada.',
           },
         })
         return { jobId: job.id, runId, dispatch: true } as const
@@ -291,133 +301,13 @@ export async function acceptAdminGiftImport(input: unknown) {
       { timeout: 30000 }
     )
     if ('error' in result) return result
-    if (result.dispatch) await dispatchImportJob(result.jobId, result.runId)
+    if (result.dispatch)
+      await dispatchImportJob(result.jobId, result.runId, 'COLLECTION')
     return { jobId: result.jobId } as const
   } catch {
-    const existing = await prisma.giftImportJob
-      .findUnique({ where: { id: parsed.data.jobId } })
-      .catch(() => null)
-    if (
-      existing?.submittedById === user.id &&
-      existing.acceptedAt &&
-      existing.status !== 'FAILED'
-    )
-      return { jobId: existing.id } as const
     return {
       error:
-        'No se pudo poner la importación en cola. Revisá su estado en Trabajos; podés reintentar sin duplicar regalos.',
-    } as const
-  }
-}
-
-export async function getAdminImportJobs(input: unknown) {
-  if ((await getCurrentUser())?.role !== 'ADMIN')
-    return { error: 'No autorizado.' } as const
-  const parsed = JobListSchema.safeParse(input)
-  if (!parsed.success) return { error: 'Filtros inválidos.' } as const
-  const { page, search, status, kind } = parsed.data
-  const where = {
-    ...(status ? { status } : {}),
-    ...(kind ? { kind } : {}),
-    ...(search
-      ? { filename: { contains: search, mode: 'insensitive' as const } }
-      : {}),
-  }
-  try {
-    const [jobs, total] = await Promise.all([
-      prisma.giftImportJob.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: page * 20,
-        take: 20,
-      }),
-      prisma.giftImportJob.count({ where }),
-    ])
-    return { jobs, total } as const
-  } catch {
-    return { error: 'No se pudieron cargar los trabajos.' } as const
-  }
-}
-
-export async function getAdminImportJobDetails(input: unknown) {
-  if ((await getCurrentUser())?.role !== 'ADMIN')
-    return { error: 'No autorizado.' } as const
-  const parsed = JobDetailsSchema.safeParse(input)
-  if (!parsed.success) return { error: 'Importación inválida.' } as const
-  const { jobId, page, historyPage } = parsed.data
-  try {
-    const [job, rows, history, historyTotal] = await Promise.all([
-      prisma.giftImportJob.findUnique({ where: { id: jobId } }),
-      prisma.giftImportRow.findMany({
-        where: { jobId },
-        orderBy: { position: 'asc' },
-        skip: page * 20,
-        take: 20,
-      }),
-      prisma.giftImportHistory.findMany({
-        where: { jobId },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        skip: historyPage * 20,
-        take: 20,
-      }),
-      prisma.giftImportHistory.count({ where: { jobId } }),
-    ])
-    if (!job) return { error: 'Importación no encontrada.' } as const
-    return { job, rows, history, historyTotal } as const
-  } catch {
-    return { error: 'No se pudieron cargar los detalles.' } as const
-  }
-}
-
-export async function retryAdminImportJob(input: unknown) {
-  const user = await getCurrentUser()
-  if (user?.role !== 'ADMIN') return { error: 'No autorizado.' } as const
-  const parsed = JobIdSchema.safeParse(input)
-  if (!parsed.success) return { error: 'Importación inválida.' } as const
-  const runId = randomUUID()
-  try {
-    const result = await prisma.$transaction(async tx => {
-      const job = await tx.giftImportJob.findUnique({
-        where: { id: parsed.data },
-      })
-      if (
-        !job?.acceptedAt ||
-        job.status === 'COMPLETED' ||
-        job.lockExpiresAt > new Date()
-      )
-        return {
-          error: 'El trabajo está activo o no tiene filas para reintentar.',
-        } as const
-      await tx.giftImportRow.updateMany({
-        where: { jobId: job.id, status: 'FAILED', excluded: false },
-        data: { status: 'PENDING', error: null },
-      })
-      await tx.giftImportJob.update({
-        where: { id: job.id },
-        data: {
-          status: 'QUEUED',
-          failedCount: 0,
-          runId,
-          lockOwner: '',
-          lockExpiresAt: new Date(0),
-          completedAt: null,
-        },
-      })
-      await tx.giftImportHistory.create({
-        data: {
-          jobId: job.id,
-          attemptId: runId,
-          message: `Reintento solicitado por ${user.name || user.email || user.id}. Se conserva el trabajo completado.`,
-        },
-      })
-      return { jobId: job.id, kind: job.kind } as const
-    })
-    if ('error' in result) return result
-    await dispatchImportJob(result.jobId, runId, result.kind)
-    return { ok: true } as const
-  } catch {
-    return {
-      error: 'No se pudo enviar el trabajo. Podés reintentar desde esta tabla.',
+        'No se pudo poner la importación en cola. Revisá su estado en Trabajos.',
     } as const
   }
 }

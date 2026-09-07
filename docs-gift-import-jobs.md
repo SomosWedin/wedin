@@ -1,10 +1,16 @@
-# Background gift imports
+# Background catalog imports
 
 Staff upload and match a file, transfer mapped rows in requests of at most
 20 rows / 600 KB, review the persisted import (downloaded in pages of ten
 rows), then accept it. Acceptance rechecks the review token and all included rows before queueing. Only the job
 and run identifiers are sent through QStash. The modal can close after
 acceptance; `/admin/jobs` shows persisted progress and paginated details.
+
+Collection imports use the same job lifecycle. They synchronize only the
+collections present in the file, never create or edit gifts, and show added,
+removed, retained, missing, and ambiguous gift references before acceptance.
+The worker compares the reviewed membership snapshot before writing so a later
+admin edit is never overwritten silently.
 
 ## Review filters
 
@@ -34,8 +40,9 @@ Configure `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`,
 for the intended deployment environment. The callback origin must reach this
 same deployment and database. Use separate queue credentials and callback
 origins for preview environments. Deployment protection must allow QStash to
-reach `/api/jobs/gift-import` and `/api/jobs/gift-import/failure` (both verify
-QStash signatures, including the exact callback URL).
+reach `/api/jobs/gift-import`, `/api/jobs/gift-import/failure`,
+`/api/jobs/collection-import`, and `/api/jobs/collection-import/failure` (all
+verify QStash signatures, including the exact callback URL).
 
 Use the existing `yarn migrate:deploy` workflow before release. Ordinary
 builds do not migrate or change databases. No credentials are checked in.

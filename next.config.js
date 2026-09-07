@@ -26,7 +26,8 @@ const nextConfig = {
       'terrazas.casa',
       'manualidadeseli.com',
       'baudinequipamientos.com',
-      'maderahogar.com'
+      'maderahogar.com',
+      'i.pinimg.com'
       // Add other domains you want to allow here
     ],
   },
