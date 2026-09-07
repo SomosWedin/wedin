@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { lazy, Suspense } from 'react'
 import {
@@ -69,6 +70,9 @@ export default async function AdminPage() {
       <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-200 pb-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-black">Panel de staff</h1>
+          <Link href="/admin/jobs" className="text-sm underline">
+            Trabajos de importación
+          </Link>
           <p className="text-textTertiary">
             Todas las transacciones y solicitudes de retiro de todos los
             eventos. Cambiar el estado queda registrado con tu usuario.
@@ -77,34 +81,46 @@ export default async function AdminPage() {
       </div>
 
       <Tabs defaultValue="transacciones" className="w-full">
-        <TabsList className="gap-2 sm:gap-3">
+        <TabsList className="h-auto min-h-10 max-w-full justify-start gap-2 overflow-x-auto overflow-y-hidden sm:gap-3 sm:justify-center">
           <TabsTrigger
             value="transacciones"
-            className="gap-2 text-xs sm:text-sm"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
           >
             <IoSwapHorizontalOutline className="text-lg" />
             Transacciones
           </TabsTrigger>
-          <TabsTrigger value="retiros" className="gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="retiros"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
+          >
             <IoCashOutline className="text-lg" />
             Solicitudes de retiro
           </TabsTrigger>
           <TabsTrigger
             value="tipos-de-evento"
-            className="gap-2 text-xs sm:text-sm"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
           >
             <IoCalendarOutline className="text-lg" />
             Tipos de evento
           </TabsTrigger>
-          <TabsTrigger value="categorias" className="gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="categorias"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
+          >
             <IoPricetagOutline className="text-lg" />
             Categorías
           </TabsTrigger>
-          <TabsTrigger value="colecciones" className="gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="colecciones"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
+          >
             <IoFolderOpenOutline className="text-lg" />
             Colecciones
           </TabsTrigger>
-          <TabsTrigger value="regalos" className="gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="regalos"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
+          >
             <IoGiftOutline className="text-lg" />
             Regalos
           </TabsTrigger>

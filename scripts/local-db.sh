@@ -10,7 +10,7 @@ local_log_file="$local_mongo_dir/mongod.log"
 launch_agent_label="com.wedin.mongodb"
 launch_agent_target="gui/$(id -u)/$launch_agent_label"
 local_server_uri="mongodb://127.0.0.1:27017/?directConnection=true"
-local_db_uri="mongodb://127.0.0.1:27017/${local_db_name}?replicaSet=rs0"
+local_db_uri="mongodb://127.0.0.1:27017/${local_db_name}?replicaSet=rs0&maxPoolSize=10"
 local_restore_uri="mongodb://127.0.0.1:27017/?replicaSet=rs0"
 
 require_command() {

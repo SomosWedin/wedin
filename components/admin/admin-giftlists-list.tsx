@@ -16,6 +16,7 @@ import {
   type AdminGiftlist,
   deleteAdminGiftlist,
 } from '@/actions/data/giftlist'
+import ImportAdminCollectionsDialog from '@/components/dialog/import-admin-collections-dialog'
 import type { GiftMultiSelectOption } from '@/components/forms/common/gift-multi-select'
 import GiftlistForm from '@/components/forms/dialog/giftlist'
 import {
@@ -324,6 +325,7 @@ export default function AdminGiftlistsList({
             ))}
           </SelectContent>
         </Select>
+        <ImportAdminCollectionsDialog gifts={giftOptions} />
         <CreateGiftlistDialog gifts={giftOptions} eventTypes={eventTypes} />
       </div>
       <div className="overflow-hidden rounded-lg bg-white">
