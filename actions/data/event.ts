@@ -25,6 +25,37 @@ async function getOwnedEvent(eventId: string) {
   })
 }
 
+export async function getAllEventsForAdmin() {
+  const currentUser = await getCurrentUser()
+
+  if (currentUser?.role !== 'ADMIN') return []
+
+  try {
+    return await prismaClient.event.findMany({
+      select: {
+        id: true,
+        url: true,
+        createdAt: true,
+        date: true,
+        eventType: { select: { id: true, name: true } },
+        users: {
+          select: {
+            id: true,
+            name: true,
+            lastName: true,
+            email: true,
+            isPrimary: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+  } catch (error) {
+    console.error('Error retrieving events for admin:', error)
+    return []
+  }
+}
+
 export const getEvent = async (): Promise<
   | (Event & {
       images: ImageModel[]

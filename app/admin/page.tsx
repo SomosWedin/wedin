@@ -6,10 +6,12 @@ import {
   IoCashOutline,
   IoFolderOpenOutline,
   IoGiftOutline,
+  IoPeopleOutline,
   IoPricetagOutline,
   IoSwapHorizontalOutline,
 } from 'react-icons/io5'
 import { getCategories } from '@/actions/data/category'
+import { getAllEventsForAdmin } from '@/actions/data/event'
 import { getEventTypes } from '@/actions/data/event-type'
 import { getGifts } from '@/actions/data/gift'
 import {
@@ -39,6 +41,9 @@ const AdminGiftlistsList = lazy(
 const AdminEventTypesList = lazy(
   () => import('@/components/admin/admin-event-types-list')
 )
+const AdminEventsList = lazy(
+  () => import('@/components/admin/admin-events-list')
+)
 
 export default async function AdminPage() {
   const currentUser = await getCurrentUser()
@@ -50,6 +55,7 @@ export default async function AdminPage() {
   const [
     transactions,
     payouts,
+    events,
     gifts,
     categories,
     giftlists,
@@ -58,6 +64,7 @@ export default async function AdminPage() {
   ] = await Promise.all([
     getAllTransactionsForAdmin(),
     getAllPayoutsForAdmin(),
+    getAllEventsForAdmin(),
     getGifts({ searchParams: { isDefault: true } }),
     getCategories(),
     getGiftlistOptionsForAdmin(),
@@ -74,8 +81,8 @@ export default async function AdminPage() {
             Trabajos de importación
           </Link>
           <p className="text-textTertiary">
-            Todas las transacciones y solicitudes de retiro de todos los
-            eventos. Cambiar el estado queda registrado con tu usuario.
+            Consultá todos los eventos, transacciones y solicitudes de retiro.
+            Los cambios de estado quedan registrados con tu usuario.
           </p>
         </div>
       </div>
@@ -95,6 +102,13 @@ export default async function AdminPage() {
           >
             <IoCashOutline className="text-lg" />
             Solicitudes de retiro
+          </TabsTrigger>
+          <TabsTrigger
+            value="eventos"
+            className="shrink-0 gap-2 text-xs sm:text-sm"
+          >
+            <IoPeopleOutline className="text-lg" />
+            Eventos
           </TabsTrigger>
           <TabsTrigger
             value="tipos-de-evento"
@@ -152,6 +166,20 @@ export default async function AdminPage() {
           ) : (
             <Suspense fallback={<DashboardTransactionsSkeleton />}>
               <AdminPayoutsList payouts={payouts} />
+            </Suspense>
+          )}
+        </TabsContent>
+
+        <TabsContent value="eventos" className="mt-6">
+          {events.length === 0 ? (
+            <EmptyState
+              icon={<IoPeopleOutline className="text-4xl sm:text-6xl" />}
+              title="Sin eventos"
+              description="Todavía no hay eventos registrados"
+            />
+          ) : (
+            <Suspense fallback={<DashboardTransactionsSkeleton />}>
+              <AdminEventsList events={events} />
             </Suspense>
           )}
         </TabsContent>
