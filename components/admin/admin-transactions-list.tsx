@@ -1,6 +1,6 @@
 'use client'
 
-import type { PaymentMethod, Prisma, TransactionStatus } from '@prisma/client'
+import type { PaymentMethod, TransactionStatus } from '@prisma/client'
 import { endOfDay, format } from 'date-fns'
 import { useMemo, useState } from 'react'
 import {
@@ -9,6 +9,7 @@ import {
   IoSearchOutline,
   IoSwapVerticalOutline,
 } from 'react-icons/io5'
+import type { AdminTransaction } from '@/actions/data/transaction'
 import {
   ESTADO_BY_STATUS,
   ESTADO_OPTIONS,
@@ -16,19 +17,14 @@ import {
 } from '@/components/dashboard/transaction-estado'
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
+import PaginationControls from '@/components/ui/pagination-controls'
 import { useAdminTransactionStatus } from '@/hooks/admin/use-admin-transaction-status'
+import { usePagination } from '@/hooks/use-pagination'
 import { giftLabel } from '@/lib/missing-gift'
 import { coupleName } from '@/lib/utils'
 
-type TransactionWithGiftAndEvent = Prisma.TransactionGetPayload<{
-  include: {
-    wishlistGift: { include: { gift: true } }
-    event: { include: { users: true } }
-  }
-}>
-
 type AdminTransactionsListProps = {
-  transactions: TransactionWithGiftAndEvent[]
+  transactions: AdminTransaction[]
 }
 
 type SortColumn = 'createdAt' | 'amount'
@@ -86,48 +82,65 @@ export default function AdminTransactionsList({
     setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'))
   }
 
-  const fromDate = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null
-  const toDate = dateTo ? endOfDay(new Date(`${dateTo}T00:00:00`)) : null
-
-  const filteredTransactions = transactions.filter(transaction => {
+  const filteredTransactions = useMemo(() => {
+    const fromDate = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null
+    const toDate = dateTo ? endOfDay(new Date(`${dateTo}T00:00:00`)) : null
     const normalizedSearch = search.trim().toLowerCase()
-    const matchesSearch =
-      !normalizedSearch ||
-      (transaction.payerName ?? '').toLowerCase().includes(normalizedSearch) ||
-      giftLabel(transaction.wishlistGift.gift)
-        .toLowerCase()
-        .includes(normalizedSearch) ||
-      coupleName(transaction.event.users)
-        .toLowerCase()
-        .includes(normalizedSearch)
-    const matchesEstado = !estadoFilter || transaction.status === estadoFilter
-    const matchesPaymentMethod =
-      !paymentMethodFilter || transaction.paymentMethod === paymentMethodFilter
-    const matchesEvent =
-      !eventFilter || coupleName(transaction.event.users) === eventFilter
-    const matchesDateRange =
-      (!fromDate || transaction.createdAt >= fromDate) &&
-      (!toDate || transaction.createdAt <= toDate)
 
-    return (
-      matchesSearch &&
-      matchesEstado &&
-      matchesPaymentMethod &&
-      matchesEvent &&
-      matchesDateRange
-    )
-  })
+    return transactions.filter(transaction => {
+      const matchesSearch =
+        !normalizedSearch ||
+        (transaction.payerName ?? '')
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        giftLabel(transaction.wishlistGift.gift)
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        coupleName(transaction.event.users)
+          .toLowerCase()
+          .includes(normalizedSearch)
+      const matchesEstado = !estadoFilter || transaction.status === estadoFilter
+      const matchesPaymentMethod =
+        !paymentMethodFilter ||
+        transaction.paymentMethod === paymentMethodFilter
+      const matchesEvent =
+        !eventFilter || coupleName(transaction.event.users) === eventFilter
+      const matchesDateRange =
+        (!fromDate || transaction.createdAt >= fromDate) &&
+        (!toDate || transaction.createdAt <= toDate)
 
-  const sortedTransactions = sortColumn
-    ? [...filteredTransactions].sort((a, b) => {
-        const diff =
-          sortColumn === 'createdAt'
-            ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.amount) - Number(b.amount)
+      return (
+        matchesSearch &&
+        matchesEstado &&
+        matchesPaymentMethod &&
+        matchesEvent &&
+        matchesDateRange
+      )
+    })
+  }, [
+    transactions,
+    search,
+    estadoFilter,
+    paymentMethodFilter,
+    eventFilter,
+    dateFrom,
+    dateTo,
+  ])
 
-        return sortDirection === 'asc' ? diff : -diff
-      })
-    : filteredTransactions
+  const sortedTransactions = useMemo(() => {
+    if (!sortColumn) return filteredTransactions
+
+    return [...filteredTransactions].sort((a, b) => {
+      const diff =
+        sortColumn === 'createdAt'
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : Number(a.amount) - Number(b.amount)
+
+      return sortDirection === 'asc' ? diff : -diff
+    })
+  }, [filteredTransactions, sortColumn, sortDirection])
+
+  const { pageItems, pagination } = usePagination(sortedTransactions)
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -241,7 +254,7 @@ export default function AdminTransactionsList({
           </div>
         )}
 
-        {sortedTransactions.map(transaction => {
+        {pageItems.map(transaction => {
           const payerName = transaction.payerName ?? 'Anónimo'
           const paymentMethod = PAYMENT_METHOD_ICON[transaction.paymentMethod]
           const estado = ESTADO_BY_STATUS[transaction.status]
@@ -304,6 +317,8 @@ export default function AdminTransactionsList({
             </div>
           )
         })}
+
+        <PaginationControls {...pagination} />
       </div>
     </div>
   )

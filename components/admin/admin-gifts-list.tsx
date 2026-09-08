@@ -8,12 +8,16 @@ import {
   IoChevronDown,
   IoChevronUp,
   IoGiftOutline,
+  IoPencilOutline,
   IoSearchOutline,
   IoSwapVerticalOutline,
 } from 'react-icons/io5'
 import type { GiftlistOption } from '@/actions/data/giftlist'
+import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
+import PaginationControls from '@/components/ui/pagination-controls'
+import { usePagination } from '@/hooks/use-pagination'
 import CreateGiftDialog from '../dialog/create-gift-dialog'
 import DeleteAdminGiftDialog from '../dialog/delete-admin-gift-dialog'
 import EditAdminGiftDialog from '../dialog/edit-admin-gift-dialog'
@@ -61,6 +65,7 @@ export default function AdminGiftsList({
   const [giftlistFilter, setGiftlistFilter] = useState('')
   const [sortColumn, setSortColumn] = useState<SortColumn | null>('createdAt')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [editingGift, setEditingGift] = useState<GiftWithImage | null>(null)
 
   const categoryNameById = useMemo(
     () => new Map(categories.map(category => [category.id, category.name])),
@@ -112,35 +117,51 @@ export default function AdminGiftsList({
     setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'))
   }
 
-  const filteredGifts = gifts.filter(gift => {
-    const categoryName =
-      categoryNameById.get(gift.categoryId) ?? 'Sin categoría'
-    const giftlistNames = gift.giftlistIds
-      .map(giftlistId => giftlistNameById.get(giftlistId))
-      .filter((name): name is string => Boolean(name))
+  const filteredGifts = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase()
-    const matchesSearch =
-      !normalizedSearch ||
-      gift.name.toLowerCase().includes(normalizedSearch) ||
-      categoryName.toLowerCase().includes(normalizedSearch) ||
-      giftlistNames.some(name => name.toLowerCase().includes(normalizedSearch))
-    const matchesCategory =
-      !categoryFilter || gift.categoryId === categoryFilter
-    const matchesEventType =
-      !eventTypeFilter ||
-      categoryEventTypeIdsById
-        .get(gift.categoryId)
-        ?.includes(eventTypeFilter) === true
-    const matchesGiftlist =
-      !giftlistFilter || gift.giftlistIds.includes(giftlistFilter)
 
-    return (
-      matchesSearch && matchesCategory && matchesEventType && matchesGiftlist
-    )
-  })
+    return gifts.filter(gift => {
+      const categoryName =
+        categoryNameById.get(gift.categoryId) ?? 'Sin categoría'
+      const giftlistNames = gift.giftlistIds
+        .map(giftlistId => giftlistNameById.get(giftlistId))
+        .filter((name): name is string => Boolean(name))
+      const matchesSearch =
+        !normalizedSearch ||
+        gift.name.toLowerCase().includes(normalizedSearch) ||
+        categoryName.toLowerCase().includes(normalizedSearch) ||
+        giftlistNames.some(name =>
+          name.toLowerCase().includes(normalizedSearch)
+        )
+      const matchesCategory =
+        !categoryFilter || gift.categoryId === categoryFilter
+      const matchesEventType =
+        !eventTypeFilter ||
+        categoryEventTypeIdsById
+          .get(gift.categoryId)
+          ?.includes(eventTypeFilter) === true
+      const matchesGiftlist =
+        !giftlistFilter || gift.giftlistIds.includes(giftlistFilter)
 
-  const sortedGifts = sortColumn
-    ? [...filteredGifts].sort((a, b) => {
+      return (
+        matchesSearch && matchesCategory && matchesEventType && matchesGiftlist
+      )
+    })
+  }, [
+    gifts,
+    search,
+    categoryFilter,
+    eventTypeFilter,
+    giftlistFilter,
+    categoryNameById,
+    categoryEventTypeIdsById,
+    giftlistNameById,
+  ])
+
+  const sortedGifts = useMemo(() => {
+    if (!sortColumn) return filteredGifts
+
+    return [...filteredGifts].sort((a, b) => {
       const diff =
         sortColumn === 'createdAt'
           ? a.createdAt.getTime() - b.createdAt.getTime()
@@ -148,7 +169,9 @@ export default function AdminGiftsList({
 
       return sortDirection === 'asc' ? diff : -diff
     })
-    : filteredGifts
+  }, [filteredGifts, sortColumn, sortDirection])
+
+  const { pageItems, pagination } = usePagination(sortedGifts)
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -243,7 +266,7 @@ export default function AdminGiftsList({
           </div>
         )}
 
-        {sortedGifts.map(gift => (
+        {pageItems.map(gift => (
           <div
             key={gift.id}
             className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center px-4 py-4 border-b border-gray-100 group hover:bg-gray-50"
@@ -268,12 +291,12 @@ export default function AdminGiftsList({
                 <p className="truncate text-xs text-textTertiary">
                   {gift.giftlistIds.length
                     ? gift.giftlistIds
-                      .map(
-                        giftlistId =>
-                          giftlistNameById.get(giftlistId) ??
-                          'Colección no encontrada'
-                      )
-                      .join(', ')
+                        .map(
+                          giftlistId =>
+                            giftlistNameById.get(giftlistId) ??
+                            'Colección no encontrada'
+                        )
+                        .join(', ')
                     : 'Sin colección'}
                 </p>
               </div>
@@ -288,17 +311,34 @@ export default function AdminGiftsList({
               Gs. {Number(gift.price).toLocaleString('es-PY')}
             </div>
             <div className="flex col-span-2 gap-2 justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-              <EditAdminGiftDialog
-                gift={gift}
-                categories={categories}
-                giftlists={giftlists}
-                eventTypes={eventTypes}
-              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label={`Editar ${gift.name}`}
+                title="Editar regalo"
+                onClick={() => setEditingGift(gift)}
+              >
+                <IoPencilOutline />
+              </Button>
               <DeleteAdminGiftDialog giftId={gift.id} giftName={gift.name} />
             </div>
           </div>
         ))}
+
+        <PaginationControls {...pagination} />
       </div>
+
+      {editingGift && (
+        <EditAdminGiftDialog
+          key={editingGift.id}
+          gift={editingGift}
+          categories={categories}
+          giftlists={giftlists}
+          eventTypes={eventTypes}
+          onClose={() => setEditingGift(null)}
+        />
+      )}
     </div>
   )
 }

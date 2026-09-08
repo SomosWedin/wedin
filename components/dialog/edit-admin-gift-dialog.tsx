@@ -2,7 +2,6 @@
 
 import type { Category, EventType } from '@prisma/client'
 import { useMemo, useState } from 'react'
-import { IoPencilOutline } from 'react-icons/io5'
 import type { GiftlistOption } from '@/actions/data/giftlist'
 import {
   AlertDialog,
@@ -14,8 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog } from '@/components/ui/dialog'
 import {
   type EditableAdminGift,
   useEditAdminGift,
@@ -28,6 +26,7 @@ type EditAdminGiftDialogProps = {
   categories: Category[]
   giftlists: GiftlistOption[]
   eventTypes: EventType[]
+  onClose: () => void
 }
 
 export default function EditAdminGiftDialog({
@@ -35,8 +34,9 @@ export default function EditAdminGiftDialog({
   categories,
   giftlists,
   eventTypes,
+  onClose,
 }: EditAdminGiftDialogProps) {
-  const controller = useEditAdminGift(gift)
+  const controller = useEditAdminGift(gift, onClose)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const selectedCategoryId = controller.form.watch('categoryId')
   const selectedGiftlistIds = controller.form.watch('giftlistIds')
@@ -61,25 +61,13 @@ export default function EditAdminGiftDialog({
   const formatEventTypes = (eventTypeIds: string[]) =>
     eventTypeIds.length > 0
       ? eventTypeIds
-          .map(eventTypeId => eventTypeNameById.get(eventTypeId) ?? eventTypeId)
-          .join(', ')
+        .map(eventTypeId => eventTypeNameById.get(eventTypeId) ?? eventTypeId)
+        .join(', ')
       : 'ningún tipo de evento en común'
 
   return (
     <>
       <Dialog open={controller.open} onOpenChange={controller.handleOpenChange}>
-        <DialogTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            aria-label={`Editar ${gift.name}`}
-            title="Editar regalo"
-          >
-            <IoPencilOutline />
-          </Button>
-        </DialogTrigger>
-
         <GiftFormDialogContent
           title="Editar regalo"
           controller={controller}

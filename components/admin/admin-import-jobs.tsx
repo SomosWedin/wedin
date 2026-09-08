@@ -37,6 +37,9 @@ type Retry = Awaited<ReturnType<typeof retryAdminImportJob>>
 type Cancel = Awaited<ReturnType<typeof cancelAdminImportJob>>
 const date = (value: Date | string | null) =>
   value ? new Date(value).toLocaleString('es-PY') : '—'
+const ACTIVE_JOB_STATUSES = new Set(['PREPARING', 'QUEUED', 'PROCESSING'])
+const POLL_ACTIVE_MS = 5000
+const POLL_IDLE_MS = 30_000
 
 async function fetchJson<T>(url: string, init?: RequestInit) {
   const controller = new AbortController()
@@ -152,10 +155,10 @@ export default function AdminImportJobs() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: Manual retries must immediately reload persisted status.
   useEffect(() => {
     let cancelled = false
-    let running = false
+    let timer: ReturnType<typeof setTimeout> | null = null
     const refresh = async () => {
-      if (running) return
-      running = true
+      if (cancelled) return
+      if (document.hidden) return schedule(POLL_ACTIVE_MS)
       const params = new URLSearchParams({ page: String(page), search })
       if (status) params.set('status', status)
       if (kind) params.set('kind', kind)
@@ -163,19 +166,26 @@ export default function AdminImportJobs() {
         const response = await fetchJson<Jobs>(
           `/api/admin/import-jobs?${params}`
         )
-        if (!cancelled) setResult(response)
+        if (cancelled) return
+        setResult(response)
+        schedule(
+          response.jobs?.some(job => ACTIVE_JOB_STATUSES.has(job.status))
+            ? POLL_ACTIVE_MS
+            : POLL_IDLE_MS
+        )
       } catch {
-        if (!cancelled)
-          setResult({ error: 'No se pudieron cargar los trabajos.' })
-      } finally {
-        running = false
+        if (cancelled) return
+        setResult({ error: 'No se pudieron cargar los trabajos.' })
+        schedule(POLL_ACTIVE_MS)
       }
     }
+    function schedule(delay: number) {
+      if (!cancelled) timer = setTimeout(() => void refresh(), delay)
+    }
     void refresh()
-    const interval = setInterval(() => void refresh(), 5000)
     return () => {
       cancelled = true
-      clearInterval(interval)
+      if (timer) clearTimeout(timer)
     }
   }, [page, search, status, kind, version])
 
@@ -184,10 +194,10 @@ export default function AdminImportJobs() {
     setDetails(null)
     if (!selected) return
     let cancelled = false
-    let running = false
+    let timer: ReturnType<typeof setTimeout> | null = null
     const refresh = async () => {
-      if (running) return
-      running = true
+      if (cancelled) return
+      if (document.hidden) return schedule(POLL_ACTIVE_MS)
       const params = new URLSearchParams({
         page: String(rowPage),
         historyPage: String(historyPage),
@@ -196,19 +206,26 @@ export default function AdminImportJobs() {
         const response = await fetchJson<Details>(
           `/api/admin/import-jobs/${selected}?${params}`
         )
-        if (!cancelled) setDetails(response)
+        if (cancelled) return
+        setDetails(response)
+        schedule(
+          response.job && ACTIVE_JOB_STATUSES.has(response.job.status)
+            ? POLL_ACTIVE_MS
+            : POLL_IDLE_MS
+        )
       } catch {
-        if (!cancelled)
-          setDetails({ error: 'No se pudieron cargar los detalles.' })
-      } finally {
-        running = false
+        if (cancelled) return
+        setDetails({ error: 'No se pudieron cargar los detalles.' })
+        schedule(POLL_ACTIVE_MS)
       }
     }
+    function schedule(delay: number) {
+      if (!cancelled) timer = setTimeout(() => void refresh(), delay)
+    }
     void refresh()
-    const interval = setInterval(() => void refresh(), 5000)
     return () => {
       cancelled = true
-      clearInterval(interval)
+      if (timer) clearTimeout(timer)
     }
   }, [selected, rowPage, historyPage, version])
 

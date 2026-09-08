@@ -148,25 +148,25 @@ async function reclaimWishlistGiftClaim(transaction: {
 
   const claim = wishlistGift.isGroupGift
     ? await prismaClient.wishlistGift.updateMany({
-      where: {
-        id: transaction.wishlistGiftId,
-        isGroupGift: true,
-        reservedAmount: {
-          lte: (Number(wishlistGift.gift.price) || 0) - amount,
+        where: {
+          id: transaction.wishlistGiftId,
+          isGroupGift: true,
+          reservedAmount: {
+            lte: (Number(wishlistGift.gift.price) || 0) - amount,
+          },
         },
-      },
-      data: { reservedAmount: { increment: amount } },
-    })
+        data: { reservedAmount: { increment: amount } },
+      })
     : await prismaClient.wishlistGift.updateMany({
-      where: {
-        id: transaction.wishlistGiftId,
-        isGroupGift: false,
-        reservedQuantity: {
-          lte: wishlistGift.quantity - transaction.quantity,
+        where: {
+          id: transaction.wishlistGiftId,
+          isGroupGift: false,
+          reservedQuantity: {
+            lte: wishlistGift.quantity - transaction.quantity,
+          },
         },
-      },
-      data: { reservedQuantity: { increment: transaction.quantity } },
-    })
+        data: { reservedQuantity: { increment: transaction.quantity } },
+      })
 
   return claim.count === 1
 }
@@ -292,6 +292,23 @@ export async function applyTransactionStatusChange(
   await recomputeWishlistGiftProgress(transaction.wishlistGiftId)
 }
 
+const adminTransactionSelect = {
+  id: true,
+  amount: true,
+  createdAt: true,
+  payerName: true,
+  paymentMethod: true,
+  status: true,
+  wishlistGift: { select: { gift: { select: { name: true } } } },
+  event: {
+    select: { id: true, users: { select: { name: true, isPrimary: true } } },
+  },
+} satisfies Prisma.TransactionSelect
+
+export type AdminTransaction = Prisma.TransactionGetPayload<{
+  select: typeof adminTransactionSelect
+}>
+
 export async function getAllTransactionsForAdmin() {
   const currentUser = await getCurrentUser()
 
@@ -299,10 +316,7 @@ export async function getAllTransactionsForAdmin() {
 
   try {
     return await prismaClient.transaction.findMany({
-      include: {
-        wishlistGift: { include: { gift: true } },
-        event: { include: { users: true } },
-      },
+      select: adminTransactionSelect,
       orderBy: { createdAt: 'desc' },
     })
   } catch (error) {
@@ -341,14 +355,14 @@ export async function updateTransactionStatusAsAdmin(
   try {
     const transactionIds = transaction?.bankTransferGroupId
       ? (
-        await prismaClient.transaction.findMany({
-          where: {
-            bankTransferGroupId: transaction.bankTransferGroupId,
-            eventId: transaction.eventId,
-          },
-          select: { id: true },
-        })
-      ).map(({ id }) => id)
+          await prismaClient.transaction.findMany({
+            where: {
+              bankTransferGroupId: transaction.bankTransferGroupId,
+              eventId: transaction.eventId,
+            },
+            select: { id: true },
+          })
+        ).map(({ id }) => id)
       : [transactionId]
 
     for (const id of transactionIds) {

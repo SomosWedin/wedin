@@ -37,9 +37,9 @@ export function useAdminGiftImport() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
-  const [loading, setLoading] = useState<'file' | 'preview' | 'import' | null>(
-    null
-  )
+  const [loading, setLoading] = useState<
+    'file' | 'preview' | 'rows' | 'import' | null
+  >(null)
   const [error, setError] = useState('')
   const [queueDispatchFailed, setQueueDispatchFailed] = useState(false)
   const [fileName, setFileName] = useState('')
@@ -54,6 +54,7 @@ export function useAdminGiftImport() {
   const [jobId, setJobId] = useState<string | null>(null)
   const [previewToken, setPreviewToken] = useState('')
   const [preview, setPreview] = useState<GiftImportPreviewRow[]>([])
+  const [reviewTotal, setReviewTotal] = useState(0)
   const [skipErrors, setSkipErrors] = useState(false)
   const [createMissingCollections, setCreateMissingCollections] =
     useState(false)
@@ -79,6 +80,7 @@ export function useAdminGiftImport() {
       submissionContent.current = ''
       setPreviewToken('')
       setPreview([])
+      setReviewTotal(0)
       setSkipErrors(false)
       setCreateMissingCollections(false)
       setJobId(null)
@@ -149,11 +151,17 @@ export function useAdminGiftImport() {
     }))
   }
 
-  const loadReview = (id: string, count: number, token: string) =>
+  const loadReview = (
+    id: string,
+    count: number,
+    token: string,
+    onPage?: (rows: GiftImportPreviewRow[]) => void
+  ) =>
     paginateReviewRows<GiftImportPreviewRow>(
       page => requestGiftImport('reviewRows', { jobId: id, page }),
       count,
-      token
+      token,
+      onPage
     )
 
   const review = async () => {
@@ -214,15 +222,29 @@ export function useAdminGiftImport() {
         return
       }
       if ('previewToken' in result) {
-        const reviewed = await loadReview(
-          started.jobId,
-          result.rowCount,
-          result.previewToken
-        )
         setPreviewToken(result.previewToken)
-        setPreview(reviewed)
+        setPreview([])
+        setReviewTotal(result.rowCount)
         setSkipErrors(false)
         setStep(2)
+        // Rows arrive ten at a time; showing them as they land beats blocking
+        // the step for one round trip per ten rows.
+        setLoading('rows')
+        try {
+          setPreview(
+            await loadReview(
+              started.jobId,
+              result.rowCount,
+              result.previewToken,
+              rows => setPreview(current => [...current, ...rows])
+            )
+          )
+        } catch (failure) {
+          setPreview([])
+          setReviewTotal(0)
+          setStep(1)
+          throw failure
+        }
       }
     } catch {
       setError('No se pudo obtener la revisión. Intentá nuevamente.')
@@ -291,6 +313,7 @@ export function useAdminGiftImport() {
     mapping,
     matches,
     preview,
+    reviewTotal,
     skipErrors,
     createMissingCollections,
     jobId,
@@ -309,6 +332,8 @@ export function useAdminGiftImport() {
         cancelPreparedJob()
         submissionId.current = ''
         submissionContent.current = ''
+        setPreview([])
+        setReviewTotal(0)
         setStep(current => Math.max(0, current - 1))
         setError('')
         setQueueDispatchFailed(false)

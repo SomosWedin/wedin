@@ -1,6 +1,6 @@
 'use server'
 
-import type { PayoutStatus } from '@prisma/client'
+import type { PayoutStatus, Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import prismaClient from '@/prisma/client'
@@ -135,6 +135,23 @@ export async function requestPayout(
   }
 }
 
+const adminPayoutSelect = {
+  id: true,
+  amount: true,
+  createdAt: true,
+  status: true,
+  bankDetails: {
+    select: { accountHolder: true, accountNumber: true, bankName: true },
+  },
+  event: {
+    select: { id: true, users: { select: { name: true, isPrimary: true } } },
+  },
+} satisfies Prisma.PayoutSelect
+
+export type AdminPayout = Prisma.PayoutGetPayload<{
+  select: typeof adminPayoutSelect
+}>
+
 export async function getAllPayoutsForAdmin() {
   const currentUser = await getCurrentUser()
 
@@ -142,10 +159,7 @@ export async function getAllPayoutsForAdmin() {
 
   try {
     return await prismaClient.payout.findMany({
-      include: {
-        bankDetails: true,
-        event: { include: { users: true } },
-      },
+      select: adminPayoutSelect,
       orderBy: { createdAt: 'desc' },
     })
   } catch (error) {

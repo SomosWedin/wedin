@@ -74,7 +74,8 @@ export async function paginateReviewRows<T>(
     page: number
   ) => Promise<{ error?: string; previewToken?: string; preview?: T[] }>,
   count: number,
-  token: string
+  token: string,
+  onPage?: (rows: T[]) => void
 ) {
   const rows: T[] = []
   for (let page = 0; page * 10 < count; page++) {
@@ -82,6 +83,7 @@ export async function paginateReviewRows<T>(
     if (result.error || result.previewToken !== token || !result.preview)
       throw new Error('No se pudo cargar la revisión completa.')
     rows.push(...result.preview)
+    onPage?.(result.preview)
   }
   return rows
 }
