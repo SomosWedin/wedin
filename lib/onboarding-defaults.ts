@@ -33,8 +33,6 @@ export function getOnboardingDefaults(
     eventCountry: event?.country || 'Paraguay',
     eventCity: event?.city ?? '',
     eventDate: event?.date ?? undefined,
-    // "Aún estamos decidiendo" is not persisted, so it is inferred: past the
-    // step with nothing stored is the only way those fields end up empty.
     isDecidingEventLocation:
       furthestStep > 3 && !event?.country && !event?.city,
     isDecidingEventDate: furthestStep > 4 && !event?.date,

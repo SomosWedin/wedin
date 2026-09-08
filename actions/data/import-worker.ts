@@ -184,8 +184,6 @@ export async function runImportJob<Ctx>(
         })
       return count
     })
-    // Every batch re-dispatches, so revalidating here would drop the whole
-    // admin/catalog cache once per 50 rows for the length of the import.
     if (!pending) {
       revalidatePath('/admin')
       revalidatePath('/gifts')

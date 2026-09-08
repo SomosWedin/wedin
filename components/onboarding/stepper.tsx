@@ -25,11 +25,8 @@ export default function OnboardingStepper({
             aria-current={value === step ? 'step' : undefined}
             disabled={!isClickable}
             onClick={() => onStepClick?.(value)}
-            // The dot is well under a usable tap target, so the hit area is
-            // grown separately instead of the dot itself.
-            className={`relative h-2 w-2 rounded-full after:absolute after:-inset-1.5 after:content-[''] ${
-              value === step ? 'bg-slate400' : 'bg-slate300'
-            } ${isClickable ? 'cursor-pointer hover:bg-slate400' : 'cursor-default'}`}
+            className={`relative h-2 w-2 rounded-full after:absolute after:-inset-1.5 after:content-[''] ${value === step ? 'bg-slate400' : 'bg-slate300'
+              } ${isClickable ? 'cursor-pointer hover:bg-slate400' : 'cursor-default'}`}
           />
         )
       })}

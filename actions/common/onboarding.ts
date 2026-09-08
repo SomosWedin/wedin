@@ -40,9 +40,9 @@ export const updateEventTypeStepOne = async (eventTypeId: string) => {
 
   const existingEvent = user.eventId
     ? await prismaClient.event.findUnique({
-        where: { id: user.eventId },
-        select: { id: true, eventType: { select: { key: true } } },
-      })
+      where: { id: user.eventId },
+      select: { id: true, eventType: { select: { key: true } } },
+    })
     : null
 
   const willBeWedding = isWeddingEventType(eventType)
@@ -52,8 +52,6 @@ export const updateEventTypeStepOne = async (eventTypeId: string) => {
     await prismaClient.$transaction(async tx => {
       let eventId = existingEvent?.id
 
-      // Coming back to this step must never recreate the event — that would
-      // orphan the wishlist and drop everything steps 2-4 collected.
       if (eventId) {
         await tx.event.update({ where: { id: eventId }, data: { eventTypeId } })
 
@@ -225,8 +223,6 @@ export const updateEventLocationStepThree = async (
     await prismaClient.event.update({
       where: { id: user.eventId },
       data: {
-        // Explicit nulls so revisiting this step can clear a location that was
-        // already saved — Prisma would skip an undefined.
         country: isDecidingEventLocation ? null : eventCountry || null,
         city: isDecidingEventLocation ? null : eventCity || null,
       },
