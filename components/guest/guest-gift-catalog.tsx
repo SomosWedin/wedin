@@ -20,10 +20,9 @@ import {
   getGiftProgress,
   getQuantityProgress,
 } from '@/components/guest/gift-progress'
-import GuestGiftCard, {
-  type WishlistGiftWithGift,
-} from '@/components/guest/guest-gift-card'
+import GuestGiftCard from '@/components/guest/guest-gift-card'
 import { useIsPreviewMode } from '@/components/guest/preview-mode'
+import type { WishlistGiftWithGift } from '@/components/guest/wishlist-gift'
 import { Input } from '@/components/ui/input'
 import { type CartItem, useCartStore } from '@/hooks/use-cart-store'
 import { useStore } from '@/hooks/use-store'
