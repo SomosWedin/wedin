@@ -1,3 +1,4 @@
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { SessionProvider } from 'next-auth/react'
@@ -25,6 +26,7 @@ export default async function RootLayout({
         <body className={`${inter.className} antialiased sm:min-h-screen`}>
           <Toaster />
           <Provider>{children}</Provider>
+          <SpeedInsights />
         </body>
       </html>
     </SessionProvider>
