@@ -1,8 +1,13 @@
 import { z } from 'zod'
 import { CollectionImportRowSchema } from './collection-import'
-import { GiftImportRowSchema, MAX_IMPORT_ROWS } from './gift-import'
+import {
+  GiftImportRowSchema,
+  MAX_IMPORT_ROWS,
+  MAX_IMPORT_UPLOAD_ROWS,
+} from './gift-import'
 
 export const JobIdSchema = z.string().regex(/^[a-f\d]{24}$/i)
+export const IMPORT_REVIEW_PAGE_SIZE = 50
 export const StartImportJobSchema = z
   .object({
     submissionId: z.string().uuid(),
@@ -22,7 +27,7 @@ export const UploadImportRowsSchema = z
   .object({
     jobId: JobIdSchema,
     offset: z.number().int().min(0).max(MAX_IMPORT_ROWS),
-    rows: z.array(GiftImportRowSchema).min(1).max(20),
+    rows: z.array(GiftImportRowSchema).min(1).max(MAX_IMPORT_UPLOAD_ROWS),
   })
   .strict()
   .refine(
@@ -33,7 +38,7 @@ export const UploadCollectionImportRowsSchema = z
   .object({
     jobId: JobIdSchema,
     offset: z.number().int().min(0).max(MAX_IMPORT_ROWS),
-    rows: z.array(CollectionImportRowSchema).min(1).max(20),
+    rows: z.array(CollectionImportRowSchema).min(1).max(MAX_IMPORT_UPLOAD_ROWS),
   })
   .strict()
   .refine(

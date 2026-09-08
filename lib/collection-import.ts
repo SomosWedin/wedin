@@ -5,7 +5,10 @@ import type {
   CollectionImportRow,
 } from '@/schemas/collection-import'
 import { GiftlistNameSchema } from '@/schemas/form'
-import type { GiftImportDataset } from '@/schemas/gift-import'
+import {
+  type GiftImportDataset,
+  MAX_IMPORT_UPLOAD_ROWS,
+} from '@/schemas/gift-import'
 import { normalizeImportLabel } from './gift-import'
 
 const notionReference = /(?:^|,\s*)(.*?)\s*\((https?:\/\/[^)]+)\)(?=,\s*|$)/g
@@ -99,7 +102,7 @@ export function chunkCollectionImportRows(rows: CollectionImportRow[]) {
     const candidate = [...current, row]
     if (
       current.length &&
-      (candidate.length > 20 ||
+      (candidate.length > MAX_IMPORT_UPLOAD_ROWS ||
         new TextEncoder().encode(JSON.stringify(candidate)).length > 590_000)
     ) {
       chunks.push(current)

@@ -4,6 +4,7 @@ import type { useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'
 import { cancelImportPreparation } from '@/lib/admin-import-api'
 import type { GiftImportDataset } from '@/schemas/gift-import'
+import { IMPORT_REVIEW_PAGE_SIZE } from '@/schemas/import-job'
 
 export async function readImportFile(
   file: File,
@@ -78,7 +79,7 @@ export async function paginateReviewRows<T>(
   onPage?: (rows: T[]) => void
 ) {
   const rows: T[] = []
-  for (let page = 0; page * 10 < count; page++) {
+  for (let page = 0; page * IMPORT_REVIEW_PAGE_SIZE < count; page++) {
     const result = await request(page)
     if (result.error || result.previewToken !== token || !result.preview)
       throw new Error('No se pudo cargar la revisión completa.')

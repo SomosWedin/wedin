@@ -297,6 +297,26 @@ describe('gift import matching and preview', () => {
     }
   })
 
+  it('refuses to guess when two collections normalize to the same label', () => {
+    const ambiguous: GiftImportCatalog = {
+      ...catalog,
+      collections: [
+        ...catalog.collections,
+        { id: 'other', name: 'primera-casa', giftCount: 0, eventTypeIds: [] },
+      ],
+    }
+    expect(
+      buildGiftImportPreview(
+        [{ ...row, collections: 'Primera casa' }],
+        ambiguous
+      )[0].errors.join()
+    ).toContain('sin coincidencia')
+    expect(
+      buildGiftImportPreview([{ ...row, collections: 'starter' }], ambiguous)[0]
+        .values?.giftlistIds
+    ).toEqual(['starter'])
+  })
+
   it('can propose every unmatched collection for creation', () => {
     const [result] = buildGiftImportPreview(
       [{ ...row, collections: 'Luna de miel Tokyo|Luna de miel Barbados' }],

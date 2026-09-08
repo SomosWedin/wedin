@@ -4,6 +4,7 @@ export const MAX_IMPORT_ROWS = 10_000
 export const MAX_IMPORT_COLUMNS = 100
 export const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024
 export const MAX_IMPORT_PAYLOAD_BYTES = 12 * 1024 * 1024
+export const MAX_IMPORT_UPLOAD_ROWS = 200
 
 export const giftImportFields = [
   { key: 'name', label: 'Nombre', required: true },

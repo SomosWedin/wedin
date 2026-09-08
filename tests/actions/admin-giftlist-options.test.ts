@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   giftlistFindMany: vi.fn(),
+  categoryFindMany: vi.fn(),
+  eventTypeFindMany: vi.fn(),
 }))
 
 vi.mock('@/actions/get-current-user', () => ({
@@ -12,6 +14,8 @@ vi.mock('@/actions/get-current-user', () => ({
 vi.mock('@/prisma/client', () => ({
   default: {
     giftlist: { findMany: mocks.giftlistFindMany },
+    category: { findMany: mocks.categoryFindMany },
+    eventType: { findMany: mocks.eventTypeFindMany },
   },
 }))
 
@@ -35,6 +39,8 @@ describe('admin gift list options', () => {
         ],
       },
     ])
+    mocks.categoryFindMany.mockResolvedValue([])
+    mocks.eventTypeFindMany.mockResolvedValue([])
   })
 
   it('returns lightweight collection options for admins', async () => {
@@ -83,27 +89,18 @@ describe('admin gift list options', () => {
         normalizedName: 'hogar',
         giftIds: ['gift-1', 'gift-2'],
         gifts: [
-          {
-            id: 'gift-1',
-            categoryId: 'category-1',
-            category: {
-              eventTypeIds: ['wedding', 'birthday'],
-              eventTypes: [
-                { id: 'wedding', name: 'Casamiento' },
-                { id: 'birthday', name: 'Cumpleaños' },
-              ],
-            },
-          },
-          {
-            id: 'gift-2',
-            categoryId: 'category-2',
-            category: {
-              eventTypeIds: ['wedding'],
-              eventTypes: [{ id: 'wedding', name: 'Casamiento' }],
-            },
-          },
+          { id: 'gift-1', categoryId: 'category-1' },
+          { id: 'gift-2', categoryId: 'category-2' },
         ],
       },
+    ])
+    mocks.categoryFindMany.mockResolvedValue([
+      { id: 'category-1', eventTypeIds: ['wedding', 'birthday'] },
+      { id: 'category-2', eventTypeIds: ['wedding'] },
+    ])
+    mocks.eventTypeFindMany.mockResolvedValue([
+      { id: 'wedding', name: 'Casamiento' },
+      { id: 'birthday', name: 'Cumpleaños' },
     ])
 
     const result = await getAdminGiftlists()

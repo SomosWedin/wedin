@@ -10,6 +10,7 @@ import {
   type GiftImportRow,
   type GiftImportValueMatches,
   giftImportFields,
+  MAX_IMPORT_UPLOAD_ROWS,
 } from '@/schemas/gift-import'
 
 export function normalizeImportLabel(value: string) {
@@ -167,8 +168,6 @@ export function mapGiftImportRows(
   })
 }
 
-// Whole guaraníes: accept plain numbers and either common thousands separator,
-// but never turn a decimal or arbitrary text into a different price.
 export function parseImportPrice(value: string): string | null {
   const amount = value
     .trim()
@@ -187,19 +186,47 @@ export function parseImportPrice(value: string): string | null {
     : null
 }
 
-export function findImportOption<
-  T extends { id: string; name: string; key?: string },
->(value: string, options: T[]) {
-  const exact = options.find(option => option.id === value)
+type ImportOption = { id: string; name: string; key?: string }
+export type ImportOptionIndex<T extends ImportOption> = {
+  byId: Map<string, T>
+  byLabel: Map<string, T | null>
+}
+
+export function buildImportOptionIndex<T extends ImportOption>(
+  options: T[]
+): ImportOptionIndex<T> {
+  const byId = new Map<string, T>()
+  const byLabel = new Map<string, T | null>()
+  for (const option of options) {
+    if (!byId.has(option.id)) byId.set(option.id, option)
+    const nameLabel = normalizeImportLabel(option.name)
+    const keyLabel = option.key ? normalizeImportLabel(option.key) : ''
+    const labels =
+      keyLabel && keyLabel !== nameLabel ? [nameLabel, keyLabel] : [nameLabel]
+    for (const label of labels) {
+      if (!label) continue
+      byLabel.set(label, byLabel.has(label) ? null : option)
+    }
+  }
+  return { byId, byLabel }
+}
+
+export function findIndexedImportOption<T extends ImportOption>(
+  value: string,
+  index: ImportOptionIndex<T>
+) {
+  const exact = index.byId.get(value)
   if (exact) return exact
   const label = normalizeImportLabel(value)
   if (!label) return undefined
-  const matches = options.filter(
-    option =>
-      normalizeImportLabel(option.name) === label ||
-      (option.key && normalizeImportLabel(option.key) === label)
-  )
-  return matches.length === 1 ? matches[0] : undefined
+  return index.byLabel.get(label) ?? undefined
+}
+
+export function findImportOption<T extends ImportOption>(
+  value: string,
+  options: T[]
+) {
+  return findIndexedImportOption(value, buildImportOptionIndex(options))
 }
 
 export function buildGiftImportPreview(
@@ -208,6 +235,9 @@ export function buildGiftImportPreview(
   existingNameKeys: Set<string> = new Set(),
   createMissingCollections = false
 ): GiftImportPreviewRow[] {
+  const categoryIndex = buildImportOptionIndex(catalog.categories)
+  const collectionIndex = buildImportOptionIndex(catalog.collections)
+  const eventTypeIndex = buildImportOptionIndex(catalog.eventTypes)
   const preview = rows.map((row): GiftImportPreviewRow => {
     const errors: string[] = []
     const errorTypes: GiftImportErrorType[] = []
@@ -217,13 +247,13 @@ export function buildGiftImportPreview(
     }
     const name = row.name.trim()
     const price = parseImportPrice(row.price)
-    const category = findImportOption(row.category, catalog.categories)
+    const category = findIndexedImportOption(row.category, categoryIndex)
     const collections = splitImportRelationValues(
       'collections',
       row.collections
     )
       .map(value => {
-        const collection = findImportOption(value, catalog.collections)
+        const collection = findIndexedImportOption(value, collectionIndex)
         if (collection) return { ...collection, isNew: false as const }
         if (!createMissingCollections) {
           addError('collections', `Colección sin coincidencia: ${value}.`)
@@ -251,7 +281,7 @@ export function buildGiftImportPreview(
       row.eventTypes
     )
       .map(value => {
-        const eventType = findImportOption(value, catalog.eventTypes)
+        const eventType = findIndexedImportOption(value, eventTypeIndex)
         if (!eventType)
           addError('event_types', `Tipo de evento sin coincidencia: ${value}.`)
         return eventType
@@ -358,22 +388,22 @@ export function buildGiftImportPreview(
       errorTypes,
       values: parsed.success
         ? {
-            ...parsed.data,
-            newGiftlistNames: Array.from(
-              new Map(
-                collections.flatMap(collection =>
-                  collection.isNew
-                    ? [
-                        [
-                          collection.name.toLocaleLowerCase('es-PY'),
-                          collection.name,
-                        ] as const,
-                      ]
-                    : []
-                )
-              ).values()
-            ),
-          }
+          ...parsed.data,
+          newGiftlistNames: Array.from(
+            new Map(
+              collections.flatMap(collection =>
+                collection.isNew
+                  ? [
+                    [
+                      collection.name.toLocaleLowerCase('es-PY'),
+                      collection.name,
+                    ] as const,
+                  ]
+                  : []
+              )
+            ).values()
+          ),
+        }
         : null,
     }
   })
@@ -433,8 +463,8 @@ export function buildGiftImportPreview(
         row.errors.length === 0 &&
         (collection.isNew
           ? row.values?.newGiftlistNames.some(
-              name => name.toLocaleLowerCase('es-PY') === collection.key
-            )
+            name => name.toLocaleLowerCase('es-PY') === collection.key
+          )
           : row.values?.giftlistIds.includes(collection.key))
     )
     if (!incoming.length) continue
@@ -463,7 +493,10 @@ export function chunkGiftImportRows(rows: GiftImportRow[]) {
   let bytes = 0
   for (const row of rows) {
     const size = new TextEncoder().encode(JSON.stringify(row)).length + 1
-    if (chunk.length && (chunk.length === 20 || bytes + size > 550_000)) {
+    if (
+      chunk.length &&
+      (chunk.length === MAX_IMPORT_UPLOAD_ROWS || bytes + size > 550_000)
+    ) {
       chunks.push(chunk)
       chunk = []
       bytes = 0
