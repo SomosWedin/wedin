@@ -90,6 +90,7 @@ export default function EditAdminGiftDialog({
           submitLabel="Guardar"
           allowTypeChange
           adminMode
+          showPropagationNote
           preserveGiftlistSelectionsOnCategoryChange
           onSubmit={event => {
             if (categoryChanged && incompatibleGiftlists.length > 0) {

@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   categoryFindUnique: vi.fn(),
   wishlistGiftFindUnique: vi.fn(),
   wishlistGiftUpdate: vi.fn(),
+  wishlistGiftCount: vi.fn(),
   imageDeleteMany: vi.fn(),
   transaction: vi.fn(),
   recomputeWishlistGiftProgress: vi.fn(),
@@ -47,6 +48,7 @@ vi.mock('@/prisma/client', () => ({
     wishlistGift: {
       findUnique: mocks.wishlistGiftFindUnique,
       update: mocks.wishlistGiftUpdate,
+      count: mocks.wishlistGiftCount,
     },
     image: {
       deleteMany: mocks.imageDeleteMany,
@@ -108,6 +110,7 @@ describe('admin creates and edits catalog gifts', () => {
       reservedQuantity: 0,
     })
     mocks.wishlistGiftUpdate.mockResolvedValue({ id: 'wishlist-gift-1' })
+    mocks.wishlistGiftCount.mockResolvedValue(0)
     mocks.imageDeleteMany.mockResolvedValue({ count: 1 })
     mocks.recomputeWishlistGiftProgress.mockResolvedValue(undefined)
     mocks.transaction.mockImplementation(
@@ -132,6 +135,7 @@ describe('admin creates and edits catalog gifts', () => {
           wishlistGift: {
             findUnique: mocks.wishlistGiftFindUnique,
             update: mocks.wishlistGiftUpdate,
+            count: mocks.wishlistGiftCount,
           },
           image: { deleteMany: mocks.imageDeleteMany },
         })
@@ -437,7 +441,7 @@ describe('admin creates and edits catalog gifts', () => {
       },
     },
   ])(
-    'copies and relinks the old gift before an admin changes only its $field',
+    'propagates to linked wishlists when an admin changes only its $field',
     async ({ existing }) => {
       mocks.giftFindFirst.mockResolvedValue({
         id: 'gift-1',
@@ -448,24 +452,67 @@ describe('admin creates and edits catalog gifts', () => {
 
       const result = await editAdminGift(editValues, 'gift-1')
 
+      expect(mocks.giftCreate).not.toHaveBeenCalled()
+      expect(mocks.wishlistGiftUpdate).not.toHaveBeenCalled()
+      expect(mocks.giftUpdate).toHaveBeenCalledOnce()
+      expect(result).toEqual({ giftId: 'gift-1' })
+    }
+  )
+
+  it.each([
+    { field: 'price', changed: { price: '999000' } },
+    { field: 'category', changed: { categoryId: 'category-2' } },
+  ])(
+    'still copies and relinks the old gift when an admin changes its $field',
+    async ({ changed }) => {
+      mocks.giftFindFirst.mockResolvedValue({
+        id: 'gift-1',
+        giftlistIds: [],
+        wishlistGifts: [{ id: 'wishlist-gift-1', eventId: 'event-1' }],
+        name: editValues.name,
+        price: editValues.price,
+        categoryId: editValues.categoryId,
+        image: { url: editValues.imageUrl },
+        ...changed,
+      })
+
+      const result = await editAdminGift(editValues, 'gift-1')
+
       expect(mocks.giftCreate).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          name: existing.name,
-          price: existing.price,
-          category: { connect: { id: existing.categoryId } },
-          ...(existing.image
-            ? { image: { create: { url: existing.image.url } } }
-            : {}),
+          name: editValues.name,
+          price: changed.price ?? editValues.price,
         }),
       })
       expect(mocks.wishlistGiftUpdate).toHaveBeenCalledWith({
         where: { id: 'wishlist-gift-1' },
         data: { giftId: 'private-gift-1' },
       })
-      expect(mocks.giftUpdate).toHaveBeenCalledOnce()
       expect(result).toEqual({ giftId: 'gift-1' })
     }
   )
+
+  it('refuses the delete when a link appears after the copy loop', async () => {
+    mocks.giftFindFirst.mockResolvedValue({
+      id: 'gift-1',
+      name: 'Sofá original',
+      price: '800000',
+      categoryId: 'category-1',
+      giftlistIds: [],
+      image: null,
+      wishlistGifts: [],
+    })
+    mocks.wishlistGiftCount.mockResolvedValue(1)
+
+    const result = await deleteDefaultGiftAsAdmin('gift-1')
+
+    expect(mocks.giftDelete).not.toHaveBeenCalled()
+    expect(mocks.imageDeleteMany).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      error:
+        'El regalo se agregó a una lista mientras se eliminaba. Intentá de nuevo.',
+    })
+  })
 
   it('does not create wishlist copies when only collections change', async () => {
     mocks.giftFindFirst.mockResolvedValue({

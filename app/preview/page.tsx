@@ -1,5 +1,6 @@
 import { getEvent } from '@/actions/data/event'
 import { getPublicWishlistGifts } from '@/actions/data/public-event'
+import { hasGift } from '@/components/guest/guest-gift-card'
 import SitePreview from '@/components/preview/site-preview'
 
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,7 @@ export default async function SitePreviewPage() {
     )
   }
 
-  const wishlistGifts = await getPublicWishlistGifts(event.id)
+  const wishlistGifts = (await getPublicWishlistGifts(event.id)).filter(hasGift)
 
   return <SitePreview event={event} wishlistGifts={wishlistGifts} />
 }

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import type { z } from 'zod'
 import { getCurrentUser } from '@/actions/get-current-user'
 import { deriveGiftlistEventTypeIds } from '@/lib/giftlist-event-types'
+import { MISSING_GIFT_EDIT_ERROR } from '@/lib/missing-gift'
 import {
   getWishlistGiftEditLockReason,
   WISHLIST_GIFT_EDIT_LOCK_MESSAGES,
@@ -189,24 +190,29 @@ async function createWishlistGiftRecord(
 async function updateWishlistGiftRecord(
   client: WishlistGiftWriter,
   values: WishlistGiftEditValues,
-  progress: WishlistGiftProgressUpdate = {}
+  progress: WishlistGiftProgressUpdate = {},
+  { locked = false }: { locked?: boolean } = {}
 ) {
   const result = await client.wishlistGift.updateMany({
-    where: {
-      id: values.wishlistGiftId,
-      isFullyPaid: false,
-      isManuallyReceived: false,
-      groupGiftParts: '0',
-      reservedQuantity: 0,
-      reservedAmount: 0,
-    },
-    data: {
-      giftId: values.giftId,
-      isFavoriteGift: values.isFavoriteGift,
-      isGroupGift: values.isGroupGift,
-      quantity: values.isGroupGift ? 1 : values.quantity,
-      ...progress,
-    },
+    where: locked
+      ? { id: values.wishlistGiftId }
+      : {
+          id: values.wishlistGiftId,
+          isFullyPaid: false,
+          isManuallyReceived: false,
+          groupGiftParts: '0',
+          reservedQuantity: 0,
+          reservedAmount: 0,
+        },
+    data: locked
+      ? { giftId: values.giftId }
+      : {
+          giftId: values.giftId,
+          isFavoriteGift: values.isFavoriteGift,
+          isGroupGift: values.isGroupGift,
+          quantity: values.isGroupGift ? 1 : values.quantity,
+          ...progress,
+        },
   })
 
   if (result.count === 0) {
@@ -434,18 +440,20 @@ export async function editGiftWithWishlistGift(
   const currentUser = await getCurrentUser()
   if (!currentUser) return { error: 'No autorizado.' }
 
-  const { gift: giftValues, wishlistGift: wishlistGiftValues } =
-    validatedFields.data
+  const {
+    gift: submittedGiftValues,
+    wishlistGift: submittedWishlistGiftValues,
+  } = validatedFields.data
 
   try {
     const result = await retryOnTransientWriteConflict(() =>
       prismaClient.$transaction(async tx => {
         const current = await tx.wishlistGift.findFirst({
           where: {
-            id: wishlistGiftValues.wishlistGiftId,
-            wishlistId: wishlistGiftValues.wishlistId,
+            id: submittedWishlistGiftValues.wishlistGiftId,
+            wishlistId: submittedWishlistGiftValues.wishlistId,
             event: {
-              wishlistId: wishlistGiftValues.wishlistId,
+              wishlistId: submittedWishlistGiftValues.wishlistId,
               users: { some: { id: currentUser.id } },
             },
           },
@@ -484,6 +492,10 @@ export async function editGiftWithWishlistGift(
           throw new WishlistGiftMutationError('No autorizado.')
         }
 
+        if (!current.gift) {
+          throw new WishlistGiftMutationError(MISSING_GIFT_EDIT_ERROR)
+        }
+
         if (
           !current.gift.isDefault &&
           current.gift.eventId !== current.eventId
@@ -501,14 +513,32 @@ export async function editGiftWithWishlistGift(
           reservedAmount: current.reservedAmount,
           hasCompletedTransaction: current.transactions.length > 0,
         })
-        if (editLockReason) {
-          throw new WishlistGiftMutationError(
-            WISHLIST_GIFT_EDIT_LOCK_MESSAGES[editLockReason]
-          )
-        }
+
+        // The money fields arrive from a form whose inputs are only disabled,
+        // so pin them to the stored row rather than trusting what was sent.
+        const locked = editLockReason !== null
+        const giftValues = locked
+          ? {
+              ...submittedGiftValues,
+              price: current.gift.price,
+              categoryId: current.gift.categoryId,
+            }
+          : submittedGiftValues
+        const wishlistGiftValues = locked
+          ? {
+              ...submittedWishlistGiftValues,
+              isFavoriteGift: current.isFavoriteGift,
+              isGroupGift: current.isGroupGift,
+              quantity: current.quantity,
+            }
+          : submittedWishlistGiftValues
 
         const giftChanged = catalogGiftContentChanged(current.gift, giftValues)
         const priceChanged = giftValues.price !== current.gift.price
+
+        if (locked && !giftChanged) {
+          return { giftId: current.giftId }
+        }
 
         const category = await tx.category.findUnique({
           where: { id: giftValues.categoryId },
@@ -557,7 +587,7 @@ export async function editGiftWithWishlistGift(
           wishlistGiftValues.isGroupGift !== current.isGroupGift ||
           wishlistGiftValues.quantity !== current.quantity
         const progress =
-          wishlistSettingsChanged || !giftChanged || priceChanged
+          !locked && (wishlistSettingsChanged || !giftChanged || priceChanged)
             ? (() => {
                 const completedAmount = current.transactions.reduce(
                   (sum, transaction) => sum + (Number(transaction.amount) || 0),
@@ -585,7 +615,8 @@ export async function editGiftWithWishlistGift(
         await updateWishlistGiftRecord(
           tx,
           { ...wishlistGiftValues, giftId },
-          progress
+          progress,
+          { locked }
         )
 
         return { giftId }
@@ -686,6 +717,7 @@ export async function deleteWishlistGift(
         where: {
           id: ownedGift.id,
           event: { users: { some: { id: currentUser.id } } },
+          transactions: { none: {} },
         },
       })
     }

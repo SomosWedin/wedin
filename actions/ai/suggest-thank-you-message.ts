@@ -58,10 +58,20 @@ export async function suggestThankYouMessage(transactionId: string) {
       include: { wishlistGift: { include: { gift: true } } },
     })
     giftNames = Array.from(
-      new Set(siblings.map(sibling => sibling.wishlistGift.gift.name))
+      new Set(
+        siblings.flatMap(sibling =>
+          sibling.wishlistGift.gift ? [sibling.wishlistGift.gift.name] : []
+        )
+      )
     )
   } else {
-    giftNames = [transaction.wishlistGift.gift.name]
+    giftNames = transaction.wishlistGift.gift
+      ? [transaction.wishlistGift.gift.name]
+      : []
+  }
+
+  if (giftNames.length === 0) {
+    return { error: 'No se encontró el regalo de esta transacción.' }
   }
 
   const giftDescription =
@@ -100,7 +110,7 @@ export async function suggestThankYouMessage(transactionId: string) {
 
     const block = response.content.find(b => b.type === 'text')
 
-    if (!block || block.type !== 'text') {
+    if (block?.type !== 'text') {
       return { error: 'No se pudieron generar sugerencias, intenta de nuevo' }
     }
 

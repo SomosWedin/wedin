@@ -196,7 +196,7 @@ model WishlistGift {
   updatedAt          DateTime @updatedAt
 
   wishlist     Wishlist      @relation(fields: [wishlistId], references: [id])
-  gift         Gift          @relation(fields: [giftId], references: [id])
+  gift         Gift?         @relation(fields: [giftId], references: [id])
   event        Event         @relation(fields: [eventId], references: [id])
   transactions Transaction[]
 

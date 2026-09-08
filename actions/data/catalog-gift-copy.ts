@@ -35,6 +35,13 @@ export function catalogGiftContentChanged(
   )
 }
 
+export function catalogGiftSnapshotRequired(
+  gift: Pick<CatalogGiftWithWishlistLinks, 'price' | 'categoryId'>,
+  values: { price: string; categoryId: string }
+) {
+  return gift.price !== values.price || gift.categoryId !== values.categoryId
+}
+
 export async function copyCatalogGiftForWishlistLinks(
   client: CatalogGiftCopyWriter,
   gift: CatalogGiftWithWishlistLinks,

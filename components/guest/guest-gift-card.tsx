@@ -18,12 +18,24 @@ import {
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 
-export type WishlistGiftWithGift = Prisma.WishlistGiftGetPayload<{
+type WishlistGiftPayload = Prisma.WishlistGiftGetPayload<{
   include: {
     gift: { include: { image: true } }
     transactions: { select: { amount: true; quantity: true } }
   }
 }>
+
+// An orphaned gift is unbuyable — the catalog filters those out via
+// hasGift, so every card is guaranteed a gift row.
+export type WishlistGiftWithGift = WishlistGiftPayload & {
+  gift: NonNullable<WishlistGiftPayload['gift']>
+}
+
+export function hasGift(
+  wishlistGift: WishlistGiftPayload
+): wishlistGift is WishlistGiftWithGift {
+  return wishlistGift.gift !== null
+}
 
 type GuestGiftCardProps = {
   wishlistGift: WishlistGiftWithGift
