@@ -13,6 +13,26 @@ import {
   uploadAdminImportRows,
 } from '@/actions/data/import-job'
 
+const handlers: Record<
+  string,
+  Record<string, (input: unknown) => Promise<unknown>>
+> = {
+  gift: {
+    start: startAdminImportJob,
+    upload: uploadAdminImportRows,
+    review: reviewAdminImportJob,
+    reviewRows: getAdminImportReviewRows,
+    accept: acceptAdminGiftImport,
+  },
+  collection: {
+    start: startAdminCollectionImportJob,
+    upload: uploadAdminCollectionImportRows,
+    review: reviewAdminCollectionImportJob,
+    reviewRows: getAdminCollectionImportReviewRows,
+    accept: acceptAdminCollectionImport,
+  },
+}
+
 export async function POST(
   request: Request,
   { params }: { params: { kind: string } }
@@ -25,29 +45,13 @@ export async function POST(
   if (!body || typeof body !== 'object')
     return Response.json({ error: 'Solicitud inválida.' }, { status: 400 })
   const { operation, input } = body as { operation?: unknown; input?: unknown }
-  let result: unknown
-  if (params.kind === 'gift') {
-    if (operation === 'start') result = await startAdminImportJob(input)
-    else if (operation === 'upload') result = await uploadAdminImportRows(input)
-    else if (operation === 'review') result = await reviewAdminImportJob(input)
-    else if (operation === 'reviewRows')
-      result = await getAdminImportReviewRows(input)
-    else if (operation === 'accept') result = await acceptAdminGiftImport(input)
-  } else if (params.kind === 'collection') {
-    if (operation === 'start')
-      result = await startAdminCollectionImportJob(input)
-    else if (operation === 'upload')
-      result = await uploadAdminCollectionImportRows(input)
-    else if (operation === 'review')
-      result = await reviewAdminCollectionImportJob(input)
-    else if (operation === 'reviewRows')
-      result = await getAdminCollectionImportReviewRows(input)
-    else if (operation === 'accept')
-      result = await acceptAdminCollectionImport(input)
-  }
-  if (!result)
+  const handler =
+    typeof operation === 'string'
+      ? handlers[params.kind]?.[operation]
+      : undefined
+  if (!handler)
     return Response.json({ error: 'Operación inválida.' }, { status: 400 })
-  return Response.json(result, {
+  return Response.json(await handler(input), {
     headers: { 'Cache-Control': 'private, no-store' },
   })
 }

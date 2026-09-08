@@ -132,7 +132,7 @@ export default function CollectionImportForm({
   controller: AdminCollectionImportController
   gifts: CollectionImportGift[]
 }) {
-  const { step, loading, error, preview, jobId } = controller
+  const { step, loading, error, preview, reviewTotal, jobId } = controller
   const invalid = preview.filter(row => row.errors.length).length
   const valid = preview.length - invalid
   const validRows = preview.filter(row => !row.errors.length)
@@ -233,7 +233,9 @@ export default function CollectionImportForm({
             ? 'Guardando y enviando a la cola…'
             : loading === 'preview'
               ? 'Calculando altas, bajas y coincidencias…'
-              : 'Leyendo archivo…'}
+              : loading === 'rows'
+                ? `Cargando la revisión… ${preview.length} de ${reviewTotal} filas.`
+                : 'Leyendo archivo…'}
         </p>
       )}
       {!loading && step === 2 && !jobId && !canAccept && (

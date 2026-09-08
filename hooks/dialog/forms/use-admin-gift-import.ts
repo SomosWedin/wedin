@@ -24,6 +24,7 @@ import {
 import {
   paginateReviewRows,
   readImportFile,
+  submitImportDraft,
   useAbandonedImportDraft,
 } from './use-import-draft-wizard'
 
@@ -178,76 +179,46 @@ export function useAdminGiftImport() {
     setError('')
     setQueueDispatchFailed(false)
     try {
-      const content = JSON.stringify({
-        rows: parsed.data,
-        createMissingCollections,
-      })
-      if (content !== submissionContent.current) {
-        if (preparedJobId.current) {
-          const cancelled = await cancelImportPreparation(preparedJobId.current)
-          if ('error' in cancelled) throw new Error(cancelled.error)
-          preparedJobId.current = ''
-        }
-        submissionId.current = ''
-        submissionContent.current = content
-      }
-      if (!submissionId.current) submissionId.current = crypto.randomUUID()
-      const started = await requestGiftImport('start', {
-        submissionId: submissionId.current,
-        filename: fileName,
-        expectedRows: parsed.data.length,
-        createMissingCollections,
-      })
-      if (started.error) {
-        setError(started.error)
-        return
-      }
-      preparedJobId.current = started.jobId
-      let offset = 0
-      for (const chunk of chunkGiftImportRows(parsed.data)) {
-        const uploaded = await requestGiftImport('upload', {
-          jobId: started.jobId,
-          offset,
-          rows: chunk,
+      const { previewToken: token, preview: rows } =
+        await submitImportDraft<GiftImportPreviewRow>({
+          requests: {
+            start: input => requestGiftImport('start', input),
+            upload: input => requestGiftImport('upload', input),
+            review: id => requestGiftImport('review', id),
+            reviewRows: input => requestGiftImport('reviewRows', input),
+          },
+          refs: { preparedJobId, submissionId, submissionContent },
+          content: JSON.stringify({
+            rows: parsed.data,
+            createMissingCollections,
+          }),
+          startInput: {
+            filename: fileName,
+            expectedRows: parsed.data.length,
+            createMissingCollections,
+          },
+          chunks: chunkGiftImportRows(parsed.data),
+          onReviewReady: (rowCount, previewTokenValue) => {
+            setPreviewToken(previewTokenValue)
+            setPreview([])
+            setReviewTotal(rowCount)
+            setSkipErrors(false)
+            setLoading('rows')
+            setStep(2)
+          },
+          onPage: rows => setPreview(current => [...current, ...rows]),
         })
-        offset += chunk.length
-        if (uploaded.error) {
-          setError(uploaded.error)
-          return
-        }
-      }
-      const result = await requestGiftImport('review', started.jobId)
-      if ('error' in result && result.error) {
-        setError(result.error)
-        return
-      }
-      if ('previewToken' in result) {
-        setPreviewToken(result.previewToken)
-        setPreview([])
-        setReviewTotal(result.rowCount)
-        setSkipErrors(false)
-        setStep(2)
-        // Rows arrive ten at a time; showing them as they land beats blocking
-        // the step for one round trip per ten rows.
-        setLoading('rows')
-        try {
-          setPreview(
-            await loadReview(
-              started.jobId,
-              result.rowCount,
-              result.previewToken,
-              rows => setPreview(current => [...current, ...rows])
-            )
-          )
-        } catch (failure) {
-          setPreview([])
-          setReviewTotal(0)
-          setStep(1)
-          throw failure
-        }
-      }
-    } catch {
-      setError('No se pudo obtener la revisión. Intentá nuevamente.')
+      setPreviewToken(token)
+      setPreview(rows)
+    } catch (failure) {
+      setPreview([])
+      setReviewTotal(0)
+      setStep(1)
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : 'No se pudo obtener la revisión. Intentá nuevamente.'
+      )
     } finally {
       busy.current = false
       setLoading(null)

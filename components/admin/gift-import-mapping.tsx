@@ -10,7 +10,8 @@ import {
 } from '@/components/ui/select'
 import type { AdminGiftImportController } from '@/hooks/dialog/forms/use-admin-gift-import'
 import {
-  findImportOption,
+  buildImportOptionIndex,
+  findIndexedImportOption,
   getImportCell,
   splitImportRelationValues,
   splitImportValues,
@@ -294,8 +295,10 @@ export default function GiftImportMapping({
         )
         if (!values.length) return null
         const options = relationOptions(field, catalog)
+        const index = buildImportOptionIndex(options)
         const unmatched = values.filter(
-          value => !findImportOption(matches[field][value] || value, options)
+          value =>
+            !findIndexedImportOption(matches[field][value] || value, index)
         )
         const willCreate = field === 'collections' && createMissingCollections
         const needsAttention = unmatched.length > 0 && !willCreate
@@ -341,9 +344,9 @@ export default function GiftImportMapping({
             )}
             <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
               {values.map(value => {
-                const match = findImportOption(
+                const match = findIndexedImportOption(
                   matches[field][value] || value,
-                  options
+                  index
                 )
                 return (
                   <div

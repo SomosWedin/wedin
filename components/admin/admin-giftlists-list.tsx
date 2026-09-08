@@ -2,7 +2,7 @@
 
 import type { Category, EventType, Gift } from '@prisma/client'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   IoAdd,
   IoChevronDown,
@@ -38,6 +38,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import PaginationControls from '@/components/ui/pagination-controls'
 import {
   Select,
   SelectContent,
@@ -48,6 +49,7 @@ import {
 import { useCreateAdminGiftlist } from '@/hooks/dialog/forms/use-create-admin-giftlist'
 import { useEditAdminGiftlist } from '@/hooks/dialog/forms/use-edit-admin-giftlist'
 import type { useGiftlistFormController } from '@/hooks/dialog/forms/use-giftlist-form-controller'
+import { usePagination } from '@/hooks/use-pagination'
 import { useToast } from '@/hooks/use-toast'
 
 type GiftlistFormController = ReturnType<typeof useGiftlistFormController>
@@ -204,51 +206,63 @@ export default function AdminGiftlistsList({
     [categoriesById, categoryEventTypeIdsById, gifts]
   )
 
-  const getCategoryNames = (giftlist: AdminGiftlist) =>
-    Array.from(
-      new Set(
-        giftlist.gifts
-          .map(gift => categoriesById.get(gift.categoryId))
-          .filter((name): name is string => Boolean(name))
-      )
-    ).sort((left, right) => left.localeCompare(right, 'es'))
+  const getCategoryNames = useCallback(
+    (giftlist: AdminGiftlist) =>
+      Array.from(
+        new Set(
+          giftlist.gifts
+            .map(gift => categoriesById.get(gift.categoryId))
+            .filter((name): name is string => Boolean(name))
+        )
+      ).sort((left, right) => left.localeCompare(right, 'es')),
+    [categoriesById]
+  )
 
   const normalizedNameFilter = nameFilter.trim().toLocaleLowerCase('es-PY')
-  const filteredGiftlists = giftlists.filter(giftlist => {
-    const matchesName = giftlist.name
-      .toLocaleLowerCase('es-PY')
-      .includes(normalizedNameFilter)
-    const matchesEventType =
-      eventTypeFilter === 'all' ||
-      giftlist.eventTypeIds.includes(eventTypeFilter)
-    const matchesCategory =
-      categoryFilter === 'all' ||
-      giftlist.gifts.some(gift => gift.categoryId === categoryFilter)
+  const filteredGiftlists = useMemo(
+    () =>
+      giftlists.filter(giftlist => {
+        const matchesName = giftlist.name
+          .toLocaleLowerCase('es-PY')
+          .includes(normalizedNameFilter)
+        const matchesEventType =
+          eventTypeFilter === 'all' ||
+          giftlist.eventTypeIds.includes(eventTypeFilter)
+        const matchesCategory =
+          categoryFilter === 'all' ||
+          giftlist.gifts.some(gift => gift.categoryId === categoryFilter)
 
-    return matchesName && matchesEventType && matchesCategory
-  })
-  const sortedGiftlists = [...filteredGiftlists].sort((first, second) => {
-    const getSortValue = (giftlist: AdminGiftlist) => {
-      if (sortColumn === 'name') return giftlist.name
-      if (sortColumn === 'eventTypes') {
-        return giftlist.eventTypes
-          .map(eventType => eventType.name)
-          .sort((left, right) => left.localeCompare(right, 'es'))
-          .join(', ')
-      }
-      return getCategoryNames(giftlist).join(', ')
-    }
-    const firstValue = getSortValue(first)
-    const secondValue = getSortValue(second)
+        return matchesName && matchesEventType && matchesCategory
+      }),
+    [categoryFilter, eventTypeFilter, giftlists, normalizedNameFilter]
+  )
+  const sortedGiftlists = useMemo(
+    () =>
+      [...filteredGiftlists].sort((first, second) => {
+        const getSortValue = (giftlist: AdminGiftlist) => {
+          if (sortColumn === 'name') return giftlist.name
+          if (sortColumn === 'eventTypes') {
+            return giftlist.eventTypes
+              .map(eventType => eventType.name)
+              .sort((left, right) => left.localeCompare(right, 'es'))
+              .join(', ')
+          }
+          return getCategoryNames(giftlist).join(', ')
+        }
+        const firstValue = getSortValue(first)
+        const secondValue = getSortValue(second)
 
-    if (!firstValue && secondValue) return 1
-    if (firstValue && !secondValue) return -1
+        if (!firstValue && secondValue) return 1
+        if (firstValue && !secondValue) return -1
 
-    const comparison = firstValue.localeCompare(secondValue, 'es', {
-      sensitivity: 'base',
-    })
-    return sortDirection === 'asc' ? comparison : -comparison
-  })
+        const comparison = firstValue.localeCompare(secondValue, 'es', {
+          sensitivity: 'base',
+        })
+        return sortDirection === 'asc' ? comparison : -comparison
+      }),
+    [filteredGiftlists, getCategoryNames, sortColumn, sortDirection]
+  )
+  const { pageItems, pagination } = usePagination(sortedGiftlists)
 
   const handleSort = (column: SortColumn) => {
     if (column !== sortColumn) {
@@ -378,7 +392,7 @@ export default function AdminGiftlistsList({
             No hay colecciones que coincidan con los filtros
           </div>
         ) : (
-          sortedGiftlists.map(giftlist => (
+          pageItems.map(giftlist => (
             <div
               key={giftlist.id}
               className="group grid grid-cols-1 items-center gap-4 border-b border-gray-100 px-4 py-4 hover:bg-gray-50 sm:grid-cols-12"
@@ -425,6 +439,8 @@ export default function AdminGiftlistsList({
             </div>
           ))
         )}
+
+        <PaginationControls {...pagination} />
       </div>
       <AlertDialog
         open={Boolean(deleting)}

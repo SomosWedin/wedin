@@ -189,9 +189,12 @@ export function parseImportPrice(value: string): string | null {
 type ImportOption = { id: string; name: string; key?: string }
 export type ImportOptionIndex<T extends ImportOption> = {
   byId: Map<string, T>
+  // null marks a label two options share: ambiguous, so it matches neither.
   byLabel: Map<string, T | null>
 }
 
+// Normalizing every option name on every lookup is O(rows x catalog) with a
+// costly per-call constant, and the preview builds twice per review.
 export function buildImportOptionIndex<T extends ImportOption>(
   options: T[]
 ): ImportOptionIndex<T> {
@@ -220,13 +223,6 @@ export function findIndexedImportOption<T extends ImportOption>(
   const label = normalizeImportLabel(value)
   if (!label) return undefined
   return index.byLabel.get(label) ?? undefined
-}
-
-export function findImportOption<T extends ImportOption>(
-  value: string,
-  options: T[]
-) {
-  return findIndexedImportOption(value, buildImportOptionIndex(options))
 }
 
 export function buildGiftImportPreview(
@@ -388,22 +384,22 @@ export function buildGiftImportPreview(
       errorTypes,
       values: parsed.success
         ? {
-          ...parsed.data,
-          newGiftlistNames: Array.from(
-            new Map(
-              collections.flatMap(collection =>
-                collection.isNew
-                  ? [
-                    [
-                      collection.name.toLocaleLowerCase('es-PY'),
-                      collection.name,
-                    ] as const,
-                  ]
-                  : []
-              )
-            ).values()
-          ),
-        }
+            ...parsed.data,
+            newGiftlistNames: Array.from(
+              new Map(
+                collections.flatMap(collection =>
+                  collection.isNew
+                    ? [
+                        [
+                          collection.name.toLocaleLowerCase('es-PY'),
+                          collection.name,
+                        ] as const,
+                      ]
+                    : []
+                )
+              ).values()
+            ),
+          }
         : null,
     }
   })
@@ -463,8 +459,8 @@ export function buildGiftImportPreview(
         row.errors.length === 0 &&
         (collection.isNew
           ? row.values?.newGiftlistNames.some(
-            name => name.toLocaleLowerCase('es-PY') === collection.key
-          )
+              name => name.toLocaleLowerCase('es-PY') === collection.key
+            )
           : row.values?.giftlistIds.includes(collection.key))
     )
     if (!incoming.length) continue

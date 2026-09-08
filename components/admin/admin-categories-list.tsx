@@ -1,7 +1,7 @@
 'use client'
 
 import type { Category, EventType } from '@prisma/client'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   IoChevronDown,
   IoChevronUp,
@@ -11,6 +11,7 @@ import {
 import AdminCategoryDialog from '@/components/dialog/admin-category-dialog'
 import DeleteAdminCategoryDialog from '@/components/dialog/delete-admin-category-dialog'
 import { Input } from '@/components/ui/input'
+import PaginationControls from '@/components/ui/pagination-controls'
 import {
   Select,
   SelectContent,
@@ -18,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { usePagination } from '@/hooks/use-pagination'
 
 export default function AdminCategoriesList({
   categories,
@@ -32,36 +34,45 @@ export default function AdminCategoriesList({
     null
   )
   const normalizedNameFilter = nameFilter.trim().toLocaleLowerCase('es-PY')
-  const filteredCategories = categories.filter(category => {
-    const matchesName = category.name
-      .toLocaleLowerCase('es-PY')
-      .includes(normalizedNameFilter)
-    const matchesEventType =
-      eventTypeFilter === 'all' ||
-      category.eventTypeIds.includes(eventTypeFilter)
+  const filteredCategories = useMemo(
+    () =>
+      categories.filter(category => {
+        const matchesName = category.name
+          .toLocaleLowerCase('es-PY')
+          .includes(normalizedNameFilter)
+        const matchesEventType =
+          eventTypeFilter === 'all' ||
+          category.eventTypeIds.includes(eventTypeFilter)
 
-    return matchesName && matchesEventType
-  })
-  const sortedCategories = eventTypeSort
-    ? [...filteredCategories].sort((first, second) => {
-        const firstTypes = first.eventTypes
-          .map(eventType => eventType.name)
-          .sort((left, right) => left.localeCompare(right, 'es'))
-          .join(', ')
-        const secondTypes = second.eventTypes
-          .map(eventType => eventType.name)
-          .sort((left, right) => left.localeCompare(right, 'es'))
-          .join(', ')
+        return matchesName && matchesEventType
+      }),
+    [categories, eventTypeFilter, normalizedNameFilter]
+  )
+  const sortedCategories = useMemo(
+    () =>
+      eventTypeSort
+        ? [...filteredCategories].sort((first, second) => {
+          const firstTypes = first.eventTypes
+            .map(eventType => eventType.name)
+            .sort((left, right) => left.localeCompare(right, 'es'))
+            .join(', ')
+          const secondTypes = second.eventTypes
+            .map(eventType => eventType.name)
+            .sort((left, right) => left.localeCompare(right, 'es'))
+            .join(', ')
 
-        if (!firstTypes && secondTypes) return 1
-        if (firstTypes && !secondTypes) return -1
+          if (!firstTypes && secondTypes) return 1
+          if (firstTypes && !secondTypes) return -1
 
-        const comparison = firstTypes.localeCompare(secondTypes, 'es', {
-          sensitivity: 'base',
+          const comparison = firstTypes.localeCompare(secondTypes, 'es', {
+            sensitivity: 'base',
+          })
+          return eventTypeSort === 'asc' ? comparison : -comparison
         })
-        return eventTypeSort === 'asc' ? comparison : -comparison
-      })
-    : filteredCategories
+        : filteredCategories,
+    [eventTypeSort, filteredCategories]
+  )
+  const { pageItems, pagination } = usePagination(sortedCategories)
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -101,13 +112,12 @@ export default function AdminCategoriesList({
           <button
             type="button"
             className="col-span-5 flex items-center gap-2 text-left hover:text-textPrimary"
-            aria-label={`Ordenar tipos de evento ${
-              eventTypeSort === null
+            aria-label={`Ordenar tipos de evento ${eventTypeSort === null
                 ? 'ascendentemente'
                 : eventTypeSort === 'asc'
                   ? 'descendentemente'
                   : 'por defecto'
-            }`}
+              }`}
             onClick={() =>
               setEventTypeSort(direction => {
                 if (direction === null) return 'asc'
@@ -136,7 +146,7 @@ export default function AdminCategoriesList({
             No hay categorías que coincidan con los filtros
           </div>
         ) : (
-          sortedCategories.map(category => (
+          pageItems.map(category => (
             <div
               key={category.id}
               className="grid grid-cols-1 items-center gap-4 border-b border-gray-100 px-4 py-4 hover:bg-gray-50 sm:grid-cols-12 group"
@@ -147,8 +157,8 @@ export default function AdminCategoriesList({
               <div className="text-sm text-textTertiary sm:col-span-5">
                 {category.eventTypes.length
                   ? category.eventTypes
-                      .map(eventType => eventType.name)
-                      .join(', ')
+                    .map(eventType => eventType.name)
+                    .join(', ')
                   : 'Sin asignar'}
               </div>
               <div className="flex col-span-2 gap-2 justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
@@ -164,6 +174,8 @@ export default function AdminCategoriesList({
             </div>
           ))
         )}
+
+        <PaginationControls {...pagination} />
       </div>
     </div>
   )
