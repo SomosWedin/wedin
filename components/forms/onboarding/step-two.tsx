@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import type { BaseSyntheticEvent } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
+import OnboardingBackButton from '@/components/onboarding/back-button'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -22,6 +23,7 @@ type StepTwoFormProps = {
   isWedding: boolean
   isValid: boolean
   loading: boolean
+  onBack: () => void
   onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
 }
 
@@ -30,6 +32,7 @@ export default function StepTwoForm({
   isWedding,
   isValid,
   loading,
+  onBack,
   onSubmit,
 }: StepTwoFormProps) {
   return (
@@ -123,19 +126,23 @@ export default function StepTwoForm({
           </>
         )}
 
-        <div className="flex justify-center">
-          <Button
-            type="submit"
-            variant="success"
-            className="mt-6 w-72"
-            disabled={loading || !isValid}
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Continuar'
-            )}
-          </Button>
+        <div className="mt-6 flex justify-center">
+          <div className="flex w-72 items-center gap-3">
+            <OnboardingBackButton onClick={onBack} disabled={loading} />
+
+            <Button
+              type="submit"
+              variant="success"
+              className="flex-1"
+              disabled={loading || !isValid}
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Continuar'
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </Form>

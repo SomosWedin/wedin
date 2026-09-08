@@ -1,6 +1,7 @@
 'use client'
 
 import { Loader2 } from 'lucide-react'
+import OnboardingBackButton from '@/components/onboarding/back-button'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Combobox } from '@/components/ui/combobox'
@@ -21,12 +22,16 @@ import {
 import { countries } from '@/lib/countries'
 
 type StepThreeFormProps = {
+  defaultValues: StepThreeValues
   loading: boolean
+  onBack: () => void
   onSubmit: (values: StepThreeValues) => Promise<void> | void
 }
 
 export default function StepThreeForm({
+  defaultValues,
   loading,
+  onBack,
   onSubmit,
 }: StepThreeFormProps) {
   const {
@@ -35,7 +40,7 @@ export default function StepThreeForm({
     isButtonEnabled,
     isDecidingEventLocation,
     handleDecidingChange,
-  } = useStepThree({ onSubmit })
+  } = useStepThree({ defaultValues, onSubmit })
 
   return (
     <Form {...form}>
@@ -124,18 +129,22 @@ export default function StepThreeForm({
         />
 
         <div className="mt-6 flex justify-center">
-          <Button
-            type="submit"
-            variant="success"
-            disabled={loading || !isButtonEnabled}
-            className="w-72"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Continuar'
-            )}
-          </Button>
+          <div className="flex w-72 items-center gap-3">
+            <OnboardingBackButton onClick={onBack} disabled={loading} />
+
+            <Button
+              type="submit"
+              variant="success"
+              disabled={loading || !isButtonEnabled}
+              className="flex-1"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Continuar'
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </Form>

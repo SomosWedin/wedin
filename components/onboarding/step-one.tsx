@@ -6,14 +6,24 @@ import { useOnboarding } from '@/hooks/use-onboarding'
 import { sortEventTypesForOnboarding } from '@/lib/event-type'
 import { getEventTypeIcon } from '@/lib/event-type-icons'
 import wedinIcon from '@/public/assets/w-icon.svg'
-import OnboardingStepper from './stepper'
+import type { OnboardingNav } from './step-manager'
+import OnboardingStepNav from './step-nav'
 
 export default function OnboardingStepOne({
   eventTypes,
+  selectedEventTypeId,
+  onEventTypeSelected,
+  nav,
 }: {
   eventTypes: EventType[]
+  selectedEventTypeId: string | null
+  onEventTypeSelected: (eventTypeId: string) => void
+  nav: OnboardingNav
 }) {
-  const { handleEventTypeUpdate, loading } = useOnboarding()
+  const { handleEventTypeUpdate, loading } = useOnboarding({
+    onAdvance: nav.onAdvance,
+    onEventTypeSelected,
+  })
 
   const sortedEventTypes = sortEventTypesForOnboarding(eventTypes)
 
@@ -39,11 +49,14 @@ export default function OnboardingStepOne({
       <div className="grid w-full max-w-3xl grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         {sortedEventTypes.map(eventType => {
           const Icon = getEventTypeIcon(eventType.key)
+          const isSelected = eventType.id === selectedEventTypeId
 
           return (
             <Card
               key={eventType.id}
               className={`w-full bg-gray50 border-gray200 hover:bg-gray200 transition-all cursor-pointer rounded-2xl ${
+                isSelected ? 'border-primary400 bg-gray200' : ''
+              } ${
                 loading
                   ? 'cursor-not-allowed pointer-events-none opacity-65'
                   : ''
@@ -66,7 +79,7 @@ export default function OnboardingStepOne({
         })}
       </div>
 
-      <OnboardingStepper step={1} />
+      <OnboardingStepNav nav={nav} loading={loading} />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { format, startOfToday } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react'
+import OnboardingBackButton from '@/components/onboarding/back-button'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -26,11 +27,18 @@ import {
 import { cn } from '@/lib/utils'
 
 type StepFourFormProps = {
+  defaultValues: StepFourValues
   loading: boolean
+  onBack: () => void
   onSubmit: (values: StepFourValues) => Promise<void>
 }
 
-export default function StepFourForm({ loading, onSubmit }: StepFourFormProps) {
+export default function StepFourForm({
+  defaultValues,
+  loading,
+  onBack,
+  onSubmit,
+}: StepFourFormProps) {
   const {
     form,
     eventDate,
@@ -41,7 +49,7 @@ export default function StepFourForm({ loading, onSubmit }: StepFourFormProps) {
     handleDateChange,
     handleDecidingChange,
     handleSubmit,
-  } = useStepFour({ onSubmit })
+  } = useStepFour({ defaultValues, onSubmit })
 
   return (
     <Form {...form}>
@@ -120,18 +128,22 @@ export default function StepFourForm({ loading, onSubmit }: StepFourFormProps) {
         </div>
 
         <div className="flex justify-center">
-          <Button
-            type="submit"
-            variant="success"
-            disabled={loading || !isButtonEnabled}
-            className="w-72"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Continuar'
-            )}
-          </Button>
+          <div className="flex w-72 items-center gap-3">
+            <OnboardingBackButton onClick={onBack} disabled={loading} />
+
+            <Button
+              type="submit"
+              variant="success"
+              disabled={loading || !isButtonEnabled}
+              className="flex-1"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Continuar'
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </Form>
