@@ -72,6 +72,7 @@ export type GiftFormProps = {
   adminMode?: boolean
   preserveGiftlistSelectionsOnCategoryChange?: boolean
   readOnlyReason?: string
+  showPropagationNote?: boolean
   onFileChange: ChangeEventHandler<HTMLInputElement>
   onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
   onCancel: () => void
@@ -95,6 +96,7 @@ export default function GiftForm({
   adminMode = false,
   preserveGiftlistSelectionsOnCategoryChange = false,
   readOnlyReason,
+  showPropagationNote = false,
   onFileChange,
   onSubmit,
   onCancel,
@@ -138,11 +140,7 @@ export default function GiftForm({
           </div>
         )}
 
-        <fieldset
-          disabled={Boolean(readOnlyReason)}
-          aria-disabled={Boolean(readOnlyReason)}
-          className="contents"
-        >
+        <fieldset className="contents">
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">Imagen del producto</span>
 
@@ -178,7 +176,7 @@ export default function GiftForm({
                   size="sm"
                   className="w-fit gap-2"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={preparingImage || Boolean(readOnlyReason)}
+                  disabled={preparingImage}
                 >
                   {preparingImage ? 'Procesando…' : 'Subir imagen'}
                   {preparingImage ? (
@@ -206,6 +204,13 @@ export default function GiftForm({
                 <FormControl>
                   <Input {...field} placeholder="Sofá living" />
                 </FormControl>
+
+                {showPropagationNote && (
+                  <p className="text-xs text-textTertiary">
+                    El nombre y la foto se actualizan también en los eventos que
+                    ya tienen este regalo.
+                  </p>
+                )}
 
                 <FormMessage className="font-normal text-red-600" />
               </FormItem>
@@ -408,20 +413,43 @@ export default function GiftForm({
                       </TooltipProvider>
                     </div>
 
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={minQuantity}
-                        max={20}
-                        step={1}
-                        value={field.value}
-                        onChange={event => {
-                          if (event.target.value.length > 2) return
-                          field.onChange(event.target.value)
-                        }}
-                        onBlur={field.onBlur}
-                      />
-                    </FormControl>
+                    {readOnlyReason ? (
+                      <TooltipProvider disableHoverableContent>
+                        <Tooltip delayDuration={100}>
+                          <TooltipTrigger asChild>
+                            <div>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  value={field.value}
+                                  onBlur={field.onBlur}
+                                  disabled
+                                />
+                              </FormControl>
+                            </div>
+                          </TooltipTrigger>
+
+                          <TooltipContent side="top">
+                            No podés cambiar la cantidad de un regalo recibido
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={minQuantity}
+                          max={20}
+                          step={1}
+                          value={field.value}
+                          onChange={event => {
+                            if (event.target.value.length > 2) return
+                            field.onChange(event.target.value)
+                          }}
+                          onBlur={field.onBlur}
+                        />
+                      </FormControl>
+                    )}
 
                     <FormMessage className="font-normal text-red-600" />
                   </FormItem>
@@ -447,6 +475,7 @@ export default function GiftForm({
                   <FormControl>
                     <Switch
                       checked={field.value}
+                      disabled={Boolean(readOnlyReason)}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
@@ -495,7 +524,7 @@ export default function GiftForm({
             type="submit"
             variant="success"
             className="gap-2"
-            disabled={loading || !isValid || Boolean(readOnlyReason)}
+            disabled={loading || !isValid}
           >
             {submitLabel}
 

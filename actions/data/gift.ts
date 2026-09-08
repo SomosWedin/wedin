@@ -9,12 +9,13 @@ import { AdminGiftCreateSchema, AdminGiftEditSchema } from '@/schemas/form'
 import { GetGiftsParams } from '@/schemas/params'
 import { getErrorMessage } from '../helper'
 import {
-  catalogGiftContentChanged,
+  catalogGiftSnapshotRequired,
   copyCatalogGiftForWishlistLinks,
 } from './catalog-gift-copy'
 import { getCategories } from './category'
 import {
   createGiftRecord,
+  GiftDeleteConflictError,
   GiftNameConflictError,
   isGiftNameUniqueConstraintError,
   updateGiftRecord,
@@ -207,12 +208,7 @@ export async function editAdminGift(
           existingGift.giftlistIds
         )
 
-      const catalogFieldsChanged = catalogGiftContentChanged(
-        existingGift,
-        values
-      )
-
-      if (catalogFieldsChanged) {
+      if (catalogGiftSnapshotRequired(existingGift, values)) {
         await copyCatalogGiftForWishlistLinks(tx, existingGift)
       }
 
@@ -283,6 +279,14 @@ export async function deleteDefaultGiftAsAdmin(giftId: string) {
 
       await copyCatalogGiftForWishlistLinks(tx, gift)
 
+      // The wishlistGifts snapshot above is frozen at the read, so a link
+      // created concurrently would survive the copy loop and be orphaned by
+      // the delete — Mongo won't flag it as a write conflict.
+      const remainingLinks = await tx.wishlistGift.count({ where: { giftId } })
+      if (remainingLinks > 0) {
+        throw new GiftDeleteConflictError()
+      }
+
       await tx.gift.update({
         where: { id: giftId },
         data: { giftlists: { set: [] } },
@@ -298,6 +302,10 @@ export async function deleteDefaultGiftAsAdmin(giftId: string) {
     revalidatePath('/gifts')
     return { success: true }
   } catch (error) {
+    if (error instanceof GiftDeleteConflictError) {
+      return { error: error.message }
+    }
+
     console.error('Error deleting default gift:', error)
     return { error: getErrorMessage(error) }
   }

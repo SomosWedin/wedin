@@ -16,9 +16,6 @@ export async function getEventByUrl(slug: string) {
 
     if (!event) return null
 
-    // "Published" = has a url (guaranteed by the findUnique above) AND at
-    // least one gift on the list — an event with no gifts yet has nothing
-    // for a guest to see.
     if (event._count.wishlistGifts === 0) return null
 
     return event

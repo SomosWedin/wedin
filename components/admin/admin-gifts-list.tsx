@@ -57,12 +57,18 @@ export default function AdminGiftsList({
 }: AdminGiftsListProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [eventTypeFilter, setEventTypeFilter] = useState('')
   const [giftlistFilter, setGiftlistFilter] = useState('')
   const [sortColumn, setSortColumn] = useState<SortColumn | null>('createdAt')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
   const categoryNameById = useMemo(
     () => new Map(categories.map(category => [category.id, category.name])),
+    [categories]
+  )
+  const categoryEventTypeIdsById = useMemo(
+    () =>
+      new Map(categories.map(category => [category.id, category.eventTypeIds])),
     [categories]
   )
   const giftlistNameById = useMemo(
@@ -78,6 +84,15 @@ export default function AdminGiftsList({
       })),
     [categories]
   )
+  const eventTypeOptions = useMemo(
+    () =>
+      eventTypes.map(eventType => ({
+        value: eventType.id,
+        label: eventType.name,
+      })),
+    [eventTypes]
+  )
+
   const giftlistOptions = useMemo(
     () =>
       giftlists.map(giftlist => ({
@@ -111,21 +126,28 @@ export default function AdminGiftsList({
       giftlistNames.some(name => name.toLowerCase().includes(normalizedSearch))
     const matchesCategory =
       !categoryFilter || gift.categoryId === categoryFilter
+    const matchesEventType =
+      !eventTypeFilter ||
+      categoryEventTypeIdsById
+        .get(gift.categoryId)
+        ?.includes(eventTypeFilter) === true
     const matchesGiftlist =
       !giftlistFilter || gift.giftlistIds.includes(giftlistFilter)
 
-    return matchesSearch && matchesCategory && matchesGiftlist
+    return (
+      matchesSearch && matchesCategory && matchesEventType && matchesGiftlist
+    )
   })
 
   const sortedGifts = sortColumn
     ? [...filteredGifts].sort((a, b) => {
-        const diff =
-          sortColumn === 'createdAt'
-            ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.price) - Number(b.price)
+      const diff =
+        sortColumn === 'createdAt'
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : Number(a.price) - Number(b.price)
 
-        return sortDirection === 'asc' ? diff : -diff
-      })
+      return sortDirection === 'asc' ? diff : -diff
+    })
     : filteredGifts
 
   return (
@@ -146,6 +168,16 @@ export default function AdminGiftsList({
           selected={categoryFilter}
           onChange={value => setCategoryFilter(value as string)}
           placeholder="Buscar categoría"
+          className="sm:w-56"
+          width="w-56"
+          clearable
+          selectionMode="value"
+        />
+        <Combobox
+          options={eventTypeOptions}
+          selected={eventTypeFilter}
+          onChange={value => setEventTypeFilter(value as string)}
+          placeholder="Buscar tipo de evento"
           className="sm:w-56"
           width="w-56"
           clearable
@@ -236,12 +268,12 @@ export default function AdminGiftsList({
                 <p className="truncate text-xs text-textTertiary">
                   {gift.giftlistIds.length
                     ? gift.giftlistIds
-                        .map(
-                          giftlistId =>
-                            giftlistNameById.get(giftlistId) ??
-                            'Colección no encontrada'
-                        )
-                        .join(', ')
+                      .map(
+                        giftlistId =>
+                          giftlistNameById.get(giftlistId) ??
+                          'Colección no encontrada'
+                      )
+                      .join(', ')
                     : 'Sin colección'}
                 </p>
               </div>

@@ -17,7 +17,7 @@ export type CheckoutCartItem = {
   quantity: number
 }
 
-class CartClaimError extends Error {}
+class CartClaimError extends Error { }
 
 export async function createTransactionsForCart(
   eventId: string,
@@ -81,7 +81,7 @@ export async function createTransactionsForCart(
       wishlistGift => wishlistGift.id === item.wishlistGiftId
     )
 
-    if (!wishlistGift) {
+    if (!wishlistGift?.gift) {
       return { error: 'Uno de los regalos ya no está disponible.' }
     }
 
@@ -134,10 +134,11 @@ export async function createTransactionsForCart(
         wishlistGift => wishlistGift.id === item.wishlistGiftId
       )
 
-      if (!wishlistGift) {
+      if (!wishlistGift?.gift) {
         throw new CartClaimError('Uno de los regalos ya no está disponible.')
       }
 
+      const giftName = wishlistGift.gift.name
       const amount = Number(item.amount) || 0
       const requestedQty = wishlistGift.isGroupGift
         ? 1
@@ -152,10 +153,8 @@ export async function createTransactionsForCart(
             select: { quantity: true, gift: { select: { price: true } } },
           })
 
-          if (!liveWishlistGift) {
-            throw new CartClaimError(
-              `"${wishlistGift.gift.name}" ya no está disponible.`
-            )
+          if (!liveWishlistGift?.gift) {
+            throw new CartClaimError(`"${giftName}" ya no está disponible.`)
           }
 
           const livePrice = Number(liveWishlistGift.gift.price) || 0
@@ -181,27 +180,27 @@ export async function createTransactionsForCart(
 
           const claim = wishlistGift.isGroupGift
             ? await tx.wishlistGift.updateMany({
-                where: {
-                  id: wishlistGift.id,
-                  isGroupGift: true,
-                  reservedAmount: { lte: livePrice - amount },
-                },
-                data: { reservedAmount: { increment: amount } },
-              })
+              where: {
+                id: wishlistGift.id,
+                isGroupGift: true,
+                reservedAmount: { lte: livePrice - amount },
+              },
+              data: { reservedAmount: { increment: amount } },
+            })
             : await tx.wishlistGift.updateMany({
-                where: {
-                  id: wishlistGift.id,
-                  isGroupGift: false,
-                  reservedQuantity: {
-                    lte: liveWishlistGift.quantity - requestedQty,
-                  },
+              where: {
+                id: wishlistGift.id,
+                isGroupGift: false,
+                reservedQuantity: {
+                  lte: liveWishlistGift.quantity - requestedQty,
                 },
-                data: { reservedQuantity: { increment: requestedQty } },
-              })
+              },
+              data: { reservedQuantity: { increment: requestedQty } },
+            })
 
           if (claim.count !== 1) {
             throw new CartClaimError(
-              `"${wishlistGift.gift.name}" ya no está disponible — alguien más lo reservó recién.`
+              `"${giftName}" ya no está disponible — alguien más lo reservó recién.`
             )
           }
 
@@ -265,6 +264,19 @@ export async function createPagoparCheckoutSession(
     return { error: 'Una de las transacciones ya no está disponible.' }
   }
 
+  const orderItems: { name: string; imageUrl: string | null }[] = []
+  for (const transaction of fullTransactions) {
+    if (!transaction.wishlistGift.gift) {
+      await markTransactionsFailed(transactionIds)
+      return { error: 'Uno de los regalos ya no está disponible.' }
+    }
+
+    orderItems.push({
+      name: transaction.wishlistGift.gift.name,
+      imageUrl: transaction.wishlistGift.gift.image?.url ?? null,
+    })
+  }
+
   const subTotal = fullTransactions.reduce(
     (sum, transaction) => sum + (Number(transaction.amount) || 0),
     0
@@ -284,11 +296,11 @@ export async function createPagoparCheckoutSession(
       email: payer.payerEmail || '',
       documento: payer.payerDocument || '',
     },
-    items: fullTransactions.map(transaction => ({
-      name: transaction.wishlistGift.gift.name,
+    items: fullTransactions.map((transaction, index) => ({
+      name: orderItems[index].name,
       amount: Number(transaction.amount),
       quantity: transaction.quantity,
-      imageUrl: transaction.wishlistGift.gift.image?.url ?? null,
+      imageUrl: orderItems[index].imageUrl,
     })),
   })
 

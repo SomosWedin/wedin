@@ -24,6 +24,7 @@ type GiftFormDialogContentProps = {
   adminMode?: boolean
   preserveGiftlistSelectionsOnCategoryChange?: boolean
   readOnlyReason?: string
+  showPropagationNote?: boolean
   onSubmit?: GiftFormProps['onSubmit']
 }
 
@@ -41,6 +42,7 @@ export default function GiftFormDialogContent({
   adminMode,
   preserveGiftlistSelectionsOnCategoryChange,
   readOnlyReason,
+  showPropagationNote,
   onSubmit,
 }: GiftFormDialogContentProps) {
   return (
@@ -69,6 +71,7 @@ export default function GiftFormDialogContent({
           preserveGiftlistSelectionsOnCategoryChange
         }
         readOnlyReason={readOnlyReason}
+        showPropagationNote={showPropagationNote}
         onFileChange={controller.handleFileChange}
         onSubmit={onSubmit ?? controller.handleSubmit}
         onCancel={() => controller.handleOpenChange(false)}

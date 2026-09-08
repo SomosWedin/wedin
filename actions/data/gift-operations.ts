@@ -25,6 +25,15 @@ export function isGiftNameUniqueConstraintError(error: unknown) {
   )
 }
 
+export const GIFT_DELETE_CONFLICT_ERROR =
+  'El regalo se agregó a una lista mientras se eliminaba. Intentá de nuevo.'
+
+export class GiftDeleteConflictError extends Error {
+  constructor() {
+    super(GIFT_DELETE_CONFLICT_ERROR)
+  }
+}
+
 export const CATEGORY_NOT_FOUND_ERROR = 'La categoría seleccionada no existe.'
 
 export class CategoryNotFoundError extends Error {

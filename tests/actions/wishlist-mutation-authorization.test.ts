@@ -84,4 +84,40 @@ describe('wishlist mutation authorization', () => {
     expect(mocks.updateMany).not.toHaveBeenCalled()
     expect(mocks.deleteMany).not.toHaveBeenCalled()
   })
+
+  it('archives instead of deleting when the gift has transactions', async () => {
+    mocks.updateMany.mockResolvedValue({ count: 1 })
+
+    const result = await deleteWishlistGift({
+      wishlistId: 'wishlist-1',
+      giftId: 'gift-1',
+    })
+
+    expect(mocks.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'wishlist-gift-1',
+        event: { users: { some: { id: 'user-1' } } },
+        transactions: { some: {} },
+      },
+      data: { isReceived: true },
+    })
+    expect(mocks.deleteMany).not.toHaveBeenCalled()
+    expect(result).toEqual({ success: true })
+  })
+
+  it('re-asserts the no-transaction predicate on the hard delete', async () => {
+    mocks.updateMany.mockResolvedValue({ count: 0 })
+
+    await deleteWishlistGift({ wishlistId: 'wishlist-1', giftId: 'gift-1' })
+
+    // Without this predicate a checkout landing between the archive check and
+    // the delete would orphan Transaction.wishlistGiftId.
+    expect(mocks.deleteMany).toHaveBeenCalledWith({
+      where: {
+        id: 'wishlist-gift-1',
+        event: { users: { some: { id: 'user-1' } } },
+        transactions: { none: {} },
+      },
+    })
+  })
 })
