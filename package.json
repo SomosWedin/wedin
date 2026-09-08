@@ -65,6 +65,7 @@
     "@upstash/qstash": "^2.11.3",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
+    "@vercel/speed-insights": "^2.0.0",
     "arg": "^5.0.2",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.0",
