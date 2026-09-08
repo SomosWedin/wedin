@@ -1,9 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import CartItemRow from '@/components/cart/cart-item-row'
-import GuestGiftCard, {
-  type WishlistGiftWithGift,
-} from '@/components/guest/guest-gift-card'
+import GuestGiftCard from '@/components/guest/guest-gift-card'
+import type { WishlistGiftWithGift } from '@/components/guest/wishlist-gift'
 
 const imageUrl = 'https://csv-gift-images.example/product.jpg?size=large'
 const createdAt = new Date('2026-01-01')

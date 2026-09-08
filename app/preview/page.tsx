@@ -1,6 +1,6 @@
 import { getEvent } from '@/actions/data/event'
 import { getPublicWishlistGifts } from '@/actions/data/public-event'
-import { hasGift } from '@/components/guest/guest-gift-card'
+import { hasGift } from '@/components/guest/wishlist-gift'
 import SitePreview from '@/components/preview/site-preview'
 
 export const dynamic = 'force-dynamic'

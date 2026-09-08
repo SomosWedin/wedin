@@ -4,9 +4,9 @@ import type { Event, Image as ImageModel, User } from '@prisma/client'
 import { useEffect, useState } from 'react'
 import { IoGiftOutline } from 'react-icons/io5'
 import EmptyState from '@/components/common/empty-state'
-import type { WishlistGiftWithGift } from '@/components/guest/guest-gift-card'
 import GuestGiftCatalog from '@/components/guest/guest-gift-catalog'
 import GuestHero from '@/components/guest/guest-hero'
+import type { WishlistGiftWithGift } from '@/components/guest/wishlist-gift'
 import { useCartStore } from '@/hooks/use-cart-store'
 import {
   getPreviewCartKey,
