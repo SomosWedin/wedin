@@ -8,5 +8,5 @@ export default async function Home() {
     redirect('/dashboard')
   }
 
-  redirect('https://home.somoswedin.com')
+  redirect(process.env.NEXT_PUBLIC_LANDING_URL || '/login')
 }
