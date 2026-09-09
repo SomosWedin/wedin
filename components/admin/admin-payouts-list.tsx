@@ -1,6 +1,6 @@
 'use client'
 
-import type { PayoutStatus, Prisma } from '@prisma/client'
+import type { PayoutStatus } from '@prisma/client'
 import { endOfDay, format } from 'date-fns'
 import { useMemo, useState } from 'react'
 import {
@@ -9,24 +9,20 @@ import {
   IoSearchOutline,
   IoSwapVerticalOutline,
 } from 'react-icons/io5'
+import type { AdminPayout } from '@/actions/data/payout'
 import {
   ESTADO_BY_PAYOUT_STATUS,
   ESTADO_OPTIONS_PAYOUT,
 } from '@/components/dashboard/payout-estado'
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
+import PaginationControls from '@/components/ui/pagination-controls'
 import { useAdminPayoutStatus } from '@/hooks/admin/use-admin-payout-status'
+import { usePagination } from '@/hooks/use-pagination'
 import { coupleName } from '@/lib/utils'
 
-type PayoutWithBankDetailsAndEvent = Prisma.PayoutGetPayload<{
-  include: {
-    bankDetails: true
-    event: { include: { users: true } }
-  }
-}>
-
 type AdminPayoutsListProps = {
-  payouts: PayoutWithBankDetailsAndEvent[]
+  payouts: AdminPayout[]
 }
 
 type SortColumn = 'createdAt' | 'amount'
@@ -81,36 +77,46 @@ export default function AdminPayoutsList({ payouts }: AdminPayoutsListProps) {
     setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'))
   }
 
-  const fromDate = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null
-  const toDate = dateTo ? endOfDay(new Date(`${dateTo}T00:00:00`)) : null
-
-  const filteredPayouts = payouts.filter(payout => {
+  const filteredPayouts = useMemo(() => {
+    const fromDate = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null
+    const toDate = dateTo ? endOfDay(new Date(`${dateTo}T00:00:00`)) : null
     const normalizedSearch = search.trim().toLowerCase()
-    const matchesSearch =
-      !normalizedSearch ||
-      coupleName(payout.event.users).toLowerCase().includes(normalizedSearch) ||
-      payout.bankDetails.bankName.toLowerCase().includes(normalizedSearch) ||
-      payout.bankDetails.accountHolder.toLowerCase().includes(normalizedSearch)
-    const matchesEstado = !estadoFilter || payout.status === estadoFilter
-    const matchesEvent =
-      !eventFilter || coupleName(payout.event.users) === eventFilter
-    const matchesDateRange =
-      (!fromDate || payout.createdAt >= fromDate) &&
-      (!toDate || payout.createdAt <= toDate)
 
-    return matchesSearch && matchesEstado && matchesEvent && matchesDateRange
-  })
+    return payouts.filter(payout => {
+      const matchesSearch =
+        !normalizedSearch ||
+        coupleName(payout.event.users)
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        payout.bankDetails.bankName.toLowerCase().includes(normalizedSearch) ||
+        payout.bankDetails.accountHolder
+          .toLowerCase()
+          .includes(normalizedSearch)
+      const matchesEstado = !estadoFilter || payout.status === estadoFilter
+      const matchesEvent =
+        !eventFilter || coupleName(payout.event.users) === eventFilter
+      const matchesDateRange =
+        (!fromDate || payout.createdAt >= fromDate) &&
+        (!toDate || payout.createdAt <= toDate)
 
-  const sortedPayouts = sortColumn
-    ? [...filteredPayouts].sort((a, b) => {
-        const diff =
-          sortColumn === 'createdAt'
-            ? a.createdAt.getTime() - b.createdAt.getTime()
-            : Number(a.amount) - Number(b.amount)
+      return matchesSearch && matchesEstado && matchesEvent && matchesDateRange
+    })
+  }, [payouts, search, estadoFilter, eventFilter, dateFrom, dateTo])
 
-        return sortDirection === 'asc' ? diff : -diff
-      })
-    : filteredPayouts
+  const sortedPayouts = useMemo(() => {
+    if (!sortColumn) return filteredPayouts
+
+    return [...filteredPayouts].sort((a, b) => {
+      const diff =
+        sortColumn === 'createdAt'
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : Number(a.amount) - Number(b.amount)
+
+      return sortDirection === 'asc' ? diff : -diff
+    })
+  }, [filteredPayouts, sortColumn, sortDirection])
+
+  const { pageItems, pagination } = usePagination(sortedPayouts)
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -206,7 +212,7 @@ export default function AdminPayoutsList({ payouts }: AdminPayoutsListProps) {
           </div>
         )}
 
-        {sortedPayouts.map(payout => {
+        {pageItems.map(payout => {
           const estado = ESTADO_BY_PAYOUT_STATUS[payout.status]
 
           return (
@@ -248,6 +254,8 @@ export default function AdminPayoutsList({ payouts }: AdminPayoutsListProps) {
             </div>
           )
         })}
+
+        <PaginationControls {...pagination} />
       </div>
     </div>
   )

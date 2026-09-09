@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function coupleName(users: User[]): string {
+export function coupleName(users: Pick<User, 'name' | 'isPrimary'>[]): string {
   const primaryUser = users.find(user => user.isPrimary) ?? users[0]
   const secondaryUser = users.find(user => !user.isPrimary)
 

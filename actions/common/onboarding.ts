@@ -1,6 +1,6 @@
 'use server'
 
-import { type Event, UserType, type Wishlist } from '@prisma/client'
+import { UserType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import type * as z from 'zod'
 import { auth } from '@/auth'
@@ -12,53 +12,70 @@ import {
   StepTwoSchema,
 } from '@/schemas/onboarding'
 
+// The partner row is created by onboarding without an email. Anything that has
+// since been given one may own Account/Session/Payout rows, and Mongo has no
+// cascade, so never delete those.
+const onboardingPartnerWhere = (eventId: string) => ({
+  eventId,
+  isPrimary: false,
+  email: null,
+})
+
 export const updateEventTypeStepOne = async (eventTypeId: string) => {
   const session = await auth()
-
-  let wishlist: Wishlist
-  let event: Event
 
   if (!session?.user?.id) return { error: 'Error obteniendo tu sesión' }
 
   const eventType = await prismaClient.eventType.findUnique({
     where: { id: eventTypeId },
-    select: { id: true },
+    select: { id: true, key: true },
   })
   if (!eventType) return { error: 'El tipo de evento seleccionado no existe.' }
 
-  // Create wishlist and event
-  try {
-    wishlist = await prismaClient.wishlist.create({
-      data: {},
-    })
+  const user = await prismaClient.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, eventId: true, onboardingStep: true },
+  })
+  if (!user) return { error: 'Error obteniendo tu perfil' }
 
-    event = await prismaClient.event.create({
-      data: {
-        eventTypeId,
-        wishlistId: wishlist.id,
-      },
+  const existingEvent = user.eventId
+    ? await prismaClient.event.findUnique({
+      where: { id: user.eventId },
+      select: { id: true, eventType: { select: { key: true } } },
+    })
+    : null
+
+  const willBeWedding = isWeddingEventType(eventType)
+  const wasWedding = isWeddingEventType(existingEvent?.eventType)
+
+  try {
+    await prismaClient.$transaction(async tx => {
+      let eventId = existingEvent?.id
+
+      if (eventId) {
+        await tx.event.update({ where: { id: eventId }, data: { eventTypeId } })
+
+        if (wasWedding && !willBeWedding) {
+          await tx.user.deleteMany({ where: onboardingPartnerWhere(eventId) })
+        }
+      } else {
+        const wishlist = await tx.wishlist.create({ data: {} })
+        const event = await tx.event.create({
+          data: { eventTypeId, wishlistId: wishlist.id },
+        })
+        eventId = event.id
+      }
+
+      await tx.user.update({
+        where: { id: user.id },
+        data: { eventId, onboardingStep: Math.max(user.onboardingStep, 2) },
+      })
     })
   } catch (error) {
-    console.error('Error creating wishlist or event:', error)
+    console.error('Error saving the event type:', error)
     return { error: 'Error creando evento' }
   }
 
-  try {
-    await prismaClient.user.update({
-      where: {
-        id: session.user.id,
-      },
-      data: {
-        onboardingStep: 2,
-        eventId: event.id,
-      },
-    })
-  } catch (error) {
-    console.error('Error updating user profile:', error)
-    return { error: 'Error actualizando perfil del usuario' }
-  }
-
-  // Revalidate cache paths after a successful operation
   try {
     revalidatePath('/onboarding')
   } catch (revalidationError) {
@@ -85,14 +102,25 @@ export const updateProfileStepTwo = async (
     return { error: 'Error obteniendo tu sesión' }
   }
 
+  const user = await prismaClient.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, onboardingStep: true },
+  })
+  if (!user) return { error: 'Error obteniendo tu perfil' }
+  if (user.onboardingStep < 2) {
+    return { error: 'Completá los pasos anteriores.' }
+  }
+
   const event = await prismaClient.event.findFirst({
-    where: { users: { some: { id: session.user.id } } },
+    where: { users: { some: { id: user.id } } },
     include: { eventType: true },
   })
   if (!event) return { error: 'Evento no encontrado.' }
 
+  const isWedding = isWeddingEventType(event.eventType)
+
   if (
-    isWeddingEventType(event.eventType) &&
+    isWedding &&
     (!partnerName ||
       partnerName.length < 2 ||
       !partnerLastName ||
@@ -113,31 +141,39 @@ export const updateProfileStepTwo = async (
   try {
     await prismaClient.$transaction(async tx => {
       await tx.user.update({
-        where: { id: session.user.id },
-        data: {
-          name,
-          lastName,
-          onboardingStep: 3,
-        },
+        where: { id: user.id },
+        data: { name, lastName },
       })
 
-      // Optionally create a partner's profile if event type is WEDDING
-      if (
-        isWeddingEventType(event.eventType) &&
-        partnerName &&
-        partnerLastName
-      ) {
-        await tx.user.create({
-          data: {
-            name: partnerName,
-            lastName: partnerLastName,
-            isOnboarded: true,
-            isPrimary: false,
-            eventId: session.user.eventId,
-            onboardingStep: 5,
-            role: UserType.COUPLE,
-          },
+      await tx.user.updateMany({
+        where: { id: user.id, onboardingStep: { lt: 3 } },
+        data: { onboardingStep: 3 },
+      })
+
+      if (isWedding && partnerName && partnerLastName) {
+        const partner = await tx.user.findFirst({
+          where: onboardingPartnerWhere(event.id),
+          select: { id: true },
         })
+
+        if (partner) {
+          await tx.user.update({
+            where: { id: partner.id },
+            data: { name: partnerName, lastName: partnerLastName },
+          })
+        } else {
+          await tx.user.create({
+            data: {
+              name: partnerName,
+              lastName: partnerLastName,
+              isOnboarded: true,
+              isPrimary: false,
+              eventId: event.id,
+              onboardingStep: 5,
+              role: UserType.COUPLE,
+            },
+          })
+        }
       }
     })
   } catch (error) {
@@ -147,7 +183,6 @@ export const updateProfileStepTwo = async (
     }
   }
 
-  // Revalidate cache paths after a successful operation
   try {
     revalidatePath('/onboarding')
   } catch (revalidationError) {
@@ -166,22 +201,30 @@ export const updateEventLocationStepThree = async (
     return { error: 'Campos inválidos' }
   }
 
-  const { eventCountry, eventCity } = validatedFields.data
+  const { eventCountry, eventCity, isDecidingEventLocation } =
+    validatedFields.data
 
   const session = await auth()
 
-  if (!session?.user?.id || session?.user?.eventId == null) {
+  if (!session?.user?.id) {
     return { error: 'Error obteniendo tu sesión' }
+  }
+
+  const user = await prismaClient.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, eventId: true, onboardingStep: true },
+  })
+  if (!user?.eventId) return { error: 'Error obteniendo tu sesión' }
+  if (user.onboardingStep < 3) {
+    return { error: 'Completá los pasos anteriores.' }
   }
 
   try {
     await prismaClient.event.update({
-      where: {
-        id: session.user.eventId,
-      },
+      where: { id: user.eventId },
       data: {
-        country: eventCountry,
-        city: eventCity,
+        country: isDecidingEventLocation ? null : eventCountry || null,
+        city: isDecidingEventLocation ? null : eventCity || null,
       },
     })
   } catch (error) {
@@ -190,20 +233,15 @@ export const updateEventLocationStepThree = async (
   }
 
   try {
-    await prismaClient.user.update({
-      where: {
-        id: session.user.id,
-      },
-      data: {
-        onboardingStep: 4,
-      },
+    await prismaClient.user.updateMany({
+      where: { id: user.id, onboardingStep: { lt: 4 } },
+      data: { onboardingStep: 4 },
     })
   } catch (error) {
     console.error(error)
     return { error: 'Error actualizando tu perfil' }
   }
 
-  // Revalidate cache paths after a successful operation
   try {
     revalidatePath('/onboarding')
   } catch (revalidationError) {
@@ -222,22 +260,27 @@ export const updateEventDateStepFour = async (
     return { error: 'Campos inválidos' }
   }
 
-  const { eventDate } = validatedFields.data
+  const { eventDate, isDecidingEventDate } = validatedFields.data
 
   const session = await auth()
 
-  if (!session?.user?.id || session?.user?.eventId == null) {
+  if (!session?.user?.id) {
     return { error: 'Error obteniendo tu sesión' }
+  }
+
+  const user = await prismaClient.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, eventId: true, onboardingStep: true },
+  })
+  if (!user?.eventId) return { error: 'Error obteniendo tu sesión' }
+  if (user.onboardingStep < 4) {
+    return { error: 'Completá los pasos anteriores.' }
   }
 
   try {
     await prismaClient.event.update({
-      where: {
-        id: session.user.eventId,
-      },
-      data: {
-        date: eventDate,
-      },
+      where: { id: user.eventId },
+      data: { date: isDecidingEventDate ? null : (eventDate ?? null) },
     })
   } catch (error) {
     console.error(error)
@@ -245,20 +288,15 @@ export const updateEventDateStepFour = async (
   }
 
   try {
-    await prismaClient.user.update({
-      where: {
-        id: session.user.id,
-      },
-      data: {
-        onboardingStep: 5,
-      },
+    await prismaClient.user.updateMany({
+      where: { id: user.id, onboardingStep: { lt: 5 } },
+      data: { onboardingStep: 5 },
     })
   } catch (error) {
     console.error(error)
     return { error: 'Error actualizando tu perfil' }
   }
 
-  // Revalidate cache paths after a successful operation
   try {
     revalidatePath('/onboarding')
   } catch (revalidationError) {
@@ -273,14 +311,19 @@ export const updateUserOnboardedStepFive = async () => {
 
   if (!session?.user?.id) return { error: 'Error obteniendo tu sesión' }
 
+  const user = await prismaClient.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, onboardingStep: true },
+  })
+  if (!user) return { error: 'Error obteniendo tu perfil' }
+  if (user.onboardingStep < 5) {
+    return { error: 'Completá los pasos anteriores.' }
+  }
+
   try {
     await prismaClient.user.update({
-      where: {
-        id: session.user.id,
-      },
-      data: {
-        isOnboarded: true,
-      },
+      where: { id: user.id },
+      data: { isOnboarded: true },
     })
   } catch (error) {
     console.error(error)

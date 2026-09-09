@@ -8,7 +8,11 @@ import {
 } from '@/lib/server/import-queue'
 import prisma from '@/prisma/client'
 import { MAX_IMPORT_PAYLOAD_BYTES } from '@/schemas/gift-import'
-import { JobDetailsSchema, JobIdSchema } from '@/schemas/import-job'
+import {
+  IMPORT_REVIEW_PAGE_SIZE,
+  JobDetailsSchema,
+  JobIdSchema,
+} from '@/schemas/import-job'
 
 export type ImportPreviewRow = {
   rowNumber: number
@@ -277,8 +281,8 @@ export async function getImportReviewRows<T extends ImportPreviewRow>(
     const rows = await prisma.giftImportRow.findMany({
       where: { jobId: job.id },
       orderBy: { position: 'asc' },
-      skip: parsed.data.page * 10,
-      take: 10,
+      skip: parsed.data.page * IMPORT_REVIEW_PAGE_SIZE,
+      take: IMPORT_REVIEW_PAGE_SIZE,
       select: { review: true },
     })
     return {

@@ -6,9 +6,11 @@ import { PiBank } from 'react-icons/pi'
 import { Button } from '@/components/ui/button'
 import { useOnboarding } from '@/hooks/use-onboarding'
 import wedinIcon from '@/public/assets/w-icon.svg'
-import OnboardingStepper from './stepper'
+import OnboardingBackButton from './back-button'
+import type { OnboardingNav } from './step-manager'
+import OnboardingStepNav from './step-nav'
 
-export default function OnboardingStepFive() {
+export default function OnboardingStepFive({ nav }: { nav: OnboardingNav }) {
   const { loading, handleCompleteOnboarding } = useOnboarding()
 
   return (
@@ -45,16 +47,20 @@ export default function OnboardingStepFive() {
         </div>
       </div>
 
-      <Button
-        variant="success"
-        className="w-72 mt-4"
-        onClick={() => handleCompleteOnboarding()}
-        disabled={loading}
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Finalizar'}
-      </Button>
+      <div className="mt-4 flex w-72 items-center gap-3">
+        <OnboardingBackButton onClick={nav.onBack} disabled={loading} />
 
-      <OnboardingStepper step={5} />
+        <Button
+          variant="success"
+          className="flex-1"
+          onClick={() => handleCompleteOnboarding()}
+          disabled={loading}
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Finalizar'}
+        </Button>
+      </div>
+
+      <OnboardingStepNav nav={nav} loading={loading} />
     </div>
   )
 }

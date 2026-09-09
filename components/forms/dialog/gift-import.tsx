@@ -165,7 +165,8 @@ export default function GiftImportForm({
   controller: AdminGiftImportController
   catalog: GiftImportCatalog
 }) {
-  const { step, loading, error, jobId, preview, skipErrors } = controller
+  const { step, loading, error, jobId, preview, reviewTotal, skipErrors } =
+    controller
   const validCount = preview.filter(
     row => row.errors.length === 0 && row.values
   ).length
@@ -261,7 +262,9 @@ export default function GiftImportForm({
             ? 'Guardando y enviando la importación a la cola…'
             : loading === 'preview'
               ? 'Validando categorías, colecciones y regalos existentes…'
-              : 'Leyendo el archivo…'}
+              : loading === 'rows'
+                ? `Cargando la revisión… ${preview.length} de ${reviewTotal} filas.`
+                : 'Leyendo el archivo…'}
         </p>
       )}
       {!loading && step === 2 && jobId === null && !canAccept && (

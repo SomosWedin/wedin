@@ -9,7 +9,7 @@ import type { GiftFormValues } from '@/schemas/form'
 
 export type EditableAdminGift = GiftWithImage
 
-export function useEditAdminGift(gift: EditableAdminGift) {
+export function useEditAdminGift(gift: EditableAdminGift, onClose: () => void) {
   const { name, categoryId, price, giftlistIds, image, id: giftId } = gift
 
   const defaultValues: GiftFormValues = {
@@ -29,6 +29,10 @@ export function useEditAdminGift(gift: EditableAdminGift) {
   return useGiftFormController({
     defaultValues,
     initialImageUrl: image?.url,
+    open: true,
+    onOpenChange: nextOpen => {
+      if (!nextOpen) onClose()
+    },
     submit: async ({ values, imageUrl }) => {
       const response = await editAdminGift(
         {

@@ -9,19 +9,17 @@ import { StepFourSchema } from '@/schemas/onboarding'
 export type StepFourValues = z.infer<typeof StepFourSchema>
 
 type UseStepFourProps = {
+  defaultValues: StepFourValues
   onSubmit: (values: StepFourValues) => Promise<void> | void
 }
 
-export function useStepFour({ onSubmit }: UseStepFourProps) {
+export function useStepFour({ defaultValues, onSubmit }: UseStepFourProps) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
   const form = useForm<StepFourValues>({
     resolver: zodResolver(StepFourSchema),
     mode: 'all',
-    defaultValues: {
-      eventDate: undefined,
-      isDecidingEventDate: false,
-    },
+    defaultValues,
   })
 
   const eventDate = useWatch({

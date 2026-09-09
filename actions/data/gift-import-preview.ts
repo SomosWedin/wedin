@@ -26,14 +26,13 @@ export async function loadImportCatalog(
       select: { id: true, name: true, eventTypeIds: true },
     }),
     client.giftlist.findMany({
-      select: {
-        id: true,
-        name: true,
-        gifts: { select: { category: { select: { eventTypeIds: true } } } },
-      },
+      select: { id: true, name: true, gifts: { select: { categoryId: true } } },
     }),
     client.eventType.findMany({ select: { id: true, name: true, key: true } }),
   ])
+  const eventTypeIdsByCategory = new Map(
+    categories.map(category => [category.id, category.eventTypeIds])
+  )
   return {
     categories,
     eventTypes,
@@ -41,7 +40,13 @@ export async function loadImportCatalog(
       id: collection.id,
       name: collection.name,
       giftCount: collection.gifts.length,
-      eventTypeIds: deriveGiftlistEventTypeIds(collection.gifts),
+      eventTypeIds: deriveGiftlistEventTypeIds(
+        collection.gifts.map(gift => ({
+          category: {
+            eventTypeIds: eventTypeIdsByCategory.get(gift.categoryId) ?? [],
+          },
+        }))
+      ),
     })),
   }
 }

@@ -22,6 +22,7 @@ import { MAX_IMPORT_FILE_BYTES } from '@/schemas/gift-import'
 import {
   paginateReviewRows,
   readImportFile,
+  submitImportDraft,
   useAbandonedImportDraft,
 } from './use-import-draft-wizard'
 
@@ -29,9 +30,9 @@ export function useAdminCollectionImport() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
-  const [loading, setLoading] = useState<'file' | 'preview' | 'import' | null>(
-    null
-  )
+  const [loading, setLoading] = useState<
+    'file' | 'preview' | 'rows' | 'import' | null
+  >(null)
   const [error, setError] = useState('')
   const [queueDispatchFailed, setQueueDispatchFailed] = useState(false)
   const [fileName, setFileName] = useState('')
@@ -42,6 +43,7 @@ export function useAdminCollectionImport() {
   )
   const [matches, setMatches] = useState<Record<string, string>>({})
   const [preview, setPreview] = useState<CollectionImportPreviewRow[]>([])
+  const [reviewTotal, setReviewTotal] = useState(0)
   const [previewToken, setPreviewToken] = useState('')
   const [skipErrors, setSkipErrors] = useState(false)
   const [acknowledgeRemovals, setAcknowledgeRemovals] = useState(false)
@@ -65,6 +67,7 @@ export function useAdminCollectionImport() {
     setMapping(autoMatchCollectionImportHeaders([]))
     setMatches({})
     setPreview([])
+    setReviewTotal(0)
     setPreviewToken('')
     setSkipErrors(false)
     setAcknowledgeRemovals(false)
@@ -143,48 +146,39 @@ export function useAdminCollectionImport() {
     setError('')
     setQueueDispatchFailed(false)
     try {
-      const content = JSON.stringify(parsed.data)
-      if (content !== submissionContent.current) {
-        if (preparedJobId.current) {
-          const cancelled = await cancelImportPreparation(preparedJobId.current)
-          if ('error' in cancelled) throw new Error(cancelled.error)
-          preparedJobId.current = ''
-        }
-        submissionId.current = ''
-        submissionContent.current = content
-      }
-      if (!submissionId.current) submissionId.current = crypto.randomUUID()
-      const started = await requestCollectionImport('start', {
-        submissionId: submissionId.current,
-        filename: fileName,
-        expectedRows: parsed.data.length,
-      })
-      if (started.error) throw new Error(started.error)
-      preparedJobId.current = started.jobId
-      let offset = 0
-      for (const chunk of chunkCollectionImportRows(parsed.data)) {
-        const uploaded = await requestCollectionImport('upload', {
-          jobId: started.jobId,
-          offset,
-          rows: chunk,
+      const { previewToken: token, preview: rows } =
+        await submitImportDraft<CollectionImportPreviewRow>({
+          requests: {
+            start: input => requestCollectionImport('start', input),
+            upload: input => requestCollectionImport('upload', input),
+            review: id => requestCollectionImport('review', id),
+            reviewRows: input => requestCollectionImport('reviewRows', input),
+          },
+          refs: { preparedJobId, submissionId, submissionContent },
+          content: JSON.stringify(parsed.data),
+          startInput: {
+            filename: fileName,
+            expectedRows: parsed.data.length,
+          },
+          chunks: chunkCollectionImportRows(parsed.data),
+          onReviewReady: (rowCount, previewTokenValue) => {
+            setPreviewToken(previewTokenValue)
+            setPreview([])
+            setReviewTotal(rowCount)
+            setSkipErrors(false)
+            setAcknowledgeRemovals(false)
+            setAcknowledgeIgnored(false)
+            setLoading('rows')
+            setStep(2)
+          },
+          onPage: page => setPreview(current => [...current, ...page]),
         })
-        if (uploaded.error) throw new Error(uploaded.error)
-        offset += chunk.length
-      }
-      const result = await requestCollectionImport('review', started.jobId)
-      if (result.error) throw new Error(result.error)
-      const reviewed = await loadReview(
-        started.jobId,
-        result.rowCount,
-        result.previewToken
-      )
-      setPreview(reviewed)
-      setPreviewToken(result.previewToken)
-      setSkipErrors(false)
-      setAcknowledgeRemovals(false)
-      setAcknowledgeIgnored(false)
-      setStep(2)
+      setPreviewToken(token)
+      setPreview(rows)
     } catch (failure) {
+      setPreview([])
+      setReviewTotal(0)
+      setStep(1)
       setError(
         failure instanceof Error
           ? failure.message
@@ -260,6 +254,7 @@ export function useAdminCollectionImport() {
     mapping,
     matches,
     preview,
+    reviewTotal,
     skipErrors,
     acknowledgeRemovals,
     acknowledgeIgnored,
@@ -284,6 +279,8 @@ export function useAdminCollectionImport() {
         cancelPreparedJob()
         submissionId.current = ''
         submissionContent.current = ''
+        setPreview([])
+        setReviewTotal(0)
         setStep(value => Math.max(0, value - 1))
         setQueueDispatchFailed(false)
       }

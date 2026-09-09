@@ -3,11 +3,21 @@
 import Image from 'next/image'
 import StepFourForm from '@/components/forms/onboarding/step-four'
 import { useOnboarding } from '@/hooks/use-onboarding'
+import type { OnboardingDefaults } from '@/lib/onboarding-defaults'
 import wedinIcon from '@/public/assets/w-icon.svg'
-import OnboardingStepper from './stepper'
+import type { OnboardingNav } from './step-manager'
+import OnboardingStepNav from './step-nav'
 
-export default function OnboardingStepFour() {
-  const { loading, handleEventDateUpdate } = useOnboarding()
+export default function OnboardingStepFour({
+  defaults,
+  nav,
+}: {
+  defaults: OnboardingDefaults
+  nav: OnboardingNav
+}) {
+  const { loading, handleEventDateUpdate } = useOnboarding({
+    onAdvance: nav.onAdvance,
+  })
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-8">
@@ -23,9 +33,17 @@ export default function OnboardingStepFour() {
         </p>
       </div>
 
-      <StepFourForm loading={loading} onSubmit={handleEventDateUpdate} />
+      <StepFourForm
+        defaultValues={{
+          eventDate: defaults.eventDate,
+          isDecidingEventDate: defaults.isDecidingEventDate,
+        }}
+        loading={loading}
+        onBack={nav.onBack}
+        onSubmit={handleEventDateUpdate}
+      />
 
-      <OnboardingStepper step={4} />
+      <OnboardingStepNav nav={nav} loading={loading} />
     </div>
   )
 }

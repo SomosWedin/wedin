@@ -117,6 +117,34 @@ is `isDefault` or shared by more than one wishlist, then repoints
   with completed contributions (`isReceived: true`) even while it's locked for
   editing. Known, not a bug to fix in passing.
 
+### Onboarding steps
+
+The stepper can go backwards, so `User.onboardingStep` records the **furthest**
+step reached, not the step being shown. The step currently rendered is
+`viewStep`, `useState` in `components/onboarding/step-manager.tsx`, seeded from
+the stored value once and never re-seeded (an effect syncing it forward would
+yank a user out of a step they navigated back to).
+
+- Step writes are monotonic. `actions/common/onboarding.ts` advances with a
+  conditional `prismaClient.user.updateMany({ where: { onboardingStep: { lt: n } } })`
+  — a plain `update` would rewind the record when someone re-submits an earlier
+  step. Each action also refuses a step the user hasn't reached yet; the client
+  clamp in `goToStep` is cosmetic and can't be the guard.
+- **Step one never recreates the event.** Coming back to it updates
+  `Event.eventTypeId` in place, so the wishlist and everything steps 2-4
+  collected survive. `wishlist.create` + `event.create` run only when the user
+  has no event at all. Switching a wedding to another type deletes the partner
+  row, matched on `isPrimary: false` **and `email: null`** — Mongo has no
+  cascade, and a partner who was later given an email may own
+  `Account`/`Session`/`Payout` rows.
+- Every step re-saves on "Continuar", so the writes have to be idempotent:
+  step two updates an existing partner rather than creating a second one.
+- The "Aún estamos decidiendo" checkboxes are **not persisted**.
+  `lib/onboarding-defaults.ts` infers them from "past that step with nothing
+  stored", and the actions write explicit `null`s so re-visiting a step can
+  clear a location/date that was already saved. If that inference ever needs to
+  be exact, the fix is two booleans on `Event`, not a cleverer guess.
+
 ### Terminology (Spanish UI ↔ code/domain)
 
 - regalo(s) → gift(s)

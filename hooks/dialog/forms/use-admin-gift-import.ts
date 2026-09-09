@@ -24,6 +24,7 @@ import {
 import {
   paginateReviewRows,
   readImportFile,
+  submitImportDraft,
   useAbandonedImportDraft,
 } from './use-import-draft-wizard'
 
@@ -37,9 +38,9 @@ export function useAdminGiftImport() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
-  const [loading, setLoading] = useState<'file' | 'preview' | 'import' | null>(
-    null
-  )
+  const [loading, setLoading] = useState<
+    'file' | 'preview' | 'rows' | 'import' | null
+  >(null)
   const [error, setError] = useState('')
   const [queueDispatchFailed, setQueueDispatchFailed] = useState(false)
   const [fileName, setFileName] = useState('')
@@ -54,6 +55,7 @@ export function useAdminGiftImport() {
   const [jobId, setJobId] = useState<string | null>(null)
   const [previewToken, setPreviewToken] = useState('')
   const [preview, setPreview] = useState<GiftImportPreviewRow[]>([])
+  const [reviewTotal, setReviewTotal] = useState(0)
   const [skipErrors, setSkipErrors] = useState(false)
   const [createMissingCollections, setCreateMissingCollections] =
     useState(false)
@@ -79,6 +81,7 @@ export function useAdminGiftImport() {
       submissionContent.current = ''
       setPreviewToken('')
       setPreview([])
+      setReviewTotal(0)
       setSkipErrors(false)
       setCreateMissingCollections(false)
       setJobId(null)
@@ -149,11 +152,17 @@ export function useAdminGiftImport() {
     }))
   }
 
-  const loadReview = (id: string, count: number, token: string) =>
+  const loadReview = (
+    id: string,
+    count: number,
+    token: string,
+    onPage?: (rows: GiftImportPreviewRow[]) => void
+  ) =>
     paginateReviewRows<GiftImportPreviewRow>(
       page => requestGiftImport('reviewRows', { jobId: id, page }),
       count,
-      token
+      token,
+      onPage
     )
 
   const review = async () => {
@@ -170,62 +179,46 @@ export function useAdminGiftImport() {
     setError('')
     setQueueDispatchFailed(false)
     try {
-      const content = JSON.stringify({
-        rows: parsed.data,
-        createMissingCollections,
-      })
-      if (content !== submissionContent.current) {
-        if (preparedJobId.current) {
-          const cancelled = await cancelImportPreparation(preparedJobId.current)
-          if ('error' in cancelled) throw new Error(cancelled.error)
-          preparedJobId.current = ''
-        }
-        submissionId.current = ''
-        submissionContent.current = content
-      }
-      if (!submissionId.current) submissionId.current = crypto.randomUUID()
-      const started = await requestGiftImport('start', {
-        submissionId: submissionId.current,
-        filename: fileName,
-        expectedRows: parsed.data.length,
-        createMissingCollections,
-      })
-      if (started.error) {
-        setError(started.error)
-        return
-      }
-      preparedJobId.current = started.jobId
-      let offset = 0
-      for (const chunk of chunkGiftImportRows(parsed.data)) {
-        const uploaded = await requestGiftImport('upload', {
-          jobId: started.jobId,
-          offset,
-          rows: chunk,
+      const { previewToken: token, preview: rows } =
+        await submitImportDraft<GiftImportPreviewRow>({
+          requests: {
+            start: input => requestGiftImport('start', input),
+            upload: input => requestGiftImport('upload', input),
+            review: id => requestGiftImport('review', id),
+            reviewRows: input => requestGiftImport('reviewRows', input),
+          },
+          refs: { preparedJobId, submissionId, submissionContent },
+          content: JSON.stringify({
+            rows: parsed.data,
+            createMissingCollections,
+          }),
+          startInput: {
+            filename: fileName,
+            expectedRows: parsed.data.length,
+            createMissingCollections,
+          },
+          chunks: chunkGiftImportRows(parsed.data),
+          onReviewReady: (rowCount, previewTokenValue) => {
+            setPreviewToken(previewTokenValue)
+            setPreview([])
+            setReviewTotal(rowCount)
+            setSkipErrors(false)
+            setLoading('rows')
+            setStep(2)
+          },
+          onPage: rows => setPreview(current => [...current, ...rows]),
         })
-        offset += chunk.length
-        if (uploaded.error) {
-          setError(uploaded.error)
-          return
-        }
-      }
-      const result = await requestGiftImport('review', started.jobId)
-      if ('error' in result && result.error) {
-        setError(result.error)
-        return
-      }
-      if ('previewToken' in result) {
-        const reviewed = await loadReview(
-          started.jobId,
-          result.rowCount,
-          result.previewToken
-        )
-        setPreviewToken(result.previewToken)
-        setPreview(reviewed)
-        setSkipErrors(false)
-        setStep(2)
-      }
-    } catch {
-      setError('No se pudo obtener la revisión. Intentá nuevamente.')
+      setPreviewToken(token)
+      setPreview(rows)
+    } catch (failure) {
+      setPreview([])
+      setReviewTotal(0)
+      setStep(1)
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : 'No se pudo obtener la revisión. Intentá nuevamente.'
+      )
     } finally {
       busy.current = false
       setLoading(null)
@@ -291,6 +284,7 @@ export function useAdminGiftImport() {
     mapping,
     matches,
     preview,
+    reviewTotal,
     skipErrors,
     createMissingCollections,
     jobId,
@@ -309,6 +303,8 @@ export function useAdminGiftImport() {
         cancelPreparedJob()
         submissionId.current = ''
         submissionContent.current = ''
+        setPreview([])
+        setReviewTotal(0)
         setStep(current => Math.max(0, current - 1))
         setError('')
         setQueueDispatchFailed(false)

@@ -66,34 +66,37 @@ export async function getAdminGiftlists() {
   if (!(await ensureAdmin())) return []
 
   try {
-    const giftlists = await prismaClient.giftlist.findMany({
-      select: {
-        id: true,
-        name: true,
-        normalizedName: true,
-        giftIds: true,
-        gifts: {
-          select: {
-            id: true,
-            categoryId: true,
-            category: {
-              select: {
-                eventTypeIds: true,
-                eventTypes: { select: { id: true, name: true } },
-              },
-            },
-          },
+    const [giftlists, categories, eventTypes] = await Promise.all([
+      prismaClient.giftlist.findMany({
+        select: {
+          id: true,
+          name: true,
+          normalizedName: true,
+          giftIds: true,
+          gifts: { select: { id: true, categoryId: true } },
         },
-      },
-      orderBy: { name: 'asc' },
-    })
+        orderBy: { name: 'asc' },
+      }),
+      prismaClient.category.findMany({
+        select: { id: true, eventTypeIds: true },
+      }),
+      prismaClient.eventType.findMany({ select: { id: true, name: true } }),
+    ])
+
+    const eventTypeIdsByCategory = new Map(
+      categories.map(category => [category.id, category.eventTypeIds])
+    )
+    const eventTypesById = new Map(
+      eventTypes.map(eventType => [eventType.id, eventType])
+    )
 
     return giftlists.map(giftlist => {
-      const eventTypeIds = deriveGiftlistEventTypeIds(giftlist.gifts)
-      const eventTypesById = new Map(
-        giftlist.gifts.flatMap(gift =>
-          gift.category.eventTypes.map(eventType => [eventType.id, eventType])
-        )
+      const eventTypeIds = deriveGiftlistEventTypeIds(
+        giftlist.gifts.map(gift => ({
+          category: {
+            eventTypeIds: eventTypeIdsByCategory.get(gift.categoryId) ?? [],
+          },
+        }))
       )
 
       return {
@@ -101,7 +104,7 @@ export async function getAdminGiftlists() {
         name: giftlist.name,
         normalizedName: giftlist.normalizedName,
         giftIds: giftlist.giftIds,
-        gifts: giftlist.gifts.map(({ id, categoryId }) => ({ id, categoryId })),
+        gifts: giftlist.gifts,
         eventTypeIds,
         eventTypes: eventTypeIds.flatMap(id => {
           const eventType = eventTypesById.get(id)
@@ -179,10 +182,10 @@ export async function getGiftlists({
 
     const scoped = eventTypeId
       ? giftlists.filter(
-          giftlist =>
-            giftlist.gifts.length > 0 &&
-            deriveGiftlistEventTypeIds(giftlist.gifts).includes(eventTypeId)
-        )
+        giftlist =>
+          giftlist.gifts.length > 0 &&
+          deriveGiftlistEventTypeIds(giftlist.gifts).includes(eventTypeId)
+      )
       : giftlists
 
     const sort = searchParams?.sort

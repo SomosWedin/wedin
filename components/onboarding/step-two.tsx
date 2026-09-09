@@ -4,18 +4,32 @@ import Image from 'next/image'
 import StepTwoForm from '@/components/forms/onboarding/step-two'
 import { useStepTwo } from '@/hooks/onboarding/use-step-two'
 import { useOnboarding } from '@/hooks/use-onboarding'
+import type { OnboardingDefaults } from '@/lib/onboarding-defaults'
 import wedinIcon from '@/public/assets/w-icon.svg'
-import OnboardingStepper from './stepper'
+import type { OnboardingNav } from './step-manager'
+import OnboardingStepNav from './step-nav'
 
 export default function OnboardingStepTwo({
   isWedding,
+  defaults,
+  nav,
 }: {
   isWedding: boolean
+  defaults: OnboardingDefaults
+  nav: OnboardingNav
 }) {
-  const { handleProfileUpdate, loading } = useOnboarding()
+  const { handleProfileUpdate, loading } = useOnboarding({
+    onAdvance: nav.onAdvance,
+  })
 
   const { form, isValid, handleSubmit } = useStepTwo({
     isWedding,
+    defaultValues: {
+      name: defaults.name,
+      lastName: defaults.lastName,
+      partnerName: defaults.partnerName,
+      partnerLastName: defaults.partnerLastName,
+    },
     onSubmit: handleProfileUpdate,
   })
 
@@ -40,10 +54,11 @@ export default function OnboardingStepTwo({
         isWedding={isWedding}
         isValid={isValid}
         loading={loading}
+        onBack={nav.onBack}
         onSubmit={handleSubmit}
       />
 
-      <OnboardingStepper step={2} />
+      <OnboardingStepNav nav={nav} loading={loading} />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
+import type { IconType } from 'react-icons'
 import {
   IoCalendarOutline,
   IoCashOutline,
@@ -21,56 +22,165 @@ import {
 import { getAllPayoutsForAdmin } from '@/actions/data/payout'
 import { getAllTransactionsForAdmin } from '@/actions/data/transaction'
 import { getCurrentUser } from '@/actions/get-current-user'
+import AdminCategoriesList from '@/components/admin/admin-categories-list'
+import AdminEventTypesList from '@/components/admin/admin-event-types-list'
+import AdminEventsList from '@/components/admin/admin-events-list'
+import AdminGiftlistsList from '@/components/admin/admin-giftlists-list'
+import AdminGiftsList from '@/components/admin/admin-gifts-list'
+import AdminPayoutsList from '@/components/admin/admin-payouts-list'
+import AdminTransactionsList from '@/components/admin/admin-transactions-list'
 import EmptyState from '@/components/common/empty-state'
 import DashboardTransactionsSkeleton from '@/components/skeletons/dashboard-transactions'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
 
-const AdminTransactionsList = lazy(
-  () => import('@/components/admin/admin-transactions-list')
-)
-const AdminPayoutsList = lazy(
-  () => import('@/components/admin/admin-payouts-list')
-)
-const AdminGiftsList = lazy(() => import('@/components/admin/admin-gifts-list'))
-const AdminCategoriesList = lazy(
-  () => import('@/components/admin/admin-categories-list')
-)
-const AdminGiftlistsList = lazy(
-  () => import('@/components/admin/admin-giftlists-list')
-)
-const AdminEventTypesList = lazy(
-  () => import('@/components/admin/admin-event-types-list')
-)
-const AdminEventsList = lazy(
-  () => import('@/components/admin/admin-events-list')
-)
+const TABS = [
+  {
+    value: 'transacciones',
+    label: 'Transacciones',
+    icon: IoSwapHorizontalOutline,
+  },
+  { value: 'retiros', label: 'Solicitudes de retiro', icon: IoCashOutline },
+  { value: 'eventos', label: 'Eventos', icon: IoPeopleOutline },
+  {
+    value: 'tipos-de-evento',
+    label: 'Tipos de evento',
+    icon: IoCalendarOutline,
+  },
+  { value: 'categorias', label: 'Categorías', icon: IoPricetagOutline },
+  { value: 'colecciones', label: 'Colecciones', icon: IoFolderOpenOutline },
+  { value: 'regalos', label: 'Regalos', icon: IoGiftOutline },
+] as const satisfies readonly { value: string; label: string; icon: IconType }[]
 
-export default async function AdminPage() {
+type AdminTab = (typeof TABS)[number]['value']
+
+const DEFAULT_TAB: AdminTab = 'transacciones'
+
+function parseTab(value: string | string[] | undefined): AdminTab {
+  return TABS.some(tab => tab.value === value)
+    ? (value as AdminTab)
+    : DEFAULT_TAB
+}
+
+async function TransactionsPanel() {
+  const transactions = await getAllTransactionsForAdmin()
+
+  if (transactions.length === 0) {
+    return (
+      <EmptyState
+        icon={<IoSwapHorizontalOutline className="text-4xl sm:text-6xl" />}
+        title="Sin transacciones"
+        description="Todavía no hay transacciones en ningún evento"
+      />
+    )
+  }
+
+  return <AdminTransactionsList transactions={transactions} />
+}
+
+async function PayoutsPanel() {
+  const payouts = await getAllPayoutsForAdmin()
+
+  if (payouts.length === 0) {
+    return (
+      <EmptyState
+        icon={<IoCashOutline className="text-4xl sm:text-6xl" />}
+        title="Sin solicitudes de retiro"
+        description="Todavía no hay solicitudes de retiro en ningún evento"
+      />
+    )
+  }
+
+  return <AdminPayoutsList payouts={payouts} />
+}
+
+async function EventsPanel() {
+  const events = await getAllEventsForAdmin()
+
+  if (events.length === 0) {
+    return (
+      <EmptyState
+        icon={<IoPeopleOutline className="text-4xl sm:text-6xl" />}
+        title="Sin eventos"
+        description="Todavía no hay eventos registrados"
+      />
+    )
+  }
+
+  return <AdminEventsList events={events} />
+}
+
+async function EventTypesPanel() {
+  return <AdminEventTypesList eventTypes={await getEventTypes()} />
+}
+
+async function CategoriesPanel() {
+  const [categories, eventTypes] = await Promise.all([
+    getCategories(),
+    getEventTypes(),
+  ])
+
+  return <AdminCategoriesList categories={categories} eventTypes={eventTypes} />
+}
+
+async function GiftlistsPanel() {
+  const [adminGiftlists, gifts, categories, eventTypes] = await Promise.all([
+    getAdminGiftlists(),
+    getGifts({ searchParams: { isDefault: true } }),
+    getCategories(),
+    getEventTypes(),
+  ])
+
+  return (
+    <AdminGiftlistsList
+      giftlists={adminGiftlists}
+      gifts={gifts}
+      categories={categories}
+      eventTypes={eventTypes}
+    />
+  )
+}
+
+async function GiftsPanel() {
+  const [gifts, categories, giftlists, eventTypes] = await Promise.all([
+    getGifts({ searchParams: { isDefault: true } }),
+    getCategories(),
+    getGiftlistOptionsForAdmin(),
+    getEventTypes(),
+  ])
+
+  return (
+    <AdminGiftsList
+      gifts={gifts}
+      categories={categories}
+      giftlists={giftlists}
+      eventTypes={eventTypes}
+    />
+  )
+}
+
+const PANELS: Record<AdminTab, () => Promise<JSX.Element>> = {
+  transacciones: TransactionsPanel,
+  retiros: PayoutsPanel,
+  eventos: EventsPanel,
+  'tipos-de-evento': EventTypesPanel,
+  categorias: CategoriesPanel,
+  colecciones: GiftlistsPanel,
+  regalos: GiftsPanel,
+}
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams?: { [key: string]: string | string[] | undefined }
+}) {
   const currentUser = await getCurrentUser()
 
   if (currentUser?.role !== 'ADMIN') {
     redirect('/dashboard')
   }
 
-  const [
-    transactions,
-    payouts,
-    events,
-    gifts,
-    categories,
-    giftlists,
-    adminGiftlists,
-    eventTypes,
-  ] = await Promise.all([
-    getAllTransactionsForAdmin(),
-    getAllPayoutsForAdmin(),
-    getAllEventsForAdmin(),
-    getGifts({ searchParams: { isDefault: true } }),
-    getCategories(),
-    getGiftlistOptionsForAdmin(),
-    getAdminGiftlists(),
-    getEventTypes(),
-  ])
+  const activeTab = parseTab(searchParams?.tab)
+  const Panel = PANELS[activeTab]
 
   return (
     <div className="container w-full h-full flex items-center flex-col gap-6 p-8">
@@ -87,140 +197,34 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="transacciones" className="w-full">
-        <TabsList className="h-auto min-h-10 max-w-full justify-start gap-2 overflow-x-auto overflow-y-hidden sm:gap-3 sm:justify-center">
-          <TabsTrigger
-            value="transacciones"
-            className="shrink-0 gap-2 text-xs sm:text-sm"
-          >
-            <IoSwapHorizontalOutline className="text-lg" />
-            Transacciones
-          </TabsTrigger>
-          <TabsTrigger
-            value="retiros"
-            className="shrink-0 gap-2 text-xs sm:text-sm"
-          >
-            <IoCashOutline className="text-lg" />
-            Solicitudes de retiro
-          </TabsTrigger>
-          <TabsTrigger
-            value="eventos"
-            className="shrink-0 gap-2 text-xs sm:text-sm"
-          >
-            <IoPeopleOutline className="text-lg" />
-            Eventos
-          </TabsTrigger>
-          <TabsTrigger
-            value="tipos-de-evento"
-            className="shrink-0 gap-2 text-xs sm:text-sm"
-          >
-            <IoCalendarOutline className="text-lg" />
-            Tipos de evento
-          </TabsTrigger>
-          <TabsTrigger
-            value="categorias"
-            className="shrink-0 gap-2 text-xs sm:text-sm"
-          >
-            <IoPricetagOutline className="text-lg" />
-            Categorías
-          </TabsTrigger>
-          <TabsTrigger
-            value="colecciones"
-            className="shrink-0 gap-2 text-xs sm:text-sm"
-          >
-            <IoFolderOpenOutline className="text-lg" />
-            Colecciones
-          </TabsTrigger>
-          <TabsTrigger
-            value="regalos"
-            className="shrink-0 gap-2 text-xs sm:text-sm"
-          >
-            <IoGiftOutline className="text-lg" />
-            Regalos
-          </TabsTrigger>
-        </TabsList>
+      <div className="w-full">
+        <nav className="inline-flex max-w-full min-h-10 items-center justify-start gap-2 overflow-x-auto overflow-y-hidden rounded-md bg-muted p-1 text-muted-foreground sm:gap-3 sm:justify-center">
+          {TABS.map(({ value, label, icon: Icon }) => (
+            <Link
+              key={value}
+              href={value === DEFAULT_TAB ? '/admin' : `/admin?tab=${value}`}
+              scroll={false}
+              aria-current={value === activeTab ? 'page' : undefined}
+              className={cn(
+                'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-borderDefault px-3 py-1.5 text-xs font-medium transition-all hover:bg-gray600 sm:text-sm',
+                value === activeTab && 'bg-gray600 text-foreground shadow-sm'
+              )}
+            >
+              <Icon className="text-lg" />
+              {label}
+            </Link>
+          ))}
+        </nav>
 
-        <TabsContent value="transacciones" className="mt-6">
-          {transactions.length === 0 ? (
-            <EmptyState
-              icon={
-                <IoSwapHorizontalOutline className="text-4xl sm:text-6xl" />
-              }
-              title="Sin transacciones"
-              description="Todavía no hay transacciones en ningún evento"
-            />
-          ) : (
-            <Suspense fallback={<DashboardTransactionsSkeleton />}>
-              <AdminTransactionsList transactions={transactions} />
-            </Suspense>
-          )}
-        </TabsContent>
-
-        <TabsContent value="retiros" className="mt-6">
-          {payouts.length === 0 ? (
-            <EmptyState
-              icon={<IoCashOutline className="text-4xl sm:text-6xl" />}
-              title="Sin solicitudes de retiro"
-              description="Todavía no hay solicitudes de retiro en ningún evento"
-            />
-          ) : (
-            <Suspense fallback={<DashboardTransactionsSkeleton />}>
-              <AdminPayoutsList payouts={payouts} />
-            </Suspense>
-          )}
-        </TabsContent>
-
-        <TabsContent value="eventos" className="mt-6">
-          {events.length === 0 ? (
-            <EmptyState
-              icon={<IoPeopleOutline className="text-4xl sm:text-6xl" />}
-              title="Sin eventos"
-              description="Todavía no hay eventos registrados"
-            />
-          ) : (
-            <Suspense fallback={<DashboardTransactionsSkeleton />}>
-              <AdminEventsList events={events} />
-            </Suspense>
-          )}
-        </TabsContent>
-
-        <TabsContent value="tipos-de-evento" className="mt-6">
-          <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminEventTypesList eventTypes={eventTypes} />
+        <div className="mt-6">
+          <Suspense
+            key={activeTab}
+            fallback={<DashboardTransactionsSkeleton />}
+          >
+            <Panel />
           </Suspense>
-        </TabsContent>
-
-        <TabsContent value="categorias" className="mt-6">
-          <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminCategoriesList
-              categories={categories}
-              eventTypes={eventTypes}
-            />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="colecciones" className="mt-6">
-          <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminGiftlistsList
-              giftlists={adminGiftlists}
-              gifts={gifts}
-              categories={categories}
-              eventTypes={eventTypes}
-            />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="regalos" className="mt-6">
-          <Suspense fallback={<DashboardTransactionsSkeleton />}>
-            <AdminGiftsList
-              gifts={gifts}
-              categories={categories}
-              giftlists={giftlists}
-              eventTypes={eventTypes}
-            />
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   )
 }

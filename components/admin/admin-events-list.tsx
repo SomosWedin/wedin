@@ -10,6 +10,8 @@ import {
 } from 'react-icons/io5'
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
+import PaginationControls from '@/components/ui/pagination-controls'
+import { usePagination } from '@/hooks/use-pagination'
 import {
   type AdminEventListItem,
   type AdminEventSortColumn,
@@ -48,12 +50,18 @@ export default function AdminEventsList({
     [events]
   )
 
-  const rows = getAdminEventRows(events, {
-    search,
-    eventTypeId,
-    sortColumn,
-    sortDirection,
-  })
+  const rows = useMemo(
+    () =>
+      getAdminEventRows(events, {
+        search,
+        eventTypeId,
+        sortColumn,
+        sortDirection,
+      }),
+    [events, search, eventTypeId, sortColumn, sortDirection]
+  )
+
+  const { pageItems, pagination } = usePagination(rows)
 
   const changeSort = (column: AdminEventSortColumn) => {
     if (sortColumn === column) {
@@ -132,7 +140,7 @@ export default function AdminEventsList({
             No hay eventos que coincidan con los filtros
           </div>
         ) : (
-          rows.map(event => (
+          pageItems.map(event => (
             <div
               key={event.id}
               className="grid grid-cols-1 gap-3 border-b border-gray-100 px-4 py-4 text-sm hover:bg-gray-50 sm:grid-cols-12 sm:items-center"
@@ -203,6 +211,8 @@ export default function AdminEventsList({
             </div>
           ))
         )}
+
+        <PaginationControls {...pagination} />
       </div>
     </div>
   )

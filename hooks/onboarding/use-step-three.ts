@@ -8,18 +8,15 @@ import { StepThreeSchema } from '@/schemas/onboarding'
 export type StepThreeValues = z.infer<typeof StepThreeSchema>
 
 type UseStepThreeProps = {
+  defaultValues: StepThreeValues
   onSubmit: (values: StepThreeValues) => Promise<void> | void
 }
 
-export function useStepThree({ onSubmit }: UseStepThreeProps) {
+export function useStepThree({ defaultValues, onSubmit }: UseStepThreeProps) {
   const form = useForm<StepThreeValues>({
     resolver: zodResolver(StepThreeSchema),
     mode: 'all',
-    defaultValues: {
-      eventCountry: 'Paraguay',
-      eventCity: '',
-      isDecidingEventLocation: false,
-    },
+    defaultValues,
   })
 
   const eventCountry =

@@ -117,6 +117,16 @@ export async function getAdminImportJobDetails(input: unknown) {
         orderBy: { position: 'asc' },
         skip: page * 20,
         take: 20,
+        select: {
+          id: true,
+          rowNumber: true,
+          input: true,
+          review: true,
+          status: true,
+          giftId: true,
+          excluded: true,
+          error: true,
+        },
       }),
       prisma.giftImportHistory.findMany({
         where: { jobId },

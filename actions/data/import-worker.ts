@@ -78,10 +78,11 @@ export async function runImportJob<Ctx>(
     const job = await prisma.giftImportJob.findUniqueOrThrow({
       where: { id: jobId },
     })
-    await prisma.giftImportJob.update({
-      where: { id: jobId },
-      data: { startedAt: job.startedAt || new Date() },
-    })
+    if (!job.startedAt)
+      await prisma.giftImportJob.update({
+        where: { id: jobId },
+        data: { startedAt: new Date() },
+      })
     await prisma.giftImportHistory.create({
       data: {
         jobId,
@@ -183,9 +184,11 @@ export async function runImportJob<Ctx>(
         })
       return count
     })
-    revalidatePath('/admin')
-    revalidatePath('/gifts')
-    revalidatePath('/wishlist')
+    if (!pending) {
+      revalidatePath('/admin')
+      revalidatePath('/gifts')
+      revalidatePath('/wishlist')
+    }
     if (pending)
       await (processor.kind === 'GIFT'
         ? dispatchImportJob(jobId, runId)

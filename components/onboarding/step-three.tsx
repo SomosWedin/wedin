@@ -3,11 +3,21 @@
 import Image from 'next/image'
 import StepThreeForm from '@/components/forms/onboarding/step-three'
 import { useOnboarding } from '@/hooks/use-onboarding'
+import type { OnboardingDefaults } from '@/lib/onboarding-defaults'
 import wedinIcon from '@/public/assets/w-icon.svg'
-import OnboardingStepper from './stepper'
+import type { OnboardingNav } from './step-manager'
+import OnboardingStepNav from './step-nav'
 
-export default function OnboardingStepThree() {
-  const { handleEventLocationUpdate, loading } = useOnboarding()
+export default function OnboardingStepThree({
+  defaults,
+  nav,
+}: {
+  defaults: OnboardingDefaults
+  nav: OnboardingNav
+}) {
+  const { handleEventLocationUpdate, loading } = useOnboarding({
+    onAdvance: nav.onAdvance,
+  })
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-8">
@@ -23,9 +33,18 @@ export default function OnboardingStepThree() {
         </p>
       </div>
 
-      <StepThreeForm loading={loading} onSubmit={handleEventLocationUpdate} />
+      <StepThreeForm
+        defaultValues={{
+          eventCountry: defaults.eventCountry,
+          eventCity: defaults.eventCity,
+          isDecidingEventLocation: defaults.isDecidingEventLocation,
+        }}
+        loading={loading}
+        onBack={nav.onBack}
+        onSubmit={handleEventLocationUpdate}
+      />
 
-      <OnboardingStepper step={3} />
+      <OnboardingStepNav nav={nav} loading={loading} />
     </div>
   )
 }

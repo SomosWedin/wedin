@@ -16,11 +16,27 @@ import {
   StepTwoSchema,
 } from '@/schemas/onboarding'
 
-export const useOnboarding = () => {
+type UseOnboardingProps = {
+  onAdvance?: (nextStep: number) => void
+  onEventTypeSelected?: (eventTypeId: string) => void
+}
+
+export const useOnboarding = ({
+  onAdvance,
+  onEventTypeSelected,
+}: UseOnboardingProps = {}) => {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
   const { update } = useSession()
+
+  // The refresh is what re-reads the saved values for a later back-navigation;
+  // moving to the next step no longer waits on it.
+  const goToNextStep = (nextStep: number) => {
+    router.refresh()
+    setLoading(false)
+    onAdvance?.(nextStep)
+  }
 
   // Step One
   const handleEventTypeUpdate = async (eventTypeId: string) => {
@@ -38,7 +54,8 @@ export const useOnboarding = () => {
         return
       }
 
-      router.refresh()
+      onEventTypeSelected?.(eventTypeId)
+      goToNextStep(2)
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -78,7 +95,7 @@ export const useOnboarding = () => {
         return
       }
 
-      router.refresh()
+      goToNextStep(3)
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -120,7 +137,7 @@ export const useOnboarding = () => {
         return
       }
 
-      router.refresh()
+      goToNextStep(4)
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -162,7 +179,7 @@ export const useOnboarding = () => {
         return
       }
 
-      router.refresh()
+      goToNextStep(5)
     } catch (error) {
       toast({
         variant: 'destructive',
