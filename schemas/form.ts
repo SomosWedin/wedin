@@ -4,8 +4,10 @@ import { EVENT_SLUG_PATTERN } from '@/lib/event-domain'
 const RESERVED_EVENT_URLS = [
   'www',
   'home',
-  'landing',
   'app',
+  'landing',
+  'listas',
+  'links',
   'api',
   'admin',
   'dashboard',
