@@ -5,6 +5,7 @@ import {
   getConfiguredRootDomain,
   getEventSlugFromHost,
   getPublicEventUrl,
+  getRootAppUrl,
   isValidEventSlug,
   publicEventPaths,
 } from '@/lib/event-domain'
@@ -202,5 +203,10 @@ describe('event-domain helpers', () => {
 
     expect(isValidEventSlug(parsed.data)).toBe(true)
     expect(() => getPublicEventUrl(parsed.data)).not.toThrow()
+  })
+
+  it('builds an absolute root URL that leaves any event subdomain', () => {
+    expect(getRootAppUrl()).toBe('https://somoswedin.com/')
+    expect(getRootAppUrl('/login')).toBe('https://somoswedin.com/login')
   })
 })
